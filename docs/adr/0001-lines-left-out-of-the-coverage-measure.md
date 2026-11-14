@@ -23,6 +23,7 @@ Each check guards a state its callers cannot produce. Removing it would leave th
 | `cli`, `forecast-merge.ts`, an error that is no `CliError` | Only a conflicted blob too large for a string gets here, over 512 MiB: a spec cannot afford one. |
 | `cli`, `tree-at.ts`, a reader that fails with no `CliError` | A reader refuses with a `CliError`: what is left is a fault of the kit, or a source too large for a string. |
 | `cli`, `tree-at.ts`, a config that fails with no `CliError` | `readConfig` refuses with a `CliError`: what is left is a fault of the kit. |
+| `cli`, `preview-table-names.ts`, the two sides failing to read once the preview failed | The two sides are read through git by readers that answer nothing rather than throw: what is left is a fault of the kit, and a dry run never changes how it exits for it. |
 | `eslint-plugin`, `pattern-identifiers.ts`, another kind of target | The parser refuses a member expression in a declaration or a parameter. |
 | `eslint-plugin`, `returns-package-type.ts`, `this` as a name | `this` stands in an entity name only under `typeof`, never in a type reference. |
 

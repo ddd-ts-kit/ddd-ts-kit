@@ -1,5 +1,5 @@
 [English](parallel-work.md) · **Français**
-<!-- translation-of: parallel-work.md sha256:c52fc36026adaae7 -->
+<!-- translation-of: parallel-work.md sha256:86e61d8581aa3a96 -->
 
 # Travailler en parallèle sans collisions
 
@@ -102,7 +102,39 @@ celle qu'il trouve ; une version qui n'est pas une version sémantique vous est 
 régions générées de `CONTEXT.md` et de la carte
 des contextes prennent le côté du tronc, un conflit à l'intérieur d'un registre généré
 (`// ddd-ts-kit:<region>`) garde les lignes des deux côtés (une ligne retirée par un côté reste
-retirée), `slices.md` se fusionne ligne par ligne (chaque statut le plus avancé des deux côtés),
+retirée), l'index des schémas de Drizzle dont les deux côtés ont chacun stocké une table du même nom,
+chacune dans le fichier de tables de son contexte, est réglé en entier comme le règlent les
+générateurs quand les deux côtés sont lus avec certitude (la table que le tronc exporte sous un
+nom le garde, quel que soit l'ordre de l'index et qu'un côté ait ou non découpé le contexte en
+modules, chaque côté étant lu tel que son commit le dispose, et celle que la branche apporte est
+listée sous le nom de son contexte, `shippingOrders` ; le rapport dit chacun sous `automatic:`,
+en simulation aussi) ; sur TypeORM, la fusion n'écrit aucun nom de l'index, comme avant : elle ne
+peut pas dire par le code si deux imports d'un même nom sont deux entités ou une, alors elle dit
+chaque nom que la région des imports donne plus d'une fois, une fois, avec les fichiers d'où il
+vient, en simulation comme à la fusion, et vous importez chaque entité sauf une sous son propre
+nom et listez ce nom dans `entities`, ou retirez l'import en trop d'une même entité ;
+`init --force` le dit de la même façon. Sur Drizzle, ce que le kit ne répare pas, il le dit, en simulation comme à la fusion : chaque table
+qu'un côté avait à portée et que l'index fusionné n'exporte sous aucun nom, avec son fichier et
+le nom qui la cache (une ligne écrite à la main, un module qui n'est pas le fichier de tables
+d'un contexte), et chaque nom du tronc ou de la branche qui nomme une autre table après la
+fusion, quand la table qu'il nommait est encore réexportée en entier par l'index fusionné. Une
+ligne ou un import de l'index de Drizzle qui nomme la place où un côté tenait un fichier de tables que
+l'autre côté a déplacé n'est pas réécrit : le rapport dit chacun, avec la place du fichier dans
+l'arbre fusionné, et le kit n'écrit aucun nom dans cette fusion. Les lignes que le kit écrit dans
+un index de Drizzle sont notées dans un *trailer* `Kit-Written:` et ne comptent jamais comme celles de la
+fusion pour la vérification des lignes perdues : une ligne qu'une résolution négligente a perdue
+arrête encore la fusion. Sur Drizzle, un
+contexte pour lequel l'arbre fusionné tient deux fichiers de tables (un côté l'a découpé en
+modules, l'autre a stocké une table à plat) ne reçoit aucune ligne, ni aucun autre nom de cette fusion, quand
+les deux fichiers déclarent un nom en commun : le rapport le dit une fois, avec les noms que les
+deux déclarent, lequel des deux fichiers garde chacun (celui dont l'index du tronc l'exporte,
+sous ce nom ou un autre), et ce qui doit tenir une fois qu'une
+personne en a fait l'unique fichier de `shared/` (puis un *commit* et `init --force`), et nomme
+encore chaque table cachée et chaque nom déplacé. Deux tels fichiers sans nom commun se fusionnent
+comme les autres. Un fichier que le kit ne lit pas avec certitude
+lui fait ne rien écrire et dire, une fois, quels noms peuvent être partagés et qui les garde,
+sans ligne à copier ; un index qu'il ne peut pas écrire lui fait donner les lignes à écrire à la
+main ; il n'en donne aucune quand il donnerait un nom du tronc à une autre table. Pour le reste, `slices.md` se fusionne ligne par ligne (chaque statut le plus avancé des deux côtés),
 le verrou des événements stockés se fusionne par clé, le journal et les *snapshots* de
 drizzle-kit prennent le côté du tronc avant le rejeu, le fichier de verrouillage prend le côté du
 tronc et est réinstallé quand la branche a changé `package.json`.

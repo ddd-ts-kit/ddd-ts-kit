@@ -1,5 +1,5 @@
 [English](bounded-context.md) · **Français**
-<!-- translation-of: bounded-context.md sha256:a35a05a0aa0e3892 -->
+<!-- translation-of: bounded-context.md sha256:db6fddb764229fc8 -->
 
 # Contexte délimité
 
@@ -114,7 +114,12 @@ Trois conséquences méritent d'être explicitées :
 - **Des données à soi.** Un schéma de base de données par contexte, aucune clé étrangère,
   jointure ou transaction d'un contexte à l'autre. Un contexte qui a besoin des données d'un
   autre lit un contrat publié ou tient une projection locale alimentée par des événements
-  d'intégration.
+  d'intégration. Deux contextes peuvent nommer une table de la même façon, `billing.invoices`
+  et `shipping.invoices` : chacune est dans le schéma de son contexte et y garde son nom, et
+  l'index des schémas de la plateforme (`src/platform/database/schema.ts`), où Drizzle et
+  TypeORM listent chaque table par son nom, liste la seconde sous un nom qui porte son
+  contexte, `shippingInvoices` : les générateurs l'écrivent, et une fusion aussi sur Drizzle ;
+  après une fusion sur TypeORM qui laisse un nom importé deux fois, une personne écrit cet alias.
 - **`CONTEXT.md` fait partie du code.** Son glossaire est la référence contre laquelle les noms
   sont vérifiés ([Langage omniprésent](ubiquitous-language.fr.md)), et sa première phrase de
   raison d'être est reprise dans la carte des contextes générée.
