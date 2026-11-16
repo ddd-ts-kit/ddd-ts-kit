@@ -28,9 +28,34 @@ export function installForReal(root: string, manager: Manager, { frozen = false 
 
   const [install, frozenInstall] = INSTALLS[manager];
   const env = { COREPACK_ENABLE_DOWNLOAD_PROMPT: '0' };
-  const printed = runIn(root, { command: manager, args: install, env });
+  const printed = onceTheRegistryServes(() => runIn(root, { command: manager, args: install, env }));
 
   return frozen ? runIn(root, { command: manager, args: frozenInstall, env }) : printed;
+}
+
+/** What npm and pnpm print while the registry lists a version whose tarball it does not serve yet: a release in progress. */
+const REGISTRY_LAG = /\b(ETARGET|E404|ERR_PNPM_FETCH_404|ERR_PNPM_NO_MATCHING_VERSION)\b/;
+const WAITS_MS = [30_000, 60_000];
+
+/**
+ * A package published while the install runs is listed before its tarball is served, for a minute
+ * or two: the install is tried again then, and only then. Any other failure, and a version that
+ * is still missing after the waits, fail the spec with what the manager printed.
+ */
+function onceTheRegistryServes(install: () => string): string {
+  for (const wait of WAITS_MS) {
+    try {
+      return install();
+    } catch (error) {
+      if (!REGISTRY_LAG.test(String(error))) {
+        throw error;
+      }
+
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, wait);
+    }
+  }
+
+  return install();
 }
 
 /** Each manager has its own way to replace a package wherever it is asked for, a dependency of the kit on the kit included. */
