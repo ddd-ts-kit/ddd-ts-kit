@@ -22,6 +22,13 @@ updates:
       # when TypeORM accepts the next major.
       - dependency-name: better-sqlite3
         update-types: ['version-update:semver-major']
+      # typescript-eslint 8.73 names `@typescript/native` as a peer at TypeScript 7.1, the alias the
+      # kit holds at 7.0: a lockfile on 8.73 is refused by `npm ci` under Node 22 (#826). Raised by
+      # hand with the alias, when TypeScript 7.1 is released.
+      - dependency-name: typescript-eslint
+        versions: ['>=8.73.0']
+      - dependency-name: '@typescript-eslint/*'
+        versions: ['>=8.73.0']
     commit-message:
       prefix: chore
       include: scope
