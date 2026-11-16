@@ -251,6 +251,7 @@ const TYPED_RULES = [
   'no-confusing-void-expression',
   'restrict-template-expressions',
   'restrict-plus-operands',
+  'no-unsafe-class-instance-assignment',
 ];
 
 function withoutTypedRules(rules: Rules): Rules {

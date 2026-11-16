@@ -71,8 +71,9 @@ export const KIT_CONVENTIONS: Rules = {
   '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true, allowBoolean: true }],
   '@typescript-eslint/restrict-plus-operands': ['error', { allowNumberAndString: true }],
   ...knownToTypescriptEslint({
-    // A port is an abstract class its adapters implement: a value typed by a port is not built by the
-    // constructor of that class. The rule came to the strict preset with typescript-eslint 8.73.
+    // A port is an abstract class its adapters implement, and a payload, an answer or a line of a read
+    // model is a class built from a literal: neither is built by the constructor of the class that types
+    // it, and the rule has no option. It came to the strict preset with typescript-eslint 8.73.
     '@typescript-eslint/no-unsafe-class-instance-assignment': 'off',
   }),
 };

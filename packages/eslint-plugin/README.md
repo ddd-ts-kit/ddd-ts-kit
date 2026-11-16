@@ -360,7 +360,7 @@ is not reported for following the conventions of the kit:
 | `no-unused-vars` | `args: 'none'` | an adapter implements the whole signature of its port |
 | `dot-notation` | index signatures allowed | `process.env['PORT']` |
 | `no-confusing-void-expression`, `restrict-template-expressions`, `restrict-plus-operands` | arrow shorthand, numbers and booleans allowed | not coercion bugs |
-| `no-unsafe-class-instance-assignment` | off, where the installed typescript-eslint has it (8.73 and later) | a port is an abstract class its adapters implement: a value typed by a port is not built by the constructor of that class |
+| `no-unsafe-class-instance-assignment` | off, where the installed typescript-eslint has it (8.73 and later) | a port is an abstract class its adapters implement, and a payload, an answer or a line of a read model is a class built from a literal: neither is built by the constructor of its class, and the rule has no option. What it would catch, a plain object where `instanceof` or the metadata of a decorator is expected, is no longer reported |
 
 ## Settings
 

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:500709b34d19002e -->
+<!-- translation-of: README.md sha256:328d0d9f75ac0088 -->
 
 # @ddd-ts-kit/eslint-plugin
 
@@ -368,7 +368,7 @@ fraîchement généré ne soit pas signalé parce qu'il suit les conventions du 
 | `no-unused-vars` | `args: 'none'` | un adaptateur implémente toute la signature de son port |
 | `dot-notation` | signatures d'index permises | `process.env['PORT']` |
 | `no-confusing-void-expression`, `restrict-template-expressions`, `restrict-plus-operands` | forme abrégée des fonctions fléchées, nombres et booléens permis | ce ne sont pas des bogues de coercition |
-| `no-unsafe-class-instance-assignment` | désactivée, là où le typescript-eslint installé la possède (8.73 et suivants) | un port est une classe abstraite que ses adaptateurs implémentent : une valeur typée par un port n'est pas construite par le constructeur de cette classe |
+| `no-unsafe-class-instance-assignment` | désactivée, là où le typescript-eslint installé la possède (8.73 et suivants) | un port est une classe abstraite que ses adaptateurs implémentent, et un *payload*, une réponse ou une ligne de modèle de lecture est une classe construite depuis un littéral : ni l'un ni l'autre n'est construit par le constructeur de sa classe, et la règle n'a aucune option. Ce qu'elle attraperait, un objet simple là où `instanceof` ou les métadonnées d'un décorateur sont attendus, n'est plus signalé |
 
 ## Réglages
 
