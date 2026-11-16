@@ -16,4 +16,6 @@ export interface Resolution {
   readonly how: string;
   /** The conflicts left, with their lines in `content` (or in the merge's text). */
   readonly blocks: readonly ConflictBlock[];
+  /** For a path left to a person, how to settle it when the lines of its conflicts alone would mislead. */
+  readonly advice?: string;
 }

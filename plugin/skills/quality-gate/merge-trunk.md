@@ -9,7 +9,10 @@ merge from the newest commit of the branch the trunk holds (a first row already 
 branch it was stacked on), settles the derived files (the `package.json` of a client at the higher
 of both versions), generated regions and registries, the rows
 of `slices.md`, the drizzle-kit journal and the lockfile itself, and leaves each source or test
-hunk in a merge in progress with what each side did there (exit 1). Resolve each hunk keeping
+hunk in a merge in progress with what each side did there (exit 1). Where both sides added a
+table, a model or a function at one place of a generated region, each is kept whole; one both
+wrote differently is one hunk that holds each version whole: write the one declaration that
+keeps the intent of both. Resolve each hunk keeping
 both sides, never by taking one side of a source file or a test (`-X theirs`, `-X ours`,
 `checkout --theirs` erase the other side without a conflict, and the guard refuses them to a
 sub-agent), `git add` it, then `npx ddd-ts-kit merge-trunk --continue`: it replays the

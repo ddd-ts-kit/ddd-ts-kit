@@ -1,5 +1,5 @@
 [English](parallel-work.md) · **Français**
-<!-- translation-of: parallel-work.md sha256:86e61d8581aa3a96 -->
+<!-- translation-of: parallel-work.md sha256:f4a23186c5a51cf5 -->
 
 # Travailler en parallèle sans collisions
 
@@ -102,7 +102,31 @@ celle qu'il trouve ; une version qui n'est pas une version sémantique vous est 
 régions générées de `CONTEXT.md` et de la carte
 des contextes prennent le côté du tronc, un conflit à l'intérieur d'un registre généré
 (`// ddd-ts-kit:<region>`) garde les lignes des deux côtés (une ligne retirée par un côté reste
-retirée), l'index des schémas de Drizzle dont les deux côtés ont chacun stocké une table du même nom,
+retirée), et la région est écrite avec ces lignes dès qu'elles apparient leurs parenthèses, comme
+avant. Dans deux cas, la région d'un fichier TypeScript, JavaScript ou Prisma est fusionnée
+déclaration par déclaration à partir des trois côtés : quand ces lignes n'apparieraient pas leurs
+parenthèses (deux tables ajoutées au même endroit du fichier de tables d'un contexte sur Drizzle
+ou sur TypeORM, deux fonctions qui les créent sur Knex, deux modèles de Prisma : git garde une
+seule fois les lignes qu'elles partagent, leurs dernières), et quand deux instructions
+différentes qui gardent chacune une parenthèse ouverte sur plusieurs lignes s'ouvrent ou se
+ferment sur la même ligne dans un même conflit, ligne que l'union garderait une seule fois (une instruction que les deux côtés ont
+ajoutée à l'identique est gardée une fois, comme avant, et ne compte pas). La table que chaque
+côté a ajoutée est alors gardée entière, celle que les deux ont ajoutée à l'identique est gardée
+une fois, celle qu'un côté a modifiée ou retirée alors que l'autre n'y a pas touché suit ce côté,
+celle que les deux ont modifiée prend la fusion de ses lignes quand elles fusionnent sans conflit
+(une ligne retirée par un côté reste retirée), et celle que les deux côtés ont écrite différemment (deux tables du même nom, une table modifiée
+par un côté et retirée par l'autre) vous est laissée en un seul bloc de conflit qui contient
+chaque version entière, le reste de la région étant fusionné ; les déclarations que les deux côtés
+contiennent restent dans l'ordre du côté qui l'a changé, et ce qu'un côté ajoute seul vient après
+la déclaration qu'il suit de ce côté. Ce que le kit ne fusionne pas ainsi garde les blocs que git
+a écrits, pour vous, et le rapport dit pourquoi et de garder chaque déclaration entière, une
+fois : une parenthèse sans sa paire, une expression régulière, une région écrite dans la région,
+une instruction qui ne déclare aucun nom et qu'un côté a modifiée, des lignes qui ne terminent aucune instruction (les
+entrées d'une liste, des instructions écrites sans `;`) sur lesquelles les côtés diffèrent, deux instructions sans nom déclaré qui
+s'ouvrent de la même façon, l'une contenant chaque ligne de l'autre, des déclarations que les deux
+côtés rangent dans deux ordres différents, un export par défaut de chaque côté ; le rapport dit
+`the declarations of both sides kept, each one whole` pour un fichier fusionné ainsi, suivi de
+`and the lines of both sides kept` quand une autre région du fichier les a gardées ; l'index des schémas de Drizzle dont les deux côtés ont chacun stocké une table du même nom,
 chacune dans le fichier de tables de son contexte, est réglé en entier comme le règlent les
 générateurs quand les deux côtés sont lus avec certitude (la table que le tronc exporte sous un
 nom le garde, quel que soit l'ordre de l'index et qu'un côté ait ou non découpé le contexte en
