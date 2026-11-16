@@ -62,7 +62,7 @@
   },
   "peerDependencies": {
     "awilix": "^13.0.5",
-    "inversify": "^8.2.3",
+    "inversify": "^8.3.0",
     "reflect-metadata": ">=0.2.0",
     "tsyringe": "^4.10.0"
   },
@@ -82,7 +82,7 @@
   },
   "devDependencies": {
     "awilix": "^13.0.5",
-    "inversify": "^8.2.3",
+    "inversify": "^8.3.0",
     "reflect-metadata": "^0.2.2",
     "tsyringe": "^4.10.0"
   }
