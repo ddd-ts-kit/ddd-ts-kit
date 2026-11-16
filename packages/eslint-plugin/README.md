@@ -347,7 +347,7 @@ that would fight it is enabled.
 
 ### Where the kit and typescript-eslint strict disagree
 
-`dddTsKit()` changes ten strict rules, each for a stated reason, so that freshly generated code
+`dddTsKit()` changes eleven strict rules, each for a stated reason, so that freshly generated code
 is not reported for following the conventions of the kit:
 
 | Rule | Setting | Reason |
@@ -360,6 +360,7 @@ is not reported for following the conventions of the kit:
 | `no-unused-vars` | `args: 'none'` | an adapter implements the whole signature of its port |
 | `dot-notation` | index signatures allowed | `process.env['PORT']` |
 | `no-confusing-void-expression`, `restrict-template-expressions`, `restrict-plus-operands` | arrow shorthand, numbers and booleans allowed | not coercion bugs |
+| `no-unsafe-class-instance-assignment` | off, where the installed typescript-eslint has it (8.73 and later) | a port is an abstract class its adapters implement: a value typed by a port is not built by the constructor of that class |
 
 ## Settings
 

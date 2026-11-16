@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:71350248628b22c6 -->
+<!-- translation-of: README.md sha256:500709b34d19002e -->
 
 # @ddd-ts-kit/eslint-plugin
 
@@ -355,7 +355,7 @@ linter : c'est le formateur du projet, Biome, qui en décide (`clean/formatted`)
 
 ### Là où le kit et typescript-eslint strict divergent
 
-`dddTsKit()` change dix règles strictes, chacune pour une raison énoncée, pour que du code
+`dddTsKit()` change onze règles strictes, chacune pour une raison énoncée, pour que du code
 fraîchement généré ne soit pas signalé parce qu'il suit les conventions du kit :
 
 | Règle | Réglage | Raison |
@@ -368,6 +368,7 @@ fraîchement généré ne soit pas signalé parce qu'il suit les conventions du 
 | `no-unused-vars` | `args: 'none'` | un adaptateur implémente toute la signature de son port |
 | `dot-notation` | signatures d'index permises | `process.env['PORT']` |
 | `no-confusing-void-expression`, `restrict-template-expressions`, `restrict-plus-operands` | forme abrégée des fonctions fléchées, nombres et booléens permis | ce ne sont pas des bogues de coercition |
+| `no-unsafe-class-instance-assignment` | désactivée, là où le typescript-eslint installé la possède (8.73 et suivants) | un port est une classe abstraite que ses adaptateurs implémentent : une valeur typée par un port n'est pas construite par le constructeur de cette classe |
 
 ## Réglages
 
