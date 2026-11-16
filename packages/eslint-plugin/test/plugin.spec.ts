@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import tseslint from 'typescript-eslint';
 import { describe, expect, it } from 'vitest';
 import plugin, { dddTsKit, rules, standardRules, VERSION } from '../src';
 import { docsOf } from '../src/support/rule/docs-of';
@@ -187,6 +188,22 @@ describe('the dddTsKit helper', () => {
 
     expect(named.filter((rule) => typed.has(rule.replace('@typescript-eslint/', '')))).toEqual([]);
     expect(own.some((entry) => entry.languageOptions?.parserOptions?.projectService !== undefined)).toBe(false);
+  });
+});
+
+describe('the conventions of the kit over typescript-eslint strict', () => {
+  it('lets a port be implemented where typescript-eslint has the rule (8.73), and names no rule the installed one lacks', () => {
+    const held: unknown = Reflect.get(tseslint.plugin, 'rules');
+
+    const installed = Object.keys(typeof held === 'object' && held !== null ? held : {}).map(
+      (rule) => `@typescript-eslint/${rule}`,
+    );
+
+    const conventions = Object.keys(standardRules.kitConventions);
+    const portsAsClasses = '@typescript-eslint/no-unsafe-class-instance-assignment';
+
+    expect(conventions.filter((rule) => !installed.includes(rule))).toEqual([]);
+    expect(standardRules.kitConventions[portsAsClasses]).toBe(installed.includes(portsAsClasses) ? 'off' : undefined);
   });
 });
 

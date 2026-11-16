@@ -1,4 +1,5 @@
 import type { TSESLint } from '@typescript-eslint/utils';
+import tseslint from 'typescript-eslint';
 
 type Rules = TSESLint.FlatConfig.Rules;
 
@@ -69,7 +70,23 @@ export const KIT_CONVENTIONS: Rules = {
   // A count or a port printed in a message is not a coercion bug.
   '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true, allowBoolean: true }],
   '@typescript-eslint/restrict-plus-operands': ['error', { allowNumberAndString: true }],
+  ...knownToTypescriptEslint({
+    // A port is an abstract class its adapters implement, and a payload, an answer or a line of a read
+    // model is a class built from a literal: neither is built by the constructor of the class that types
+    // it, and the rule has no option. It came to the strict preset with typescript-eslint 8.73.
+    '@typescript-eslint/no-unsafe-class-instance-assignment': 'off',
+  }),
 };
+
+/** Among `rules`, those the installed typescript-eslint holds: ESLint refuses a rule its plugin does not know. */
+function knownToTypescriptEslint(rules: Rules): Rules {
+  const held: unknown = Reflect.get(tseslint.plugin, 'rules');
+  const installed = typeof held === 'object' && held !== null ? Object.keys(held) : [];
+
+  return Object.fromEntries(
+    Object.entries(rules).filter(([name]) => installed.includes(name.replace('@typescript-eslint/', ''))),
+  );
+}
 
 /** The state of an aggregate is replaced by its intention methods: it cannot be readonly, even before the first one is written. */
 export const AGGREGATE_RULES: Rules = {
