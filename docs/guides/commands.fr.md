@@ -1,5 +1,5 @@
 [English](commands.md) · **Français**
-<!-- translation-of: commands.md sha256:24908bfdba5f2598 -->
+<!-- translation-of: commands.md sha256:5106e6b0c1c4c03f -->
 
 # Quelle commande, quand
 
@@ -148,7 +148,7 @@ exemple, reste un `TODO(domain)` du schéma et de l'appel.
 |---|---|---|---|---|
 | `/ddd-ts-kit:quality-gate`, `npm run verify` | chaque porte du *pipeline*, corrigée à la racine | avant d'ouvrir la *pull request* ou la *merge request* | une porte verte | la *request* |
 | `npx ddd-ts-kit merge-trunk` | apporte le tronc dans la branche en un seul *commit* de fusion calculé à partir du *diff* propre de la branche (depuis l'endroit où elle est arrivée après un *squash*) : fichiers dérivés, package.json de chaque client (à la plus haute des deux versions), régions et registres générés, lignes de `slices.md`, méta de drizzle, fichier de verrouillage et verrou des événements stockés réglés, migrations rejouées (renommées avec `--to-land`), décisions renumérotées, régénération (et `db:client` sous Prisma quand la fusion a changé un schéma), puis `verify-merge` sur le résultat | un *worker* : pour apporter le tronc, jamais `git merge` seul ; le chef d'orchestre : `--to-land --cwd <worktree>` juste avant la fusion en *squash* | un *commit* de fusion avec les *trailers* `Merge-Base:`, `Trunk:` et `Landed:` ; ou une fusion en cours avec chaque bloc laissé, ce que chaque côté y a fait, code de sortie 1 | résoudre chaque bloc, `git add`, `merge-trunk --continue` (`--accept-lost` pour une suppression voulue, `--abort` pour défaire, ce qui restaure les fichiers dérivés qu'il a régénérés ; `--continue` dit quand le tronc a avancé depuis le début de la fusion), puis `npm run verify` |
-| `npx ddd-ts-kit verify-merge` | ce que les fusions de la branche ont perdu, lu dans git seul : une ligne ajoutée par un côté, une tranche terminée, un test, une *spec*, une migration, un marqueur de conflit | merge-trunk la lance avant son *commit* ; après une fusion faite autrement, ou un *squash* avec `--theirs <head>` ; le *hook* de *pre-push* (`--warn`) et `verify-slice` la lancent aussi, en avertissement dans cette version : une version mineure ultérieure bloquera | les constats de chaque fusion, avec `file:line` et le côté qui les portait ; rien sans fusion ; code de sortie 1 sur une erreur, 0 avec `--warn` | rétablir chacun depuis son côté, ou consigner une suppression voulue par un *trailer* `Lost-Accepted: <file:line>` |
+| `npx ddd-ts-kit verify-merge` | ce que les fusions de la branche ont perdu, lu dans git seul : une ligne ajoutée par un côté, une tranche terminée, un test, une *spec*, une migration, un marqueur de conflit | merge-trunk la lance avant son *commit* ; après une fusion faite autrement, ou un *squash* avec `--theirs <head>` ; le *hook* de *pre-push* (`--warn`) et `verify-slice` la lancent aussi, en avertissement dans cette version : une version mineure ultérieure bloquera | les constats de chaque fusion, avec `file:line` et le côté qui les portait ; rien sans fusion ; code de sortie 1 sur une erreur, 0 avec `--warn` | rétablir chacun depuis son côté, ou consigner une suppression voulue par un *trailer* `Lost-Accepted: <file:line>` (merge-trunk écrit `<file>@<side>#<hash>` pour une ligne que son règlement d'un index de Drizzle retire, et nomme les lignes qu'il y écrit dans `Kit-Written:` ; sur TypeORM, il n'écrit aucun nom) |
 | `npx ddd-ts-kit affected --base origin/main` | les contextes qu'un changement atteint à travers la carte des contextes | dans le *pipeline* ; en local pour voir ce qu'il lancera | des filtres pour les tests et le *linter* | le *pipeline* |
 | agent `architecture-reviewer` | une revue en lecture seule du *diff* au regard des règles | avant de fusionner une tranche | des constats avec fichier et ligne | les corrections, puis la fusion |
 
@@ -255,10 +255,24 @@ des fichiers (`init`, `generate`, `docs`, `sdk`, un déplacement) n'a pas pu en 
 où elle tournait, comme les chemins que protège le bac à sable d'un agent. Avec `3`, le rapport les
 liste sous `unwritable` (et dans `skipped`), *dry run* compris ; tous les autres fichiers sont
 écrits et aucun n'est supprimé. Relancez la même commande là où ils peuvent être écrits, hors du
-bac à sable : `init` donne la commande dans une note. `4` est une erreur interne du kit, jamais une
-erreur de l'appelant : une ligne avec la version du kit et où la signaler (sous `--json`, une
-`error` avec `"internal": true`) ; signalez-la sur https://github.com/gbourgeat/ddd-ts-kit/issues
-avec la commande qu'elle donne.
+bac à sable : `init` donne la commande dans une note. `3` est aussi le code de `generate` et de
+`init --force` quand ils laissent l'index des schémas (`src/platform/database/schema.ts`) tel qu'il
+était : ce qu'ils y écriraient perdrait une valeur qu'un fichier exporte par son nom et que l'index
+exporte sous ce nom ou sous un autre, ou donnerait ce nom à une autre table (un nom exporté
+seulement comme type, et un export par défaut réexporté, ne sont pas comparés), ce qui n'est jugé
+que lorsque tout ce que l'index réexporte est lu avec certitude, ou (`init --force`) la partie de
+l'index hors des régions tient une ligne que le kit ne lit pas avec certitude et que la réécriture
+perdrait. Le rapport liste l'index sous `left` (et dans `skipped`, jamais dans `updated`), une note
+dit pourquoi et quoi faire, et c'est une personne qui le fait. Tant qu'un fichier que l'index
+réexporte, ou l'index lui-même, n'est pas lu avec certitude, un nom perdu ou un nom déplacé ne
+laisse jamais l'index : la commande sort avec `0` et écrit ce qu'elle écrivait avant, une note dit
+quels noms peuvent être partagés et qui les garde, et chaque nom qu'aucune ligne lue par le kit
+n'exporte après la commande, comme chaque nom qui peut nommer une autre table, est dit avec ce doute
+tant que l'index nomme encore, après la commande, ce qui n'est pas lu, et sans ce doute quand il ne
+le nomme plus ; le kit compare les noms que l'index exporte, pas les tables derrière eux. `4` est
+une erreur interne du kit, jamais une erreur de l'appelant : une ligne avec la version du kit et où
+la signaler (sous `--json`, une `error` avec `"internal": true`) ; signalez-la sur
+https://github.com/gbourgeat/ddd-ts-kit/issues avec la commande qu'elle donne.
 
 Sous `--json`, un refus est `{"error": {"message": "...", "fix": "..."}}`. Le refus de
 `move-to-module` qui fermerait un cycle entre modules y ajoute ce qu'un script lit sans analyser
@@ -625,8 +639,9 @@ ddd-ts-kit <command> --help prints the usage and the notes of that command alone
                    changed files past 300 of the 350 lines, the paths of the slice to stage (its context, its
                    Prisma models, an end-to-end spec, a working migration, the pages of docs/behaviour/ but
                    those of other contexts, prisma/schema/schema.prisma when its one change is the context
-                   joining the schemas of the datasource, the schema index of the platform when every line
-                   changed there is of the context, the derived files git tracks) and every other
+                   joining the schemas of the datasource, the schema index of the platform and the list of the
+                   read model tables when every line changed there is of the context, the derived files git
+                   tracks) and every other
                    changed path, left out and never to stage with it; the merges since --since, as
                    verify-merge checks them, reported without failing the slice in this version (a later
                    minor version fails it; a migration out of order is said apart, the push being refused
@@ -657,7 +672,9 @@ ddd-ts-kit <command> --help prints the usage and the notes of that command alone
                    by lines of its own. Derived files, files a tool says it wrote, migrations, lockfiles
                    and slices.md are left out of the lines. The base is --base, else the Merge-Base:
                    trailer of the merge, else git merge-base; entries of a Lost-Accepted: <file:line>,...
-                   trailer are listed and never fail, nor what a later commit restored; silent and exit 0
+                   trailer, or <file>@<side>#<hash> as merge-trunk writes what its Drizzle settle takes out,
+                   are listed and never fail, nor what a later commit restored; the lines a Kit-Written:
+                   trailer names are never the merge's own; silent and exit 0
                    without a merge, exit 1 on an error; --warn prints the same and exits 0, as the
                    pre-push hook of init runs it in this version (a later minor version blocks the push).
                    Then, without a <commit>, the migrations of the working tree against that trunk: one the

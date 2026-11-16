@@ -1,5 +1,5 @@
 [English](0001-lines-left-out-of-the-coverage-measure.md) · **Français**
-<!-- translation-of: 0001-lines-left-out-of-the-coverage-measure.md sha256:4348f2d9f2da4d9c -->
+<!-- translation-of: 0001-lines-left-out-of-the-coverage-measure.md sha256:ccafaec58beaf5d3 -->
 
 # ADR-0001 : les lignes laissées hors de la mesure de couverture
 
@@ -24,6 +24,7 @@ Chaque vérification garde un état que ses appelants ne peuvent pas produire. L
 | `cli`, `forecast-merge.ts`, une erreur qui n'est pas une `CliError` | Seul un blob en conflit trop grand pour une chaîne arrive ici, au-delà de 512 Mio : une spec ne peut pas se l'offrir. |
 | `cli`, `tree-at.ts`, un lecteur qui échoue sans `CliError` | Un lecteur refuse avec une `CliError` : ce qui reste est une faute du kit, ou une source trop grande pour une chaîne. |
 | `cli`, `tree-at.ts`, une configuration qui échoue sans `CliError` | `readConfig` refuse avec une `CliError` : ce qui reste est une faute du kit. |
+| `cli`, `preview-table-names.ts`, la lecture des deux côtés qui échoue après l'échec de l'aperçu | Les deux côtés sont lus dans git par des lecteurs qui ne répondent rien plutôt que de lever : ce qui reste est une faute du kit, et une simulation ne change jamais pour elle sa façon de sortir. |
 | `eslint-plugin`, `pattern-identifiers.ts`, un autre genre de cible | L'analyseur refuse une expression membre dans une déclaration ou un paramètre. |
 | `eslint-plugin`, `returns-package-type.ts`, `this` comme nom | `this` n'apparaît dans un nom d'entité que sous `typeof`, jamais dans une référence de type. |
 

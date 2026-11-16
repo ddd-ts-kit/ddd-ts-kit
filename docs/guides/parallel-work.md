@@ -97,6 +97,36 @@ side at the higher of the two versions (the version is the team's, and `regenera
 it finds; a version that is not a semantic version is left to you), the generated regions of `CONTEXT.md` and of the
 context map take the trunk's side, a conflict inside a generated registry
 (`// ddd-ts-kit:<region>`) keeps the lines of both sides (a line one side removed stays removed),
+the schema index of Drizzle whose two sides each stored a table of one name, each in the tables
+file of its context, is settled whole as the generators settle it when both sides are read with
+certainty (the table the trunk exports under a name keeps it, whatever the order of the index and
+whether a side laid the context out in modules, each side read as its commit lays it out, and the
+one the branch brings is listed under the name of its context, `shippingOrders`; the report says
+each under `automatic:`, in a dry run too); on TypeORM the merge writes no name of the index, as
+before: it cannot tell by the code whether two imports of one name are two entities or one, so it
+says each name the region of the imports gives more than once, once, with the files it comes
+from, in the dry run as in the merge, and you import each entity but one under its own name and
+list that name in `entities`, or take out the extra import of one entity; `init --force` says it
+the same way. On Drizzle, what the kit does not repair it says, in the dry run as in the
+merge: each table a side had within reach that the merged index exports under no name, with its
+file and the name that hides it (a line written by hand, a module that is no tables file of a
+context), and each name of the trunk or of the branch that names another table after the merge,
+when the table it named is still re-exported whole by the merged index. A line or an import of
+the Drizzle index that names the place a side held a tables file at, which the other side moved, is not
+written again: the report says each, with the place of the file in the merged tree, and the kit
+writes no name in that merge. The lines the kit writes in a Drizzle index are recorded in a
+`Kit-Written:` trailer and never count as the merge's own for the lost-lines check, so a line a
+careless resolution lost still stops the merge. On Drizzle, a context the merged tree
+holds two tables files for (one side laid it out in modules, the other stored a table flat) gets
+no line, nor does any other name of that merge, when the two files declare a name in common: the
+report says it once, with the names both declare, which of the two files keeps each (the one the
+trunk's index exports it from, under that name or another), and what
+must hold once a person made them the one file of `shared/` (then a commit and `init --force`),
+and still names each table hidden and each name moved. Two such files that share no name merge as
+any other.
+A file the kit does not read with certainty makes it write nothing and say, once, which names
+may be shared and who keeps them, with no line to copy; an index it cannot write makes it give
+the lines to write by hand; it gives none when it would hand a name of the trunk to another table. For the rest,
 `slices.md` merges row by row (each status the furthest of both sides), the stored-events lock
 merges by key, the drizzle-kit journal and snapshots take the trunk's side before the replay, the
 lockfile takes the trunk's side and is installed again when the branch changed `package.json`.

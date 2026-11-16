@@ -24,6 +24,8 @@ export interface MergeState {
   readonly toLand: boolean;
   readonly install: boolean;
   readonly done: readonly MergeStep[];
+  /** What the last run said of the names of the schema index: a `--continue` says it again only if it still holds. */
+  readonly names?: readonly string[];
 }
 
 /** Reads, writes or removes the state of the merge in progress of the project at `root`. */
@@ -33,13 +35,15 @@ export const mergeState = {
   read(root: string): MergeState | undefined {
     const file = mergeState.file(root);
     const json = fs.existsSync(file) ? jsonObject(fs.readFileSync(file, 'utf8')) : undefined;
-    const { report, ours, toLand, install, done } = json ?? {};
+    const { report, ours, toLand, install, done, names } = json ?? {};
 
     if (!isReport(report) || typeof ours !== 'string') {
       return undefined;
     }
 
-    return { report, ours, toLand: toLand === true, install: install === true, done: steps(done) };
+    const said = Array.isArray(names) ? names.filter((name): name is string => typeof name === 'string') : [];
+
+    return { report, ours, toLand: toLand === true, install: install === true, done: steps(done), names: said };
   },
 
   write(root: string, state: MergeState): void {

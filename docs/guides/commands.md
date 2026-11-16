@@ -145,7 +145,7 @@ path). A field of another type, the `readonly string[]` of the products for one,
 |---|---|---|---|---|
 | `/ddd-ts-kit:quality-gate`, `npm run verify` | every gate of the pipeline, fixed at the root cause | before opening the pull or merge request | a green gate | the request |
 | `npx ddd-ts-kit merge-trunk` | brings the trunk into the branch as one merge commit computed from the branch's own diff (from where it landed after a squash): derived files, the package.json of each client (at the higher of both versions), generated regions and registries, `slices.md` rows, drizzle meta, the lockfile and the stored-events lock settled, migrations replayed (renamed with `--to-land`), decision records renumbered, regenerate (and `db:client` on Prisma when the merge changed a schema), then `verify-merge` on the result | a worker: to bring the trunk in, never `git merge` alone; the conductor: `--to-land --cwd <worktree>` just before the squash merge | one merge commit with `Merge-Base:`, `Trunk:` and `Landed:` trailers; or a merge in progress with each hunk left, what each side did there, exit 1 | resolve each hunk, `git add`, `merge-trunk --continue` (`--accept-lost` for a removal decided on purpose, `--abort` to undo, which restores the derived files it regenerated; `--continue` says when the trunk moved since the merge started), then `npm run verify` |
-| `npx ddd-ts-kit verify-merge` | what the merges of the branch lost, read from git alone: a line one side added, a row done, a test, a spec file, a migration, a conflict marker | merge-trunk runs it before its commit; after a merge made otherwise, or of a squash with `--theirs <head>`; the pre-push hook (`--warn`) and `verify-slice` run it too, as a warning in this version: a later minor version blocks | the findings of each merge, with `file:line` and the side that held them; nothing without a merge; exit 1 on an error, 0 with `--warn` | restore each one from its side, or record a removal decided on purpose with a `Lost-Accepted: <file:line>` trailer |
+| `npx ddd-ts-kit verify-merge` | what the merges of the branch lost, read from git alone: a line one side added, a row done, a test, a spec file, a migration, a conflict marker | merge-trunk runs it before its commit; after a merge made otherwise, or of a squash with `--theirs <head>`; the pre-push hook (`--warn`) and `verify-slice` run it too, as a warning in this version: a later minor version blocks | the findings of each merge, with `file:line` and the side that held them; nothing without a merge; exit 1 on an error, 0 with `--warn` | restore each one from its side, or record a removal decided on purpose with a `Lost-Accepted: <file:line>` trailer (merge-trunk writes `<file>@<side>#<hash>` for a line its settle of a Drizzle index takes out, and names the lines it writes there in `Kit-Written:`; on TypeORM it writes no name) |
 | `npx ddd-ts-kit affected --base origin/main` | the contexts a change reaches through the context map | in the pipeline; locally to see what it will run | filters for the tests and the linter | the pipeline |
 | agent `architecture-reviewer` | a read-only review of the diff against the rules | before merging a slice | findings with file and line | fixes, then merge |
 
@@ -249,9 +249,22 @@ refusal (the message says what to do); `3` a command that writes files (`init`, 
 `docs`, `sdk`, a move) could not write some of them where it ran, such as the paths the sandbox of
 an agent protects. With `3` the report lists them under `unwritable` (and in `skipped`), a dry run
 included; every other file is written and none is deleted. Run the same command where they can be
-written, outside the sandbox: `init` gives the command in a note. `4` is an internal error of the
-kit, never a mistake of the caller: one line with the version of the kit and where to report it
-(under `--json`, an `error` with `"internal": true`); report it at
+written, outside the sandbox: `init` gives the command in a note. `3` is also the code of `generate`
+and of `init --force` when they leave the schema index (`src/platform/database/schema.ts`) as it
+stood: what they would write there would lose a value a file exports by name and the index exports
+under that name or another, or give that name to another table (a name exported as a type only, and
+a default export re-exported, are not compared), which is judged only when everything the index
+re-exports is read with certainty, or (`init --force`) the part of the index outside the regions
+holds a line the kit does not read with certainty and the rewrite would drop it. The report lists
+the index under `left` (and in `skipped`, never in `updated`), one note says why and what to do, and
+it is a person who does it. While a file the index re-exports, or the index itself, is not read with
+certainty, a name lost or a name moved never leaves the index: the command exits `0` and writes what
+it wrote before, one note says which names may be shared and who keeps them, and each name no line
+the kit reads exports after the command, and each name that may name another table, is said with
+that doubt while the index still names what is not read after the command, and plainly when it does
+not; the kit compares the names the index exports, not the tables behind them. `4` is an internal
+error of the kit, never a mistake of the caller: one line with the version of the kit and where to
+report it (under `--json`, an `error` with `"internal": true`); report it at
 https://github.com/gbourgeat/ddd-ts-kit/issues with the command it gives.
 
 Under `--json`, a refusal is `{"error": {"message": "...", "fix": "..."}}`. The refusal of
@@ -618,8 +631,9 @@ ddd-ts-kit <command> --help prints the usage and the notes of that command alone
                    changed files past 300 of the 350 lines, the paths of the slice to stage (its context, its
                    Prisma models, an end-to-end spec, a working migration, the pages of docs/behaviour/ but
                    those of other contexts, prisma/schema/schema.prisma when its one change is the context
-                   joining the schemas of the datasource, the schema index of the platform when every line
-                   changed there is of the context, the derived files git tracks) and every other
+                   joining the schemas of the datasource, the schema index of the platform and the list of the
+                   read model tables when every line changed there is of the context, the derived files git
+                   tracks) and every other
                    changed path, left out and never to stage with it; the merges since --since, as
                    verify-merge checks them, reported without failing the slice in this version (a later
                    minor version fails it; a migration out of order is said apart, the push being refused
@@ -650,7 +664,9 @@ ddd-ts-kit <command> --help prints the usage and the notes of that command alone
                    by lines of its own. Derived files, files a tool says it wrote, migrations, lockfiles
                    and slices.md are left out of the lines. The base is --base, else the Merge-Base:
                    trailer of the merge, else git merge-base; entries of a Lost-Accepted: <file:line>,...
-                   trailer are listed and never fail, nor what a later commit restored; silent and exit 0
+                   trailer, or <file>@<side>#<hash> as merge-trunk writes what its Drizzle settle takes out,
+                   are listed and never fail, nor what a later commit restored; the lines a Kit-Written:
+                   trailer names are never the merge's own; silent and exit 0
                    without a merge, exit 1 on an error; --warn prints the same and exits 0, as the
                    pre-push hook of init runs it in this version (a later minor version blocks the push).
                    Then, without a <commit>, the migrations of the working tree against that trunk: one the

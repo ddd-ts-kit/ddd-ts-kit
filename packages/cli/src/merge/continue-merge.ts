@@ -7,10 +7,11 @@ import { commitMerge } from './commit-merge';
 import { gitProcess } from './git-process';
 import { lostLinesGate } from './lost-lines-gate';
 import type { MergeContext } from './merge-context';
-import type { MergeReport, StepRun } from './merge-report';
+import type { MergeReport, Settled, StepRun } from './merge-report';
 import { type MergeState, mergeState } from './merge-state';
 import { MERGE_STEPS } from './merge-steps';
 import { NEXT_STEPS } from './next-steps';
+import { settleTableNames } from './settle-table-names';
 import { stageRewritten } from './stage-rewritten';
 import { unmergedEntries } from './unmerged-entries';
 
@@ -57,10 +58,13 @@ export function continueMerge(context: MergeContext, state: MergeState, options:
 }
 
 function checkedAndCommitted(context: MergeContext, state: MergeState, options: ContinueOptions): MergeReport {
+  // Before the project is regenerated and checked: an index that names one table twice does not compile.
+  const named = withNames(context, state);
   const regenerate = regenerated(context);
 
   stageRewritten(context.repo);
-  const withRegenerate: MergeState = { ...state, report: { ...state.report, regenerate } };
+
+  const withRegenerate: MergeState = { ...named, report: { ...named.report, regenerate } };
 
   if (regenerate.status === 'failed') {
     return stopped(context, withRegenerate, { why: '`npm run regenerate` failed', next: NEXT_STEPS.regenerate });
@@ -91,6 +95,38 @@ function checkedAndCommitted(context: MergeContext, state: MergeState, options: 
   }
 
   return committed(context, checked);
+}
+
+/**
+ * The state with what the merge says of the names of the schema index now: a `--continue` after
+ * one that stopped settles them again, and what an earlier run said of them gives way to what
+ * holds now, each sentence once.
+ */
+function withNames(context: MergeContext, state: MergeState): MergeState {
+  const earlier = new Set(state.names ?? []);
+  const kept = state.report.automatic.filter(({ how }) => !earlier.has(how));
+  const settled = tableNames(context, state);
+  const said = settled.filter((one) => !kept.some(({ file, how }) => file === one.file && how === one.how));
+
+  return { ...state, report: { ...state.report, automatic: [...kept, ...said] }, names: settled.map(({ how }) => how) };
+}
+
+/**
+ * The names of the schema index, settled between the two sides. Nothing of it may stop the merge:
+ * what goes wrong is said in the report, the index left as the merge wrote it.
+ */
+function tableNames(context: MergeContext, { report, ours }: MergeState): Settled[] {
+  if (context.config === undefined) {
+    return [];
+  }
+
+  const file = `${context.repo.prefix}${context.config.platformDir}/database/schema.ts`;
+
+  try {
+    return settleTableNames(context, { trunk: report.trunk.commit, ours });
+  } catch (error) {
+    return [{ file, kind: 'registry', how: `the kit wrote no name in it: settling them failed (${String(error)})` }];
+  }
 }
 
 /** Commits the paths of the merge, or stops on what blocks it. */
