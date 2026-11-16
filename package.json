@@ -83,7 +83,7 @@
     "jest": "^30.5.2",
     "knip": "^6.44.1",
     "lefthook": "^2.2.2",
-    "oxlint": "1.92.0",
+    "oxlint": "1.93.0",
     "oxlint-tsgolint": "7.0.2006",
     "publint": "^0.3.25",
     "reflect-metadata": "^0.2.2",
