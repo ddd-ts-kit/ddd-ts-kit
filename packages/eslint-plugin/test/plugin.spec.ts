@@ -192,7 +192,7 @@ describe('the dddTsKit helper', () => {
 });
 
 describe('the conventions of the kit over typescript-eslint strict', () => {
-  it('lets a port be implemented, and names no rule the installed typescript-eslint does not hold', () => {
+  it('lets a port be implemented where typescript-eslint has the rule (8.73), and names no rule the installed one lacks', () => {
     const held: unknown = Reflect.get(tseslint.plugin, 'rules');
 
     const installed = Object.keys(typeof held === 'object' && held !== null ? held : {}).map(
@@ -203,8 +203,7 @@ describe('the conventions of the kit over typescript-eslint strict', () => {
     const portsAsClasses = '@typescript-eslint/no-unsafe-class-instance-assignment';
 
     expect(conventions.filter((rule) => !installed.includes(rule))).toEqual([]);
-    expect(installed).toContain(portsAsClasses);
-    expect(standardRules.kitConventions[portsAsClasses]).toBe('off');
+    expect(standardRules.kitConventions[portsAsClasses]).toBe(installed.includes(portsAsClasses) ? 'off' : undefined);
   });
 });
 
