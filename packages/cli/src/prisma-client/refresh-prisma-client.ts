@@ -17,7 +17,7 @@ export interface PrismaClientRequest {
 }
 
 /**
- * The Prisma client (`prisma generate`) and the schema of the tests (`prisma migrate diff` into
+ * The Prisma client (`prisma generate`, from the same `schema`) and the schema of the tests (`prisma migrate diff` into
  * generated/schema.sql), written again unless they are current: generated from the same schema, the
  * same `prisma.config.ts` and the same Prisma, and still there. The stamp of what they were derived
  * from goes before the first tool runs and comes back once both succeeded, so that a run stopped
@@ -37,7 +37,7 @@ export function refreshPrismaClient({ root, schema, io }: PrismaClientRequest): 
   fs.rmSync(stamp, { force: true });
 
   const code = firstFailure(root, [
-    ['generate'],
+    ['generate', '--schema', schema],
     ['migrate', 'diff', '--from-empty', '--to-schema', schema, '--script', '-o', TEST_SCHEMA],
   ]);
 

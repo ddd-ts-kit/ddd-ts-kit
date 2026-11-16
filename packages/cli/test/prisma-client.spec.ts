@@ -31,6 +31,7 @@ const [step, ...rest] = process.argv.slice(2);
 fs.appendFileSync('prisma.log', step + '\\n');
 if (process.env.FAIL_AT === step) process.exit(5);
 if (step === 'generate') {
+  fs.writeFileSync('generate-args', rest.join(' '));
   if (fs.existsSync('generating')) fs.appendFileSync('prisma.log', 'overlap\\n');
   fs.writeFileSync('generating', '');
   fs.rmSync('generated/prisma', { recursive: true, force: true });
@@ -84,6 +85,7 @@ describe('ddd-ts-kit prisma-client', () => {
 
     expect(result.code, result.stderr).toBe(0);
     expect(runsOf(root)).toEqual(['generate', 'migrate']);
+    expect(read(root, 'generate-args')).toBe('--schema prisma/schema');
     expect(read(root, 'generated/schema.sql')).toBe('-- the tables\n');
     expect(read(root, STAMP)).toMatch(/^[0-9a-f]{64}\n$/);
     expect(exists(root, PRISMA_CLIENT_LOCK)).toBe(false);
@@ -250,6 +252,27 @@ describe('two runs of ddd-ts-kit prisma-client in one project', () => {
   });
 });
 
+describe('a lock of prisma-client taken over while its run goes on', () => {
+  it('is left to the run that took it over when the first one ends', () => {
+    const root = prismaProject();
+    const holder = path.join(root, PRISMA_CLIENT_LOCK, 'holder.json');
+    const timing = { waitMs: 200, pollMs: 50, staleMs: 600_000 };
+
+    const other = JSON.stringify({
+      command: 'ddd-ts-kit prisma-client',
+      pid: 1,
+      startedAt: '2026-01-01T00:00:00.000Z',
+    });
+
+    withFolderLock(
+      { root, lock: PRISMA_CLIENT_LOCK, command: 'ddd-ts-kit prisma-client', timing, refusal: prismaClientLockRefusal },
+      () => fs.writeFileSync(holder, other),
+    );
+
+    expect(read(root, path.join(PRISMA_CLIENT_LOCK, 'holder.json'))).toBe(other);
+  });
+});
+
 describe('the refusal of a run of prisma-client that waited', () => {
   it('names the lock when it reads as nothing', () => {
     const refusal = prismaClientLockRefusal(undefined, Date.now());
@@ -259,6 +282,12 @@ describe('the refusal of a run of prisma-client that waited', () => {
     );
 
     expect(refusal.fix).toContain('To take it at once, remove .ddd-ts-kit/prisma-client.');
+  });
+
+  it('names the command of a holder whose pid it could not read', () => {
+    const refusal = prismaClientLockRefusal({ command: 'ddd-ts-kit prisma-client', startedAt: 0 }, 3000);
+
+    expect(refusal.message).toContain('`ddd-ts-kit prisma-client` (started 3 seconds ago)');
   });
 
   it('names the lock when its holder has not written its name yet', () => {

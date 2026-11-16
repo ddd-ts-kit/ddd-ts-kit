@@ -466,7 +466,8 @@ for the whole server, since two copies at once slow each other): the second wait
 the first, in its global setup, and their files never wait for each other. On Prisma, the client
 and `generated/schema.sql` that each run derives first (`npm run db:client`, through
 `ddd-ts-kit prisma-client`) are written by one run at a time, and the second finds them current
-and writes nothing, so that neither reads a client the other is rewriting. A run that watches
+and writes nothing, so that of two runs started from the same sources neither reads a client the
+other is rewriting. A run that watches
 copies once, when it starts: a migration applied meanwhile reaches the files after a restart.
 
 - **A file starts from empty tables, but for those the project keeps.** The run empties every
