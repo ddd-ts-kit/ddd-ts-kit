@@ -64,9 +64,13 @@ function changeOf(blocks: readonly ConflictBlock[], side: 'ours' | 'theirs'): st
   return `${counts.join(', ')} line${added.length + removed.length === 1 ? '' : 's'}${example}`;
 }
 
-function adviceOf({ blocks, how }: Resolution): string {
+function adviceOf({ blocks, how, advice }: Resolution): string {
   if (blocks.length === 0) {
     return `${how}: decide what the result holds, then \`git add\` or \`git rm\` it. ${NEVER_ONE_SIDE}`;
+  }
+
+  if (advice !== undefined) {
+    return `${advice} ${NEVER_ONE_SIDE}`;
   }
 
   const onlyAdding = blocks.every((block) =>

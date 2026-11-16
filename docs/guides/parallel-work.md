@@ -97,6 +97,29 @@ side at the higher of the two versions (the version is the team's, and `regenera
 it finds; a version that is not a semantic version is left to you), the generated regions of `CONTEXT.md` and of the
 context map take the trunk's side, a conflict inside a generated registry
 (`// ddd-ts-kit:<region>`) keeps the lines of both sides (a line one side removed stays removed),
+and the region is written with those lines whenever they pair their brackets, as before. In two
+cases the region of a TypeScript, JavaScript or Prisma file is merged declaration by declaration
+from the three sides instead: when those lines would not pair their brackets (two tables added at
+one place of the tables file of a context on Drizzle or on TypeORM, two functions that create
+them on Knex, two models of Prisma: git keeps once the lines they share, their last ones), and
+when two different statements that each hold a bracket open across several lines open or close
+on the same line in one conflict, a line the union would keep once (a statement both sides added alike is kept once, as
+before, and does not count). The table each side added is then kept whole, one both added alike
+is kept once, one a side changed or removed while the other left it alone follows that side, one
+both changed takes the merge of its lines when they merge without a conflict (a line one side
+removed stays removed), and one the two
+sides wrote differently (two tables of one name, a table one side changed and the other removed)
+is left to you as one hunk that holds each version whole, the rest of the region merged; the
+declarations both sides hold stand in the order of the side that changed it, and what a side
+alone adds after the declaration it follows on that side. What the kit does not merge this way
+keeps the hunks git wrote, for you, and the report says why and to keep each declaration whole,
+once: a bracket that does not pair, a regular expression, a region written inside the region, a
+statement that declares no name and that a side changed, lines that end no statement (entries of
+a list, statements written without `;`) on which the sides differ, two statements with no declared name that
+open alike, one holding every line of the other, declarations the two sides set in two different
+orders, a default export on each side; the report says `the declarations of both sides kept, each
+one whole` for a file merged this way, followed by `and the lines of both sides kept` when
+another region of the file kept them;
 the schema index of Drizzle whose two sides each stored a table of one name, each in the tables
 file of its context, is settled whole as the generators settle it when both sides are read with
 certainty (the table the trunk exports under a name keeps it, whatever the order of the index and

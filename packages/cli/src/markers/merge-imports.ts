@@ -1,4 +1,5 @@
 import { LINE_WIDTH } from '../layout';
+import { oneLineImports } from './one-line-imports';
 
 const NAMED_IMPORT = /^import (type )?\{ ([^}]+) \} from '([^']+)';$/;
 
@@ -7,7 +8,7 @@ const NAMED_IMPORT = /^import (type )?\{ ([^}]+) \} from '([^']+)';$/;
  * statement, written one name per line once it no longer fits the line width.
  */
 export function mergeImports(present: readonly string[], wanted: readonly string[]): string[] {
-  const merged = joined(present);
+  const merged = oneLineImports(present);
 
   for (const line of wanted.map((candidate) => candidate.trim())) {
     const added = NAMED_IMPORT.exec(line);
@@ -27,27 +28,6 @@ export function mergeImports(present: readonly string[], wanted: readonly string
   }
 
   return merged.flatMap(fitted);
-}
-
-/** Each import statement on one line, whatever the number of lines it was written on. */
-function joined(present: readonly string[]): string[] {
-  const statements: string[] = [];
-  let open: string[] | undefined;
-
-  for (const line of present.map((candidate) => candidate.trim())) {
-    if (open === undefined && /^import (?:type )?\{$/.test(line)) {
-      open = [line];
-    } else if (open === undefined) {
-      statements.push(line);
-    } else if (line.startsWith('}')) {
-      statements.push(`${open[0] ?? ''} ${open.slice(1).join(' ').replace(/,$/, '')} ${line}`);
-      open = undefined;
-    } else {
-      open.push(line);
-    }
-  }
-
-  return [...statements, ...(open ?? [])];
 }
 
 function fitted(line: string): string[] {
