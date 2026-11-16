@@ -94,7 +94,7 @@
     "tsyringe": "^4.10.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.4",
+    "@biomejs/biome": "2.6.6",
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.3",
     "@ddd-ts-kit/eslint-plugin": "^0.112.0",
@@ -103,8 +103,8 @@
     "@electric-sql/pglite-socket": "0.2.18",
     "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^10.6.0",
-    "@opentelemetry/context-async-hooks": "^3.0.0",
-    "@opentelemetry/sdk-trace": "^3.0.0",
+    "@opentelemetry/context-async-hooks": "^3.1.0",
+    "@opentelemetry/sdk-trace": "^3.1.0",
     "@stryker-mutator/core": "^10.1.1",
     "@stryker-mutator/vitest-runner": "^10.1.1",
     "@types/express": "^5.0.6",
