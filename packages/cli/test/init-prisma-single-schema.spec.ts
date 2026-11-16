@@ -9,7 +9,7 @@ import { stringsAt } from './support/strings-at';
 
 const SINGLE = 'prisma/schema.prisma';
 const MAIN = 'prisma/schema/schema.prisma';
-const SINGLE_CLIENT = '--to-schema prisma/schema.prisma --script';
+const SINGLE_CLIENT = '--schema prisma/schema.prisma';
 
 const BILLING_MODEL = [
   'model BillingInvoice {',
@@ -53,7 +53,7 @@ function laidOutBy094(): string {
   const manifest: Record<string, Record<string, string>> = JSON.parse(read(root, 'package.json'));
   const scripts = manifest['scripts'] ?? {};
 
-  scripts['db:client'] = (scripts['db:client'] ?? '').replace('--to-schema prisma/schema --script', SINGLE_CLIENT);
+  scripts['db:client'] = (scripts['db:client'] ?? '').replace('--schema prisma/schema', SINGLE_CLIENT);
   write(root, 'package.json', JSON.stringify(manifest, null, 2));
 
   return root;

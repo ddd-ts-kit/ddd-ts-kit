@@ -58,6 +58,18 @@ export const TOOL_NOTES: readonly Note[] = [
     ],
   },
   {
+    name: 'prisma-client',
+    command: 'prisma-client',
+    lines: [
+      'the db:client of a Prisma project: prisma generate, then the schema of the tests',
+      '(prisma migrate diff --from-empty into generated/schema.sql), from the schema at --schema',
+      '(prisma/schema by default); nothing is written when both are current, generated from the',
+      'same schema files, prisma.config.ts and Prisma, and still there; two runs in one project',
+      '(two test runs started together, a type check beside them) take turns on',
+      '.ddd-ts-kit/prisma-client, and the second finds the client current',
+    ],
+  },
+  {
     name: 'error-factories',
     command: 'error-factories',
     lines: [

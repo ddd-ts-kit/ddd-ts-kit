@@ -317,6 +317,7 @@ Usage
   ddd-ts-kit drizzle-generate --name <what-it-does> [--custom]
   ddd-ts-kit drizzle-generate --replay [--base <git-ref>]
   ddd-ts-kit knex-generate --name <what-it-does> [--custom]
+  ddd-ts-kit prisma-client [--schema <path>]
   ddd-ts-kit prisma-generate --name <what-it-does>
   ddd-ts-kit typeorm-generate <folder>/<what-it-does>
   ddd-ts-kit error-factories --plan | --apply [--to named|factories] [--dry-run]
@@ -371,6 +372,12 @@ ddd-ts-kit <command> --help prints the usage and the notes of that command alone
                    that changes rows or removes something are listed in the migration as a TODO(domain);
                    nothing differs, nothing is written; --custom writes the empty migration of knex, to fill
                    by hand; a word after the name is refused
+  prisma-client    the db:client of a Prisma project: prisma generate, then the schema of the tests
+                   (prisma migrate diff --from-empty into generated/schema.sql), from the schema at --schema
+                   (prisma/schema by default); nothing is written when both are current, generated from the
+                   same schema files, prisma.config.ts and Prisma, and still there; two runs in one project
+                   (two test runs started together, a type check beside them) take turns on
+                   .ddd-ts-kit/prisma-client, and the second finds the client current
   error-factories  moves the refusals of a project to one class per refusal (--to named, the default), from
                    one class per error or from the factories of one error class per concept: --plan writes
                    error-factories.plan.json, where each refusal is given a class (the PascalCase of its

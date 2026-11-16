@@ -24,7 +24,7 @@ export function singlePrismaSchemaSteps(contexts: readonly string[]): string {
     'in that file write the `output` of the generator one level up (`"../../generated/prisma"`);',
     `move out of its \`// ddd-ts-kit:models\` region ${each}, each file holding them between a \`// ddd-ts-kit:models\` and a \`// /ddd-ts-kit:models\` line of its own, then remove the emptied region;`,
     `in prisma.config.ts set \`schema: './${PRISMA_SCHEMA_FOLDER}'\`;`,
-    `in the \`db:client\` script of package.json replace \`--to-schema ${SINGLE_PRISMA_SCHEMA}\` by \`--to-schema ${PRISMA_SCHEMA_FOLDER}\`;`,
+    `set the \`db:client\` script of package.json to \`ddd-ts-kit prisma-client --schema ${PRISMA_SCHEMA_FOLDER}\`;`,
     'then run `npm run db:client`: the tables are the same, so `npm run db:generate` finds no change and no migration is needed.',
   ].join(' ');
 }
