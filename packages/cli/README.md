@@ -699,6 +699,14 @@ options; `typeorm-generate` also refuses a folder outside the project. With `--j
 `{ code, written, messages }` on one line: the exit code, the files of the migrations folder that are new
 or changed, and what the command said; the output of the ORM tool goes to stderr.
 
+On Prisma, `db:client` (`ddd-ts-kit prisma-client --schema prisma/schema`), which `pretest`,
+`pretest:e2e`, `pretypecheck` and `prebuild` run, writes the client (`prisma generate`) and the
+schema of the tests (`prisma migrate diff --from-empty` into `generated/schema.sql`) unless both are
+current: generated from the same files of the schema, `prisma.config.ts`, `prisma` and
+`@prisma/client`, and still there (`generated/prisma-client.sha256` records what they come from;
+removing `generated/` writes them again). Two runs in one project take turns on
+`.ddd-ts-kit/prisma-client`: two test runs started together never write the client at once.
+
 `package.json` carries two compilers: `typescript ~6.0.3`, which the tools load as a library,
 and `@typescript/native` (`npm:typescript@~7.0.2`), which `build` and `typecheck` call by path
 (`node node_modules/@typescript/native/bin/tsc`). `npx tsc` would run the older one.

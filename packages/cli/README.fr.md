@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:0a0cee453998b8fe -->
+<!-- translation-of: README.md sha256:d66d20ef651ad8e6 -->
 
 # ddd-ts-kit
 
@@ -731,6 +731,15 @@ commençant par une lettre ou un chiffre (`npm run db:generate add-invoices`, so
 de ses options ; `typeorm-generate` refuse aussi un dossier hors du projet. Avec `--json`, elles répondent
 `{ code, written, messages }` sur une ligne : le code de sortie, les fichiers du dossier de migrations
 nouveaux ou modifiés, et ce que la commande a dit ; la sortie de l'outil de l'ORM va sur stderr.
+
+Sur Prisma, `db:client` (`ddd-ts-kit prisma-client --schema prisma/schema`), que lancent `pretest`,
+`pretest:e2e`, `pretypecheck` et `prebuild`, écrit le client (`prisma generate`) et le schéma des
+tests (`prisma migrate diff --from-empty` dans `generated/schema.sql`) sauf s'ils sont à jour :
+générés des mêmes fichiers du schéma, du même `prisma.config.ts`, des mêmes `prisma` et
+`@prisma/client`, et toujours là (`generated/prisma-client.sha256` garde ce dont ils viennent ;
+supprimer `generated/` les écrit de nouveau). Deux exécutions dans un même projet passent tour à
+tour par `.ddd-ts-kit/prisma-client` : deux exécutions des tests lancées ensemble n'écrivent jamais
+le client en même temps.
 
 `package.json` porte deux compilateurs : `typescript ~6.0.3`, que les outils chargent comme une
 bibliothèque, et `@typescript/native` (`npm:typescript@~7.0.2`), que `build` et `typecheck`

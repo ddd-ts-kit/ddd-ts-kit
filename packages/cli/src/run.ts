@@ -16,6 +16,7 @@ import { doctorCommand } from './commands/doctor';
 import { lintCommand } from './commands/lint';
 import { drizzleGenerateCommand } from './commands/drizzle-generate';
 import { knexGenerateCommand } from './commands/knex-generate';
+import { prismaClientCommand } from './commands/prisma-client';
 import { prismaGenerateCommand } from './commands/prisma-generate';
 import { typeormGenerateCommand } from './commands/typeorm-generate';
 import { errorFactoriesCommand } from './commands/error-factories';
@@ -81,6 +82,7 @@ export const COMMANDS: Readonly<Record<string, Command>> = {
   'build-aliases': buildAliasesCommand,
   'drizzle-generate': drizzleGenerateCommand,
   'knex-generate': knexGenerateCommand,
+  'prisma-client': prismaClientCommand,
   'prisma-generate': prismaGenerateCommand,
   'typeorm-generate': typeormGenerateCommand,
   'error-factories': errorFactoriesCommand,

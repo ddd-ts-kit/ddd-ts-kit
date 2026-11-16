@@ -1,5 +1,5 @@
 [English](testing-strategy.md) · **Français**
-<!-- translation-of: testing-strategy.md sha256:9f8562d7ce866eff -->
+<!-- translation-of: testing-strategy.md sha256:330b400b96037b4f -->
 
 # Stratégie de test
 
@@ -485,7 +485,11 @@ avec le modèle de l'exécution, la mise en place globale prend 6 secondes une f
 fichier attend 0,1 à 0,5 seconde. Deux exécutions lancées ensemble copient la base migrée l'une
 après l'autre (un verrou pour tout le serveur, puisque deux copies en même temps se
 ralentissent) : la seconde attend la copie de la première, dans sa mise en place globale, et leurs
-fichiers ne s'attendent jamais. Une exécution qui surveille les fichiers copie une fois, à son
+fichiers ne s'attendent jamais. Sur Prisma, le client et `generated/schema.sql` que chaque
+exécution dérive d'abord (`npm run db:client`, par `ddd-ts-kit prisma-client`) sont écrits par une
+seule exécution à la fois, et la seconde les trouve à jour et n'écrit rien, si bien que de deux
+exécutions lancées depuis les mêmes sources, aucune ne lit un client que l'autre est en train de
+réécrire. Une exécution qui surveille les fichiers copie une fois, à son
 démarrage : une migration appliquée entre-temps atteint les fichiers après un redémarrage.
 
 - **Un fichier part de tables vides, sauf celles que le projet garde.** L'exécution vide chaque

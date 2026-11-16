@@ -463,7 +463,11 @@ copy takes 6 seconds, four at the same time 46 to 56 seconds each, more than the
 hook; with the template of the run, the global setup takes 6 seconds once and each file waits 0.1
 to 0.5 second. Two runs started together copy the migrated database one after the other (a lock
 for the whole server, since two copies at once slow each other): the second waits for the copy of
-the first, in its global setup, and their files never wait for each other. A run that watches
+the first, in its global setup, and their files never wait for each other. On Prisma, the client
+and `generated/schema.sql` that each run derives first (`npm run db:client`, through
+`ddd-ts-kit prisma-client`) are written by one run at a time, and the second finds them current
+and writes nothing, so that of two runs started from the same sources neither reads a client the
+other is rewriting. A run that watches
 copies once, when it starts: a migration applied meanwhile reaches the files after a restart.
 
 - **A file starts from empty tables, but for those the project keeps.** The run empties every
