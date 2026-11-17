@@ -25,7 +25,8 @@ const TRUNK_SIDE: Readonly<Partial<Record<ConflictClass, string>>> = {
  * package.json of a client at the higher version of both sides, the slices rows and the
  * stored-events lock merged by their keys, and inside a source or a mixed document
  * each conflict lying in a generated region: the lines of both sides, or its declarations merged
- * one by one where those lines would leave a table, a model or a function open. What is left is a person's: a
+ * one by one where those lines would leave a table, a model or a function open, or set a line of
+ * one side inside a declaration of the other. What is left is a person's: a
  * source conflict, a declaration both sides wrote differently, a cell or a key both sides changed,
  * a file one side deleted, bytes that are not text.
  */
@@ -91,8 +92,9 @@ function byKeys(path: ConflictedPath & { ours: string; theirs: string }, kind: '
 
 /**
  * A source or a mixed document: the conflicts inside generated regions settled, the others left.
- * In code, a region the lines of both sides would leave with a declaration open is merged
- * declaration by declaration, and what the two sides do not agree on there is left.
+ * In code, a region the lines of both sides would leave with a declaration open, or with a line
+ * of one side inside a declaration of the other, is merged declaration by declaration, and what
+ * the two sides do not agree on there is left.
  */
 function inRegions(path: ConflictedPath, kind: ConflictClass, repo: MergeRepository): Resolution {
   const text = path.merged ?? '';

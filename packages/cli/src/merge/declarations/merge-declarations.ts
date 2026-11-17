@@ -1,6 +1,7 @@
 import type { Declaration } from './declaration';
 import type { DeclaredSide } from './declared-side';
 import { holdsEveryLine } from './holds-every-line';
+import { leadOf } from './lead-of';
 import type { LineMerge } from './merged-lines';
 
 /** The three sides of a region, each read as declarations. */
@@ -105,27 +106,6 @@ function mayBeOne(one: Declaration, other: Declaration): boolean {
     one.lines[0] === other.lines[0] &&
     (holdsEveryLine(one.lines, other.lines) || holdsEveryLine(other.lines, one.lines))
   );
-}
-
-/**
- * The side whose order the merged region follows: ours, unless the trunk alone changed the order
- * of the declarations both sides hold. Undefined when the two sides order them differently and
- * the base does not say that one of them left that order alone.
- */
-function leadOf({ ours, base, theirs }: DeclaredSides): DeclaredSide | undefined {
-  const shared = new Set(ours.declarations.map(({ key }) => key).filter((key) => byKey(theirs).has(key)));
-
-  const orderOf = (side: DeclaredSide, among: ReadonlySet<string> = shared): string =>
-    side.declarations.flatMap(({ key }) => (among.has(key) ? [key] : [])).join('\0');
-
-  if (orderOf(ours) === orderOf(theirs)) {
-    return ours;
-  }
-
-  const kept = new Set(base.declarations.map(({ key }) => key).filter((key) => shared.has(key)));
-  const moved = [ours, theirs].filter((side) => orderOf(side, kept) !== orderOf(base, kept));
-
-  return moved.length === 1 ? moved[0] : undefined;
 }
 
 /** A declaration of the merged region with its key: what the other side brings finds its place by it. */

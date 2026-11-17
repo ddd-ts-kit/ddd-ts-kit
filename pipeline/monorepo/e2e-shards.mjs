@@ -35,7 +35,7 @@ export const ELSEWHERE = [
  * One list per runner, with the seconds each file took on a runner of the pipeline, each file given,
  * longest first, to the runner with the most room. Measured again on 2026-11-11 on a pull request (the
  * cover of the stacks): the runners ended at 565, 368, 571 and 707 seconds, the fourth holding
- * first-class.spec.ts, which went to the second; they are counted 591, 592, 600 and 594 with the
+ * first-class.spec.ts, which went to the second; they are counted 591, 592, 600 and 596 with the
  * specs of the generators added since (read-model on the first, personal-fields-of-table and merge-trunk-both-sides-add-a-table on the fourth, and
  * background-job-e2e on the third, 61 s on a workstation, which sent personal-fields and nest-controllers
  * to the second), the fourth with the 60 s of the coverage gate, which only a deep run starts. On the trunk and at
@@ -92,8 +92,8 @@ export const SHARDS = [
     'search-without-node.spec.ts': 2,
     // The personal columns of a table no aggregate owns, type-checked on the four ORMs.
     'personal-fields-of-table.spec.ts': 20,
-    // Both sides of a merge added a table to one context: the merged project type-checked on the four ORMs (measured on a workstation).
-    'merge-trunk-both-sides-add-a-table.spec.ts': 10,
+    // Both sides of a merge added a table to one context, or a column to one table and one of them a table below it: the merged project type-checked on the four ORMs (measured on a workstation).
+    'merge-trunk-both-sides-add-a-table.spec.ts': 12,
   },
 ];
 

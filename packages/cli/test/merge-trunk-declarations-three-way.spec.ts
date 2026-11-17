@@ -79,7 +79,7 @@ describe('merge-trunk, in a region of declarations both sides changed', () => {
     expect(removedHere.blocks[0]).toMatchObject({ ours: [], base: payments });
 
     expect(removedHere.advice).toBe(
-      'the two sides do not agree in the region `tables`: for each hunk, write the one declaration that keeps the intent of both, whole, or remove it.',
+      'the two sides do not agree in the region `tables`: for each hunk, write the one declaration that keeps the intent of both, whole, or remove it. If a declaration of the side that removed it is this one under another name, write the change there and remove the hunk.',
     );
   });
 });
