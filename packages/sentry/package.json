@@ -1,6 +1,6 @@
 {
   "name": "@ddd-ts-kit/sentry",
-  "version": "0.113.1",
+  "version": "0.113.2",
   "description": "Error reporting to Sentry or GlitchTip behind the kernel ErrorReporter port: unexpected failures only, correlated with traces, scrubbed before sending.",
   "keywords": [
     "ddd",
@@ -40,12 +40,12 @@
     "dist"
   ],
   "dependencies": {
-    "@ddd-ts-kit/kernel": "0.113.1"
+    "@ddd-ts-kit/kernel": "0.113.2"
   },
   "devDependencies": {
-    "@ddd-ts-kit/di": "0.113.1",
-    "@ddd-ts-kit/http": "0.113.1",
-    "@ddd-ts-kit/tracing": "0.113.1",
+    "@ddd-ts-kit/di": "0.113.2",
+    "@ddd-ts-kit/http": "0.113.2",
+    "@ddd-ts-kit/tracing": "0.113.2",
     "@opentelemetry/api": "^1.10.0",
     "@opentelemetry/sdk-trace": "^3.1.0",
     "@sentry/node": "^11.11.0"
