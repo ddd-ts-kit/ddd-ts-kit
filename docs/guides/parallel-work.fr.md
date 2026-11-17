@@ -1,5 +1,5 @@
 [English](parallel-work.md) · **Français**
-<!-- translation-of: parallel-work.md sha256:f4a23186c5a51cf5 -->
+<!-- translation-of: parallel-work.md sha256:e119c00d4d275fa1 -->
 
 # Travailler en parallèle sans collisions
 
@@ -102,23 +102,51 @@ celle qu'il trouve ; une version qui n'est pas une version sémantique vous est 
 régions générées de `CONTEXT.md` et de la carte
 des contextes prennent le côté du tronc, un conflit à l'intérieur d'un registre généré
 (`// ddd-ts-kit:<region>`) garde les lignes des deux côtés (une ligne retirée par un côté reste
-retirée), et la région est écrite avec ces lignes dès qu'elles apparient leurs parenthèses, comme
-avant. Dans deux cas, la région d'un fichier TypeScript, JavaScript ou Prisma est fusionnée
+retirée), et la région est écrite avec ces lignes, comme avant, sauf dans trois cas. Dans les
+deux premiers, la région d'un fichier TypeScript, JavaScript ou Prisma est fusionnée
 déclaration par déclaration à partir des trois côtés : quand ces lignes n'apparieraient pas leurs
 parenthèses (deux tables ajoutées au même endroit du fichier de tables d'un contexte sur Drizzle
 ou sur TypeORM, deux fonctions qui les créent sur Knex, deux modèles de Prisma : git garde une
 seule fois les lignes qu'elles partagent, leurs dernières), et quand deux instructions
 différentes qui gardent chacune une parenthèse ouverte sur plusieurs lignes s'ouvrent ou se
 ferment sur la même ligne dans un même conflit, ligne que l'union garderait une seule fois (une instruction que les deux côtés ont
-ajoutée à l'identique est gardée une fois, comme avant, et ne compte pas). La table que chaque
+ajoutée à l'identique est gardée une fois, comme avant, et ne compte pas). Le troisième cas est
+recherché quand aucun des deux ne vaut, car les lignes des deux côtés peuvent apparier leurs
+parenthèses et mélanger quand même les deux côtés. Chaque fois que le kit lit avec certitude les
+trois côtés de la région, la région que donnent ces lignes est relue déclaration par déclaration,
+un commentaire appartenant à la déclaration au-dessus de laquelle il se trouve. Elle est écrite,
+comme avant et avec le même rapport, quand elle contient chaque déclaration entière et une seule
+fois, telle que les trois côtés la fusionnent une à une (celle qu'un côté a ajoutée, modifiée ou
+retirée alors que l'autre n'y a pas touché, celle que les deux ont écrite à l'identique, et pour
+celle que les deux ont modifiée les lignes que le kit garde de cette déclaration fusionnée seule),
+et quand une déclaration qui en lit une autre se trouve en dessous d'elle, comme du côté qui l'a
+écrite ; l'ordre des lignes des deux côtés est gardé pour le reste. Sinon, la région est fusionnée
+déclaration par déclaration comme dans les deux cas ci-dessus : la branche ajoute une colonne à une
+table et stocke un agrégat en dessous, git met la colonne, la fin de la table et le début de la
+suivante dans un seul bloc, et une colonne que le tronc a ajoutée à cet endroit atterrirait dans la
+nouvelle table ; une table qu'un côté a retirée et que l'autre a déplacée reviendrait ; un
+commentaire se retrouverait au-dessus d'une autre déclaration ; une constante se retrouverait
+au-dessus de la table qu'elle lit. Rien n'est écrit dans la région, et ses blocs vous restent,
+quand un côté a retiré une déclaration qu'une déclaration écrite ou modifiée par l'autre côté lit
+désormais, ou quand la région fusionnée déclaration par déclaration mettrait elle-même une
+déclaration au-dessus d'une autre qu'elle lit. Ce qu'une déclaration lit est trouvé par son nom,
+sans lire aucune portée : une déclaration qui lie elle-même le nom (un paramètre, une constante
+locale) est considérée comme ne lisant aucune autre déclaration de ce nom. Un arrêt est nouveau
+là où les lignes des deux côtés étaient justes : un côté donne un autre nom à une table et
+l'autre modifie cette table, et la table que l'autre a modifiée vous est laissée en un seul bloc,
+le kit ne distinguant pas un renommage d'une suppression. Une région que le kit ne lit pas avec
+certitude garde les lignes des deux côtés, comme avant, et de même une région dans laquelle un
+côté contient des lignes qui ne terminent aucune instruction (les entrées d'une liste). La table que chaque
 côté a ajoutée est alors gardée entière, celle que les deux ont ajoutée à l'identique est gardée
 une fois, celle qu'un côté a modifiée ou retirée alors que l'autre n'y a pas touché suit ce côté,
 celle que les deux ont modifiée prend la fusion de ses lignes quand elles fusionnent sans conflit
-(une ligne retirée par un côté reste retirée), et celle que les deux côtés ont écrite différemment (deux tables du même nom, une table modifiée
+(une ligne retirée par un côté reste retirée), et celle que les deux côtés ont écrite différemment (deux tables du même nom, une table à
+laquelle les deux ont ajouté une colonne au même endroit, une table modifiée
 par un côté et retirée par l'autre) vous est laissée en un seul bloc de conflit qui contient
 chaque version entière, le reste de la région étant fusionné ; les déclarations que les deux côtés
-contiennent restent dans l'ordre du côté qui l'a changé, et ce qu'un côté ajoute seul vient après
-la déclaration qu'il suit de ce côté. Ce que le kit ne fusionne pas ainsi garde les blocs que git
+contiennent restent dans l'ordre du côté qui l'a seul changé, le nôtre quand aucun ne l'a fait, et
+ce qu'un côté ajoute seul vient après la déclaration qu'il suit de ce côté (une région écrite avec
+les lignes des deux côtés reste dans l'ordre de ces lignes). Ce que le kit ne fusionne pas ainsi garde les blocs que git
 a écrits, pour vous, et le rapport dit pourquoi et de garder chaque déclaration entière, une
 fois : une parenthèse sans sa paire, une expression régulière, une région écrite dans la région,
 une instruction qui ne déclare aucun nom et qu'un côté a modifiée, des lignes qui ne terminent aucune instruction (les

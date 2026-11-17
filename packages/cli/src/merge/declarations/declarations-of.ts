@@ -15,7 +15,7 @@ const DEFAULT = /^\s*export\s+default\b/;
 const ENDS = /[;}]$/;
 
 /** How a line starts that goes on with the statement above it, whatever that one ends with but a semicolon. */
-const GOES_ON = /^(?:[|&?:.+\-*/=]|satisfies\b|as\b)/;
+export const GOES_ON = /^(?:[|&?:.+\-*/=]|satisfies\b|as\b)/;
 
 /** The declaration being read: its lines, the brackets it holds open, the name it declares. */
 interface Reading {

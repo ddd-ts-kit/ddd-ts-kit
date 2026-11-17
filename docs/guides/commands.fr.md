@@ -1,5 +1,5 @@
 [English](commands.md) · **Français**
-<!-- translation-of: commands.md sha256:27813b67ef334929 -->
+<!-- translation-of: commands.md sha256:e6de78ddd99a9dbc -->
 
 # Quelle commande, quand
 
@@ -690,11 +690,13 @@ ddd-ts-kit <command> --help prints the usage and the notes of that command alone
                    lines are on the trunk; else git merge-base). Settles derived files and drizzle-kit meta
                    (trunk side), the package.json of a client (trunk side, at the higher of both versions;
                    left to you when one is not a semantic version), generated regions of CONTEXT.md and the
-                   context map (trunk side), conflicts inside generated registries (lines of both sides;
-                   where those lines would leave a declaration open, two tables added at one place, the
-                   region merged declaration by declaration, what is not read with certainty left to you as
-                   git wrote it), slices.md row by row (the furthest status), the stored-events lock by key,
-                   the lockfile
+                   context map (trunk side), conflicts inside generated registries (lines of both sides,
+                   read back: where they would leave a declaration open or do not give the declarations of
+                   the two sides merged one by one, the region merged declaration by declaration, one the
+                   two sides do not agree on left to you as one hunk; a region not read with certainty is
+                   merged by lines as before, one the kit merges neither way is left as git wrote it),
+                   slices.md row by row (the furthest
+                   status), the stored-events lock by key, the lockfile
                    (trunk side, installed again when the branch changed package.json); the rest is left in a
                    merge in progress git understands, with what each side did (exit 1). Then, or on
                    --continue: the drizzle migrations of both sides replayed, on --to-land the working

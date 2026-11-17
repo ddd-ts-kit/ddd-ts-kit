@@ -12,7 +12,15 @@ of `slices.md`, the drizzle-kit journal and the lockfile itself, and leaves each
 hunk in a merge in progress with what each side did there (exit 1). Where both sides added a
 table, a model or a function at one place of a generated region, each is kept whole; one both
 wrote differently is one hunk that holds each version whole: write the one declaration that
-keeps the intent of both. Resolve each hunk keeping
+keeps the intent of both. A table both sides added a column to at one place, while one of them
+added a table below it, is such a hunk too: write the table once with both columns. So is a table
+one side removed and the other changed; when the report adds that a declaration of the side that
+removed it may be this one under another name, a rename, write the change in that declaration and
+remove the hunk. Two refusals write nothing in the region and leave the hunks git wrote, which show
+lines, not whole declarations: one side removed a declaration that a declaration the other side
+wrote now reads (keep the one removed, or write the other without it), or a declaration would
+stand above one it reads (write the region in the order that holds for both); in both, write each
+declaration of both sides whole, once. Resolve each hunk keeping
 both sides, never by taking one side of a source file or a test (`-X theirs`, `-X ours`,
 `checkout --theirs` erase the other side without a conflict, and the guard refuses them to a
 sub-agent), `git add` it, then `npx ddd-ts-kit merge-trunk --continue`: it replays the

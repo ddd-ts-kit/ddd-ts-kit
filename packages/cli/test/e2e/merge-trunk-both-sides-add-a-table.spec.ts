@@ -8,7 +8,9 @@ import {
   tablesFileOf,
   withPrismaClient,
 } from '../support/both-sides-add-a-table';
-import { mergeTrunk } from '../support/trunk-history';
+import { COLUMN_STACKS, columnAndTable, hunkOf, withColumn } from '../support/column-and-table';
+import { git } from '../support/git';
+import { goOn, mergeTrunk } from '../support/trunk-history';
 import { twoSides } from '../support/two-sides';
 import { generatePrismaClient } from './generate-prisma-client';
 import { SLOW } from './stacks';
@@ -84,4 +86,47 @@ describe.runIf(SLOW)('merge-trunk, when the trunk and the branch each added a ta
     expect(tables).toContain('synchronize: false');
     expect(typeErrors(root)).toBe('');
   }, 180_000);
+});
+
+/** Slow, opt-in (DDD_TS_KIT_E2E=1): the project left once the one hunk of a table both sides added a column to is settled, read by the compiler. */
+describe.runIf(SLOW)('merge-trunk, when the branch added a column to a table and stored an aggregate below it', () => {
+  it.each(COLUMN_STACKS)(
+    'stops on the table alone on $orm, and leaves a project that type-checks once both columns are written in it',
+    (stack) => {
+      const { orm, column, added } = stack;
+      const root = columnAndTable(stack, (project) => withColumn(project, stack, 'sentTo'));
+      const file = tablesFileOf(root, orm);
+      const stopped = mergeTrunk(root);
+      const text = read(root, file);
+      const { hunk, ours } = hunkOf(text);
+      const both = `${column('paidBy')}\n${column('sentTo')}`;
+
+      expect(stopped.code, stopped.stdout).toBe(1);
+      expect(stopped.stdout).toContain('stopped: 1 conflicted path left for you');
+      // The table the branch stored below is whole, without the column of the trunk: its mapper is read as generated.
+      expect(added.exec(text)?.[0]).not.toContain('sentTo');
+
+      write(root, file, text.replace(hunk, ours.replace(column('paidBy'), both)));
+
+      if (orm === 'drizzle') {
+        // The row of Drizzle is read from the table: the mapper of the orders gives the two columns a value.
+        const mapper = file.replace('billing.schema.ts', 'order.mapper.ts');
+
+        write(
+          root,
+          mapper,
+          read(root, mapper).replace('{ id: saved.id,', '{ id: saved.id, paidBy: null, sentTo: null,'),
+        );
+
+        git(root, 'add', mapper);
+      }
+
+      git(root, 'add', file);
+
+      expect(goOn(root, '--continue').stdout).toContain('committed');
+      expect(read(root, file)).toContain(both);
+      expect(typeErrors(root)).toBe('');
+    },
+    180_000,
+  );
 });

@@ -97,21 +97,45 @@ side at the higher of the two versions (the version is the team's, and `regenera
 it finds; a version that is not a semantic version is left to you), the generated regions of `CONTEXT.md` and of the
 context map take the trunk's side, a conflict inside a generated registry
 (`// ddd-ts-kit:<region>`) keeps the lines of both sides (a line one side removed stays removed),
-and the region is written with those lines whenever they pair their brackets, as before. In two
-cases the region of a TypeScript, JavaScript or Prisma file is merged declaration by declaration
+and the region is written with those lines, as before, unless one of three cases holds. In the
+first two the region of a TypeScript, JavaScript or Prisma file is merged declaration by declaration
 from the three sides instead: when those lines would not pair their brackets (two tables added at
 one place of the tables file of a context on Drizzle or on TypeORM, two functions that create
 them on Knex, two models of Prisma: git keeps once the lines they share, their last ones), and
 when two different statements that each hold a bracket open across several lines open or close
 on the same line in one conflict, a line the union would keep once (a statement both sides added alike is kept once, as
-before, and does not count). The table each side added is then kept whole, one both added alike
+before, and does not count). The third case is looked for when neither holds, because the lines of
+both sides can pair their brackets and still mix the two sides. Whenever the kit reads the three
+sides of the region with certainty, the region those lines give is read back declaration by
+declaration, a comment belonging to the declaration it stands above. It is written, as before and
+with the same report, when it holds each declaration whole and once, as the three sides merge one
+by one (the one a side added, changed or removed while the other left it alone, the one both wrote
+alike, and for one both changed the lines the kit keeps of that declaration merged alone), and
+when a declaration that reads another one stands below it, as on the side that wrote it; the order
+of the lines of both sides is otherwise kept. When it does not, the region is merged
+declaration by declaration as in the two cases above: the branch adds a column to a table and
+stores an aggregate below it, git sets the column, the end of the table and the start of the next
+one in one hunk, and a column the trunk added at that place would land in the new table; a table
+one side removed and the other moved would come back; a comment would stand above another
+declaration; a constant would stand above the table it reads. Nothing is written in the region,
+and its hunks stay for you, when one side removed a declaration that a declaration the other side
+wrote or changed now reads, or when the region merged by declaration would itself set a
+declaration above one it reads. What a declaration reads is found by name, without reading any
+scope: a declaration that binds the name itself (a parameter, a local constant) is taken to read
+no other declaration of that name. One stop is new where the lines of both sides were right: one
+side gives a table another name and the other changes that table, and the table the other changed
+is left to you as one hunk, the kit not telling a rename from a removal. A region the kit does not
+read with certainty keeps the lines of both sides, as before, and so does one in which a side
+holds lines that end no statement (the entries of a list). The table each side added is then kept whole, one both added alike
 is kept once, one a side changed or removed while the other left it alone follows that side, one
 both changed takes the merge of its lines when they merge without a conflict (a line one side
 removed stays removed), and one the two
-sides wrote differently (two tables of one name, a table one side changed and the other removed)
+sides wrote differently (two tables of one name, a table both added a column to at one place, a
+table one side changed and the other removed)
 is left to you as one hunk that holds each version whole, the rest of the region merged; the
-declarations both sides hold stand in the order of the side that changed it, and what a side
-alone adds after the declaration it follows on that side. What the kit does not merge this way
+declarations both sides hold stand in the order of the side that alone changed it, ours when
+neither did, and what a side alone adds after the declaration it follows on that side (a region
+written with the lines of both sides stands in the order of those lines). What the kit does not merge this way
 keeps the hunks git wrote, for you, and the report says why and to keep each declaration whole,
 once: a bracket that does not pair, a regular expression, a region written inside the region, a
 statement that declares no name and that a side changed, lines that end no statement (entries of
