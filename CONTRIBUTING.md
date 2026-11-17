@@ -224,6 +224,13 @@ gh pr create --fill
 gh pr merge --auto --squash
 ```
 
+An AI review comments on each pull request opened from a branch of this repository, ready for
+review (`.github/workflows/pr-review.yml`): PR-Agent, the open source reviewer of Qodo, on NVIDIA
+Nemotron, with the rules of `AGENTS.md` and `.pr_agent.toml`. It is one comment, never a required
+check nor an approval. Someone who can write here asks for more in a comment: `/review` again,
+`/improve` for code suggestions (posted as review threads, which must then be resolved before the
+merge), `/ask <question>`. A pull request from a fork gets no review, the key being a secret.
+
 What the CI runs depends on the pull request (`docs/proposals/generated-project-families.md`). Open it
 as a draft until the branch is final: a draft runs the fast checks only, and marking it ready runs the
 whole CI. A pull request that changes documents alone, the website, the plugin text or the example

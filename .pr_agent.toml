@@ -1,0 +1,36 @@
+# PR-Agent, run by .github/workflows/pr-review.yml on the API of build.nvidia.com, which sets
+# the model. PR-Agent reads this file on the default branch. Options: https://docs.pr-agent.ai/
+
+[config]
+response_language = "en-US"
+# The rules of the repository, read with each pull request.
+repo_context_files = ["AGENTS.md"]
+ignore_pr_authors = ["dependabot[bot]"]
+
+[ignore]
+glob = [
+  "package-lock.json",
+  "CHANGELOG.md",
+  "**/*.fr.md",
+  "examples/scheduling/clients/api/src/client.ts",
+  "docs/proposals/*.csv",
+  "docs/assets/**",
+]
+
+[pr_reviewer]
+num_max_findings = 6
+# No label on the pull request: the comment says it.
+enable_review_labels_effort = false
+enable_review_labels_security = false
+require_security_review = true
+require_tests_review = true
+extra_instructions = """
+Report defects only: a wrong behaviour, a broken contract between packages, a security issue, a test that cannot fail, a sentence of the documentation that the code contradicts. Do not report style, naming or formatting: Biome and ESLint hold them.
+The rules of the repository are in AGENTS.md: English only, no em dash nor en dash, no `any`, no non-null assertion, relative imports without `.js` nor `/index`, one file under `changes/` per change a user sees, never an edit of CHANGELOG.md, every package at 100 percent of lines.
+docs/ARCHITECTURE.md is normative: a rule id it lists is implemented by the checker, the templates and the skills together.
+"""
+
+[pr_code_suggestions]
+extra_instructions = """
+Suggest only what fixes a defect or removes a real risk. No suggestion of style, naming, comments or formatting.
+"""
