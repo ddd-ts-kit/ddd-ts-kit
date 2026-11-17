@@ -234,7 +234,11 @@ the pull request of a release (title `chore(release)` or branch `release/*`) add
 intermediate states of the first minute, the coverage gate on ten stacks, the pairs and the migrations.
 
 Workflows pin each action to a commit, with its version in a comment; Dependabot proposes the
-updates. A vulnerability is reported privately: see [SECURITY.md](SECURITY.md). Conduct:
+updates. The Security job fails on an advisory of severity high or critical in a production
+dependency (`npm run ci:audit`). An advisory with no fixed version that cannot reach a project using the
+kit is listed in `pipeline/monorepo/audit-exceptions.json` with its reason and a date at most a month
+away: past that date, or once the advisory is gone, the job fails until the line is removed or renewed.
+A vulnerability is reported privately: see [SECURITY.md](SECURITY.md). Conduct:
 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ## Releasing

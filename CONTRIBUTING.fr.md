@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:5480edec4edf46a1 -->
+<!-- translation-of: CONTRIBUTING.md sha256:a46bacb1c5ce160d -->
 
 # Contribuer
 
@@ -252,7 +252,11 @@ les états intermédiaires de la première minute, la porte de couverture sur di
 les migrations.
 
 Les workflows épinglent chaque action à un commit, avec sa version en commentaire ; Dependabot
-propose les mises à jour. Une vulnérabilité se signale en privé : voir
+propose les mises à jour. Le job Security échoue sur un avis de gravité high ou critical dans une
+dépendance de production (`npm run ci:audit`). Un avis sans version corrigée qui ne peut pas atteindre
+un projet utilisant le kit est inscrit dans `pipeline/monorepo/audit-exceptions.json` avec sa raison
+et une date à un mois au plus : passé cette date, ou dès que l'avis disparaît, le job échoue tant que la
+ligne n'est pas retirée ou renouvelée. Une vulnérabilité se signale en privé : voir
 [SECURITY.fr.md](SECURITY.fr.md). Conduite : [CODE_OF_CONDUCT.fr.md](CODE_OF_CONDUCT.fr.md).
 
 ## Publier une version
