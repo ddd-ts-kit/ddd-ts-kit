@@ -1,0 +1,70 @@
+name: Pull request review
+
+# An AI review of each pull request, by PR-Agent (the open source reviewer Qodo gave to the
+# community) on NVIDIA Nemotron, through the OpenAI-compatible API of build.nvidia.com. It
+# comments; it never approves, pushes nor blocks a merge. The key is the repository secret
+# NVIDIA_API_KEY; without it the job is skipped.
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  review:
+    name: AI review
+    # A pull request from a fork gets no secret, so it is left out. A command in a comment
+    # (`/review`, `/improve`, `/ask ...`) is taken from someone who can write here only: on a
+    # public repository anyone may comment, and the key is billed to the owner.
+    if: >-
+      github.event.sender.type != 'Bot' && (
+        (github.event_name == 'pull_request'
+          && !github.event.pull_request.draft
+          && github.event.pull_request.head.repo.full_name == github.repository)
+        || (github.event_name == 'issue_comment'
+          && github.event.issue.pull_request
+          && startsWith(github.event.comment.body, '/')
+          && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association))
+      )
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: The key is configured
+        id: key
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+        run: |
+          if [ -n "$NVIDIA_API_KEY" ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else
+            echo "::notice::No NVIDIA_API_KEY secret: the AI review is skipped."; fi
+      - name: PR-Agent reviews the pull request
+        if: steps.key.outputs.present == 'true'
+        # pragent/pr-agent:0.50.0-github_action, pinned by digest.
+        uses: docker://pragent/pr-agent@sha256:548e894a88071180832b2f4233f734d0acd0db1a879e2fcbaa70bac8b8372ebe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          OPENAI__API_BASE: https://integrate.api.nvidia.com/v1
+          # Here and not in .pr_agent.toml, which PR-Agent reads on the default branch: the model
+          # goes with the endpoint, and a pull request does not choose what the key pays for.
+          config.model: openai/nvidia/nemotron-3-ultra-550b-a55b
+          config.fallback_models: '["openai/nvidia/nemotron-3.5-super-vl-120b-a12b"]'
+          # The models are not in the token table of PR-Agent, and it caps every model at 32000:
+          # a diff is clipped to 128000 tokens.
+          config.custom_model_max_tokens: '128000'
+          config.max_model_tokens: '128000'
+          # A review comment on each pull request; the description stays the author's, and code
+          # suggestions are asked for with `/improve`.
+          github_action_config.auto_review: 'true'
+          github_action_config.auto_describe: 'false'
+          github_action_config.auto_improve: 'false'

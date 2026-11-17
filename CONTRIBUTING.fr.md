@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:5480edec4edf46a1 -->
+<!-- translation-of: CONTRIBUTING.md sha256:7d07a163fab28c65 -->
 
 # Contribuer
 
@@ -240,6 +240,14 @@ résolue. Activez la fusion automatique et passez à autre chose :
 gh pr create --fill
 gh pr merge --auto --squash
 ```
+
+Une revue par IA commente chaque pull request ouverte depuis une branche de ce dépôt, prête pour la
+revue (`.github/workflows/pr-review.yml`) : PR-Agent, le relecteur open source de Qodo, sur NVIDIA
+Nemotron, avec les règles d'`AGENTS.md` et de `.pr_agent.toml`. C'est un commentaire, jamais une
+vérification requise ni une approbation. Qui peut écrire ici en demande davantage dans un
+commentaire : `/review` de nouveau, `/improve` pour des suggestions de code (publiées en fils de revue,
+qu'il faut alors résoudre avant la fusion), `/ask <question>`. Une pull request venue d'un fork n'a pas
+de revue, la clé étant un secret.
 
 Ce que la CI exécute dépend de la pull request (`docs/proposals/generated-project-families.fr.md`).
 Ouvrez-la en brouillon tant que la branche n'est pas définitive : un brouillon n'exécute que les
