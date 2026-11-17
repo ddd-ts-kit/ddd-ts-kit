@@ -173,7 +173,8 @@ jobs:
     name: Unit tests (Node 24, coverage floors)
     needs: install
     runs-on: ubuntu-26.04
-    timeout-minutes: 25
+    # On the trunk the whole suite runs with coverage: 19 to 25 minutes on 2026-11-17, cut at 25 three times in a day.
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
