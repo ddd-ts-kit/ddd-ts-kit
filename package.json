@@ -81,7 +81,7 @@
     "eslint-formatter-gitlab": "^7.2.0",
     "globals": "^17.14.0",
     "jest": "^30.5.2",
-    "knip": "^6.44.1",
+    "knip": "^6.45.1",
     "lefthook": "^2.2.2",
     "oxlint": "1.93.0",
     "oxlint-tsgolint": "7.0.2006",
