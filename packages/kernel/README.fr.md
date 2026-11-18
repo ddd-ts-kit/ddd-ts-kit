@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:bcc2bfaf4621aaee -->
+<!-- translation-of: README.md sha256:32d9cb44336efff6 -->
 
 # @ddd-ts-kit/kernel
 
@@ -17,7 +17,7 @@ standard et leurs doubles), `@ddd-ts-kit/kernel/declarations` (les décorateurs 
 classe dit ce qu'elle est, voir « Déclarations ») et `@ddd-ts-kit/kernel/testing` (les bus
 enregistreurs d'une *spec*, voir « La *spec* d'une réaction »).
 
-![Le domaine et l'application d'un contexte délimité importent le noyau ; le noyau déclare les ports sous forme de classes abstraites ; ses propres doubles, les packages d'adaptateurs du kit et l'infrastructure du contexte les implémentent ; la plateforme lie une implémentation à chaque port au démarrage](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/kernel-ports-and-implementations.fr.svg)
+![Le domaine et l'application d'un contexte délimité importent le noyau ; le noyau déclare les ports sous forme de classes abstraites ; ses propres doubles, les packages d'adaptateurs du kit et l'infrastructure du contexte les implémentent ; la plateforme lie une implémentation à chaque port au démarrage](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/kernel-ports-and-implementations.fr.svg)
 
 Le noyau dit **ce dont** un contexte a besoin (un `Clock`, un `UnitOfWork`, un `Logger`) et
 jamais **comment** : chaque port est une classe abstraite aux seuls membres abstraits. Ses
@@ -473,7 +473,7 @@ au chargement du fichier. Pourquoi, et la règle qui y tient l'agrégat :
 Un effet d'un événement du domaine n'existe que si le changement d'état qui l'a enregistré est
 validé.
 
-![La chronologie d'une unité de travail : la transaction commence, deux saves mettent chacun en file l'événement que son panier a enregistré, le travail rend la main et les gestionnaires before-commit s'exécutent dans l'ordre d'enregistrement en voyant les deux saves, la transaction est validée, les gestionnaires after-commit s'exécutent, puis la commande répond ; un échec avant la validation annule tout et abandonne les événements en file](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/kernel-unit-of-work-timeline.fr.svg)
+![La chronologie d'une unité de travail : la transaction commence, deux saves mettent chacun en file l'événement que son panier a enregistré, le travail rend la main et les gestionnaires before-commit s'exécutent dans l'ordre d'enregistrement en voyant les deux saves, la transaction est validée, les gestionnaires after-commit s'exécutent, puis la commande répond ; un échec avant la validation annule tout et abandonne les événements en file](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/kernel-unit-of-work-timeline.fr.svg)
 
 Un agrégat enregistre ses événements ; rien dans un cas d'usage ne les remet. Un *repository*
 enveloppé par `dispatchingOnSave(repository, () => dispatcher)` les tire lui-même, une fois
@@ -1829,7 +1829,7 @@ return this.appointments.search(scoped(criteria, scope, { ids: 'id', filter: { t
 Du gestionnaire jusqu'au store, des critères sont vérifiés deux fois, et le périmètre de l'acteur
 voyage avec eux :
 
-![Le chemin des critères : dans l'application, le gestionnaire de requête les construit et le compilateur les vérifie, scoped leur joint le périmètre d'accès par un ET, le port de lecture reçoit les critères restreints ; dans l'infrastructure, planCriteria les valide par rapport à la définition, le plan est rendu par un traducteur d'un package ORM ou évalué en mémoire par un fake, et pageOfPlan transforme les lignes en la page que renvoie le gestionnaire](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/kernel-criteria-path.fr.svg)
+![Le chemin des critères : dans l'application, le gestionnaire de requête les construit et le compilateur les vérifie, scoped leur joint le périmètre d'accès par un ET, le port de lecture reçoit les critères restreints ; dans l'infrastructure, planCriteria les valide par rapport à la définition, le plan est rendu par un traducteur d'un package ORM ou évalué en mémoire par un fake, et pageOfPlan transforme les lignes en la page que renvoie le gestionnaire](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/kernel-criteria-path.fr.svg)
 
 **Vérifiés par le compilateur.** `where` prend un champ de la ligne, un opérateur qui s'applique
 à ce que contient le champ, et une valeur de son type : `where('seats', 'contains', '2')`, un tri

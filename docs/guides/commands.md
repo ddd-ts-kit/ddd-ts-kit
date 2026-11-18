@@ -265,7 +265,7 @@ that doubt while the index still names what is not read after the command, and p
 not; the kit compares the names the index exports, not the tables behind them. `4` is an internal
 error of the kit, never a mistake of the caller: one line with the version of the kit and where to
 report it (under `--json`, an `error` with `"internal": true`); report it at
-https://github.com/gbourgeat/ddd-ts-kit/issues with the command it gives.
+https://github.com/ddd-ts-kit/ddd-ts-kit/issues with the command it gives.
 
 Under `--json`, a refusal is `{"error": {"message": "...", "fix": "..."}}`. The refusal of
 `move-to-module` that would close a cycle between modules adds to it what a script reads without

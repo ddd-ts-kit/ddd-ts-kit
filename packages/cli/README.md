@@ -20,7 +20,7 @@ second reads the project back without changing it: `check` judges it, `list` and
 what it holds, `status` and `todo` say what is left to do, `affected` says what a pull request has
 to run.
 
-![The commands of the CLI around a project: on the left the ones that write it (init, generate, docs, sdk and depcruise-config, the three migrations), in the middle the project (ddd-ts-kit.config.json, the bounded contexts and the platform under src/, the generated documents), on the right the ones that read it back (check and check-file, list and describe, status and todo, affected)](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/cli-commands-and-project.svg)
+![The commands of the CLI around a project: on the left the ones that write it (init, generate, docs, sdk and depcruise-config, the three migrations), in the middle the project (ddd-ts-kit.config.json, the bounded contexts and the platform under src/, the generated documents), on the right the ones that read it back (check and check-file, list and describe, status and todo, affected)](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/cli-commands-and-project.svg)
 
 No runtime dependency. Node 22.12 or later. Windows through WSL 2 only: outside it, `affected --run`,
 `verify-slice`, `worker-scope`, `story-scope`, `worktree` (unless `--no-install` or `--dry-run`) and
@@ -55,7 +55,7 @@ not write some of them where it ran (a path the sandbox of an agent protects): t
 under `unwritable`, every other file is written and none is deleted; `4` an internal error of the
 kit, said in one line with its version (`internal error of ddd-ts-kit <version>: ...`, its stack
 trace after it when `DDD_TS_KIT_DEBUG` is set; under `--json` an `error` with its `stack` and
-`"internal": true`): report it at https://github.com/gbourgeat/ddd-ts-kit/issues with the command
+`"internal": true`): report it at https://github.com/ddd-ts-kit/ddd-ts-kit/issues with the command
 and the stack trace.
 
 ## init
@@ -380,7 +380,7 @@ is absent with standard decorators and under `tsx`. `init` writes
 what each class is given. Every generated file exports one class, interface or function and is named
 after it.
 
-![How a declared context reaches the composition root: the role files carry their decorator and type their constructor parameters by classes; generate, docs and the dev script read those signatures and write the declarations of each layer, one export per role file of the layer and one injected statement per class that takes something, and a summary at the root of the context that re-exports them; the composition root includes the summary with contextModule and @ddd-ts-kit/di injects from it; check and docs --check report generated declarations that no longer match the role files](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/cli-declared-barrel.svg)
+![How a declared context reaches the composition root: the role files carry their decorator and type their constructor parameters by classes; generate, docs and the dev script read those signatures and write the declarations of each layer, one export per role file of the layer and one injected statement per class that takes something, and a summary at the root of the context that re-exports them; the composition root includes the summary with contextModule and @ddd-ts-kit/di injects from it; check and docs --check report generated declarations that no longer match the role files](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/cli-declared-barrel.svg)
 
 An excerpt of the declarations of the `notification` context of the example application, as
 the CLI writes them (never by hand): one file per layer, above the role folders whose classes it
@@ -761,7 +761,7 @@ One run of `generate` does five things, in this order, and writes nothing when t
 refuses (each file written whole, a kind that writes shared files under the lock of the
 project: [init](#init)):
 
-![One run of generate command: the name is checked against the glossary of the context (refused with exit code 2 and the --term to add when a word is not defined), the files are written from the templates, the new pieces are registered between marker comments, the derived documents are refreshed, and the places that need a business decision are printed as file:line](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/cli-generate-one-run.svg)
+![One run of generate command: the name is checked against the glossary of the context (refused with exit code 2 and the --term to add when a word is not defined), the files are written from the templates, the new pieces are registered between marker comments, the derived documents are refreshed, and the places that need a business decision are printed as file:line](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/cli-generate-one-run.svg)
 
 In the example application, a use case named with a word its glossary does not define is refused,
 and the message says how to go on:
@@ -2191,7 +2191,7 @@ it as one of its own options. The selection is never narrower than the declared 
 because `context/declared-relationship` keeps every import between contexts inside them, and that
 rule runs on the whole project in every pipeline.
 
-![A change in the scheduling context of the example application: scheduling is selected, and so are notification and analytics, which are downstream of it in the context map; identity, upstream, is left to the default branch](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/cli-affected-selection.svg)
+![A change in the scheduling context of the example application: scheduling is selected, and so are notification and analytics, which are downstream of it in the context map; identity, upstream, is left to the default branch](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/cli-affected-selection.svg)
 
 In the example application, a branch that changes one aggregate of `scheduling`:
 

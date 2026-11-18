@@ -13,7 +13,7 @@ patched, so upgrade to the latest one.
 Do not open a public issue for a vulnerability.
 
 Report it privately through
-[GitHub private vulnerability reporting](https://github.com/gbourgeat/ddd-ts-kit/security/advisories/new).
+[GitHub private vulnerability reporting](https://github.com/ddd-ts-kit/ddd-ts-kit/security/advisories/new).
 Say what is affected (a package, the CLI, a generated template, the plugin hook, a pipeline
 asset), how to reproduce it and what an attacker gains.
 

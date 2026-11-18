@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:0d30d02803f33ba1 -->
+<!-- translation-of: README.md sha256:06973090f81ea39e -->
 
 # @ddd-ts-kit/drizzle
 
@@ -24,7 +24,7 @@ port de *repository* de son domaine ; l'adaptateur de ce port, dans `infrastruct
 ses instructions sur la `Database` du projet ; la plateforme construit l'unité de travail une
 fois et la lie.
 
-![Un contexte délimité contient un gestionnaire, le port de repository du domaine et le repository drizzle qui l'implémente ; createDrizzleUnitOfWork donne un seul objet qui est à la fois le UnitOfWork dans lequel le bus de commandes exécute chaque commande et la Database dont l'executor() sert aux requêtes du repository et des stores ; il ouvre db.transaction() sur une base drizzle de n'importe quel pilote PostgreSQL, dont les migrations drizzle-kit créent les tables](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/drizzle-place-in-an-application.fr.svg)
+![Un contexte délimité contient un gestionnaire, le port de repository du domaine et le repository drizzle qui l'implémente ; createDrizzleUnitOfWork donne un seul objet qui est à la fois le UnitOfWork dans lequel le bus de commandes exécute chaque commande et la Database dont l'executor() sert aux requêtes du repository et des stores ; il ouvre db.transaction() sur une base drizzle de n'importe quel pilote PostgreSQL, dont les migrations drizzle-kit créent les tables](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/drizzle-place-in-an-application.fr.svg)
 
 L'idée à retenir : **toute instruction passe par `executor()`**. Dans une unité de travail,
 c'est la transaction de cette unité de travail : la ligne de l'agrégat, l'enregistrement
@@ -637,7 +637,7 @@ pas recevoir.
 
 Ce que font les deux sortes de page quand une ligne est insérée entre deux lectures :
 
-![Des factures triées par montant puis par id : une page 2 par offset lue après une insertion montre inv-f une seconde fois, tandis qu'une page par curseur qui commence après la position (120, inv-f) de la dernière ligne de la page 1 montre les mêmes lignes quoi qu'on ait inséré avant elle, et lit une ligne de plus que la limite pour savoir qu'une page suit](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/drizzle-keyset-pages.fr.svg)
+![Des factures triées par montant puis par id : une page 2 par offset lue après une insertion montre inv-f une seconde fois, tandis qu'une page par curseur qui commence après la position (120, inv-f) de la dernière ligne de la page 1 montre les mêmes lignes quoi qu'on ait inséré avant elle, et lit une ligne de plus que la limite pour savoir qu'une page suit](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/drizzle-keyset-pages.fr.svg)
 
 Les règles que tiennent ces exemples, et que les tests de ce *package* vérifient sur une vraie
 base de données :
@@ -671,7 +671,7 @@ Deux stratégies sur drizzle, toutes deux prouvées par `tenantIsolationContract
 `@ddd-ts-kit/testing/contracts` ; le schéma par *tenant* et la base par *tenant* ne sont livrés
 que pour knex ([Multitenance](../../docs/concepts/multitenancy.fr.md) en donne le tableau).
 
-![La portée d'exécution nomme le tenant du travail ; première ligne de défense, le repository le met dans chaque instruction avec tenantCondition, ownTenantCondition et tenantScopeOf ; seconde ligne, l'unité de travail commence chaque transaction par tenantSession, qui fixe le tenant pour cette transaction seulement, et les politiques déclarées avec la table ne la laissent voir et écrire que les lignes de ce seul tenant](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/drizzle-tenant-isolation.fr.svg)
+![La portée d'exécution nomme le tenant du travail ; première ligne de défense, le repository le met dans chaque instruction avec tenantCondition, ownTenantCondition et tenantScopeOf ; seconde ligne, l'unité de travail commence chaque transaction par tenantSession, qui fixe le tenant pour cette transaction seulement, et les politiques déclarées avec la table ne la laissent voir et écrire que les lignes de ce seul tenant](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/drizzle-tenant-isolation.fr.svg)
 
 **Tables partagées.** Une colonne `tenant_id` (`tenantColumn()`) et la condition du kit dans
 chaque instruction, au lieu d'une condition écrite à la main :

@@ -79,4 +79,4 @@ the contract, `docs:check` fails while one differs from it, `ci:build` builds th
   CSV) has no procedure answer: keep the HTTP client for it.
 - Publishing is manual (`npm publish --workspace clients/<document>` after raising its
   version); set `sdk.name` and `sdk.access` first. The comparison with openapi-typescript, hey-api
-  and orval, and the limits: https://github.com/gbourgeat/ddd-ts-kit/blob/main/docs/tools/client-sdk.md.
+  and orval, and the limits: https://github.com/ddd-ts-kit/ddd-ts-kit/blob/main/docs/tools/client-sdk.md.

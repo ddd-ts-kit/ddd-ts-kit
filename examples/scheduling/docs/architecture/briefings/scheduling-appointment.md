@@ -38,7 +38,7 @@ the adapter translating that violation into the domain error `SLOT_TAKEN`, the r
 and an integration spec that sends two bookings of one slot at once and sees exactly one win. With
 `DATABASE_URL` set the specs run on a real server, where the two transactions are truly concurrent;
 in process they are serialised by the single session: write the spec so that it is true in both.
-Read `/home/gbourgeat/ddd-ts-kit/packages/redis/README.md` on why the lock is not the guard, and
+Read `/home/ddd-ts-kit/ddd-ts-kit/packages/redis/README.md` on why the lock is not the guard, and
 say it in one comment where the constraint is declared. Projections have no generator: write
 `application/projections/<name>.projection.ts` after the README of `@ddd-ts-kit/kernel`
 ("Projections", "Criteria", "Hydration") and `@ddd-ts-kit/knex` ("Read models", "Criteria"), and

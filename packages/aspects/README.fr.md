@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:edbc8736a9859c84 -->
+<!-- translation-of: README.md sha256:01ace5a43b25842c -->
 
 # @ddd-ts-kit/aspects
 
@@ -21,7 +21,7 @@ enveloppé par les aspects que la racine de composition a posés autour de lui. 
 lui-même est enveloppé aussi, mais par les bus : leurs *middlewares* journalisent et mesurent
 chaque commande et chaque requête.
 
-![Une route appelle le bus de commandes, dont les middlewares de journalisation et de métriques s'exécutent autour du gestionnaire ; le gestionnaire appelle le port PaymentGateway ; l'appel traverse logged, timed, retry et timeout avant d'atteindre l'adaptateur StripeGateway, qui appelle l'API Stripe ; la racine de composition a mis en place les aspects et les middlewares, et ni le domaine ni l'application n'importent le package](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/aspects-place-in-an-application.fr.svg)
+![Une route appelle le bus de commandes, dont les middlewares de journalisation et de métriques s'exécutent autour du gestionnaire ; le gestionnaire appelle le port PaymentGateway ; l'appel traverse logged, timed, retry et timeout avant d'atteindre l'adaptateur StripeGateway, qui appelle l'API Stripe ; la racine de composition a mis en place les aspects et les middlewares, et ni le domaine ni l'application n'importent le package](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/aspects-place-in-an-application.fr.svg)
 
 Au lieu d'écrire la politique dans chaque adaptateur, écrivez l'adaptateur seul et posez la
 politique autour de lui :
@@ -284,7 +284,7 @@ soumise à la gigue : `delayBeforeRetry(n, backoff)` la calcule.
 **`circuitBreaker` et les métriques.** `onStateChange: circuitStateGauge()` publie l'état dans
 la jauge `circuit_breaker_state` : 0 fermé, 1 semi-ouvert, 2 ouvert.
 
-![Les trois états d'un circuit : fermé laisse passer chaque appel et compte les échecs consécutifs ; après failureThreshold d'entre eux, il s'ouvre et refuse chaque appel avec CircuitOpenError ; après resetAfterMs, il est semi-ouvert et laisse passer halfOpenMax appels d'essai ; un appel d'essai qui répond le ferme, un appel d'essai qui échoue le rouvre](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/aspects-circuit-breaker-states.fr.svg)
+![Les trois états d'un circuit : fermé laisse passer chaque appel et compte les échecs consécutifs ; après failureThreshold d'entre eux, il s'ouvre et refuse chaque appel avec CircuitOpenError ; après resetAfterMs, il est semi-ouvert et laisse passer halfOpenMax appels d'essai ; un appel d'essai qui répond le ferme, un appel d'essai qui échoue le rouvre](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/aspects-circuit-breaker-states.fr.svg)
 
 Un refus métier (une `DomainError`) prouve que la dépendance répond : il remet le compte à zéro
 comme un succès. Une politique pour un fournisseur qui peut disparaître un moment, dans l'ordre
@@ -373,7 +373,7 @@ remise de ses événements du domaine, puis ceux du module de plateforme), et en
 la liaison elle-même (`.with(...)`, ou `aspects` d'une déclaration). Les décorateurs posés sur
 les méthodes de la classe sont à l'intérieur de tous ceux-là.
 
-![Six niveaux imbriqués autour de la méthode d'une instance (un adaptateur ou un repository), du plus extérieur au plus intérieur : le hook decorate de createApplication ; le span de l'instrumentation de kernelModule ; pour un repository, la remise de ses événements du domaine ; les aspects du module de plateforme posés avec builder.around ; les aspects de la liaison, .with ou les aspects d'une déclaration ; les décorateurs de méthode de la classe ; puis la méthode elle-même](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/aspects-order-of-wrappers.fr.svg)
+![Six niveaux imbriqués autour de la méthode d'une instance (un adaptateur ou un repository), du plus extérieur au plus intérieur : le hook decorate de createApplication ; le span de l'instrumentation de kernelModule ; pour un repository, la remise de ses événements du domaine ; les aspects du module de plateforme posés avec builder.around ; les aspects de la liaison, .with ou les aspects d'une déclaration ; les décorateurs de méthode de la classe ; puis la méthode elle-même](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/aspects-order-of-wrappers.fr.svg)
 
 L'ordre change le sens :
 
@@ -387,7 +387,7 @@ L'ordre change le sens :
   ouvert arrête aussitôt les nouvelles tentatives, puisque `retry` ne retente pas une
   `CircuitOpenError`.
 
-![Deux chronologies. Avec retry à l'extérieur de timeout, chacune des trois tentatives a sa propre limite de 2 s, et l'appel peut durer trois fois 2 s plus les attentes. Avec timeout à l'extérieur de retry, une seule limite de 2 s couvre ensemble les tentatives et les attentes, et l'appel est rejeté avec TimeoutError à 2 s, quelle que soit la tentative en cours](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/aspects-retry-and-timeout-order.fr.svg)
+![Deux chronologies. Avec retry à l'extérieur de timeout, chacune des trois tentatives a sa propre limite de 2 s, et l'appel peut durer trois fois 2 s plus les attentes. Avec timeout à l'extérieur de retry, une seule limite de 2 s couvre ensemble les tentatives et les attentes, et l'appel est rejeté avec TimeoutError à 2 s, quelle que soit la tentative en cours](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/aspects-retry-and-timeout-order.fr.svg)
 
 <!-- checked sample -->
 ```ts

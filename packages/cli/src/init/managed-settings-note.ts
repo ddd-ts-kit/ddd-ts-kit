@@ -1,5 +1,5 @@
 /** The marketplace of the plugin of the kit, as `strictKnownMarketplaces` names a GitHub marketplace. */
-const MARKETPLACE = { source: 'github', repo: 'gbourgeat/ddd-ts-kit' };
+const MARKETPLACE = { source: 'github', repo: 'ddd-ts-kit/ddd-ts-kit' };
 
 /**
  * The block the platform team pastes in the managed settings of Claude Code: what a project file

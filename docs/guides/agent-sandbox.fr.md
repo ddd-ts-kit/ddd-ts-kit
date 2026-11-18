@@ -1,5 +1,5 @@
 [English](agent-sandbox.md) · **Français**
-<!-- translation-of: agent-sandbox.md sha256:3e9d99e990244137 -->
+<!-- translation-of: agent-sandbox.md sha256:a9ad2c6b43ce9e16 -->
 
 # Isoler les agents de code : sécurité et charge de la machine
 
@@ -95,7 +95,7 @@ ligne apporte, en termes de contrôle :
 | `allowManagedPermissionRulesOnly: true` | réglages gérés | les règles de permission de l'organisation sont les seules : un fichier de projet ou d'utilisateur ne peut pas les élargir |
 | `permissions.disableBypassPermissionsMode: "disable"` | gérés | le mode qui saute chaque demande de permission est refusé : aucune session ne tourne sans les portes |
 | `allowManagedHooksOnly: true` | gérés | seuls les *hooks* de l'organisation tournent ; copiez-y les *hooks* du profil, sinon un fichier de projet ne peut pas les garder. Un projet ne peut pas retirer la porte de production |
-| `strictKnownMarketplaces: [{ "source": "github", "repo": "gbourgeat/ddd-ts-kit" }]` | gérés | les *plugins* viennent des *marketplaces* que l'organisation nomme (celle du kit, ou votre miroir) : aucun *skill* non relu |
+| `strictKnownMarketplaces: [{ "source": "github", "repo": "ddd-ts-kit/ddd-ts-kit" }]` | gérés | les *plugins* viennent des *marketplaces* que l'organisation nomme (celle du kit, ou votre miroir) : aucun *skill* non relu |
 | `requiredMinimumVersion: "<version>"` | gérés | un Claude Code plus ancien que la version nommée ne démarre pas : chaque session a les contrôles de cette version |
 | `hooks.PreToolUse` : `production-gate.mjs` sur `Bash` | projet, `.claude/hooks/` | une commande qui nomme l'environnement de production avec une action de mise en production ne tourne pas sans approbation nommée : l'autorisation de mise en production du processus de changement, tenue au moment où la commande tournerait |
 | `hooks.PreToolUse` : `change-reference.mjs` sur `Edit\|Write\|MultiEdit` | projet, `.claude/hooks/` | une modification d'une migration ou des conteneurs est confirmée par une personne avec une référence de changement en tête, enregistrée comme *trailer* `Change:` du *commit* : le ticket de changement du processus, sur ce qui atteint la production autrement que par le code |

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:e9cff581cdb4c40c -->
+<!-- translation-of: README.md sha256:2d473b7d522b6a8d -->
 
 # @ddd-ts-kit/typeorm
 
@@ -26,7 +26,7 @@ port de *repository* de son domaine ; l'adaptateur de ce port, dans `infrastruct
 ses instructions sur le `TypeOrmContext` ; la plateforme construit l'unité de travail une fois et
 la lie.
 
-![Un contexte délimité contient un gestionnaire, le port de repository du domaine et le repository TypeORM qui l'implémente ; createTypeOrmUnitOfWork donne un seul objet qui est à la fois le UnitOfWork dans lequel le bus de commandes exécute chaque commande et le TypeOrmContext dont le manager() sert aux requêtes du repository et des stores ; il ouvre dataSource.transaction() sur la DataSource TypeORM, qui écrit dans PostgreSQL les tables du contexte, l'outbox et les événements traités](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/typeorm-place-in-an-application.fr.svg)
+![Un contexte délimité contient un gestionnaire, le port de repository du domaine et le repository TypeORM qui l'implémente ; createTypeOrmUnitOfWork donne un seul objet qui est à la fois le UnitOfWork dans lequel le bus de commandes exécute chaque commande et le TypeOrmContext dont le manager() sert aux requêtes du repository et des stores ; il ouvre dataSource.transaction() sur la DataSource TypeORM, qui écrit dans PostgreSQL les tables du contexte, l'outbox et les événements traités](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/typeorm-place-in-an-application.fr.svg)
 
 L'idée à retenir : **toute instruction passe par `manager()`**. Dans une unité de travail,
 c'est l'`EntityManager` transactionnel de cette unité de travail : la ligne de l'agrégat,
@@ -261,7 +261,7 @@ await optimisticUpdate(invoice, async ({ expected, next }) => {
 });
 ```
 
-![optimisticUpdate lit la version à laquelle l'agrégat a été chargé et calcule la suivante ; un premier enregistrement insère avec insertIgnoringConflict, un enregistrement suivant exécute une mise à jour gardée par la version attendue ; une ligne écrite fait avancer la version de l'agrégat, aucune ligne écrite lève ConcurrencyError ; à côté, deux appels concurrents à manager.save réussissent tous les deux et le second efface le premier](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/typeorm-save-an-aggregate.fr.svg)
+![optimisticUpdate lit la version à laquelle l'agrégat a été chargé et calcule la suivante ; un premier enregistrement insère avec insertIgnoringConflict, un enregistrement suivant exécute une mise à jour gardée par la version attendue ; une ligne écrite fait avancer la version de l'agrégat, aucune ligne écrite lève ConcurrencyError ; à côté, deux appels concurrents à manager.save réussissent tous les deux et le second efface le premier](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/typeorm-save-an-aggregate.fr.svg)
 
 Ce que fait `optimisticUpdate`, seul, du nombre de lignes que renvoie l'écriture :
 
@@ -703,7 +703,7 @@ garderait ce qu'il ne doit pas. L'adaptateur implémente `PersonalDataRetention`
 
 ## Outbox et idempotence
 
-![Deux relais se partagent l'outbox : avec skip-locked, chacun sélectionne les lignes dues FOR UPDATE SKIP LOCKED dans une courte transaction et le relais B saute les lignes que le relais A a verrouillées ; avec compare-and-set, les deux lisent la ligne 7 et tentent une mise à jour gardée par le nombre de tentatives lu, le premier la prend et le second n'écrit aucune ligne et relit ; dans les deux cas, une ligne prise reste cachée jusqu'à la fin de son bail](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/typeorm-outbox-claim.fr.svg)
+![Deux relais se partagent l'outbox : avec skip-locked, chacun sélectionne les lignes dues FOR UPDATE SKIP LOCKED dans une courte transaction et le relais B saute les lignes que le relais A a verrouillées ; avec compare-and-set, les deux lisent la ligne 7 et tentent une mise à jour gardée par le nombre de tentatives lu, le premier la prend et le second n'écrit aucune ligne et relit ; dans les deux cas, une ligne prise reste cachée jusqu'à la fin de son bail](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/typeorm-outbox-claim.fr.svg)
 
 - `TypeOrmOutboxStore.claimBatch` sélectionne les lignes dues `FOR UPDATE SKIP LOCKED`
   (`setLock('pessimistic_write').setOnLocked('skip_locked')`) et les prend à bail dans la même

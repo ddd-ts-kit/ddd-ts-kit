@@ -14,7 +14,7 @@ npm i @ddd-ts-kit/sentry @sentry/node @opentelemetry/api
 Written against `@sentry/node` 11: the options it relies on (`enableOpenTelemetrySetup`,
 `dataCollection`) do not exist in earlier majors.
 
-![Where the Sentry reporter sits: handlers and aggregates throw and report nothing; five capture points around them, the command and query buses, the HTTP pipeline, the job scheduler, DeadLetterReports on the hooks of the event providers and reportProcessFailures on the process, hand an unexpected failure to the kernel ErrorReporter, once; the composition root binds the SentryErrorReporter of initSentry to it; the event is scrubbed, then passed to the beforeSend of the project, then sent to Sentry or GlitchTip; its trace id leads to the trace in the tracing backend](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/sentry-capture-points.svg)
+![Where the Sentry reporter sits: handlers and aggregates throw and report nothing; five capture points around them, the command and query buses, the HTTP pipeline, the job scheduler, DeadLetterReports on the hooks of the event providers and reportProcessFailures on the process, hand an unexpected failure to the kernel ErrorReporter, once; the composition root binds the SentryErrorReporter of initSentry to it; the event is scrubbed, then passed to the beforeSend of the project, then sent to Sentry or GlitchTip; its trace id leads to the trace in the tracing backend](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/sentry-capture-points.svg)
 
 The code of a use case never sees the reporter. It throws; what stands around it decides whether
 the failure is an incident, describes it with the identifiers of the work in progress and hands
@@ -100,7 +100,7 @@ under the name of the command, and the route that answers 500 stays silent. The 
 says where it came from: `origin` is the origin of the execution context (`http`, `schedule`),
 and the correlation id and the trace lead to the request.
 
-![One failure, one report: a request reaches the route, which sends a command on the bus; the handler throws an unexpected error; errorReportingMiddleware of the bus reports it under the name of the command and marks it, then lets it go on; the route answers 500 and reportHttpErrors recognises the marked error and stays silent; the tracker receives one event, with origin http, the correlation id and the trace id](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/sentry-one-failure-one-report.svg)
+![One failure, one report: a request reaches the route, which sends a command on the bus; the handler throws an unexpected error; errorReportingMiddleware of the bus reports it under the name of the command and marks it, then lets it go on; the route answers 500 and reportHttpErrors recognises the marked error and stays silent; the tracker receives one event, with origin http, the correlation id and the trace id](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/sentry-one-failure-one-report.svg)
 
 **Events.** A consumer is retried: its first failures are expected, and reporting them would
 bury the real incidents. The bus middleware therefore says nothing while an event is consumed,
@@ -110,7 +110,7 @@ report carries the real error and its stack. Without it, or for a poison message
 is a `DeadLetterError` naming the code. An event buried by a `DomainError` is reported as a
 `warning`: it is lost to its consumer all the same.
 
-![An event whose handler keeps failing: at each attempt observing remembers what the handler threw and the provider calls onFailure; while the provider retries, onFailure reports nothing; at the last attempt the provider gives the event up, onFailure hears dead and reports once, with the error the handler really threw, origin event and the operation named after the event type and the consumer](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/sentry-event-given-up.svg)
+![An event whose handler keeps failing: at each attempt observing remembers what the handler threw and the provider calls onFailure; while the provider retries, onFailure reports nothing; at the last attempt the provider gives the event up, onFailure hears dead and reports once, with the error the handler really threw, origin event and the operation named after the event type and the consumer](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/sentry-event-given-up.svg)
 
 The same steps, played by hand against the doubles of the kernel, as a test of the wiring would:
 

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:894394a51f0a6fd8 -->
+<!-- translation-of: README.md sha256:4b58791f6366f83c -->
 
 # @ddd-ts-kit/tracing
 
@@ -16,7 +16,7 @@ npm i @opentelemetry/sdk-node @opentelemetry/resources @opentelemetry/auto-instr
 npm i -D @opentelemetry/sdk-trace @opentelemetry/context-async-hooks
 ```
 
-![La place du package : la plateforme enveloppe chaque endroit où le travail entre dans un contexte délimité ou en sort, et chaque enveloppe ouvre une sorte de span. tracedRoutes autour du pipeline HTTP ouvre le span SERVER de la requête HTTP. traceApplication, donné une fois à kernelModule, réunit les enveloppes qui ouvrent des spans : traceUseCases sur les bus ouvre les spans command et query, traceBindings sur les repositories, les gateways et les gestionnaires ouvre leurs spans, tracedDomainEvents sur le répartiteur des événements du domaine ouvre les spans unit-of-work et domain-event, tracedPublisher sur le publisher du noyau ouvre outbox append, tracedConsumer ouvre process, et tracedJob et tracedBackgroundJob ouvrent job ; il confie aussi au traçage le rapporteur d'erreurs et la portée d'exécution. tracedPublisher autour du publisher du relais de l'outbox ouvre publish. initTracing démarre le SDK OpenTelemetry avec ses instrumentations et ses processeurs de spans, et exporte en OTLP vers Jaeger ou un collecteur. Le code des contextes n'en importe rien](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/tracing-package-place.fr.svg)
+![La place du package : la plateforme enveloppe chaque endroit où le travail entre dans un contexte délimité ou en sort, et chaque enveloppe ouvre une sorte de span. tracedRoutes autour du pipeline HTTP ouvre le span SERVER de la requête HTTP. traceApplication, donné une fois à kernelModule, réunit les enveloppes qui ouvrent des spans : traceUseCases sur les bus ouvre les spans command et query, traceBindings sur les repositories, les gateways et les gestionnaires ouvre leurs spans, tracedDomainEvents sur le répartiteur des événements du domaine ouvre les spans unit-of-work et domain-event, tracedPublisher sur le publisher du noyau ouvre outbox append, tracedConsumer ouvre process, et tracedJob et tracedBackgroundJob ouvrent job ; il confie aussi au traçage le rapporteur d'erreurs et la portée d'exécution. tracedPublisher autour du publisher du relais de l'outbox ouvre publish. initTracing démarre le SDK OpenTelemetry avec ses instrumentations et ses processeurs de spans, et exporte en OTLP vers Jaeger ou un collecteur. Le code des contextes n'en importe rien](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/tracing-package-place.fr.svg)
 
 Chaque *span* d'une trace est ouvert par l'un de ces quelques endroits, tous dans la plateforme.
 Le domaine, l'application et les adaptateurs d'un contexte restent de simples classes, ce que
@@ -260,7 +260,7 @@ l'enregistrement, jamais de la boucle du relais, et appose son propre *span* sur
 bien que les consommateurs sont ses enfants. Un tour qui ne trouve rien à publier ne crée aucun
 *span*, et il n'y a pas de *span* par tour.
 
-![Une seule trace à travers deux chaînes d'appels. Dans la requête HTTP, le span POST /appointments contient la commande, qui contient, à travers les spans unit-of-work, domain-event et handler, outbox append ; outbox append appose son propre traceparent sur l'événement, et l'outbox le stocke avec l'enregistrement. Plus tard, le relais réclame l'enregistrement depuis un minuteur, sans span à lui ; tracedPublisher ouvre publish comme enfant du span que nomme l'enregistrement, et appose son propre traceparent sur le message, dans l'enveloppe et dans un en-tête. Chaque consommateur ouvre process comme enfant de publish. L'identifiant de trace est le même de la requête HTTP jusqu'aux consommateurs](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/tracing-package-across-the-outbox.fr.svg)
+![Une seule trace à travers deux chaînes d'appels. Dans la requête HTTP, le span POST /appointments contient la commande, qui contient, à travers les spans unit-of-work, domain-event et handler, outbox append ; outbox append appose son propre traceparent sur l'événement, et l'outbox le stocke avec l'enregistrement. Plus tard, le relais réclame l'enregistrement depuis un minuteur, sans span à lui ; tracedPublisher ouvre publish comme enfant du span que nomme l'enregistrement, et appose son propre traceparent sur le message, dans l'enveloppe et dans un en-tête. Chaque consommateur ouvre process comme enfant de publish. L'identifiant de trace est le même de la requête HTTP jusqu'aux consommateurs](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/tracing-package-across-the-outbox.fr.svg)
 
 Un événement sans `traceparent` (stocké avant que le traçage soit configuré) poursuit plutôt le
 *span* actif.
@@ -274,7 +274,7 @@ comme une référence à suivre d'un clic, un consommateur à la fois. Choisisse
 retenté si longtemps, qu'une trace ne finirait jamais : chaque livraison est alors la racine de
 sa propre trace, liée à la publication.
 
-![Les deux façons dont un consommateur se rattache à la publication. Avec consumers: continue, le défaut, les spans process des deux consommateurs sont des enfants de publish, dans la trace de la requête HTTP : une action est une trace. Avec consumers: link, publish termine la trace de la requête HTTP, et chaque livraison démarre une trace à elle, dont le span racine process porte un lien vers publish](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/tracing-package-continue-or-link.fr.svg)
+![Les deux façons dont un consommateur se rattache à la publication. Avec consumers: continue, le défaut, les spans process des deux consommateurs sont des enfants de publish, dans la trace de la requête HTTP : une action est une trace. Avec consumers: link, publish termine la trace de la requête HTTP, et chaque livraison démarre une trace à elle, dont le span racine process porte un lien vers publish](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/tracing-package-continue-or-link.fr.svg)
 
 **Les livraisons.** Un fournisseur dit à chaque gestionnaire de quelle livraison il s'agit
 (`EventDelivery` du noyau : tentative, dernière tentative, transport, source, consommateur), et

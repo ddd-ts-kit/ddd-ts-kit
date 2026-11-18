@@ -12,7 +12,7 @@ Every rule reads `ddd-ts-kit.config.json` ([docs/CONFIG.md](../../docs/CONFIG.md
 walking up from the linted file, and classifies the file into context and layer exactly like
 `ddd-ts-kit check` does. It also reads `stack.style` there: see [The two styles](#the-two-styles).
 
-![ESLint hands the plugin a file; the plugin walks up to ddd-ts-kit.config.json, classifies the file as ddd-ts-kit check does (context billing, layer application, not a test file), runs each rule on its syntax tree at the severity the config gives its id, and reports the line, the problem, what to write instead and the rule](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/eslint-plugin-how-a-file-is-judged.svg)
+![ESLint hands the plugin a file; the plugin walks up to ddd-ts-kit.config.json, classifies the file as ddd-ts-kit check does (context billing, layer application, not a test file), runs each rule on its syntax tree at the severity the config gives its id, and reports the line, the problem, what to write instead and the rule](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/eslint-plugin-how-a-file-is-judged.svg)
 
 ## Install
 
@@ -418,7 +418,7 @@ way, by `clean/no-escape-hatch` and `governance/recorded-deviation`.
 Two tools, one set of ids, no overlap of authority. A third, dependency-cruiser, does not read the
 config: it runs on a file generated from it, with its own rule names.
 
-![The plugin and ddd-ts-kit check read ddd-ts-kit.config.json at run time and share its rule ids, severities and suppression comments: the plugin judges one source file at a time on its syntax tree and is right when it disagrees with the checker; the checker judges what spans files, the tree, names, glossaries, config and barrel; dependency-cruiser runs only on the .dependency-cruiser.cjs that depcruise-config --write generates from the config and judges the resolved import graph with its own rule names, always at severity error, ignoring suppression comments](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/eslint-plugin-two-tools.svg)
+![The plugin and ddd-ts-kit check read ddd-ts-kit.config.json at run time and share its rule ids, severities and suppression comments: the plugin judges one source file at a time on its syntax tree and is right when it disagrees with the checker; the checker judges what spans files, the tree, names, glossaries, config and barrel; dependency-cruiser runs only on the .dependency-cruiser.cjs that depcruise-config --write generates from the config and judges the resolved import graph with its own rule names, always at severity error, ignoring suppression comments](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/eslint-plugin-two-tools.svg)
 
 | Concern | Authority | Why |
 |---|---|---|

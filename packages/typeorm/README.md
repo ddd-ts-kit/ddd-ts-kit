@@ -22,7 +22,7 @@ Nothing here is imported from `domain/` or `application/`. A handler depends on 
 port of its domain; the adapter of that port, in `infrastructure/`, runs its statements on the
 `TypeOrmContext`; the platform builds the unit of work once and binds it.
 
-![A bounded context holds a handler, the repository port of the domain and the TypeORM repository that implements it; createTypeOrmUnitOfWork gives one object that is both the UnitOfWork the command bus runs each command in and the TypeOrmContext whose manager() the repository and the stores query through; it opens dataSource.transaction() on the TypeORM DataSource, which writes the tables of the context, the outbox and the processed events in PostgreSQL](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/typeorm-place-in-an-application.svg)
+![A bounded context holds a handler, the repository port of the domain and the TypeORM repository that implements it; createTypeOrmUnitOfWork gives one object that is both the UnitOfWork the command bus runs each command in and the TypeOrmContext whose manager() the repository and the stores query through; it opens dataSource.transaction() on the TypeORM DataSource, which writes the tables of the context, the outbox and the processed events in PostgreSQL](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/typeorm-place-in-an-application.svg)
 
 The one idea to keep: **every statement goes through `manager()`**. Inside a unit of work it
 is the transactional `EntityManager` of that unit of work, so the row of the aggregate, the
@@ -249,7 +249,7 @@ await optimisticUpdate(invoice, async ({ expected, next }) => {
 });
 ```
 
-![optimisticUpdate reads the version the aggregate was loaded at and computes the next one; a first save inserts with insertIgnoringConflict, a later save runs an update guarded by the expected version; one row written moves the version of the aggregate on, no row written raises ConcurrencyError; beside it, two concurrent manager.save calls both succeed and the second erases the first](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/typeorm-save-an-aggregate.svg)
+![optimisticUpdate reads the version the aggregate was loaded at and computes the next one; a first save inserts with insertIgnoringConflict, a later save runs an update guarded by the expected version; one row written moves the version of the aggregate on, no row written raises ConcurrencyError; beside it, two concurrent manager.save calls both succeed and the second erases the first](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/typeorm-save-an-aggregate.svg)
 
 What `optimisticUpdate` does with the count the write answers, on its own:
 
@@ -675,7 +675,7 @@ every copy, and `auditedPersonalDataRetention` of `@ddd-ts-kit/audit` records ea
 
 ## Outbox and idempotency
 
-![Two relays share the outbox: with skip-locked, each selects the due rows FOR UPDATE SKIP LOCKED in a short transaction and relay B passes over the rows relay A has locked; with compare-and-set, both read row 7 and try an update guarded by the attempt count they read, the first takes it and the second writes no row and reads again; either way a claimed row stays hidden until its lease ends](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/typeorm-outbox-claim.svg)
+![Two relays share the outbox: with skip-locked, each selects the due rows FOR UPDATE SKIP LOCKED in a short transaction and relay B passes over the rows relay A has locked; with compare-and-set, both read row 7 and try an update guarded by the attempt count they read, the first takes it and the second writes no row and reads again; either way a claimed row stays hidden until its lease ends](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/typeorm-outbox-claim.svg)
 
 - `TypeOrmOutboxStore.claimBatch` selects the due rows `FOR UPDATE SKIP LOCKED`
   (`setLock('pessimistic_write').setOnLocked('skip_locked')`) and leases them in the same short

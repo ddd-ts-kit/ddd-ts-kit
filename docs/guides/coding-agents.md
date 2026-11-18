@@ -2,14 +2,14 @@
 
 # The plugin for coding agents: Claude Code, Codex, GitHub Copilot
 
-The [ddd-ts-kit repository](https://github.com/gbourgeat/ddd-ts-kit) is the marketplace of the plugin
+The [ddd-ts-kit repository](https://github.com/ddd-ts-kit/ddd-ts-kit) is the marketplace of the plugin
 for three coding agents:
 
 | Agent | Install | A skill is called |
 |---|---|---|
-| Claude Code | `/plugin marketplace add gbourgeat/ddd-ts-kit`, then `/plugin install ddd-ts-kit@ddd-ts-kit` | `/ddd-ts-kit:start` |
-| Codex | `codex plugin marketplace add gbourgeat/ddd-ts-kit`, then install `ddd-ts-kit` from `/plugins` and trust its hooks in `/hooks` | `$start` |
-| Copilot CLI | `copilot plugin marketplace add gbourgeat/ddd-ts-kit`, then `copilot plugin install ddd-ts-kit@ddd-ts-kit` | by its name, `start` |
+| Claude Code | `/plugin marketplace add ddd-ts-kit/ddd-ts-kit`, then `/plugin install ddd-ts-kit@ddd-ts-kit` | `/ddd-ts-kit:start` |
+| Codex | `codex plugin marketplace add ddd-ts-kit/ddd-ts-kit`, then install `ddd-ts-kit` from `/plugins` and trust its hooks in `/hooks` | `$start` |
+| Copilot CLI | `copilot plugin marketplace add ddd-ts-kit/ddd-ts-kit`, then `copilot plugin install ddd-ts-kit@ddd-ts-kit` | by its name, `start` |
 | Copilot cloud agent, VS Code | declared by the `.github/copilot/settings.json` that `init` writes: the cloud agent installs it, VS Code recommends it | by its name, `start` |
 
 Twenty-six skills, in the order a project meets them:

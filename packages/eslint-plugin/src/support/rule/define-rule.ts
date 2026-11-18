@@ -5,7 +5,7 @@ import type { LintedFile } from '../../project/linted-file';
 import { suppressedLines } from '../suppressions/suppressed-lines';
 import type { RuleDocs } from './rule-docs';
 
-const DOCS = 'https://github.com/gbourgeat/ddd-ts-kit/blob/main/packages/eslint-plugin/docs/rules';
+const DOCS = 'https://github.com/ddd-ts-kit/ddd-ts-kit/blob/main/packages/eslint-plugin/docs/rules';
 
 export type Report<MessageIds extends string> = (descriptor: TSESLint.ReportDescriptor<MessageIds>) => void;
 

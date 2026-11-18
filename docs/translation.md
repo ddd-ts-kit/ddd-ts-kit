@@ -326,7 +326,7 @@ This is the reference drawing: copy its style.
 | English drawing | `docs/assets/diagrams/<page-slug>-<what>.svg` |
 | French drawing | `docs/assets/diagrams/<page-slug>-<what>.fr.svg`, the same drawing with French labels |
 | From a page under `docs/` | a relative path: `![<what it shows>](../assets/diagrams/aggregates-boundary.svg)` |
-| From a page outside `docs/` (package READMEs, examples, the root README) | the absolute URL, so that npm renders it too: `![<what it shows>](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/aggregates-boundary.svg)` |
+| From a page outside `docs/` (package READMEs, examples, the root README) | the absolute URL, so that npm renders it too: `![<what it shows>](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/aggregates-boundary.svg)` |
 
 The alt text says what the diagram shows, in the language of the page. The French page shows
 the `.fr.svg` drawing at the place where the English page shows the `.svg` one; `--check`

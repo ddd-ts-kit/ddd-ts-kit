@@ -25,7 +25,7 @@ Nothing here is imported from `domain/` or `application/`. A use case depends on
 (`Cache`, `Lock`, `RateLimiter` of the kernel); the adapter is chosen in `platform/` and bound
 in the composition root.
 
-![The six ports the code names (Cache, Lock, RateLimiter, RelaySignal, JobStore, EventBus), the six adapters of @ddd-ts-kit/redis that implement them, and the one server they send their commands to; the platform binds them, the outbox and the processed events stay in the database](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/redis-place-in-an-application.svg)
+![The six ports the code names (Cache, Lock, RateLimiter, RelaySignal, JobStore, EventBus), the six adapters of @ddd-ts-kit/redis that implement them, and the one server they send their commands to; the platform binds them, the outbox and the processed events stay in the database](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/redis-place-in-an-application.svg)
 
 The same use case then runs against Redis in production and against the in-memory adapters of
 the kernel in its tests. Instead of naming the adapter, which ties the use case to one server
@@ -420,7 +420,7 @@ it. A refused call is not counted. `RedisRateLimiter` keeps one sorted set per k
 per allowed call, and decides in a single script, so concurrent calls from several instances
 cannot both take the last place.
 
-![A limit of three calls per minute: the calls at 20, 30 and 45 seconds are allowed; the call at 60 seconds sees three calls in its window, is refused, not counted, and told to retry after 20 seconds; the call at 82 seconds sees two and is allowed](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/redis-rate-limiter-sliding-window.svg)
+![A limit of three calls per minute: the calls at 20, 30 and 45 seconds are allowed; the call at 60 seconds sees three calls in its window, is refused, not counted, and told to retry after 20 seconds; the call at 82 seconds sees two and is allowed](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/redis-rate-limiter-sliding-window.svg)
 
 `remaining` counts the places left once this call is counted; `retryAfterMs` is 0 for an
 allowed call, and for a refused one the time until the oldest call of the window leaves it.
@@ -582,7 +582,7 @@ memory: see [Guarantees and limits](#guarantees-and-limits).
 Handlers never see this package. They publish to the outbox; the relay publishes to the
 streams; each consuming context subscribes through the bus under its own name.
 
-![The outbox relay claims pending records from the outbox table and publishes them with XADD in one MULTI; each event type has one stream; each consumer name has its own group on it, notifications and billing, both receiving every event; the instances of billing share its entries; a failed or poison entry goes to the dead stream of billing](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/redis-streams-topology.svg)
+![The outbox relay claims pending records from the outbox table and publishes them with XADD in one MULTI; each event type has one stream; each consumer name has its own group on it, notifications and billing, both receiving every event; the instances of billing share its entries; a failed or poison entry goes to the dead stream of billing](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/redis-streams-topology.svg)
 
 <!-- checked sample -->
 ```ts
@@ -740,7 +740,7 @@ version in the payload when it matters.
 
 ### Retry and dead-letter behaviour
 
-![An entry delivered with attempt n: without an envelope it goes to the dead stream as poison; past retry.maxAttempts after its instances crashed on it, to the dead stream as ATTEMPTS_EXHAUSTED; otherwise every handler of its type runs; all resolved, it is acknowledged; one threw on the last attempt, it is copied to the dead stream and acknowledged in one script; otherwise it stays pending and is claimed again after retry.delayMs; another instance takes over the entries of a crashed one after visibilityTimeoutMs](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/redis-streams-retry-and-dead-letter.svg)
+![An entry delivered with attempt n: without an envelope it goes to the dead stream as poison; past retry.maxAttempts after its instances crashed on it, to the dead stream as ATTEMPTS_EXHAUSTED; otherwise every handler of its type runs; all resolved, it is acknowledged; one threw on the last attempt, it is copied to the dead stream and acknowledged in one script; otherwise it stays pending and is claimed again after retry.delayMs; another instance takes over the entries of a crashed one after visibilityTimeoutMs](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/redis-streams-retry-and-dead-letter.svg)
 
 1. An entry is acknowledged (`XACK`) after every handler subscribed to its type resolved. Use
    `consume` of `@ddd-ts-kit/events`: the acknowledgement then follows the commit of the unit
