@@ -3,6 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
+  # The merge queue checks each pull request again on top of the trunk and of the pull requests queued before it,
+  # as a pull request: the jobs and the scope of its change, the queued commit compared with its first parent.
+  merge_group:
+    types: [checks_requested]
   pull_request:
     # A pull request in draft runs the fast checks only; marking it ready runs the whole of them (ready_for_review).
     types: [opened, synchronize, reopened, ready_for_review]
@@ -47,7 +51,7 @@ jobs:
       - name: What this run covers (everything on the default branch and at night, the affected packages on a pull request)
         id: affected
         env:
-          BASE: ${{ github.event_name == 'pull_request' && 'HEAD^1' || '' }}
+          BASE: ${{ (github.event_name == 'pull_request' || github.event_name == 'merge_group') && 'HEAD^1' || '' }}
         run: node pipeline/monorepo/affected-packages.mjs --base "$BASE" --format github | tee -a "$GITHUB_OUTPUT"
       # `all` on the default branch, at night and on a release; on another pull request the script says `cover` when the change
       # touches anything a generated project runs or is built from (`packages/`, `pipeline/`, the root configuration) and `none` when it touches none of it (docs/proposals/generated-project-families.md).
@@ -57,7 +61,8 @@ jobs:
           EVENT: ${{ github.event_name }}
           DRAFT: ${{ github.event.pull_request.draft }}
           INTEGRATED: ${{ steps.affected.outputs.integrated }}
-          TITLE: ${{ github.event.pull_request.title }}
+          # In the merge queue, the queued squash commit, whose subject is the title of the pull request.
+          TITLE: ${{ github.event.pull_request.title || github.event.merge_group.head_commit.message }}
           HEAD_REF: ${{ github.head_ref }}
           STACKS: ${{ steps.affected.outputs.stacks }}
         run: |
@@ -100,7 +105,7 @@ jobs:
       - name: No em dash or en dash, and the French documentation complete and current
         run: npm run ci:docs
       - name: What the change does for a user in a file of changes/, CHANGELOG.md and the plugin version left to the release
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
         run: node pipeline/monorepo/changes.mjs --check --base HEAD^1
       - name: The asymmetries this pull request accepts, shown for the review
         if: ${{ github.event_name == 'pull_request' }}
@@ -118,7 +123,7 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
         run: |
-          if [ "$EVENT" != "pull_request" ] \
+          if { [ "$EVENT" != "pull_request" ] && [ "$EVENT" != "merge_group" ]; } \
             || git diff --name-only HEAD^1 HEAD \
               | grep -qE '(\.md$|^docs/|^site/|^pipeline/monorepo/translations\.mjs$|^package-lock\.json$|^\.github/workflows/(ci|pages)\.yml$|^\.github/actions/setup/)'; then
             echo "build=true" >> "$GITHUB_OUTPUT"
@@ -245,7 +250,7 @@ jobs:
     # Not a gate: the floors of vitest.config.ts are. The report feeds the badge of the README and the history.
     # The unit report, and the integration one when that job passed: Codecov adds what the specs on a server cover.
     # `!cancelled()` keeps a failed integration job from skipping the unit report.
-    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.install.outputs.scope == 'all' && needs.unit.result == 'success' }}
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && github.event_name != 'merge_group' && needs.install.outputs.scope == 'all' && needs.unit.result == 'success' }}
     needs: [install, unit, integration]
     runs-on: ubuntu-26.04
     timeout-minutes: 10
@@ -568,8 +573,8 @@ jobs:
   oxlint:
     name: Trial, Oxlint beside ESLint
     needs: install
-    # The default branch and the night, not a pull request: nothing of this run is read before a merge.
-    if: ${{ github.event_name != 'pull_request' }}
+    # The default branch and the night, not a pull request nor the merge queue: nothing of this run is read before a merge.
+    if: ${{ github.event_name != 'pull_request' && github.event_name != 'merge_group' }}
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     continue-on-error: true

@@ -390,7 +390,8 @@ the rest; larger runners are paid and need a Team plan. The cache holds 10 GB pe
 evicted hourly by least recent use; its key should hash the lockfile, the OS, the architecture
 and the Node line, not the commit. A path filter cannot skip a required check, so the pattern is
 a gate job that reads every other job (which this repository has). A merge queue is available to
-organization-owned public repositories.
+organization-owned public repositories (this one uses it since it moved to the `ddd-ts-kit`
+organization: `CONTRIBUTING.md`).
 
 ## Judgement: the options compared
 
