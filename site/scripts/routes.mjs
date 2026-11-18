@@ -5,8 +5,8 @@
  */
 import path from 'node:path';
 
-export const REPOSITORY = 'https://github.com/gbourgeat/ddd-ts-kit';
-export const SITE = 'https://gbourgeat.github.io';
+export const REPOSITORY = 'https://github.com/ddd-ts-kit/ddd-ts-kit';
+export const SITE = 'https://ddd-ts-kit.github.io';
 export const BASE = '/ddd-ts-kit';
 
 /** The pages that are not where their directory says: the root pages and the reference documents. */

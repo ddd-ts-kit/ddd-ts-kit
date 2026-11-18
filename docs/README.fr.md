@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:2f087e95bdc76ace -->
+<!-- translation-of: README.md sha256:fee65b4c386fff99 -->
 
 # Documentation
 
@@ -20,7 +20,7 @@ compilés par le *pipeline* comme ceux de l'anglais.
 
 **Sur le web.** Ces pages, le README de chaque *package* et les documents de l'exemple sont
 aussi publiés sous la forme d'un site, avec une recherche, en français et en anglais :
-<https://gbourgeat.github.io/ddd-ts-kit/fr/>. Les fichiers Markdown d'ici restent sa seule
+<https://ddd-ts-kit.github.io/ddd-ts-kit/fr/>. Les fichiers Markdown d'ici restent sa seule
 source.
 
 ![La référence normative en haut (ARCHITECTURE.md, CONFIG.md, le README du pipeline, les README des packages) ; en dessous, les concepts qui l'expliquent, les pages d'outils qui choisissent une valeur de la stack, les guides qui l'appliquent et les propositions qui pourraient la changer](assets/diagrams/documentation-map.fr.svg)

@@ -17,7 +17,7 @@ have French labels, and its code samples are compiled by the pipeline like the E
 
 **On the web.** These pages, the README of every package and the documents of the example are
 also published as a website, with search, in English and in French:
-<https://gbourgeat.github.io/ddd-ts-kit/>. The Markdown files here stay its only source.
+<https://ddd-ts-kit.github.io/ddd-ts-kit/>. The Markdown files here stay its only source.
 
 ![The normative reference at the top (ARCHITECTURE.md, CONFIG.md, the pipeline README, the package READMEs); under it the concepts that explain it, the tools pages that choose a stack value, the guides that apply it and the proposals that may change it](assets/diagrams/documentation-map.svg)
 

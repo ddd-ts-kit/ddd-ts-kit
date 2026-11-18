@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:850ad6c6eab8788c -->
+<!-- translation-of: README.md sha256:81d3f92f58479ee5 -->
 
 # @ddd-ts-kit/s3
 
@@ -16,7 +16,7 @@ npm i @ddd-ts-kit/s3 @aws-sdk/client-s3 @aws-sdk/lib-storage @aws-sdk/s3-request
 Les trois *packages* du SDK AWS v3 officiel sont des dépendances *peer* optionnelles, écrites pour
 la version 3.1150.
 
-![Les cas d'usage et FileStaging dépendent du port FileStorage du noyau ; S3FileStorage l'implémente, place chaque clé sous son préfixe et envoie ses commandes par un S3Client construit par s3ClientOf ; le client envoie et télécharge directement vers le bucket par des liens signés ; le bucket garde les fichiers promus sous leurs clés et les fichiers mis en attente sous staging/](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/s3-place-in-an-application.fr.svg)
+![Les cas d'usage et FileStaging dépendent du port FileStorage du noyau ; S3FileStorage l'implémente, place chaque clé sous son préfixe et envoie ses commandes par un S3Client construit par s3ClientOf ; le client envoie et télécharge directement vers le bucket par des liens signés ; le bucket garde les fichiers promus sous leurs clés et les fichiers mis en attente sous staging/](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/s3-place-in-an-application.fr.svg)
 
 Les cas d'usage parlent au port avec des clés comme `appointment-documents/2026/10/7f3c`,
 générées par `TenantFileKeys`, le `FileKeys` du noyau : la zone, l'année, le mois, puis un
@@ -128,7 +128,7 @@ pour plus d'une heure avec `INVALID_FILE_URL_EXPIRY`, avant toute requête. La s
 demande pas de requête non plus : un lien signé est calculé à partir des identifiants d'accès, et
 seul le fournisseur le vérifie, quand le client l'utilise.
 
-![Un envoi par lien signé : le client demande un lien, FileStaging.uploadUrl fait signer un PUT localement par S3FileStorage et garde l'autorisation d'envoi sur l'agrégat, le client envoie le fichier directement au bucket, qui vérifie la clé, la méthode, le content-type et l'expiration mais ne peut pas plafonner la taille ; puis le client confirme, et FileStaging.confirm relit l'objet mis en attente pour vérifier sa taille contre le plafond, son type de média, son empreinte et l'analyse](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/s3-signed-upload.fr.svg)
+![Un envoi par lien signé : le client demande un lien, FileStaging.uploadUrl fait signer un PUT localement par S3FileStorage et garde l'autorisation d'envoi sur l'agrégat, le client envoie le fichier directement au bucket, qui vérifie la clé, la méthode, le content-type et l'expiration mais ne peut pas plafonner la taille ; puis le client confirme, et FileStaging.confirm relit l'objet mis en attente pour vérifier sa taille contre le plafond, son type de média, son empreinte et l'analyse](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/s3-signed-upload.fr.svg)
 
 Le client envoie le fichier exactement comme le dit le lien, avec les en-têtes qu'il a reçus :
 

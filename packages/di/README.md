@@ -33,7 +33,7 @@ the kit needs it: dependencies are named, never reflected.
 To run the kit on another container, implement `Container` and call `createApplicationOn` and
 `createTestApplicationOn`, both of `@ddd-ts-kit/di`.
 
-![How the classes of a bounded context become a running application: the context declares its ports and classes (or writes an explicit module), one module is made per context by contextModule, discoverContext or defineContextModule, and createApplication records the modules, checks the whole graph, binds everything in a child container and starts nothing; then a separate call, app.start, subscribes the consumers and starts the jobs](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/di-assembly.svg)
+![How the classes of a bounded context become a running application: the context declares its ports and classes (or writes an explicit module), one module is made per context by contextModule, discoverContext or defineContextModule, and createApplication records the modules, checks the whole graph, binds everything in a child container and starts nothing; then a separate call, app.start, subscribes the consumers and starts the jobs](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/di-assembly.svg)
 
 Whatever the style, the path is the same: the classes of a context say what they are, a module
 gathers them, and `createApplication` checks the whole graph before it builds a single instance.
@@ -855,7 +855,7 @@ by `start()` and unsubscribed by `stop()`, since a subscription is a side effect
 
 ## The life of an application
 
-![The three phases of an application: createApplication checks the whole graph before it builds any handler, app.start calls onStart of each module then subscribes the consumers and starts the jobs, app.stop stops the jobs first, unsubscribes the consumers, calls onStop in reverse order and flushes the error reporter and the logger last](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/di-lifecycle.svg)
+![The three phases of an application: createApplication checks the whole graph before it builds any handler, app.start calls onStart of each module then subscribes the consumers and starts the jobs, app.stop stops the jobs first, unsubscribes the consumers, calls onStop in reverse order and flushes the error reporter and the logger last](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/di-lifecycle.svg)
 
 Whatever the style of its modules, an application goes through the same three calls:
 
@@ -925,7 +925,7 @@ retries or dead-letters it, and a redelivered event is handled once per `consume
 `ProcessedEventStore` is bound. The name is required: it is the idempotency key, and it must
 survive the renaming of a class.
 
-![What happens to one integration event delivered to one consumer: the contract parses it and skips another type or version or refuses an unreadable event; a valid event is handled in the execution scope of the event and in one unit of work, where the processed event store skips a redelivery, and the mark and the writes of the handler commit or roll back together](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/di-consumer-event.svg)
+![What happens to one integration event delivered to one consumer: the contract parses it and skips another type or version or refuses an unreadable event; a valid event is handled in the execution scope of the event and in one unit of work, where the processed event store skips a redelivery, and the mark and the writes of the handler commit or roll back together](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/di-consumer-event.svg)
 
 ### The execution context of the event
 
@@ -1409,7 +1409,7 @@ of the application applied. What a job did last and when it runs next is not wir
 
 An effect of a domain event exists only if the state change that recorded it is committed.
 
-![The timeline of one command: inside one transaction the handler saves its aggregates and their events wait in a queue, the before-commit handlers run on the queue once the handler has returned, then the transaction commits; the after-commit handlers run after the commit, before the command answers](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/domain-and-integration-events-unit-of-work.svg)
+![The timeline of one command: inside one transaction the handler saves its aggregates and their events wait in a queue, the before-commit handlers run on the queue once the handler has returned, then the transaction commits; the after-commit handlers run after the commit, before the command answers](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/domain-and-integration-events-unit-of-work.svg)
 
 Instead of dispatching the events in the handler (behind `kernelModule()` the save has already
 taken them, so this line dispatches nothing; without it, the reactions would run outside the

@@ -45,7 +45,7 @@ It is not a log (logs are sampled, rotated and lost), not event sourcing (it doe
 state) and not the `AuditStamp` of the kernel (`createdBy`, `updatedBy`: the last writer of a
 row, not the history).
 
-![The sources auditGuardRefusals, auditDecisions, auditMiddleware, auditIntegrationEvents and, by hand, auditRecordOf call the AuditTrail port; a store (in memory, knex or drizzle) implements it, seals each record with its chain, sequence, previous hash and hash, and writes to PostgreSQL behind append-only triggers; the same store implements AuditReader, which the handler of SearchAuditEntriesQuery and verifyChain read; sealing hands checkpoints to a place the application cannot write](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/audit-place-in-an-application.svg)
+![The sources auditGuardRefusals, auditDecisions, auditMiddleware, auditIntegrationEvents and, by hand, auditRecordOf call the AuditTrail port; a store (in memory, knex or drizzle) implements it, seals each record with its chain, sequence, previous hash and hash, and writes to PostgreSQL behind append-only triggers; the same store implements AuditReader, which the handler of SearchAuditEntriesQuery and verifyChain read; sealing hands checkpoints to a place the application cannot write](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/audit-place-in-an-application.svg)
 
 The diagram is the map of this page: [the entry](#the-entry) and its hash, the
 [sources](#wiring-the-sources), [redaction](#redaction), [verification](#verification-and-anchoring),
@@ -340,7 +340,7 @@ it to `auditMiddleware`, `auditedSubjectKeys`, `auditedPersonalDataErasure`,
 `auditedPersonalDataExport` and `auditedPersonalDataRetention`, in the application and in the
 scripts of `--privacy on`.
 
-![CancelAppointment reaches authorization first: denied, it leaves one authorization denied entry and opens no transaction; allowed, the audit middleware opens the transaction and the handler runs in it; on success the succeeded entry is written in the same transaction and commits with the change, or neither exists; on failure the transaction rolls back, then the failed entry is written outside of it with the code of the error](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/audit-trail-transaction.svg)
+![CancelAppointment reaches authorization first: denied, it leaves one authorization denied entry and opens no transaction; allowed, the audit middleware opens the transaction and the handler runs in it; on success the succeeded entry is written in the same transaction and commits with the change, or neither exists; on failure the transaction rolls back, then the failed entry is written outside of it with the code of the error](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/audit-trail-transaction.svg)
 
 Without `unitOfWork` (no database, the in-memory trail) the middleware records after the
 handler. Recording through the outbox would also be atomic for successes, but an outbox row
@@ -628,7 +628,7 @@ auditedFields(RescheduleAppointmentCommand, ['status', 'startsAt', masked('patie
 auditedProjection(ExportAppointmentsCommand, (command) => ({ plain: { format: command.options.format } }));
 ```
 
-![A RescheduleAppointmentCommand and its five fields, the declaration, and the entry: appointmentId becomes the resource, status is kept as it is, startsAt as an ISO instant, patientEmail as the HMAC of the value under a secret, and note, free text that is not listed, is never read and leaves no trace](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/audit-redaction.svg)
+![A RescheduleAppointmentCommand and its five fields, the declaration, and the entry: appointmentId becomes the resource, status is kept as it is, startsAt as an ISO instant, patientEmail as the HMAC of the value under a secret, and note, free text that is not listed, is never read and leaves no trace](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/audit-redaction.svg)
 
 - A field that is not listed is never read. The compiler refuses a name the message does not
   have.
@@ -732,7 +732,7 @@ and whoever has looked at it walks on from the entry after it, which trusts that
 await verifyChain(reader, { chain: 'tenant:acme', from: 313 });
 ```
 
-![Four entries of the chain tenant:acme, each holding the hash of the entry before it and its own, the first linked to the genesis hash; a changed entry is reported as altered-content, a removed one as missing-entry, two swapped as reordered; a chain rewritten as a whole is valid again, so a checkpoint copied where the trail's owner cannot write is what shows it](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/audit-trail-hash-chain.svg)
+![Four entries of the chain tenant:acme, each holding the hash of the entry before it and its own, the first linked to the genesis hash; a changed entry is reported as altered-content, a removed one as missing-entry, two swapped as reordered; a chain rewritten as a whole is valid again, so a checkpoint copied where the trail's owner cannot write is what shows it](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/audit-trail-hash-chain.svg)
 
 **Why anchoring.** The chain protects against whoever can change some rows. Whoever can
 rewrite the whole table (a database administrator, an attacker with the owner's role) can
@@ -917,7 +917,7 @@ written at once; in a transaction opened by hand, the head then stays locked unt
 transaction ends. A unit of work of another database opened inside the one in progress ends
 before it: its entries are written at the commit of the outer one, in a transaction of their own.
 
-![Three transactions append at the same time: T1 locks the head of tenant:acme, writes entry 42 and commits; T2, on the same chain, waits for that commit, then reads 42 and writes entry 43; T3, on tenant:globex, writes entry 8 without waiting](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/audit-chain-append.svg)
+![Three transactions append at the same time: T1 locks the head of tenant:acme, writes entry 42 and commits; T2, on the same chain, waits for that commit, then reads 42 and writes entry 43; T3, on tenant:globex, writes entry 8 without waiting](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/audit-chain-append.svg)
 
 **Append-only in the database too.** The migration helper creates the function
 `audit_entries_append_only` and two triggers: `UPDATE`, `DELETE` and `TRUNCATE` on

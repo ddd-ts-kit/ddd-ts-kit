@@ -17,7 +17,7 @@ A call leaves a use case through a port. What answers it is the adapter bound to
 wrapped by the aspects the composition root put around it. The use case itself is wrapped too,
 but by the buses: their middlewares log and measure every command and query.
 
-![A route calls the command bus, whose logging and metrics middlewares run around the handler; the handler calls the PaymentGateway port; the call goes through logged, timed, retry and timeout before it reaches the StripeGateway adapter, which calls the Stripe API; the composition root put the aspects and the middlewares in place, and neither domain nor application imports the package](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/aspects-place-in-an-application.svg)
+![A route calls the command bus, whose logging and metrics middlewares run around the handler; the handler calls the PaymentGateway port; the call goes through logged, timed, retry and timeout before it reaches the StripeGateway adapter, which calls the Stripe API; the composition root put the aspects and the middlewares in place, and neither domain nor application imports the package](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/aspects-place-in-an-application.svg)
 
 Instead of writing the policy into each adapter, write the adapter alone and put the policy
 around it:
@@ -274,7 +274,7 @@ the failed attempt `n` is `baseMs x factor^(n - 1)`, capped at `maxMs`, then jit
 **`circuitBreaker` and metrics.** `onStateChange: circuitStateGauge()` publishes the state as
 the gauge `circuit_breaker_state`: 0 closed, 1 half-open, 2 open.
 
-![The three states of a circuit: closed lets every call through and counts consecutive failures; after failureThreshold of them it opens and refuses every call with CircuitOpenError; after resetAfterMs it is half-open and lets halfOpenMax trial calls through; a trial that answers closes it, a trial that fails opens it again](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/aspects-circuit-breaker-states.svg)
+![The three states of a circuit: closed lets every call through and counts consecutive failures; after failureThreshold of them it opens and refuses every call with CircuitOpenError; after resetAfterMs it is half-open and lets halfOpenMax trial calls through; a trial that answers closes it, a trial that fails opens it again](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/aspects-circuit-breaker-states.svg)
 
 A business refusal (a `DomainError`) proves that the dependency answers: it resets the count
 like a success. A policy for a provider that may go away for a while, in the order the next
@@ -361,7 +361,7 @@ for a repository the hand-over of its domain events, then the ones of the platfo
 and last the aspects of the binding itself (`.with(...)`, or `aspects` of a declaration).
 Decorators on the methods of the class are inside all of them.
 
-![Six nested layers around the method of one instance (an adapter or a repository), outermost first: the decorate hook of createApplication; the span of kernelModule instrumentation; for a repository, the hand-over of its domain events; the aspects of the platform module put with builder.around; the aspects of the binding, .with or the aspects of a declaration; the method decorators of the class; then the method itself](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/aspects-order-of-wrappers.svg)
+![Six nested layers around the method of one instance (an adapter or a repository), outermost first: the decorate hook of createApplication; the span of kernelModule instrumentation; for a repository, the hand-over of its domain events; the aspects of the platform module put with builder.around; the aspects of the binding, .with or the aspects of a declaration; the method decorators of the class; then the method itself](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/aspects-order-of-wrappers.svg)
 
 Order changes meaning:
 
@@ -374,7 +374,7 @@ Order changes meaning:
 - `circuitBreaker` inside `retry`: each failed attempt counts, and an open circuit ends the
   retries at once, since `retry` does not retry a `CircuitOpenError`.
 
-![Two timelines. With retry outside timeout, each of the three attempts has its own 2 s limit, and the call can last three times 2 s plus the waits. With timeout outside retry, one 2 s limit covers the attempts and the waits together, and the call rejects with TimeoutError at 2 s whatever the attempt in progress](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/aspects-retry-and-timeout-order.svg)
+![Two timelines. With retry outside timeout, each of the three attempts has its own 2 s limit, and the call can last three times 2 s plus the waits. With timeout outside retry, one 2 s limit covers the attempts and the waits together, and the call rejects with TimeoutError at 2 s whatever the attempt in progress](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/aspects-retry-and-timeout-order.svg)
 
 <!-- checked sample -->
 ```ts

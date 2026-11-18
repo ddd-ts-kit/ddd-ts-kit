@@ -65,7 +65,7 @@ const KNIP_FILE = 'knip.json';
 
 /** What a new project does next: the recommended path, which the README of the project repeats. */
 const NEXT_STEP =
-  'Next, follow the recommended steps in order, the supported path: discover the domain, find the bounded contexts, write their glossaries and draw the context map before any code (`/ddd-ts-kit:start` in Claude Code conducts them), then declare each context with `npx ddd-ts-kit generate context`, plan the slices and build them one at a time. `npx ddd-ts-kit status` says which step is next; the steps are in README.md and at https://github.com/gbourgeat/ddd-ts-kit/blob/main/docs/guides/methodology.md.';
+  'Next, follow the recommended steps in order, the supported path: discover the domain, find the bounded contexts, write their glossaries and draw the context map before any code (`/ddd-ts-kit:start` in Claude Code conducts them), then declare each context with `npx ddd-ts-kit generate context`, plan the slices and build them one at a time. `npx ddd-ts-kit status` says which step is next; the steps are in README.md and at https://github.com/ddd-ts-kit/ddd-ts-kit/blob/main/docs/guides/methodology.md.';
 
 export interface InitOptions extends StackOptions {
   /** `<name>:<classification>` entries. */

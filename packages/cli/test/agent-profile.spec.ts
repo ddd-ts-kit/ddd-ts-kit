@@ -58,7 +58,7 @@ describe('init --agent-profile regulated', () => {
     expect(notes).toContain('"allowManagedPermissionRulesOnly": true');
     expect(notes).toContain('"disableBypassPermissionsMode": "disable"');
     expect(notes).toContain('"strictKnownMarketplaces": [');
-    expect(notes).toContain('"repo": "gbourgeat/ddd-ts-kit"');
+    expect(notes).toContain('"repo": "ddd-ts-kit/ddd-ts-kit"');
     expect(notes).toContain('"requiredMinimumVersion": "<the oldest version of Claude Code the team accepts>"');
     expect(notes).toContain('copy the hooks of .claude/settings.json into the managed settings too');
     expect(notes).toContain('a headless run (claude -p) in an untrusted workspace ignores them');

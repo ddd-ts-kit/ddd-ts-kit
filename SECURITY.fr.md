@@ -1,5 +1,5 @@
 [English](SECURITY.md) · **Français**
-<!-- translation-of: SECURITY.md sha256:f562d967055b0804 -->
+<!-- translation-of: SECURITY.md sha256:af63f505c846ea8b -->
 
 # Politique de sécurité
 
@@ -15,7 +15,7 @@ stabilité](docs/versioning.fr.md) dit ce que demande une mise à jour).
 N'ouvrez pas d'issue publique pour une vulnérabilité.
 
 Signalez-la en privé par le
-[signalement privé de vulnérabilités de GitHub](https://github.com/gbourgeat/ddd-ts-kit/security/advisories/new).
+[signalement privé de vulnérabilités de GitHub](https://github.com/ddd-ts-kit/ddd-ts-kit/security/advisories/new).
 Dites ce qui est touché (un package, la CLI, un template généré, le hook du plugin, un élément
 du pipeline), comment le reproduire et ce qu'un attaquant y gagne.
 

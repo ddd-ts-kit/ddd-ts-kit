@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:d723d12bcfe5ca31 -->
+<!-- translation-of: README.md sha256:c6d56ebe67625a45 -->
 
 # @ddd-ts-kit/knex
 
@@ -28,7 +28,7 @@ vivent dans l'`infrastructure/` de chaque contexte, et l'unité de travail est c
 `UnitOfWork` dans lequel le bus de commandes exécute chaque commande, et au `KnexContext` par
 lequel chaque adaptateur atteint la base de données.
 
-![Le bus de commandes appelle run sur le port UnitOfWork ; les repositories, les lecteurs, les stores du package et le journal d'audit appellent executor sur le port KnexContext ; les deux ports sont l'objet unique que renvoie createKnexUnitOfWork, qui garde la transaction ouverte dans un AsyncLocalStorage : chaque instruction d'une commande s'exécute ainsi dans une seule transaction PostgreSQL, avec un schéma par contexte](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/knex-place-in-an-application.fr.svg)
+![Le bus de commandes appelle run sur le port UnitOfWork ; les repositories, les lecteurs, les stores du package et le journal d'audit appellent executor sur le port KnexContext ; les deux ports sont l'objet unique que renvoie createKnexUnitOfWork, qui garde la transaction ouverte dans un AsyncLocalStorage : chaque instruction d'une commande s'exécute ainsi dans une seule transaction PostgreSQL, avec un schéma par contexte](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/knex-place-in-an-application.fr.svg)
 
 Plutôt que de faire descendre une transaction le long des appels, ce qui met un type knex dans
 chaque signature, du gestionnaire (handler) à l'adaptateur, et fait de son oubli un bogue
@@ -397,7 +397,7 @@ autre ligne détient sous une contrainte d'unicité (un e-mail) est refusée par
 `optimisticUpdate` lève `UniqueViolationError` (code `CONFLICT`, 409), pas une mise à jour
 perdue ; sur MySQL, qui n'a pas de cible de conflit et dont `INSERT IGNORE` écarte aussi cette ligne, l'utilitaire demande si une ligne détient la clé quand rien n'a été écrit, et lève `UniqueViolationError` quand aucune ne la détient. Deux premiers enregistrements d'un même agrégat faits en même temps (une requête livrée deux fois) ne sont pas refusés pour la valeur unique qu'ils écrivent tous les deux : sur PostgreSQL, une cible de conflit sur la clé seule les laisse se rencontrer d'abord sur l'autre index unique, si bien que l'utilitaire insère par une instruction qui passe sur toute valeur unique, et seulement quand elle n'a rien écrit par une seconde qui nomme la clé. Celui qui a perdu n'écrit aucune ligne, une `ConcurrencyError`.
 
-![Deux transactions chargent la facture inv-1 à la version 3 ; la première sauvegarde, sa mise à jour trouve la version 3 et la ligne passe à la version 4 ; la seconde sauvegarde ensuite, sa mise à jour attend toujours la version 3, n'écrit aucune ligne, et optimisticUpdate lève ConcurrencyError, code CONCURRENCY_CONFLICT](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/persistence-optimistic-concurrency.fr.svg)
+![Deux transactions chargent la facture inv-1 à la version 3 ; la première sauvegarde, sa mise à jour trouve la version 3 et la ligne passe à la version 4 ; la seconde sauvegarde ensuite, sa mise à jour attend toujours la version 3, n'écrit aucune ligne, et optimisticUpdate lève ConcurrencyError, code CONCURRENCY_CONFLICT](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/persistence-optimistic-concurrency.fr.svg)
 
 Le second écrivain est refusé au lieu d'écraser le premier en silence. Rien ne le retente pour
 vous : l'appelant reçoit la `ConcurrencyError` et décide s'il recharge la facture.
@@ -627,7 +627,7 @@ base de données :
 Ce que le curseur apporte, sur des factures triées par montant, quand une ligne est insérée entre
 deux pages :
 
-![Des factures dans un ordre total par montant puis par id ; la page 1 lit quatre lignes pour une limite de 3 et garde comme curseur la position de la dernière, montant 40 et id inv-7 ; après l'insertion d'une facture de 10, la page 2 par offset 3 lit inv-7 une seconde fois, tandis que la page 2 après le curseur compare la position comme un tuple et renvoie inv-9, inv-2 et inv-4 : rien de répété, rien de sauté, aucun comptage](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/knex-cursor-page.fr.svg)
+![Des factures dans un ordre total par montant puis par id ; la page 1 lit quatre lignes pour une limite de 3 et garde comme curseur la position de la dernière, montant 40 et id inv-7 ; après l'insertion d'une facture de 10, la page 2 par offset 3 lit inv-7 une seconde fois, tandis que la page 2 après le curseur compare la position comme un tuple et renvoie inv-9, inv-2 et inv-4 : rien de répété, rien de sauté, aucun comptage](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/knex-cursor-page.fr.svg)
 
 ## Isolation des tenants
 
@@ -635,7 +635,7 @@ Quatre stratégies, choisies par projet ([Multitenance](../../docs/concepts/mult
 dit quand chacune convient). Chacune est prouvée ici par `tenantIsolationContract` de
 `@ddd-ts-kit/testing/contracts`, sur PGlite et sur PostgreSQL.
 
-![Les quatre stratégies, de la plus partagée à la plus séparée, et les helpers de chacune : tables partagées avec tenantColumn, tenantTable, ownTenantTable, tenantRow et whereTenant ; sécurité au niveau des lignes avec enableTenantIsolation ou tenantIsolationStatements, tenantSession et un rôle sans BYPASSRLS ; schéma par tenant avec tenantSchemaOf, tenantSchemaTable, tenantOfMigration, migrateTenantSchema et tenantSearchPath ; base par tenant avec TenantDatabases, createTenantRoutedUnitOfWork et migrateEveryTenant](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/knex-tenant-isolation-helpers.fr.svg)
+![Les quatre stratégies, de la plus partagée à la plus séparée, et les helpers de chacune : tables partagées avec tenantColumn, tenantTable, ownTenantTable, tenantRow et whereTenant ; sécurité au niveau des lignes avec enableTenantIsolation ou tenantIsolationStatements, tenantSession et un rôle sans BYPASSRLS ; schéma par tenant avec tenantSchemaOf, tenantSchemaTable, tenantOfMigration, migrateTenantSchema et tenantSearchPath ; base par tenant avec TenantDatabases, createTenantRoutedUnitOfWork et migrateEveryTenant](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/knex-tenant-isolation-helpers.fr.svg)
 
 **Tables partagées.** Une table par agrégat, une colonne `tenant_id`, et chaque instruction
 restreinte par le kit plutôt que par une condition écrite à la main :
@@ -903,7 +903,7 @@ La vie d'un enregistrement dans la table `outbox`. Le relais de `@ddd-ts-kit/eve
 par `claimBatch`, `markPublished` et `markFailed` ; `retryDead`, `purgePublished` et `stats` sont
 appelés par un opérateur ou par un job planifié, jamais par le relais :
 
-![Un enregistrement est ajouté en attente par la validation de la commande ; le relais le réclame quand il est dû et le publie, puis le marque publié, et purgePublished le supprime plus tard ; une publication en échec le laisse en attente, retenté après un délai exponentiel ; après la dernière tentative il est mort, jusqu'à ce que retryDead le remette en attente ; stats compte les enregistrements en attente, en échec et morts](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/transactional-outbox-record-lifecycle.fr.svg)
+![Un enregistrement est ajouté en attente par la validation de la commande ; le relais le réclame quand il est dû et le publie, puis le marque publié, et purgePublished le supprime plus tard ; une publication en échec le laisse en attente, retenté après un délai exponentiel ; après la dernière tentative il est mort, jusqu'à ce que retryDead le remette en attente ; stats compte les enregistrements en attente, en échec et morts](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/transactional-outbox-record-lifecycle.fr.svg)
 
 ## Event store
 

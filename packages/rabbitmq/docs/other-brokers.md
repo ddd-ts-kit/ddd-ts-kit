@@ -14,7 +14,7 @@ Kafka, NATS JetStream and Redis Streams are packages of the kit, held to what
 | Redis Streams (Redis, Dragonfly, Valkey) | package | [`@ddd-ts-kit/redis`](../../redis/README.md), entry `./event-bus` |
 | SQS and SNS | outline, nothing built | below |
 
-![What every provider owes: the outbox relay calls publish and marks a record published only when the promise resolves, that is when the broker acknowledged every event; the broker keeps one subscription per consumer; each consumer receives the event at least once, its handler runs through consume with a processed-event store, and the provider acknowledges after the handler resolved; a failure comes back after a delay, a bounded number of times, then the event is parked in a dead destination an operator can read and replay](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/other-brokers-what-a-provider-owes.svg)
+![What every provider owes: the outbox relay calls publish and marks a record published only when the promise resolves, that is when the broker acknowledged every event; the broker keeps one subscription per consumer; each consumer receives the event at least once, its handler runs through consume with a processed-event store, and the provider acknowledges after the handler resolved; a failure comes back after a delay, a bounded number of times, then the event is parked in a dead destination an operator can read and replay](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/other-brokers-what-a-provider-owes.svg)
 
 ## What every provider owes
 
@@ -236,7 +236,7 @@ and Dragonfly. For `forConsumer('billing')` subscribed to `ordering.order.placed
 
 ## SQS and SNS
 
-![The outline of a provider on SQS and SNS: the outbox relay publishes to one SNS topic with the event type as a message attribute; each subscription has a filter policy on type and delivers raw messages to an SQS queue per consumer and type, billing-ordering_order_placed and notifications-ordering_order_placed (the dots of the type replaced, since SQS refuses them in a queue name); the consumer long-polls its queue and deletes a message after its handler resolved; a failed message reappears after its visibility timeout; after maxReceiveCount receptions the redrive policy moves it to a dead-letter queue](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/other-brokers-sqs-and-sns.svg)
+![The outline of a provider on SQS and SNS: the outbox relay publishes to one SNS topic with the event type as a message attribute; each subscription has a filter policy on type and delivers raw messages to an SQS queue per consumer and type, billing-ordering_order_placed and notifications-ordering_order_placed (the dots of the type replaced, since SQS refuses them in a queue name); the consumer long-polls its queue and deletes a message after its handler resolved; a failed message reappears after its visibility timeout; after maxReceiveCount receptions the redrive policy moves it to a dead-letter queue](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/other-brokers-sqs-and-sns.svg)
 
 | Concept here | SQS / SNS |
 |---|---|

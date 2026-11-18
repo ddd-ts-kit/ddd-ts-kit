@@ -24,7 +24,7 @@ kernel (`UnitOfWork`, `IntegrationEventPublisher`) and of its domain (a reposito
 package gives the adapters of the kernel ports, your `infrastructure/` writes the adapters of
 the domain ports on top of it, and the platform binds them all at start-up.
 
-![The PrismaInvoiceRepository adapter of the project implements the InvoiceRepository port that a command handler calls, and queries database.client(); the package gives the unit of work (bound to UnitOfWork and Database), the processed-event store and the outbox store, where the handler's events are appended; the OutboxRelay of @ddd-ts-kit/events claims them and publishes to the broker; every statement goes through the generated Prisma client to PostgreSQL](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/prisma-place-in-an-application.svg)
+![The PrismaInvoiceRepository adapter of the project implements the InvoiceRepository port that a command handler calls, and queries database.client(); the package gives the unit of work (bound to UnitOfWork and Database), the processed-event store and the outbox store, where the handler's events are appended; the OutboxRelay of @ddd-ts-kit/events claims them and publishes to the broker; every statement goes through the generated Prisma client to PostgreSQL](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/prisma-place-in-an-application.svg)
 
 | Piece | What it provides | Section |
 |---|---|---|
@@ -196,7 +196,7 @@ of work and on the root client outside. Because `append` uses the current client
 published by a handler that then fails is rolled back with the business write: that is the
 whole point of the outbox.
 
-![One command in a Prisma unit of work: the command bus calls run, which opens the Prisma transaction and keeps its client in an AsyncLocalStorage; the handler saves the invoice and appends its events on that client; when the work returns, the domain events go to their before-commit handlers, then the transaction commits, then the after-commit handlers run; a failure before the commit leaves no row and no outbox record](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/prisma-unit-of-work-timeline.svg)
+![One command in a Prisma unit of work: the command bus calls run, which opens the Prisma transaction and keeps its client in an AsyncLocalStorage; the handler saves the invoice and appends its events on that client; when the work returns, the domain events go to their before-commit handlers, then the transaction commits, then the after-commit handlers run; a failure before the commit leaves no row and no outbox record](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/prisma-unit-of-work-timeline.svg)
 
 The same two calls, with the publisher bound to the broker or to the outbox, do not give the
 same guarantee:
@@ -382,7 +382,7 @@ the id, it raises `UniqueViolationError` (code `CONFLICT`, 409), what the other 
 a statement the database refuses for a unique value (`P2002`) is raised the same by
 `optimisticUpdate`.
 
-![Two transactions load invoice inv-1 at version 3; A saves first, its update matches version 3 and the row moves to version 4; B saves after, its update still expects version 3, matches no row, and optimisticUpdate throws ConcurrencyError with the code CONCURRENCY_CONFLICT; the transaction of B rolls back](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/persistence-optimistic-concurrency.svg)
+![Two transactions load invoice inv-1 at version 3; A saves first, its update matches version 3 and the row moves to version 4; B saves after, its update still expects version 3, matches no row, and optimisticUpdate throws ConcurrencyError with the code CONCURRENCY_CONFLICT; the transaction of B rolls back](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/persistence-optimistic-concurrency.svg)
 
 A `ConcurrencyError` is an expected outcome, not a bug: the command can be retried on a fresh
 load, or the caller told that someone else changed the invoice.
@@ -886,7 +886,7 @@ every copy, and `auditedPersonalDataRetention` of `@ddd-ts-kit/audit` records ea
   no tenant, and the events published before the field existed): its consumers then run in that
   tenant. A model that has the field is read back either way.
 
-![The two claim strategies side by side: skip-locked locks the due rows with a raw select for update skip locked, reads them and leases them in one short transaction, so relays pass over each other's rows; compare-and-set reads the due rows, takes each one with an updateMany guarded by the attempt count it read, and reads again to replace the rows another relay took; both hide a claimed record for leaseMs, so the records of a relay that died are claimed again](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/prisma-outbox-claim.svg)
+![The two claim strategies side by side: skip-locked locks the due rows with a raw select for update skip locked, reads them and leases them in one short transaction, so relays pass over each other's rows; compare-and-set reads the due rows, takes each one with an updateMany guarded by the attempt count it read, and reads again to replace the rows another relay took; both hide a claimed record for leaseMs, so the records of a relay that died are claimed again](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/prisma-outbox-claim.svg)
 
 <!-- checked sample -->
 ```ts

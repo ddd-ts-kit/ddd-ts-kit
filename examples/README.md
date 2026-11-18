@@ -20,7 +20,7 @@ One deployable application and a worker process, built from the same image. Both
 same four bounded contexts; the API process also serves HTTP, relays the outbox and keeps the
 projections fed by the event store up to date, the worker runs the scheduled jobs.
 
-![The scheduling example when it runs: the demo script and the specs call the API directly, Varnish is an optional front that caches public reads (one spec reads through it) and that the outbox relay purges by tag; the API process and the worker process hold the same four bounded contexts and use Keycloak, PostgreSQL, Dragonfly, Jaeger, GlitchTip and MinIO](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/examples-scheduling-at-a-glance.svg)
+![The scheduling example when it runs: the demo script and the specs call the API directly, Varnish is an optional front that caches public reads (one spec reads through it) and that the outbox relay purges by tag; the API process and the worker process hold the same four bounded contexts and use Keycloak, PostgreSQL, Dragonfly, Jaeger, GlitchTip and MinIO](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/examples-scheduling-at-a-glance.svg)
 
 | Context | Kind | What it holds |
 |---|---|---|
@@ -40,7 +40,7 @@ capability of the platform, not a context.
 
 Every step of the method left a document, so the build can be read, and replayed, in order.
 
-![How the example was built: the statement of needs, the discovery, the bounded contexts, the glossaries and the draft map, then the plan with the init command, the slices, the briefings of five parallel workers, and the demo transcript: a recorded real run after a green gate](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/examples-how-it-was-built.svg)
+![How the example was built: the statement of needs, the discovery, the bounded contexts, the glossaries and the draft map, then the plan with the init command, the slices, the briefings of five parallel workers, and the demo transcript: a recorded real run after a green gate](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/examples-how-it-was-built.svg)
 
 | Step | Read | What it shows |
 |---|---|---|
@@ -75,7 +75,7 @@ answered in one place and nowhere else: who is calling (the token, at the edge),
 this on this appointment (the application, before anything changes), and is it valid at all
 (the domain, whoever is calling).
 
-![The path of a cancellation: the route lets an authenticated caller through, the permission is checked before the handler, the policy in the handler with the loaded appointment, the invariants in the domain, then one unit of work commits; each check answers its own refusal](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/examples-cancel-three-questions.svg)
+![The path of a cancellation: the route lets an authenticated caller through, the permission is checked before the handler, the policy in the handler with the loaded appointment, the invariants in the domain, then one unit of work commits; each check answers its own refusal](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/examples-cancel-three-questions.svg)
 
 **The application decides who may.** The permission is data of the context; the command says
 which permission it requires and on which element; the rule that needs the loaded appointment

@@ -15,7 +15,7 @@ their doubles), `@ddd-ts-kit/kernel/declarations` (the decorators with which a c
 what it is, see "Declarations") and `@ddd-ts-kit/kernel/testing` (the recording buses of a
 spec, see "The spec of a reaction").
 
-![The domain and the application of a bounded context import the kernel; the kernel declares the ports as abstract classes; its own doubles, the adapter packages of the kit and the infrastructure of the context implement them; the platform binds one implementation to each port at start-up](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/kernel-ports-and-implementations.svg)
+![The domain and the application of a bounded context import the kernel; the kernel declares the ports as abstract classes; its own doubles, the adapter packages of the kit and the infrastructure of the context implement them; the platform binds one implementation to each port at start-up](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/kernel-ports-and-implementations.svg)
 
 The kernel says **what** a context needs (a `Clock`, a `UnitOfWork`, a `Logger`) and never
 **how**: every port is an abstract class with abstract members only. Its implementations live
@@ -465,7 +465,7 @@ loads. Why, and the rule that holds the aggregate to it:
 
 An effect of a domain event exists only if the state change that recorded it is committed.
 
-![A timeline of one unit of work: the transaction begins, two saves each queue the event their cart recorded, the work returns and the before-commit handlers run in recording order and see both saves, the transaction commits, the after-commit handlers run, then the command answers; a failure before the commit rolls everything back and drops the queued events](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/kernel-unit-of-work-timeline.svg)
+![A timeline of one unit of work: the transaction begins, two saves each queue the event their cart recorded, the work returns and the before-commit handlers run in recording order and see both saves, the transaction commits, the after-commit handlers run, then the command answers; a failure before the commit rolls everything back and drops the queued events](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/kernel-unit-of-work-timeline.svg)
 
 An aggregate records its events; nothing in a use case hands them over. A repository wrapped
 by `dispatchingOnSave(repository, () => dispatcher)` pulls them itself, once a method that was
@@ -1753,7 +1753,7 @@ return this.appointments.search(scoped(criteria, scope, { ids: 'id', filter: { t
 From the handler to the store, a criteria is checked twice, and the scope of the actor travels
 with it:
 
-![The path of a criteria: in the application, the query handler builds it and the compiler checks it, scoped joins the access scope by AND, the read port receives the scoped criteria; in the infrastructure, planCriteria validates it against the definition, the plan is rendered by a translator of an ORM package or evaluated in memory by a fake, and pageOfPlan turns the rows into the page the handler answers](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/kernel-criteria-path.svg)
+![The path of a criteria: in the application, the query handler builds it and the compiler checks it, scoped joins the access scope by AND, the read port receives the scoped criteria; in the infrastructure, planCriteria validates it against the definition, the plan is rendered by a translator of an ORM package or evaluated in memory by a fake, and pageOfPlan turns the rows into the page the handler answers](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/kernel-criteria-path.svg)
 
 **Checked by the compiler.** `where` takes a field of the row, an operator that applies to
 what the field holds, and a value of its type: `where('seats', 'contains', '2')`, an order on
