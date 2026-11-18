@@ -1,5 +1,5 @@
 [English](CODE_OF_CONDUCT.md) · **Français**
-<!-- translation-of: CODE_OF_CONDUCT.md sha256:a9f02a49ea03152b -->
+<!-- translation-of: CODE_OF_CONDUCT.md sha256:0aaa5f5ffe80aac5 -->
 
 # Code de conduite
 
@@ -14,7 +14,7 @@ puisse refuser un changement, et aucun harcèlement d'aucune sorte.
 
 Signalez un comportement qui enfreint ce code au mainteneur, [@gbourgeat](https://github.com/gbourgeat),
 en privé : par le contact de son profil GitHub, ou par un
-[signalement privé](https://github.com/gbourgeat/ddd-ts-kit/security/advisories/new) qui dit
+[signalement privé](https://github.com/ddd-ts-kit/ddd-ts-kit/security/advisories/new) qui dit
 qu'il porte sur la conduite. Un signalement reste confidentiel. Le mainteneur peut modifier ou
 retirer une contribution, et peut bloquer un contributeur, comme le décrivent les lignes
 directrices d'application du Contributor Covenant.

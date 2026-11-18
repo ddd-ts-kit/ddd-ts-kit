@@ -9,7 +9,7 @@ same declaration.
 Every adapter goes through one pipeline (`executeRoute`): validation, handler, error mapping.
 The behaviour is therefore the same on the four frameworks, and one test suite proves it.
 
-![The place of the package in an application: the adapter of each framework hands every request to the same executeRoute pipeline, which runs the handler of the route, and the handler calls a use case; the same list of routes is mounted on the server and given to generateOpenApi, which writes the contract](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/http-package-overview.svg)
+![The place of the package in an application: the adapter of each framework hands every request to the same executeRoute pipeline, which runs the handler of the route, and the handler calls a use case; the same list of routes is mounted on the server and given to generateOpenApi, which writes the contract](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/http-package-overview.svg)
 
 The package lives in the presentation layer: it turns an HTTP request into a call of your
 handler, and the answer of the handler (or its refusal) into an HTTP response. It decides
@@ -178,7 +178,7 @@ are on the [presentation layer](../../docs/concepts/presentation-layer.md) page.
 copies the request of its framework into a `RawRequest` (`params`, `query`, `headers`, `body`,
 `raw`, and the body `stream`), calls it, and writes back the `RouteResponse` it returns.
 
-![The steps executeRoute takes for one request: the identifiers, then, inside the around hook, authentication, upload, validation, If-Match, execution context and tenant, then guards and handle inside the execution scope, the check of the answer, the headers and the 304; each step that can refuse names its status, and every refusal becomes a problem document](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/http-package-pipeline.svg)
+![The steps executeRoute takes for one request: the identifiers, then, inside the around hook, authentication, upload, validation, If-Match, execution context and tenant, then guards and handle inside the execution scope, the check of the answer, the headers and the 304; each step that can refuse names its status, and every refusal becomes a problem document](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/http-package-pipeline.svg)
 
 The steps that are not needed are skipped: no upload, no `If-Match`, no guard, no validator.
 The first refusal ends the request: a request that is not valid never reaches the check of a
@@ -528,7 +528,7 @@ A handler throws a `DomainError`; its `code` is mapped to a status in one place 
   "detail": "Order 7 does not exist.", "requestId": "..." }
 ```
 
-![How the answer to an error is chosen: an error that is not a DomainError answers 500 with no detail; a DomainError gets the status its code maps to, from the defaults, the codes of the application, else 422; a 5xx answers its status and code only, a 4xx a problem document with its detail, its exposed facts and its issues](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/http-package-error-answer.svg)
+![How the answer to an error is chosen: an error that is not a DomainError answers 500 with no detail; a DomainError gets the status its code maps to, from the defaults, the codes of the application, else 422; a 5xx answers its status and code only, a 4xx a problem document with its detail, its exposed facts and its issues](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/http-package-error-answer.svg)
 
 A refusal built by a factory carries facts, and they are private: the document holds, under
 `facts`, only the ones its factory exposed by name, and no `facts` member when it exposed none.
@@ -936,7 +936,7 @@ into the text of one media type, chosen per request by the `Accept` header among
 route declares. The application registers its representations once and gives the same set to
 the adapters and to the contract generator:
 
-![A handler answers a typed value; the response schema checks it; field access leaves out what the caller may not read; negotiation on Accept picks JSON, XML or CSV among what the route produces, or refuses with 406 when none is in common](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/representations-and-forms-one-value.svg)
+![A handler answers a typed value; the response schema checks it; field access leaves out what the caller may not read; negotiation on Accept picks JSON, XML or CSV among what the route produces, or refuses with 406 when none is in common](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/representations-and-forms-one-value.svg)
 
 ```ts
 import { Representations, type ExecuteOptions } from '@ddd-ts-kit/http';
@@ -1144,7 +1144,7 @@ A route that declares `form` is described as a form, from what it already declar
 body schema, the restricted fields of that schema, and a few presentation hints. `formRoutes`
 serves one `GET /forms/<operationId>` per such route, mounted and documented like any route:
 
-![The body schema of the booking reserves the internal note; the form route asks the permission to book and Access about the calendar; the practitioner who holds the desk may set every field, an assistant on a delegated desk sees the note read-only, a patient booking for themselves does not see it, and an assistant without a delegation is refused with 403](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/representations-and-forms-one-form-per-caller.svg)
+![The body schema of the booking reserves the internal note; the form route asks the permission to book and Access about the calendar; the practitioner who holds the desk may set every field, an assistant on a delegated desk sees the note read-only, a patient booking for themselves does not see it, and an assistant without a delegation is refused with 403](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/representations-and-forms-one-form-per-caller.svg)
 
 ```ts
 // presentation/http/appointments/book-appointment/book-appointment.controller.ts, next to its schemas

@@ -29,7 +29,7 @@ describe('the plugin', () => {
     const rule = rules[name];
 
     expect(rule?.meta.docs?.url).toBe(
-      `https://github.com/gbourgeat/ddd-ts-kit/blob/main/packages/eslint-plugin/docs/rules/${name}.md`,
+      `https://github.com/ddd-ts-kit/ddd-ts-kit/blob/main/packages/eslint-plugin/docs/rules/${name}.md`,
     );
 
     expect(rule?.meta.docs?.description.length).toBeGreaterThan(20);

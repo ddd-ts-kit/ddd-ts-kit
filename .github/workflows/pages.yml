@@ -1,7 +1,7 @@
 name: Pages
 
 # The documentation website (site/), published on GitHub Pages from the default branch at
-# https://gbourgeat.github.io/ddd-ts-kit/. Its pages are the Markdown files of the repository,
+# https://ddd-ts-kit.github.io/ddd-ts-kit/. Its pages are the Markdown files of the repository,
 # assembled at each build: a change of a page publishes it.
 on:
   push:

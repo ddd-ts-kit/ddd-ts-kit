@@ -202,7 +202,7 @@ describe('the guidance of each coding agent', () => {
     const settings = JSON.parse(read(root, '.github/copilot/settings.json')) as unknown;
 
     expect(settings).toEqual({
-      extraKnownMarketplaces: { 'ddd-ts-kit': { source: { source: 'github', repo: 'gbourgeat/ddd-ts-kit' } } },
+      extraKnownMarketplaces: { 'ddd-ts-kit': { source: { source: 'github', repo: 'ddd-ts-kit/ddd-ts-kit' } } },
       enabledPlugins: { 'ddd-ts-kit@ddd-ts-kit': true },
     });
 

@@ -1,5 +1,5 @@
 [English](translation.md) · **Français**
-<!-- translation-of: translation.md sha256:094a072318e77087 -->
+<!-- translation-of: translation.md sha256:a0830380766cb6fc -->
 
 # La documentation en français
 
@@ -341,7 +341,7 @@ C'est le dessin de référence : reprenez son style.
 | Dessin anglais | `docs/assets/diagrams/<page-slug>-<what>.svg` |
 | Dessin français | `docs/assets/diagrams/<page-slug>-<what>.fr.svg`, le même dessin avec des libellés français |
 | Depuis une page sous `docs/` | un chemin relatif : `![<ce qu'il montre>](../assets/diagrams/aggregates-boundary.fr.svg)` |
-| Depuis une page hors de `docs/` (README des packages, exemples, README racine) | l'URL absolue, pour que npm l'affiche aussi : `![<ce qu'il montre>](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/aggregates-boundary.fr.svg)` |
+| Depuis une page hors de `docs/` (README des packages, exemples, README racine) | l'URL absolue, pour que npm l'affiche aussi : `![<ce qu'il montre>](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/aggregates-boundary.fr.svg)` |
 
 Le texte alternatif dit ce que montre le schéma, dans la langue de la page. La page française
 montre le dessin `.fr.svg` à l'endroit où la page anglaise montre le dessin `.svg` ; `--check`

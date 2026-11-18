@@ -1,5 +1,5 @@
 [English](other-brokers.md) · **Français**
-<!-- translation-of: other-brokers.md sha256:c5279eaa3f23e47d -->
+<!-- translation-of: other-brokers.md sha256:e316a422a4fdb7c8 -->
 
 # Le même fournisseur sur d'autres *brokers*
 
@@ -15,7 +15,7 @@ chacun : Kafka, NATS JetStream et Redis Streams sont des *packages* du kit, tenu
 | Redis Streams (Redis, Dragonfly, Valkey) | *package* | [`@ddd-ts-kit/redis`](../../redis/README.fr.md), point d'entrée `./event-bus` |
 | SQS et SNS | esquisse, rien de construit | ci-dessous |
 
-![Ce que doit tout fournisseur : le relais de l'outbox appelle publish et ne marque un enregistrement publié que lorsque la promesse se résout, c'est-à-dire quand le broker a accusé réception de chaque événement ; le broker garde un abonnement par consommateur ; chaque consommateur reçoit l'événement au moins une fois, son gestionnaire s'exécute par consume avec un store d'événements traités, et le fournisseur accuse réception après la résolution du gestionnaire ; un échec revient après un délai, un nombre borné de fois, puis l'événement est garé dans une destination morte qu'un opérateur peut lire et rejouer](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/other-brokers-what-a-provider-owes.fr.svg)
+![Ce que doit tout fournisseur : le relais de l'outbox appelle publish et ne marque un enregistrement publié que lorsque la promesse se résout, c'est-à-dire quand le broker a accusé réception de chaque événement ; le broker garde un abonnement par consommateur ; chaque consommateur reçoit l'événement au moins une fois, son gestionnaire s'exécute par consume avec un store d'événements traités, et le fournisseur accuse réception après la résolution du gestionnaire ; un échec revient après un délai, un nombre borné de fois, puis l'événement est garé dans une destination morte qu'un opérateur peut lire et rejouer](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/other-brokers-what-a-provider-owes.fr.svg)
 
 ## Ce que doit tout fournisseur
 
@@ -242,7 +242,7 @@ tourne sur Redis, Valkey et Dragonfly. Pour `forConsumer('billing')` abonné à
 
 ## SQS et SNS
 
-![L'esquisse d'un fournisseur sur SQS et SNS : le relais de l'outbox publie vers un seul topic SNS avec le type de l'événement en attribut de message ; chaque abonnement a une politique de filtre sur type et livre des messages bruts à une file SQS par consommateur et par type, billing-ordering_order_placed et notifications-ordering_order_placed (les points du type remplacés, car SQS les refuse dans un nom de file) ; le consommateur interroge sa file en long polling et supprime un message après la résolution de son gestionnaire ; un message en échec réapparaît après son délai de visibilité ; après maxReceiveCount réceptions, la politique de redrive le déplace vers une file de rejet](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/other-brokers-sqs-and-sns.fr.svg)
+![L'esquisse d'un fournisseur sur SQS et SNS : le relais de l'outbox publie vers un seul topic SNS avec le type de l'événement en attribut de message ; chaque abonnement a une politique de filtre sur type et livre des messages bruts à une file SQS par consommateur et par type, billing-ordering_order_placed et notifications-ordering_order_placed (les points du type remplacés, car SQS les refuse dans un nom de file) ; le consommateur interroge sa file en long polling et supprime un message après la résolution de son gestionnaire ; un message en échec réapparaît après son délai de visibilité ; après maxReceiveCount réceptions, la politique de redrive le déplace vers une file de rejet](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/other-brokers-sqs-and-sns.fr.svg)
 
 | Concept ici | SQS / SNS |
 |---|---|

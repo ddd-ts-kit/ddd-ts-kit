@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:d6b1e43435f9be23 -->
+<!-- translation-of: README.md sha256:af4d7d4f7f6d74f7 -->
 
 # @ddd-ts-kit/validation
 
@@ -11,7 +11,7 @@ sans qu'on y touche.
 Les règles métier n'ont pas leur place ici : elles vivent dans le domaine et n'importent jamais
 de bibliothèque de validation.
 
-![Une requête HTTP à la frontière : ses params, query, headers et body passent chacun par le Schema que la route déclare ; quand chaque partie est analysée, le gestionnaire reçoit des valeurs typées et le domaine vérifie les règles métier ; quand une partie échoue, ses problèmes sont rassemblés avec le nom de la partie devant leur chemin, comme body.items.0.sku, et la requête HTTP est refusée avec une seule ValidationError, code VALIDATION_FAILED, traduite en réponse 422 avec la liste des problèmes ; les mêmes schémas donnent le JSON Schema du document OpenAPI](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/validation-package-at-the-boundary.fr.svg)
+![Une requête HTTP à la frontière : ses params, query, headers et body passent chacun par le Schema que la route déclare ; quand chaque partie est analysée, le gestionnaire reçoit des valeurs typées et le domaine vérifie les règles métier ; quand une partie échoue, ses problèmes sont rassemblés avec le nom de la partie devant leur chemin, comme body.items.0.sku, et la requête HTTP est refusée avec une seule ValidationError, code VALIDATION_FAILED, traduite en réponse 422 avec la liste des problèmes ; les mêmes schémas donnent le JSON Schema du document OpenAPI](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/validation-package-at-the-boundary.fr.svg)
 
 Un schéma vérifie la **forme** de ce qui entre : types, champs obligatoires, formats, longueurs.
 Ce que le métier décide (un créneau dans le passé, une quantité au-delà du stock) est vérifié par
@@ -326,7 +326,7 @@ une référence à l'une de ses propres définitions
 (`{ $ref: '#/$defs/Slot', $defs: { Slot: ... } }`), la forme que chaque bibliothèque atteint à sa
 façon :
 
-![Un schéma partagé sous le nom Slot : son JSON Schema est une référence à sa propre définition ; les routes reschedule et book l'utilisent, l'une entier et l'autre imbriqué dans son corps ; le générateur OpenAPI écrit Slot une seule fois sous components.schemas et y renvoie par $ref depuis les deux routes, au lieu de deux copies](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/validation-package-shared-schemas.fr.svg)
+![Un schéma partagé sous le nom Slot : son JSON Schema est une référence à sa propre définition ; les routes reschedule et book l'utilisent, l'une entier et l'autre imbriqué dans son corps ; le générateur OpenAPI écrit Slot une seule fois sous components.schemas et y renvoie par $ref depuis les deux routes, au lieu de deux copies](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/validation-package-shared-schemas.fr.svg)
 
 <!-- checked sample -->
 ```ts

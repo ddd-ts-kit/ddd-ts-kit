@@ -3,7 +3,7 @@
     "ddd-ts-kit": {
       "source": {
         "source": "github",
-        "repo": "gbourgeat/ddd-ts-kit"
+        "repo": "ddd-ts-kit/ddd-ts-kit"
       }
     }
   },

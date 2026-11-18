@@ -14,7 +14,7 @@ a change, and no harassment of any kind.
 
 Report a behaviour that breaks this code to the maintainer, [@gbourgeat](https://github.com/gbourgeat),
 privately: through the contact of their GitHub profile, or through a
-[private report](https://github.com/gbourgeat/ddd-ts-kit/security/advisories/new) that says it
+[private report](https://github.com/ddd-ts-kit/ddd-ts-kit/security/advisories/new) that says it
 is about conduct. A report is kept confidential. The maintainer may edit or remove a
 contribution, and may block a contributor, as the enforcement guidelines of the Contributor
 Covenant describe.

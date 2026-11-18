@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:328d0d9f75ac0088 -->
+<!-- translation-of: README.md sha256:211de62fa18753e0 -->
 
 # @ddd-ts-kit/eslint-plugin
 
@@ -13,7 +13,7 @@ Chaque règle lit `ddd-ts-kit.config.json` ([docs/CONFIG.fr.md](../../docs/CONFI
 remontant depuis le fichier analysé, et classe le fichier en contexte et en couche exactement comme
 le fait `ddd-ts-kit check`. Elle y lit aussi `stack.style` : voir [Les deux styles](#les-deux-styles).
 
-![ESLint passe un fichier au plugin ; le plugin remonte jusqu'à ddd-ts-kit.config.json, classe le fichier comme le fait ddd-ts-kit check (contexte billing, couche application, pas un fichier de test), exécute chaque règle sur son arbre syntaxique à la sévérité que la config donne à son identifiant, et signale la ligne, le problème, quoi écrire à la place et la règle](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/eslint-plugin-how-a-file-is-judged.fr.svg)
+![ESLint passe un fichier au plugin ; le plugin remonte jusqu'à ddd-ts-kit.config.json, classe le fichier comme le fait ddd-ts-kit check (contexte billing, couche application, pas un fichier de test), exécute chaque règle sur son arbre syntaxique à la sévérité que la config donne à son identifiant, et signale la ligne, le problème, quoi écrire à la place et la règle](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/eslint-plugin-how-a-file-is-judged.fr.svg)
 
 ## Installation
 
@@ -428,7 +428,7 @@ Deux outils, un seul jeu d'identifiants, aucun recouvrement d'autorité. Un troi
 dependency-cruiser, ne lit pas la config : il s'exécute sur un fichier qui en est généré, avec ses
 propres noms de règle.
 
-![Le plugin et ddd-ts-kit check lisent ddd-ts-kit.config.json à l'exécution et en partagent les identifiants de règle, les sévérités et les commentaires de désactivation : le plugin juge un fichier source à la fois sur son arbre syntaxique et a raison quand il diverge du checker ; le checker juge ce qui dépasse un fichier, l'arborescence, les noms, les glossaires, la config et le barrel ; dependency-cruiser ne s'exécute que sur le .dependency-cruiser.cjs que depcruise-config --write génère à partir de la config et juge le graphe des imports résolu avec ses propres noms de règle, toujours en sévérité error, sans tenir compte des commentaires de désactivation](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/eslint-plugin-two-tools.fr.svg)
+![Le plugin et ddd-ts-kit check lisent ddd-ts-kit.config.json à l'exécution et en partagent les identifiants de règle, les sévérités et les commentaires de désactivation : le plugin juge un fichier source à la fois sur son arbre syntaxique et a raison quand il diverge du checker ; le checker juge ce qui dépasse un fichier, l'arborescence, les noms, les glossaires, la config et le barrel ; dependency-cruiser ne s'exécute que sur le .dependency-cruiser.cjs que depcruise-config --write génère à partir de la config et juge le graphe des imports résolu avec ses propres noms de règle, toujours en sévérité error, sans tenir compte des commentaires de désactivation](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/eslint-plugin-two-tools.fr.svg)
 
 | Préoccupation | Autorité | Pourquoi |
 |---|---|---|

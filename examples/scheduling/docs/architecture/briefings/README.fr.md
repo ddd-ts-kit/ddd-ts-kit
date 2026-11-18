@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:5c1237bc2e516383 -->
+<!-- translation-of: README.md sha256:0a4d7211b9af70d7 -->
 
 # Consignes des *workers*
 
@@ -9,10 +9,10 @@ partagent un seul arbre au lieu d'avoir chacun un *worktree*, et l'exemple mesur
 
 ## Règles communes
 
-- Projet : `/home/gbourgeat/ddd-ts-kit/examples/scheduling` (un *workspace* npm du dépôt du kit).
+- Projet : `/home/ddd-ts-kit/ddd-ts-kit/examples/scheduling` (un *workspace* npm du dépôt du kit).
   Lancez chaque commande depuis là. Ne lancez jamais git, `npm install`, docker, ni quoi que ce soit
   qui écrive hors de votre périmètre. Ne modifiez jamais le kit lui-même
-  (`/home/gbourgeat/ddd-ts-kit/packages`, `plugin`, `docs`, `pipeline`).
+  (`/home/ddd-ts-kit/ddd-ts-kit/packages`, `plugin`, `docs`, `pipeline`).
 - D'autres *workers* écrivent dans le même arbre au même moment. Restez dans votre périmètre.
   L'arbre peut être rouge à cause du fichier inachevé de quelqu'un d'autre : ne regardez que les
   erreurs de vos propres fichiers, ne corrigez ni ne rétablissez jamais un fichier hors de votre
@@ -21,9 +21,9 @@ partagent un seul arbre au lieu d'avoir chacun un *worktree*, et l'exemple mesur
   votre contexte, vos lignes et vos règles dans `docs/architecture/slices.md` (avec son tableau
   « Permissions and the element they bear on »), puis `node scripts/kit.mjs list --json` une fois.
   Votre procédure, ce sont les *skills* du kit, à lire quand vous arrivez au sujet :
-  `/home/gbourgeat/ddd-ts-kit/plugin/skills/` `use-case`, `scaffold` (avec `kinds.md`), `testing`,
+  `/home/ddd-ts-kit/ddd-ts-kit/plugin/skills/` `use-case`, `scaffold` (avec `kinds.md`), `testing`,
   `persistence`, `integration-event`, `access-control`, `cross-cutting`. Détails d'API : le README
-  du *package* concerné sous `/home/gbourgeat/ddd-ts-kit/packages/<name>/README.md` (cherchez-y, ne
+  du *package* concerné sous `/home/ddd-ts-kit/ddd-ts-kit/packages/<name>/README.md` (cherchez-y, ne
   le lisez pas en entier).
 - Créez chaque fichier d'un rôle généré avec le générateur, jamais à la main :
   `KIT_WORKER=<your name> node scripts/gen.mjs <kind> <args>` (il affiche les endroits `next` ;

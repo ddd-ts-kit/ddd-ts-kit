@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:5cadc917f0ab46ea -->
+<!-- translation-of: README.md sha256:fd2d64e11ef4ba03 -->
 
 # @ddd-ts-kit/di
 
@@ -35,7 +35,7 @@ jamais obtenues par réflexion.
 Pour faire tourner le kit sur un autre conteneur, implémentez `Container` et appelez
 `createApplicationOn` et `createTestApplicationOn`, tous deux de `@ddd-ts-kit/di`.
 
-![Comment les classes d'un contexte délimité deviennent une application en marche : le contexte déclare ses ports et ses classes (ou écrit un module explicite), un module est fait par contexte par contextModule, discoverContext ou defineContextModule, et createApplication enregistre les modules, vérifie le graphe entier, lie tout dans un conteneur enfant et ne démarre rien ; puis un appel à part, app.start, abonne les consommateurs et démarre les jobs](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/di-assembly.fr.svg)
+![Comment les classes d'un contexte délimité deviennent une application en marche : le contexte déclare ses ports et ses classes (ou écrit un module explicite), un module est fait par contexte par contextModule, discoverContext ou defineContextModule, et createApplication enregistre les modules, vérifie le graphe entier, lie tout dans un conteneur enfant et ne démarre rien ; puis un appel à part, app.start, abonne les consommateurs et démarre les jobs](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/di-assembly.fr.svg)
 
 Quel que soit le style, le chemin est le même : les classes d'un contexte disent ce qu'elles
 sont, un module les rassemble, et `createApplication` vérifie le graphe entier avant de
@@ -879,7 +879,7 @@ effet de bord.
 
 ## La vie d'une application
 
-![Les trois phases d'une application : createApplication vérifie le graphe entier avant de construire le moindre gestionnaire, app.start appelle onStart de chaque module puis abonne les consommateurs et démarre les jobs, app.stop arrête d'abord les jobs, désabonne les consommateurs, appelle onStop dans l'ordre inverse et vide en dernier le rapporteur d'erreurs et le logger](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/di-lifecycle.fr.svg)
+![Les trois phases d'une application : createApplication vérifie le graphe entier avant de construire le moindre gestionnaire, app.start appelle onStart de chaque module puis abonne les consommateurs et démarre les jobs, app.stop arrête d'abord les jobs, désabonne les consommateurs, appelle onStop dans l'ordre inverse et vide en dernier le rapporteur d'erreurs et le logger](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/di-lifecycle.fr.svg)
 
 Quel que soit le style de ses modules, une application passe par les trois mêmes appels :
 
@@ -952,7 +952,7 @@ de nouveau est traité une seule fois par nom de `consumer` quand `ProcessedEven
 Le nom est obligatoire : c'est la clé d'idempotence, et il doit survivre au renommage d'une
 classe.
 
-![Ce qui arrive à un événement d'intégration livré à un consommateur : le contrat l'analyse et saute un autre type ou une autre version, ou refuse un événement illisible ; un événement valide est traité dans la portée d'exécution de l'événement et dans une seule unité de travail, où le magasin des événements traités saute une nouvelle livraison, et la marque et les écritures du gestionnaire sont validées ou annulées ensemble](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/di-consumer-event.fr.svg)
+![Ce qui arrive à un événement d'intégration livré à un consommateur : le contrat l'analyse et saute un autre type ou une autre version, ou refuse un événement illisible ; un événement valide est traité dans la portée d'exécution de l'événement et dans une seule unité de travail, où le magasin des événements traités saute une nouvelle livraison, et la marque et les écritures du gestionnaire sont validées ou annulées ensemble](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/di-consumer-event.fr.svg)
 
 ### Le contexte d'exécution de l'événement
 
@@ -1471,7 +1471,7 @@ quand il s'exécute la prochaine fois n'est pas du câblage : demandez-le à
 Un effet d'un événement du domaine n'existe que si le changement d'état qui l'a consigné est
 validé.
 
-![La chronologie d'une commande : dans une seule transaction, le gestionnaire enregistre ses agrégats et leurs événements attendent dans une file, les gestionnaires before-commit s'exécutent sur la file une fois que le gestionnaire a rendu la main, puis la transaction est validée ; les gestionnaires after-commit s'exécutent après la validation, avant que la commande réponde](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/domain-and-integration-events-unit-of-work.fr.svg)
+![La chronologie d'une commande : dans une seule transaction, le gestionnaire enregistre ses agrégats et leurs événements attendent dans une file, les gestionnaires before-commit s'exécutent sur la file une fois que le gestionnaire a rendu la main, puis la transaction est validée ; les gestionnaires after-commit s'exécutent après la validation, avant que la commande réponde](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/domain-and-integration-events-unit-of-work.fr.svg)
 
 Au lieu de distribuer les événements dans le gestionnaire (derrière `kernelModule()`,
 l'enregistrement les a déjà pris, si bien que cette ligne ne distribue rien ; sans lui, les

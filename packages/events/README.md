@@ -10,7 +10,7 @@ document and event catalog generated from the declarations.
 npm i @ddd-ts-kit/events @ddd-ts-kit/validation zod
 ```
 
-![One integration event through the package: inside the transaction of the command, the aggregate records a domain event, its publisher creates the integration event from its declaration and publishes it to the IntegrationEventPublisher port, bound to the OutboxPublisher, which appends a pending record to the outbox table; after the commit the OutboxRelay claims the record and publishes it to the broker or the in-memory bus, which delivers it at least once to consume in the consuming context, which deduplicates it and runs the handler, here the command IssueInvoice. One declaration feeds the producer, the consumer, the registry, the AsyncAPI document and the catalog](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/events-package-place.svg)
+![One integration event through the package: inside the transaction of the command, the aggregate records a domain event, its publisher creates the integration event from its declaration and publishes it to the IntegrationEventPublisher port, bound to the OutboxPublisher, which appends a pending record to the outbox table; after the commit the OutboxRelay claims the record and publishes it to the broker or the in-memory bus, which delivers it at least once to consume in the consuming context, which deduplicates it and runs the handler, here the command IssueInvoice. One declaration feeds the producer, the consumer, the registry, the AsyncAPI document and the catalog](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/events-package-place.svg)
 
 ## What is in the package
 
@@ -343,7 +343,7 @@ check, `store.purgePublished(before)` keeps the table small, and
 whatever their status (`personalEventsInOutbox(store, events)` gives it to `eraseDataSubject` as a
 copy; a generated project reads the list `ddd-ts-kit docs` writes).
 
-![The life of an outbox record: appended pending by the commit of the command, claimed by the relay when it is due, published then purged; a failed publication leaves it pending until its next attempt, after an exponential backoff; after maxAttempts attempts it is dead until retryDead puts it back pending](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/transactional-outbox-record-lifecycle.svg)
+![The life of an outbox record: appended pending by the commit of the command, claimed by the relay when it is due, published then purged; a failed publication leaves it pending until its next attempt, after an exponential backoff; after maxAttempts attempts it is dead until retryDead puts it back pending](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/transactional-outbox-record-lifecycle.svg)
 
 The relay publishes the records of a batch one by one, so one event the provider refuses does
 not fail its neighbours. With the defaults (`baseMs: 1000`, `factor: 2`, `maxMs: 300000`,
@@ -415,7 +415,7 @@ key is still pending or failed. The price is head-of-line blocking: one event th
 published holds back every later event of its key (and only of its key) until it goes out or
 is dead. Events for which `keyOf` gives `undefined` are not ordered.
 
-![Five records in the outbox, in the order they were appended: A1, A2, B1, A3, B2, where A is the key order-1 and B the key order-2, and the publication of A1 fails. With the default ordering, A2, B1, A3 and B2 are published in the same tick and A1 is retried later, so A2 and A3 overtake A1. With ordering per-key, B1 and B2 are published, A2 and A3 are held with the code OUTBOX_HELD_FOR_ORDER, and once A1 goes out on its retry, A2 then A3 follow in order](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/events-package-per-key-ordering.svg)
+![Five records in the outbox, in the order they were appended: A1, A2, B1, A3, B2, where A is the key order-1 and B the key order-2, and the publication of A1 fails. With the default ordering, A2, B1, A3 and B2 are published in the same tick and A1 is retried later, so A2 and A3 overtake A1. With ordering per-key, B1 and B2 are published, A2 and A3 are held with the code OUTBOX_HELD_FOR_ORDER, and once A1 goes out on its retry, A2 then A3 follow in order](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/events-package-per-key-ordering.svg)
 
 What it relies on, and what it does not give:
 
@@ -500,7 +500,7 @@ back, because its mark was rolled back with the rest. The command bus middleware
 unit of work (a nested `run` joins the outer transaction), so the handler needs nothing
 special.
 
-![One delivery through consume: the declaration parses the event; another type or version is skipped without a mark; an invalid payload throws InvalidEventPayloadError, so the provider retries or dead-letters it. A valid event enters one unit of work, inside the execution scope when one is given: the processed-event store marks the pair of the consumer and the event id; when the pair was already marked, the handler is skipped; otherwise the handler runs, and its success commits the mark with the state change, while its failure rolls both back, so the redelivery is handled](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/events-package-consume.svg)
+![One delivery through consume: the declaration parses the event; another type or version is skipped without a mark; an invalid payload throws InvalidEventPayloadError, so the provider retries or dead-letters it. A valid event enters one unit of work, inside the execution scope when one is given: the processed-event store marks the pair of the consumer and the event id; when the pair was already marked, the handler is skipped; otherwise the handler runs, and its success commits the mark with the state change, while its failure rolls both back, so the redelivery is handled](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/events-package-consume.svg)
 
 The consumer name is the idempotency scope: two consumers of the same event each handle it
 once, and renaming a consumer makes it handle again every event it is redelivered. Write it

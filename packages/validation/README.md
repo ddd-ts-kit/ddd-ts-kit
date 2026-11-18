@@ -8,7 +8,7 @@ on the contract, so the validation library can change without touching them.
 
 Business rules do not belong here: they live in the domain and never import a validation library.
 
-![A request at the boundary: its params, query, headers and body each go through the Schema the route declares; when every part parses, the handler receives typed values and the domain checks the business rules; when a part fails, its issues are collected with the name of the part in front of their path, such as body.items.0.sku, and the request is refused with one ValidationError, code VALIDATION_FAILED, answered 422 with the list of issues; the same schemas give the JSON Schema of the OpenAPI document](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/validation-package-at-the-boundary.svg)
+![A request at the boundary: its params, query, headers and body each go through the Schema the route declares; when every part parses, the handler receives typed values and the domain checks the business rules; when a part fails, its issues are collected with the name of the part in front of their path, such as body.items.0.sku, and the request is refused with one ValidationError, code VALIDATION_FAILED, answered 422 with the list of issues; the same schemas give the JSON Schema of the OpenAPI document](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/validation-package-at-the-boundary.svg)
 
 A schema checks the **shape** of what comes in: types, required fields, formats, lengths. What
 the business decides (a slot in the past, a quantity above the stock) is checked by the domain,
@@ -315,7 +315,7 @@ route, whole or nested. A schema is shared when its JSON Schema is a reference t
 definitions (`{ $ref: '#/$defs/Slot', $defs: { Slot: ... } }`), the form each library reaches its
 own way:
 
-![A schema shared under the name Slot: its JSON Schema is a reference to its own definition; the routes reschedule and book use it, one whole and one nested in its body; the OpenAPI generator writes Slot once under components.schemas and points at it with $ref from both routes, instead of two copies](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/validation-package-shared-schemas.svg)
+![A schema shared under the name Slot: its JSON Schema is a reference to its own definition; the routes reschedule and book use it, one whole and one nested in its body; the OpenAPI generator writes Slot once under components.schemas and points at it with $ref from both routes, instead of two copies](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/validation-package-shared-schemas.svg)
 
 <!-- checked sample -->
 ```ts

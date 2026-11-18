@@ -8,9 +8,9 @@ tree instead of a worktree each, and the example measures the tooling.
 
 ## Common rules
 
-- Project: `/home/gbourgeat/ddd-ts-kit/examples/scheduling` (an npm workspace of the kit's
+- Project: `/home/ddd-ts-kit/ddd-ts-kit/examples/scheduling` (an npm workspace of the kit's
   repository). Run every command from there. Never run git, `npm install`, docker, or anything
-  that writes outside your scope. Never edit the kit itself (`/home/gbourgeat/ddd-ts-kit/packages`,
+  that writes outside your scope. Never edit the kit itself (`/home/ddd-ts-kit/ddd-ts-kit/packages`,
   `plugin`, `docs`, `pipeline`).
 - Other workers write in the same tree at the same time. Stay inside your scope. The tree may be
   red because of someone else's unfinished file: look only at errors in your own files, never fix
@@ -18,10 +18,10 @@ tree instead of a worktree each, and the example measures the tooling.
 - Read first, and only: the agent rules `init` generated at the root of the project (the instruction file and its `rules/` folder), the `CONTEXT.md` of
   your context, your rows and rules in `docs/architecture/slices.md` (with its table "Permissions
   and the element they bear on"), then `node scripts/kit.mjs list --json` once. Your procedure is
-  the kit's skills, to read when you reach the matter: `/home/gbourgeat/ddd-ts-kit/plugin/skills/`
+  the kit's skills, to read when you reach the matter: `/home/ddd-ts-kit/ddd-ts-kit/plugin/skills/`
   `use-case`, `scaffold` (with `kinds.md`), `testing`, `persistence`, `integration-event`,
   `access-control`, `cross-cutting`. API details: the README of the package concerned under
-  `/home/gbourgeat/ddd-ts-kit/packages/<name>/README.md` (search it, do not read it whole).
+  `/home/ddd-ts-kit/ddd-ts-kit/packages/<name>/README.md` (search it, do not read it whole).
 - Create every file of a generated role with the generator, never by hand:
   `KIT_WORKER=<your name> node scripts/gen.mjs <kind> <args>` (it prints the `next` places; it is
   `npx ddd-ts-kit generate <kind> <args> --json`, serialised and measured). A name whose words the

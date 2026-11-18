@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:fed384e3b45605e5 -->
+<!-- translation-of: README.md sha256:ed88079c12e1f87f -->
 
 # Exemples
 
@@ -23,7 +23,7 @@ deux composent les quatre mêmes contextes délimités ; le processus de l'API s
 relaie l'outbox et tient à jour les projections alimentées par l'*event store*, le
 *worker* fait tourner les *jobs* planifiés.
 
-![L'exemple scheduling à l'exécution : le script de démo et les specs appellent l'API directement, Varnish est une façade facultative qui met en cache les lectures publiques (une spec lit à travers lui) et que le relais de l'outbox purge par tag ; le processus de l'API et le processus worker contiennent les quatre mêmes contextes délimités et utilisent Keycloak, PostgreSQL, Dragonfly, Jaeger, GlitchTip et MinIO](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/examples-scheduling-at-a-glance.fr.svg)
+![L'exemple scheduling à l'exécution : le script de démo et les specs appellent l'API directement, Varnish est une façade facultative qui met en cache les lectures publiques (une spec lit à travers lui) et que le relais de l'outbox purge par tag ; le processus de l'API et le processus worker contiennent les quatre mêmes contextes délimités et utilisent Keycloak, PostgreSQL, Dragonfly, Jaeger, GlitchTip et MinIO](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/examples-scheduling-at-a-glance.fr.svg)
 
 | Contexte | Classification | Ce qu'il détient |
 |---|---|---|
@@ -44,7 +44,7 @@ est une capacité de la plateforme, pas un contexte.
 Chaque étape de la méthode a laissé un document : la construction peut donc être lue, et rejouée,
 dans l'ordre.
 
-![Comment l'exemple a été construit : l'expression des besoins, la découverte, les contextes délimités, les glossaires et l'ébauche de carte, puis le plan avec la commande init, les tranches, les consignes de cinq workers en parallèle, et la transcription de la démo : une exécution réelle enregistrée après une porte verte](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/examples-how-it-was-built.fr.svg)
+![Comment l'exemple a été construit : l'expression des besoins, la découverte, les contextes délimités, les glossaires et l'ébauche de carte, puis le plan avec la commande init, les tranches, les consignes de cinq workers en parallèle, et la transcription de la démo : une exécution réelle enregistrée après une porte verte](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/examples-how-it-was-built.fr.svg)
 
 | Étape | À lire | Ce qu'il montre |
 |---|---|---|
@@ -79,7 +79,7 @@ trois questions, chacune tranchée à un seul endroit et nulle part ailleurs : q
 en bordure), peut-il faire cela sur ce rendez-vous (l'application, avant que quoi que ce soit ne
 change), et est-ce valide tout court (le domaine, qui que soit l'appelant).
 
-![Le chemin d'une annulation : la route laisse passer un appelant authentifié, la permission est vérifiée avant le gestionnaire, la politique dans le gestionnaire avec le rendez-vous chargé, les invariants dans le domaine, puis une unité de travail valide le tout ; chaque vérification répond par son propre refus](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/examples-cancel-three-questions.fr.svg)
+![Le chemin d'une annulation : la route laisse passer un appelant authentifié, la permission est vérifiée avant le gestionnaire, la politique dans le gestionnaire avec le rendez-vous chargé, les invariants dans le domaine, puis une unité de travail valide le tout ; chaque vérification répond par son propre refus](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/examples-cancel-three-questions.fr.svg)
 
 **L'application décide qui peut.** La permission est une donnée du contexte ; la commande dit
 quelle permission elle exige et sur quel élément ; la règle qui a besoin du rendez-vous chargé est

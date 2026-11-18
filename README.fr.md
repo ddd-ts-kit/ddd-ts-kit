@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:82b52bc2a9926e8f -->
+<!-- translation-of: README.md sha256:2643ad0434ce29a3 -->
 
 <div align="center">
 
@@ -12,8 +12,8 @@ pour les backends TypeScript et Node.js, tenus par des outils plutôt que par de
 intentions. Vous décrivez le métier ; votre agent de code (Claude Code, Codex ou GitHub Copilot)
 le construit avec le kit, et le kit le tient à l'architecture.
 
-[![CI](https://github.com/gbourgeat/ddd-ts-kit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gbourgeat/ddd-ts-kit/actions/workflows/ci.yml)
-[![Couverture](https://codecov.io/gh/gbourgeat/ddd-ts-kit/graph/badge.svg?branch=main)](https://codecov.io/gh/gbourgeat/ddd-ts-kit)
+[![CI](https://github.com/ddd-ts-kit/ddd-ts-kit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ddd-ts-kit/ddd-ts-kit/actions/workflows/ci.yml)
+[![Couverture](https://codecov.io/gh/ddd-ts-kit/ddd-ts-kit/graph/badge.svg?branch=main)](https://codecov.io/gh/ddd-ts-kit/ddd-ts-kit)
 [![Version npm](https://img.shields.io/npm/v/ddd-ts-kit?color=3f9a77&label=npm)](https://www.npmjs.com/package/ddd-ts-kit)
 [![Téléchargements npm](https://img.shields.io/npm/dm/ddd-ts-kit?color=3f9a77)](https://www.npmjs.com/package/ddd-ts-kit)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/ddd-ts-kit/ddd-ts-kit/badge)](https://scorecard.dev/viewer/?uri=github.com/ddd-ts-kit/ddd-ts-kit)
@@ -22,12 +22,12 @@ le construit avec le kit, et le kit le tient à l'architecture.
 [![Licence MIT](https://img.shields.io/badge/license-MIT-3f9a77)](LICENSE)
 [![PRs bienvenues](https://img.shields.io/badge/PRs-welcome-3f9a77)](#contribuer)
 
-**[Documentation](https://gbourgeat.github.io/ddd-ts-kit/fr/)** ·
+**[Documentation](https://ddd-ts-kit.github.io/ddd-ts-kit/fr/)** ·
 [Démarrage rapide](#démarrage-rapide) ·
 [Exemple](examples/scheduling/README.fr.md) ·
 [Article](https://medium.com/@gary.bourgeat/domain-driven-design-typescript-agents-ia-71200e05b261) ·
 [Changelog](CHANGELOG.md) ·
-[Discussions](https://github.com/gbourgeat/ddd-ts-kit/discussions) ·
+[Discussions](https://github.com/ddd-ts-kit/ddd-ts-kit/discussions) ·
 [Contribuer](#contribuer)
 
 </div>
@@ -73,7 +73,7 @@ L'histoire derrière le projet, sur Medium :
 ([en anglais](https://medium.com/@gary.bourgeat/domain-driven-design-typescript-ai-coding-agents-6981482928aa)).
 
 La documentation est aussi un site web, avec une recherche, en français et en anglais :
-<https://gbourgeat.github.io/ddd-ts-kit/fr/>. Chaque page a sa traduction à côté d'elle, à
+<https://ddd-ts-kit.github.io/ddd-ts-kit/fr/>. Chaque page a sa traduction à côté d'elle, à
 laquelle mène le lien de sa première ligne.
 
 ## Démarrage rapide
@@ -88,9 +88,9 @@ demeure.
 
 | Agent | Installation | La skill `start` |
 |---|---|---|
-| Claude Code | `/plugin marketplace add gbourgeat/ddd-ts-kit`, puis `/plugin install ddd-ts-kit@ddd-ts-kit` | `/ddd-ts-kit:start` |
-| Codex | `codex plugin marketplace add gbourgeat/ddd-ts-kit`, puis installer `ddd-ts-kit` depuis `/plugins` et approuver ses hooks dans `/hooks` | `$start` |
-| Copilot CLI | `copilot plugin marketplace add gbourgeat/ddd-ts-kit`, puis `copilot plugin install ddd-ts-kit@ddd-ts-kit` | par son nom, `start` |
+| Claude Code | `/plugin marketplace add ddd-ts-kit/ddd-ts-kit`, puis `/plugin install ddd-ts-kit@ddd-ts-kit` | `/ddd-ts-kit:start` |
+| Codex | `codex plugin marketplace add ddd-ts-kit/ddd-ts-kit`, puis installer `ddd-ts-kit` depuis `/plugins` et approuver ses hooks dans `/hooks` | `$start` |
+| Copilot CLI | `copilot plugin marketplace add ddd-ts-kit/ddd-ts-kit`, puis `copilot plugin install ddd-ts-kit@ddd-ts-kit` | par son nom, `start` |
 | Agent cloud de Copilot, VS Code | déclaré par le `.github/copilot/settings.json` que le projet reçoit à son amorçage | par son nom, `start` |
 
 **2. Ouvrez une session dans un dossier vide, et donnez-lui vos besoins :**
@@ -129,7 +129,7 @@ et, une fois le projet écrit par `init` (étape 5), `npx ddd-ts-kit status` dit
 | 8 | Passer la porte de qualité | `quality-gate`, `npm run verify` | une porte verte avant chaque fusion |
 | 9 | Documenter | `document`, `npm run docs:generate` | des contrats, une carte des contextes et des enregistrements de décision à jour |
 
-![Les neuf étapes : quatre écrites dans les mots du métier sous docs/architecture/ (découvrir le domaine, trouver les contextes, écrire les glossaires, dessiner la carte des contextes), puis cinq avec les générateurs (démarrer, planifier les tranches, construire une tranche, passer la porte, documenter) ; les étapes 7 et 8 se répètent pour chaque tranche](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/ddd-ts-kit-workflow.fr.svg)
+![Les neuf étapes : quatre écrites dans les mots du métier sous docs/architecture/ (découvrir le domaine, trouver les contextes, écrire les glossaires, dessiner la carte des contextes), puis cinq avec les générateurs (démarrer, planifier les tranches, construire une tranche, passer la porte, documenter) ; les étapes 7 et 8 se répètent pour chaque tranche](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/ddd-ts-kit-workflow.fr.svg)
 
 La [méthodologie](docs/guides/methodology.fr.md) est la référence de chaque étape et dit ce que
 coûte d'en sauter une ; [quelle commande, quand](docs/guides/commands.fr.md) donne la commande
@@ -240,7 +240,7 @@ autres :
 `npx ddd-ts-kit rules` liste chaque identifiant avec sa sévérité ; la
 [référence de l'architecture](docs/ARCHITECTURE.fr.md) les définit.
 
-![Les mêmes règles vérifiées à trois moments : à chaque écriture de fichier par le hook du plugin, avant chaque fusion par npm run verify, et à chaque pull request par le pipeline de CI, les trois appliquant les règles définies dans docs/ARCHITECTURE.md](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/ddd-ts-kit-checks.fr.svg)
+![Les mêmes règles vérifiées à trois moments : à chaque écriture de fichier par le hook du plugin, avant chaque fusion par npm run verify, et à chaque pull request par le pipeline de CI, les trois appliquant les règles définies dans docs/ARCHITECTURE.md](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/ddd-ts-kit-checks.fr.svg)
 
 ## Le plugin pour agents de code
 
@@ -283,7 +283,7 @@ Tout passe par des ports du kernel, si bien que chaque pièce est remplaçable :
 un autre ORM ou un autre framework HTTP est un adaptateur qui passe la même suite de contrat. Le
 README de chaque package dit ses limites et ce qui a été vérifié.
 
-![Où chaque package est importé : dans un contexte délimité, le domaine n'importe que le kernel, l'application y ajoute auth, la présentation importe http et validation, l'infrastructure un package d'ORM, le langage publié events et validation ; la plateforme compose les contextes avec di et les packages de ses capacités techniques](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/ddd-ts-kit-packages.fr.svg)
+![Où chaque package est importé : dans un contexte délimité, le domaine n'importe que le kernel, l'application y ajoute auth, la présentation importe http et validation, l'infrastructure un package d'ORM, le langage publié events et validation ; la plateforme compose les contextes avec di et les packages de ses capacités techniques](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/ddd-ts-kit-packages.fr.svg)
 
 ## Pipeline
 
@@ -322,8 +322,8 @@ TypeScript 7 natif et gardent TypeScript 6 pour les outils qui ont encore besoin
 
 ## Communauté et aide
 
-- **Questions et idées** : [GitHub Discussions](https://github.com/gbourgeat/ddd-ts-kit/discussions).
-- **Bugs et propositions** : les [issues](https://github.com/gbourgeat/ddd-ts-kit/issues/new/choose),
+- **Questions et idées** : [GitHub Discussions](https://github.com/ddd-ts-kit/ddd-ts-kit/discussions).
+- **Bugs et propositions** : les [issues](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/new/choose),
   à partir de leurs modèles.
 - **Sécurité** : jamais dans une issue publique ; voir [SECURITY.fr.md](SECURITY.fr.md).
 - Chaque participant suit le [code de conduite](CODE_OF_CONDUCT.fr.md).
@@ -335,19 +335,19 @@ une coquille, une traduction, un test, un adaptateur ou une nouvelle règle. De 
 départ :
 
 - les issues étiquetées
-  [good first issue](https://github.com/gbourgeat/ddd-ts-kit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-  ou [help wanted](https://github.com/gbourgeat/ddd-ts-kit/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) ;
+  [good first issue](https://github.com/ddd-ts-kit/ddd-ts-kit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+  ou [help wanted](https://github.com/ddd-ts-kit/ddd-ts-kit/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) ;
 - un adaptateur pour un broker, un ORM ou un framework HTTP que le kit ne prend pas encore en
   charge : il passe la suite de contrat de son port ;
 - la documentation, en anglais ou en français, et l'[application d'exemple](examples/scheduling/README.fr.md) ;
-- un retour d'un vrai projet, dans les [Discussions](https://github.com/gbourgeat/ddd-ts-kit/discussions) :
+- un retour d'un vrai projet, dans les [Discussions](https://github.com/ddd-ts-kit/ddd-ts-kit/discussions) :
   ce qui a tenu, ce qui a gêné.
 
 [CONTRIBUTING.fr.md](CONTRIBUTING.fr.md) donne l'installation, les règles de base et le chemin
 d'un changement jusqu'à `main`. Si ddd-ts-kit vous est utile, une étoile sur GitHub aide d'autres
 personnes à le trouver.
 
-[![Historique des étoiles de ddd-ts-kit](https://api.star-history.com/svg?repos=gbourgeat/ddd-ts-kit&type=Date)](https://star-history.com/#gbourgeat/ddd-ts-kit&Date)
+[![Historique des étoiles de ddd-ts-kit](https://api.star-history.com/svg?repos=ddd-ts-kit/ddd-ts-kit&type=Date)](https://star-history.com/#ddd-ts-kit/ddd-ts-kit&Date)
 
 ## Contributeurs
 
@@ -360,7 +360,7 @@ Les personnes qui construisent ddd-ts-kit, puis toutes celles dont les commits s
   </tr>
 </table>
 
-<a href="https://github.com/gbourgeat/ddd-ts-kit/graphs/contributors"><img src="https://contrib.rocks/image?repo=gbourgeat/ddd-ts-kit" alt="Les contributeurs de ddd-ts-kit"></a>
+<a href="https://github.com/ddd-ts-kit/ddd-ts-kit/graphs/contributors"><img src="https://contrib.rocks/image?repo=ddd-ts-kit/ddd-ts-kit" alt="Les contributeurs de ddd-ts-kit"></a>
 
 ## Licence
 

@@ -1,16 +1,16 @@
 [English](coding-agents.md) · **Français**
-<!-- translation-of: coding-agents.md sha256:9df5e447a84600b7 -->
+<!-- translation-of: coding-agents.md sha256:d81181320440d181 -->
 
 # Le plugin pour agents de code : Claude Code, Codex, GitHub Copilot
 
-Le [dépôt ddd-ts-kit](https://github.com/gbourgeat/ddd-ts-kit) est la marketplace du plugin pour
+Le [dépôt ddd-ts-kit](https://github.com/ddd-ts-kit/ddd-ts-kit) est la marketplace du plugin pour
 trois agents de code :
 
 | Agent | Installation | Une skill s'appelle |
 |---|---|---|
-| Claude Code | `/plugin marketplace add gbourgeat/ddd-ts-kit`, puis `/plugin install ddd-ts-kit@ddd-ts-kit` | `/ddd-ts-kit:start` |
-| Codex | `codex plugin marketplace add gbourgeat/ddd-ts-kit`, puis installer `ddd-ts-kit` depuis `/plugins` et approuver ses hooks dans `/hooks` | `$start` |
-| Copilot CLI | `copilot plugin marketplace add gbourgeat/ddd-ts-kit`, puis `copilot plugin install ddd-ts-kit@ddd-ts-kit` | par son nom, `start` |
+| Claude Code | `/plugin marketplace add ddd-ts-kit/ddd-ts-kit`, puis `/plugin install ddd-ts-kit@ddd-ts-kit` | `/ddd-ts-kit:start` |
+| Codex | `codex plugin marketplace add ddd-ts-kit/ddd-ts-kit`, puis installer `ddd-ts-kit` depuis `/plugins` et approuver ses hooks dans `/hooks` | `$start` |
+| Copilot CLI | `copilot plugin marketplace add ddd-ts-kit/ddd-ts-kit`, puis `copilot plugin install ddd-ts-kit@ddd-ts-kit` | par son nom, `start` |
 | Agent cloud de Copilot, VS Code | déclaré par le `.github/copilot/settings.json` qu'écrit `init` : l'agent cloud l'installe, VS Code le recommande | par son nom, `start` |
 
 Vingt-six skills, dans l'ordre où un projet les rencontre :

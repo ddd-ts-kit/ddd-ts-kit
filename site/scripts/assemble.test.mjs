@@ -20,8 +20,8 @@ import { sidebar, sidebarRoutes } from './navigation.mjs';
 import { hrefOf, routeOf } from './routes.mjs';
 
 const REPOSITORY_ROOT = path.resolve(import.meta.dirname, '../..');
-const BLOB = 'https://github.com/gbourgeat/ddd-ts-kit/blob/main/';
-const RAW = 'https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/';
+const BLOB = 'https://github.com/ddd-ts-kit/ddd-ts-kit/blob/main/';
+const RAW = 'https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/';
 
 const SMALL = {
   ...pair(
@@ -174,7 +174,7 @@ test('a link to another file leads to GitHub, a diagram to its copy on the site,
   assert.equal(rewritten('README.md', '[log](CHANGELOG.md)'), `[log](${BLOB}CHANGELOG.md)`);
   assert.equal(
     rewritten('README.md', '[packages](packages)'),
-    '[packages](https://github.com/gbourgeat/ddd-ts-kit/tree/main/packages)',
+    '[packages](https://github.com/ddd-ts-kit/ddd-ts-kit/tree/main/packages)',
   );
   assert.equal(rewritten('README.md', `![x](${RAW}LICENSE)`), `![x](${RAW}LICENSE)`);
   assert.equal(rewritten('README.md', '[site](https://example.com/a.md)'), '[site](https://example.com/a.md)');
@@ -214,7 +214,7 @@ test('the assembly writes every page in both languages with its frontmatter, the
   assert.deepEqual(written, { pages: 10, diagrams: 2 });
   assert.match(
     aggregates,
-    /^---\ntitle: "Aggregates"\ndescription: "An aggregate is a boundary\."\neditUrl: "https:\/\/github\.com\/gbourgeat\/ddd-ts-kit\/edit\/main\/docs\/concepts\/aggregates\.md"\n---\n\n\*\*Summary\.\*\*/,
+    /^---\ntitle: "Aggregates"\ndescription: "An aggregate is a boundary\."\neditUrl: "https:\/\/github\.com\/ddd-ts-kit\/ddd-ts-kit\/edit\/main\/docs\/concepts\/aggregates\.md"\n---\n\n\*\*Summary\.\*\*/,
   );
   assert.doesNotMatch(aggregates, /# Aggregates|English/);
   assert.match(fs.readFileSync(path.join(content, 'fr/concepts/aggregates.md'), 'utf8'), /^---\ntitle: "Agrégats"/);
