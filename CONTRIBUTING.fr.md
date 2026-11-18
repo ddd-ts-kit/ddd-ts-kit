@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:6e3d0c0792370dcf -->
+<!-- translation-of: CONTRIBUTING.md sha256:82a39b667f78ee74 -->
 
 # Contribuer
 
@@ -288,8 +288,9 @@ lance le workflow `Release` : il les fait tourner une fois de plus et ne publie 
 d'eux est rouge (posez l'étiquette une fois les jobs `managers`, `pairwise` et `migrations` de la pull request de la release
 verts, ou un run de la nuit demandé sur `main`, `gh workflow run ci.yml --ref main` : l'étiquette pointe sur ce code ; si `generated-stacks` échoue quand même, rien n'a atteint
 npm : corrigez sur `main`, supprimez l'étiquette, `git push --delete origin v0.2.0 && git tag -d
-v0.2.0`, et posez-la sur le commit corrigé avec la même version), puis vérifie que l'étiquette est la version qu'annonce chaque package, construit, vérifie les archives, publie chaque package sur le registre npm avec
-sa provenance et crée la release GitHub. Une version qui a une partie de préversion
+v0.2.0`, et posez-la sur le commit corrigé avec la même version), puis vérifie que l'étiquette est la version qu'annonce chaque package, construit, vérifie les archives, atteste chaque archive (sa provenance de construction et la nomenclature logicielle de la
+release, en CycloneDX, écrite par `pipeline/monorepo/sbom.mjs` depuis le lockfile), publie chaque
+package sur le registre npm avec sa provenance et crée la release GitHub, la nomenclature jointe. Une version qui a une partie de préversion
 (`0.2.0-rc.1`) est publiée sous l'étiquette `next`. Une exécution arrêtée à mi-chemin se
 relance : ce qui est déjà publié est sauté. Les notes de la release GitHub sont générées à
 partir des pull requests fusionnées ; `CHANGELOG.md` à la racine dit en quelques lignes ce qu'une version change pour un utilisateur :
