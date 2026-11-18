@@ -169,26 +169,68 @@ jobs:
         if: failure()
         run: node pipeline/monorepo/uncovered-branches.mjs coverage/plugin.lcov
 
-  unit:
-    name: Unit tests (Node 24, coverage floors)
+  # The whole suite with coverage took 19 to 26 minutes on one runner on 2026-11-17. It runs in three shards, each measuring the
+  # files it runs and held to no floor; the next job merges their measures and holds each package to its floor (vitest.config.ts).
+  # Measured on 2026-11-18 with the durations of that run: the heaviest shard holds 36 percent of the work, about 9 minutes.
+  unit-shard:
+    name: Unit tests (Node 24, shard ${{ matrix.shard }}/3)
     needs: install
     runs-on: ubuntu-26.04
-    # On the trunk the whole suite runs with coverage: 19 to 25 minutes on 2026-11-17, cut at 25 three times in a day.
-    timeout-minutes: 40
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - name: Unit specs, each package held to its coverage floor (vitest.config.ts)
+      # A pull request that reaches one small package has fewer spec files than shards: a shard left without one passes.
+      - name: A third of the unit spec files, measured, their results and their measure written as a blob report
         if: ${{ needs.install.outputs.scope != 'none' }}
         env:
           KIT_AFFECTED: ${{ needs.install.outputs.packages }}
           FILTERS: ${{ needs.install.outputs.filters }}
-        run: npm run ci:test:unit -- $FILTERS
+        run: npm run ci:test:unit -- --shard=${{ matrix.shard }}/3 --reporter=default --reporter=blob --passWithNoTests $FILTERS
+      # Once, on the shard that held the least work in the measured run.
       - name: The specs of @ddd-ts-kit/di on InversifyJS and Awilix
-        if: ${{ needs.install.outputs.scope != 'none' }}
+        if: ${{ needs.install.outputs.scope != 'none' && matrix.shard == 3 }}
         run: npm run test:containers
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ needs.install.outputs.scope != 'none' }}
+        with:
+          name: unit-blob-${{ matrix.shard }}
+          path: .vitest/blob
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 1
+
+  unit:
+    name: Unit tests (Node 24, coverage floors)
+    needs: [install, unit-shard]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          build: 'false'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: ${{ needs.install.outputs.scope != 'none' }}
+        with:
+          pattern: unit-blob-*
+          merge-multiple: true
+          path: .vitest/blob
+      # The same KIT_AFFECTED as the shards: the floors of the packages they measured, and of no other.
+      - name: The measures of the shards merged, each package held to its coverage floor (vitest.config.ts)
+        if: ${{ needs.install.outputs.scope != 'none' }}
+        env:
+          KIT_AFFECTED: ${{ needs.install.outputs.packages }}
+        run: npm run ci:test:unit -- --merge-reports
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
@@ -644,7 +686,7 @@ jobs:
   gate:
     name: gate
     if: ${{ always() }}
-    needs: [install, checks, lint, architecture, unit, unit-oldest, alias, integration, e2e, managers, example, conformance, security]
+    needs: [install, checks, lint, architecture, unit-shard, unit, unit-oldest, alias, integration, e2e, managers, example, conformance, security]
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     steps:
