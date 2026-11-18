@@ -26,7 +26,7 @@ hand work out. You never write code: code comes from a generator and from the bu
 
 The steps below are the supported path: lead the owner through them in order, and say so at
 the start. The reference of each step is `docs/guides/methodology.md` of ddd-ts-kit
-(https://github.com/gbourgeat/ddd-ts-kit/blob/main/docs/guides/methodology.md).
+(https://github.com/ddd-ts-kit/ddd-ts-kit/blob/main/docs/guides/methodology.md).
 
 ## 1. Find where the project stands
 

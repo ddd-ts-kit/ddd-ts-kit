@@ -61,7 +61,7 @@ each consuming context listens through the bus under its own name. The bus is gi
 application as two ports of the kernel: `IntegrationEventPublisher` stays the outbox, and
 `EventSubscribers` hands each context the subscriber of its own consumer name.
 
-![In the producing context the command handler writes the order and its event to the outbox in one transaction; the OutboxRelay claims the record and gives it to KafkaEventBus.publish (idempotent producer, acks=all), which writes it to the topic of its type, keyed by the order id; each consuming context is a consumer group, notifications and billing both receive every event, the two instances of billing share the partitions; the billing handler commits its mark and its work in one unit of work before the offset is committed; a record that keeps failing goes to the dead-letter topic of billing](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/kafka-place-in-an-application.svg)
+![In the producing context the command handler writes the order and its event to the outbox in one transaction; the OutboxRelay claims the record and gives it to KafkaEventBus.publish (idempotent producer, acks=all), which writes it to the topic of its type, keyed by the order id; each consuming context is a consumer group, notifications and billing both receive every event, the two instances of billing share the partitions; the billing handler commits its mark and its work in one unit of work before the offset is committed; a record that keeps failing goes to the dead-letter topic of billing](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/kafka-place-in-an-application.svg)
 
 `init --broker kafka` writes this wiring in the platform of the project: the bus is built by
 `platform/events/create-event-provider.ts`, keyed by `platform/events/aggregate-key-of.ts`,
@@ -280,7 +280,7 @@ Kafka orders the records of one partition, and the key chooses the partition. So
    consumer handles the records of a partition one at a time, and a failed record is retried
    **in place**, see below.
 
-![Two events of order 1, placed then paid: with the default key, the event id, they land on two partitions owned by two instances and paid may be handled before placed; with keyOf giving the order id, both land on one partition owned by one instance and are handled in the order of the log](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/kafka-keys-and-partitions.svg)
+![Two events of order 1, placed then paid: with the default key, the event id, they land on two partitions owned by two instances and paid may be handled before placed; with keyOf giving the order id, both land on one partition owned by one instance and are handled in the order of the log](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/kafka-keys-and-partitions.svg)
 
 <!-- checked sample -->
 ```ts
@@ -346,7 +346,7 @@ that follow a dead one are handled without it, and a replay brings it back late.
 that cannot tolerate that must stop on the dead letter itself (carry a version in the
 payload, refuse a gap).
 
-![Two records of order 1 on one partition, placed then paid: with a retry topic, the failed placed record is moved aside, paid is handled, and placed later, so paid is applied before placed; with the retry in place of this bus, the partition is paused for retry.delayMs while the other partitions keep flowing, placed is read again and handled, then paid; after retry.maxAttempts failed deliveries the record goes to the dead-letter topic and the partition moves on](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/kafka-retry-in-place.svg)
+![Two records of order 1 on one partition, placed then paid: with a retry topic, the failed placed record is moved aside, paid is handled, and placed later, so paid is applied before placed; with the retry in place of this bus, the partition is paused for retry.delayMs while the other partitions keep flowing, placed is read again and handled, then paid; after retry.maxAttempts failed deliveries the record goes to the dead-letter topic and the partition moves on](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/kafka-retry-in-place.svg)
 
 The bus decides from what the handler does, so a handler that hides its failure hides it from
 the bus too:

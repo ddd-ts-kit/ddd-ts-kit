@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:d22af54bf265554f -->
+<!-- translation-of: README.md sha256:9e02c42e5ab46747 -->
 
 # @ddd-ts-kit/redis
 
@@ -26,7 +26,7 @@ Rien ici n'est importé depuis `domain/` ou `application/`. Un cas d'usage dépe
 (`Cache`, `Lock`, `RateLimiter` du noyau) ; l'adaptateur est choisi dans `platform/` et lié dans
 la racine de composition.
 
-![Les six ports que le code nomme (Cache, Lock, RateLimiter, RelaySignal, JobStore, EventBus), les six adaptateurs de @ddd-ts-kit/redis qui les implémentent, et l'unique serveur auquel ils envoient leurs commandes ; la plateforme les lie, l'outbox et les événements traités restent dans la base de données](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/redis-place-in-an-application.fr.svg)
+![Les six ports que le code nomme (Cache, Lock, RateLimiter, RelaySignal, JobStore, EventBus), les six adaptateurs de @ddd-ts-kit/redis qui les implémentent, et l'unique serveur auquel ils envoient leurs commandes ; la plateforme les lie, l'outbox et les événements traités restent dans la base de données](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/redis-place-in-an-application.fr.svg)
 
 Le même cas d'usage tourne alors contre Redis en production et contre les adaptateurs en mémoire
 du noyau dans ses tests. Au lieu de nommer l'adaptateur, ce qui lie le cas d'usage à un seul
@@ -431,7 +431,7 @@ qui le précèdent. Un appel refusé n'est pas compté. `RedisRateLimiter` garde
 (sorted set) par clé, un membre par appel autorisé, et décide dans un seul script, si bien que des
 appels concurrents venus de plusieurs instances ne peuvent pas prendre tous deux la dernière place.
 
-![Une limite de trois appels par minute : les appels à 20, 30 et 45 secondes sont autorisés ; l'appel à 60 secondes voit trois appels dans sa fenêtre, il est refusé, non compté, et invité à réessayer dans 20 secondes ; l'appel à 82 secondes en voit deux et il est autorisé](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/redis-rate-limiter-sliding-window.fr.svg)
+![Une limite de trois appels par minute : les appels à 20, 30 et 45 secondes sont autorisés ; l'appel à 60 secondes voit trois appels dans sa fenêtre, il est refusé, non compté, et invité à réessayer dans 20 secondes ; l'appel à 82 secondes en voit deux et il est autorisé](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/redis-rate-limiter-sliding-window.fr.svg)
 
 `remaining` compte les places qui restent une fois cet appel compté ; `retryAfterMs` vaut 0 pour
 un appel autorisé et, pour un appel refusé, le temps qui reste avant que l'appel le plus ancien de
@@ -600,7 +600,7 @@ configuré, et la rétention est bornée par la mémoire : voir
 Les gestionnaires ne voient jamais ce *package*. Ils publient dans l'outbox ; le relais publie
 dans les flux ; chaque contexte consommateur s'abonne par le bus, sous son propre nom.
 
-![Le relais de l'outbox prend les enregistrements en attente dans la table de l'outbox et les publie avec XADD dans un seul MULTI ; chaque type d'événement a un flux ; chaque nom de consommateur y a son propre groupe, notifications et billing, qui reçoivent tous deux chaque événement ; les instances de billing se partagent ses entrées ; une entrée en échec ou empoisonnée va dans le flux de rejet de billing](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/redis-streams-topology.fr.svg)
+![Le relais de l'outbox prend les enregistrements en attente dans la table de l'outbox et les publie avec XADD dans un seul MULTI ; chaque type d'événement a un flux ; chaque nom de consommateur y a son propre groupe, notifications et billing, qui reçoivent tous deux chaque événement ; les instances de billing se partagent ses entrées ; une entrée en échec ou empoisonnée va dans le flux de rejet de billing](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/redis-streams-topology.fr.svg)
 
 <!-- checked sample -->
 ```ts
@@ -761,7 +761,7 @@ compte.
 
 ### Comportement des nouvelles tentatives et de la file de rejet
 
-![Une entrée livrée avec la tentative n : sans enveloppe, elle va dans le flux de rejet comme entrée empoisonnée ; au-delà de retry.maxAttempts, après que ses instances ont planté sur elle, dans le flux de rejet comme ATTEMPTS_EXHAUSTED ; sinon chaque gestionnaire de son type s'exécute ; s'ils se sont tous résolus, elle est acquittée ; si l'un a levé une exception à la dernière tentative, elle est copiée dans le flux de rejet et acquittée en un seul script ; sinon elle reste en attente et elle est reprise après retry.delayMs ; une autre instance reprend les entrées d'une instance plantée après visibilityTimeoutMs](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/redis-streams-retry-and-dead-letter.fr.svg)
+![Une entrée livrée avec la tentative n : sans enveloppe, elle va dans le flux de rejet comme entrée empoisonnée ; au-delà de retry.maxAttempts, après que ses instances ont planté sur elle, dans le flux de rejet comme ATTEMPTS_EXHAUSTED ; sinon chaque gestionnaire de son type s'exécute ; s'ils se sont tous résolus, elle est acquittée ; si l'un a levé une exception à la dernière tentative, elle est copiée dans le flux de rejet et acquittée en un seul script ; sinon elle reste en attente et elle est reprise après retry.delayMs ; une autre instance reprend les entrées d'une instance plantée après visibilityTimeoutMs](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/redis-streams-retry-and-dead-letter.fr.svg)
 
 1. Une entrée est acquittée (`XACK`) après que chaque gestionnaire abonné à son type s'est résolu.
    Utilisez `consume` de `@ddd-ts-kit/events` : l'acquittement suit alors la validation (commit)

@@ -17,11 +17,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gbourgeat/ddd-ts-kit.git",
+    "url": "git+https://github.com/ddd-ts-kit/ddd-ts-kit.git",
     "directory": "packages/validation"
   },
-  "homepage": "https://gbourgeat.github.io/ddd-ts-kit/packages/validation/",
-  "bugs": "https://github.com/gbourgeat/ddd-ts-kit/issues",
+  "homepage": "https://ddd-ts-kit.github.io/ddd-ts-kit/packages/validation/",
+  "bugs": "https://github.com/ddd-ts-kit/ddd-ts-kit/issues",
   "publishConfig": {
     "access": "public",
     "provenance": true

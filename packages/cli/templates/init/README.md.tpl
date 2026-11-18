@@ -242,7 +242,7 @@ in `docker-compose.yml` while developing, which creates the bucket at its first 
 aggregate keeps the `StoredFile` reference (key, size, media type, checksum). The command bus
 stages a file a command carries before the transaction opens, `FileStaging` moves it to its key
 with the commit and, every hour, purges what refused or rolled-back commands left in `staging/`. `npx ddd-ts-kit generate file-upload <context> <UseCase>` writes an
-upload; see https://github.com/gbourgeat/ddd-ts-kit/blob/main/docs/concepts/file-storage.md.
+upload; see https://github.com/ddd-ts-kit/ddd-ts-kit/blob/main/docs/concepts/file-storage.md.
 {{#if files.local}}
 
 | Variable | Says |
@@ -447,8 +447,8 @@ records them in `docs/architecture/plan.md`; `npx ddd-ts-kit status` says which 
 
 A step skipped costs later: boundaries drawn from the tables, a glossary written after the
 code, a first integration made by a direct import the checker then refuses. The method, step by
-step: https://github.com/gbourgeat/ddd-ts-kit/blob/main/docs/guides/methodology.md; the command
-for each moment of the project: https://github.com/gbourgeat/ddd-ts-kit/blob/main/docs/guides/commands.md.
+step: https://github.com/ddd-ts-kit/ddd-ts-kit/blob/main/docs/guides/methodology.md; the command
+for each moment of the project: https://github.com/ddd-ts-kit/ddd-ts-kit/blob/main/docs/guides/commands.md.
 
 | Script | Does |
 |---|---|

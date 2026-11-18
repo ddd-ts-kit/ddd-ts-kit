@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:ef7bf1d3df6d16c2 -->
+<!-- translation-of: README.md sha256:3d186d85697ba2d9 -->
 
 # @ddd-ts-kit/nats
 
@@ -36,7 +36,7 @@ dans NATS ; chaque contexte consommateur écoute par le bus, sous son propre nom
 l'outbox, et `EventSubscribers` remet à chaque contexte l'abonné de son propre nom de
 consommateur.
 
-![Le gestionnaire de ordering écrit la commande client et un enregistrement d'outbox dans une seule transaction ; le relais de l'outbox donne l'enregistrement à NatsEventBus, qui le publie dans le flux integration-events avec l'identifiant de l'événement comme Nats-Msg-Id et attend l'acquittement ; le flux écarte un second message de même identifiant dans sa fenêtre de déduplication ; un consommateur durable par consommateur et par type d'événement tire le message et le remet aux gestionnaires de son contexte, acquitté après la validation de leur unité de travail ; ce qu'un consommateur abandonne est copié dans le flux integration-events-dead](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/nats-outbox-to-consumers.fr.svg)
+![Le gestionnaire de ordering écrit la commande client et un enregistrement d'outbox dans une seule transaction ; le relais de l'outbox donne l'enregistrement à NatsEventBus, qui le publie dans le flux integration-events avec l'identifiant de l'événement comme Nats-Msg-Id et attend l'acquittement ; le flux écarte un second message de même identifiant dans sa fenêtre de déduplication ; un consommateur durable par consommateur et par type d'événement tire le message et le remet aux gestionnaires de son contexte, acquitté après la validation de leur unité de travail ; ce qu'un consommateur abandonne est copié dans le flux integration-events-dead](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/nats-outbox-to-consumers.fr.svg)
 
 `init --broker nats` écrit ce câblage dans la plateforme du projet : le bus est construit par
 `platform/events/create-event-provider.ts`, `platform/composition/platform.module.ts` lie à nouveau
@@ -271,7 +271,7 @@ l'ordre d'un agrégat compte.
 
 ## Comportement des nouvelles tentatives et du flux de rejet
 
-![Ce que devient un message livré à un consommateur durable : un message rejoué pour un autre consommateur est acquitté et ignoré ; un corps qui n'est pas une enveloppe est copié dans le flux de rejet comme empoisonné, puis terminé ; sinon chaque gestionnaire du type s'exécute ; quand tous se sont résolus, le message est acquitté ; quand l'un a levé une exception avant la dernière tentative, le message est refusé avec un délai et le serveur le livre à nouveau, compteur de livraisons plus un ; à la tentative retry.maxAttempts, il est copié dans le flux de rejet avec max-attempts, puis terminé](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/nats-retry-and-dead-letter.fr.svg)
+![Ce que devient un message livré à un consommateur durable : un message rejoué pour un autre consommateur est acquitté et ignoré ; un corps qui n'est pas une enveloppe est copié dans le flux de rejet comme empoisonné, puis terminé ; sinon chaque gestionnaire du type s'exécute ; quand tous se sont résolus, le message est acquitté ; quand l'un a levé une exception avant la dernière tentative, le message est refusé avec un délai et le serveur le livre à nouveau, compteur de livraisons plus un ; à la tentative retry.maxAttempts, il est copié dans le flux de rejet avec max-attempts, puis terminé](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/nats-retry-and-dead-letter.fr.svg)
 
 1. Un message est acquitté après que chaque gestionnaire abonné à son consommateur durable s'est
    résolu. Un `@IntegrationEventHandler` déclaré (ou `consume` de `@ddd-ts-kit/events` à la

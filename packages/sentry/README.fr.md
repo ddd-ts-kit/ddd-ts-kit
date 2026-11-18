@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:463278a43493852b -->
+<!-- translation-of: README.md sha256:dfecc690f619411f -->
 
 # @ddd-ts-kit/sentry
 
@@ -17,7 +17,7 @@ npm i @ddd-ts-kit/sentry @sentry/node @opentelemetry/api
 (`enableOpenTelemetrySetup`, `dataCollection`) n'existent pas dans les versions majeures
 antérieures.
 
-![La place du rapporteur Sentry : les gestionnaires et les agrégats lèvent des exceptions et ne remontent rien ; cinq points de capture autour d'eux, les bus de commandes et de requêtes, le pipeline HTTP, le planificateur de jobs, DeadLetterReports sur les crochets des fournisseurs d'événements et reportProcessFailures sur le processus, confient un échec inattendu à l'ErrorReporter du noyau, une fois ; la racine de composition y lie le SentryErrorReporter d'initSentry ; l'événement est nettoyé, puis passé au beforeSend du projet, puis envoyé à Sentry ou GlitchTip ; son identifiant de trace mène à la trace dans le backend de traçage](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/sentry-capture-points.fr.svg)
+![La place du rapporteur Sentry : les gestionnaires et les agrégats lèvent des exceptions et ne remontent rien ; cinq points de capture autour d'eux, les bus de commandes et de requêtes, le pipeline HTTP, le planificateur de jobs, DeadLetterReports sur les crochets des fournisseurs d'événements et reportProcessFailures sur le processus, confient un échec inattendu à l'ErrorReporter du noyau, une fois ; la racine de composition y lie le SentryErrorReporter d'initSentry ; l'événement est nettoyé, puis passé au beforeSend du projet, puis envoyé à Sentry ou GlitchTip ; son identifiant de trace mène à la trace dans le backend de traçage](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/sentry-capture-points.fr.svg)
 
 Le code d'un cas d'usage ne voit jamais le rapporteur. Il lève une exception ; ce qui l'entoure
 décide si l'échec est un incident, le décrit avec les identifiants du travail en cours et le
@@ -106,7 +106,7 @@ fois, par le bus, sous le nom de la commande, et la route qui répond 500 reste 
 rapport dit tout de même d'où il vient : `origin` est l'origine du contexte d'exécution (`http`,
 `schedule`), et l'identifiant de corrélation et la trace mènent à la requête HTTP.
 
-![Un échec, un rapport : une requête HTTP atteint la route, qui envoie une commande sur le bus ; le gestionnaire lève une erreur inattendue ; errorReportingMiddleware du bus la remonte sous le nom de la commande et la marque, puis la laisse poursuivre ; la route répond 500 et reportHttpErrors reconnaît l'erreur marquée et reste silencieux ; l'outil de suivi reçoit un seul événement, avec l'origine http, l'identifiant de corrélation et l'identifiant de trace](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/sentry-one-failure-one-report.fr.svg)
+![Un échec, un rapport : une requête HTTP atteint la route, qui envoie une commande sur le bus ; le gestionnaire lève une erreur inattendue ; errorReportingMiddleware du bus la remonte sous le nom de la commande et la marque, puis la laisse poursuivre ; la route répond 500 et reportHttpErrors reconnaît l'erreur marquée et reste silencieux ; l'outil de suivi reçoit un seul événement, avec l'origine http, l'identifiant de corrélation et l'identifiant de trace](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/sentry-one-failure-one-report.fr.svg)
 
 **Événements.** Un consommateur fait l'objet de nouvelles tentatives : ses premiers échecs sont
 attendus, et les remonter enterrerait les vrais incidents. Le *middleware* du bus ne dit donc
@@ -117,7 +117,7 @@ erreur et sa pile. Sans lui, ou pour un message empoisonné, le rapport est une 
 qui nomme le code. Un événement enterré par une `DomainError` est remonté en `warning` : il est
 perdu pour son consommateur tout de même.
 
-![Un événement dont le gestionnaire échoue sans cesse : à chaque tentative, observing retient ce que le gestionnaire a levé et le fournisseur appelle onFailure ; tant que le fournisseur réessaie, onFailure ne remonte rien ; à la dernière tentative, le fournisseur abandonne l'événement, onFailure apprend dead et remonte une fois, avec l'erreur que le gestionnaire a réellement levée, l'origine event et l'opération nommée d'après le type de l'événement et le consommateur](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/sentry-event-given-up.fr.svg)
+![Un événement dont le gestionnaire échoue sans cesse : à chaque tentative, observing retient ce que le gestionnaire a levé et le fournisseur appelle onFailure ; tant que le fournisseur réessaie, onFailure ne remonte rien ; à la dernière tentative, le fournisseur abandonne l'événement, onFailure apprend dead et remonte une fois, avec l'erreur que le gestionnaire a réellement levée, l'origine event et l'opération nommée d'après le type de l'événement et le consommateur](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/sentry-event-given-up.fr.svg)
 
 Les mêmes étapes, jouées à la main contre les doubles du noyau, comme le ferait un test du
 câblage :

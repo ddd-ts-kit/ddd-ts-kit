@@ -21,7 +21,7 @@ Nothing here is imported from `domain/` or `application/`. A handler depends on 
 port of its domain; the adapter of that port, in `infrastructure/`, runs its statements on the
 `Database` of the project; the platform builds the unit of work once and binds it.
 
-![A bounded context holds a handler, the repository port of the domain and the drizzle repository that implements it; createDrizzleUnitOfWork gives one object that is both the UnitOfWork the command bus runs each command in and the Database whose executor() the repository and the stores query through; it opens db.transaction() on a drizzle database of any PostgreSQL driver, whose tables drizzle-kit migrations create](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/drizzle-place-in-an-application.svg)
+![A bounded context holds a handler, the repository port of the domain and the drizzle repository that implements it; createDrizzleUnitOfWork gives one object that is both the UnitOfWork the command bus runs each command in and the Database whose executor() the repository and the stores query through; it opens db.transaction() on a drizzle database of any PostgreSQL driver, whose tables drizzle-kit migrations create](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/drizzle-place-in-an-application.svg)
 
 The one idea to keep: **every statement goes through `executor()`**. Inside a unit of work it
 is the transaction of that unit of work, so the row of the aggregate, the outbox record of the
@@ -622,7 +622,7 @@ adapter, which a statement of the unit of work must not get.
 
 What the two kinds of page do when a row is inserted between two reads:
 
-![Invoices sorted by amount then id: an offset page 2 read after an insertion shows inv-f a second time, while a cursor page that starts after the position (120, inv-f) of the last row of page 1 shows the same rows whatever was inserted before it, and fetches one row more than the limit to know that a page follows](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/drizzle-keyset-pages.svg)
+![Invoices sorted by amount then id: an offset page 2 read after an insertion shows inv-f a second time, while a cursor page that starts after the position (120, inv-f) of the last row of page 1 shows the same rows whatever was inserted before it, and fetches one row more than the limit to know that a page follows](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/drizzle-keyset-pages.svg)
 
 The rules these examples hold, and that the tests of this package check on a real database:
 
@@ -652,7 +652,7 @@ Two strategies on drizzle, both proven by `tenantIsolationContract` of
 `@ddd-ts-kit/testing/contracts`; schema per tenant and database per tenant are shipped for knex
 only ([Multitenancy](../../docs/concepts/multitenancy.md) has the table).
 
-![The execution scope names the tenant of the work; first line, the repository puts it in every statement with tenantCondition, ownTenantCondition and tenantScopeOf; second line, the unit of work begins each transaction with tenantSession, which sets the tenant for that transaction only, and the policies declared with the table let it see and write the rows of that tenant alone](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/drizzle-tenant-isolation.svg)
+![The execution scope names the tenant of the work; first line, the repository puts it in every statement with tenantCondition, ownTenantCondition and tenantScopeOf; second line, the unit of work begins each transaction with tenantSession, which sets the tenant for that transaction only, and the policies declared with the table let it see and write the rows of that tenant alone](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/drizzle-tenant-isolation.svg)
 
 **Shared tables.** A `tenant_id` column (`tenantColumn()`) and the condition of the kit in every
 statement instead of one written by hand:

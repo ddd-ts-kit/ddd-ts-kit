@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:f62d71a7d5bd47a1 -->
+<!-- translation-of: README.md sha256:2a21a83f1d408547 -->
 
 # @ddd-ts-kit/scheduling
 
@@ -27,7 +27,7 @@ Les déclarations (`@Scheduled`, `@Background`), les ports (`JobScheduler`, `Job
 `InProcessJobScheduler` dans son module kernel et enregistre les *jobs* déclarés : une application
 construite avec lui n'a besoin d'aucune ligne de ce README, hormis le *job* lui-même.
 
-![La couche application d'un contexte délimité déclare ses jobs à l'aide du kernel, qui porte les déclarations et les ports JobScheduler, JobQueue et ProcessRunner, et n'importe jamais ce package ; ce package implémente ces ports, exécute les jobs et appelle le Lock, le JobStore et les JobCheckpoints que lie la plateforme ; le module kernel de @ddd-ts-kit/di lie chaque port à son implémentation et enregistre les jobs déclarés](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/scheduling-package-place.fr.svg)
+![La couche application d'un contexte délimité déclare ses jobs à l'aide du kernel, qui porte les déclarations et les ports JobScheduler, JobQueue et ProcessRunner, et n'importe jamais ce package ; ce package implémente ces ports, exécute les jobs et appelle le Lock, le JobStore et les JobCheckpoints que lie la plateforme ; le module kernel de @ddd-ts-kit/di lie chaque port à son implémentation et enregistre les jobs déclarés](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/scheduling-package-place.fr.svg)
 
 `JobScheduler` n'est pas le `Scheduler` de `@ddd-ts-kit/aspects`. Celui-là est un minuteur pour
 les nouvelles tentatives et les délais d'expiration (`schedule(work, delayMs)`) ; celui-ci connaît
@@ -159,7 +159,7 @@ chaque instance nomme les mêmes instants, et qu'un redémarrage les conserve. U
 divise pas une journée (`'7h'`) dérive par rapport à l'heure murale, et aucun ne suit un fuseau
 horaire : pour « chaque matin », écrivez un cron.
 
-![Deux instances démarrées à 10:07 et à 10:11 : alignées sur l'époque, les deux nomment les occurrences 10:15, 10:30, 10:45 et 11:00, donc une clé de verrou par occurrence et une seule instance l'exécute ; en comptant depuis le démarrage de chaque processus, la première nommerait 10:22, 10:37, 10:52 et la seconde 10:26, 10:41, 10:56, des clés différentes, et les deux exécuteraient](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/scheduling-package-interval-alignment.fr.svg)
+![Deux instances démarrées à 10:07 et à 10:11 : alignées sur l'époque, les deux nomment les occurrences 10:15, 10:30, 10:45 et 11:00, donc une clé de verrou par occurrence et une seule instance l'exécute ; en comptant depuis le démarrage de chaque processus, la première nommerait 10:22, 10:37, 10:52 et la seconde 10:26, 10:41, 10:56, des clés différentes, et les deux exécuteraient](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/scheduling-package-interval-alignment.fr.svg)
 
 **Le cron** a les cinq champs standard, sans les secondes :
 
@@ -233,7 +233,7 @@ nextOccurrence(parseJobSchedule({ cron: '30 2 * * *', timeZone: 'Europe/Paris' }
 Chaque option agit à une étape d'une occurrence, et chaque étape qui l'arrête enregistre une issue
 (voir « Observabilité ») :
 
-![Une occurrence devient due ; atteinte plus tard que lateAfterMs avec missed skip, elle est enregistrée missed ; avec l'exécution précédente encore en cours et overlap skip, skipped-overlap ; pour un job singleInstance, le planificateur prend le verrou de l'occurrence, détenu par une autre instance il enregistre skipped-locked, injoignable failed avec JOB_LOCK_UNAVAILABLE ; une fois le verrou pris, le job s'exécute dans une portée d'exécution et réussit, ou échoue avec son code, JOB_TIMEOUT ou JOB_ABORTED ; chaque issue est journalisée, comptée et donnée à onRun](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/scheduling-package-one-occurrence.fr.svg)
+![Une occurrence devient due ; atteinte plus tard que lateAfterMs avec missed skip, elle est enregistrée missed ; avec l'exécution précédente encore en cours et overlap skip, skipped-overlap ; pour un job singleInstance, le planificateur prend le verrou de l'occurrence, détenu par une autre instance il enregistre skipped-locked, injoignable failed avec JOB_LOCK_UNAVAILABLE ; une fois le verrou pris, le job s'exécute dans une portée d'exécution et réussit, ou échoue avec son code, JOB_TIMEOUT ou JOB_ABORTED ; chaque issue est journalisée, comptée et donnée à onRun](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/scheduling-package-one-occurrence.fr.svg)
 
 **Manquée** veut dire atteinte plus tard que `lateAfterMs` (60 s par défaut, une option du
 planificateur) après l'instant, gigue mise à part : le processus était arrêté, en veille, ou sa

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:4a8c6a1bc0e68219 -->
+<!-- translation-of: README.md sha256:916ccdfd8999eb2c -->
 
 # @ddd-ts-kit/pino
 
@@ -18,7 +18,7 @@ npm i -D pino-pretty        # seulement pour le format lisible
 Écrit pour pino 10. `pino-pretty` 13 est un *peer* facultatif : il n'est chargé que lorsque le
 format `pretty` est demandé.
 
-![La place du logger pino dans une application : le domaine et les gestionnaires ne journalisent rien ; les adaptateurs de l'infrastructure, les contrôleurs de la présentation et les aspects écrivent par le port Logger du noyau ; la racine de composition lie PinoLogger à ce port ; pino écrit des lignes JSON sur la sortie standard, que la plateforme collecte](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/pino-place-in-an-application.fr.svg)
+![La place du logger pino dans une application : le domaine et les gestionnaires ne journalisent rien ; les adaptateurs de l'infrastructure, les contrôleurs de la présentation et les aspects écrivent par le port Logger du noyau ; la racine de composition lie PinoLogger à ce port ; pino écrit des lignes JSON sur la sortie standard, que la plateforme collecte](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/pino-place-in-an-application.fr.svg)
 
 Le domaine et les gestionnaires (handlers) disent ce qui s'est passé par des événements et des
 erreurs, jamais par une ligne de journal. Ce qui écrit les entoure : les adaptateurs de
@@ -83,7 +83,7 @@ Une ligne de l'application, telle qu'elle est écrite :
 {"level":"info","time":"2026-03-01T10:00:00.000Z","service":"shop-api","environment":"production","correlationId":"9f2c","origin":"http","actorId":"user-1","tenantId":"acme","trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","span_id":"00f067aa0ba902b7","context":"shipping","message":"order shipped"}
 ```
 
-![Le chemin d'un appel à logger.info : sous le seuil, il s'arrête après une comparaison ; sinon l'adaptateur décrit les erreurs parmi les champs et écarte les clés level et time ; pino écrit l'en-tête, puis service, environment et base, les champs des enfants, ce que renvoie fields() et les champs de la ligne ; il remplace la valeur de chaque clé de secret par [redacted] ; puis il confie la ligne JSON à sa destination : tout de suite sur la sortie standard, par un tampon de 4 Kio avec asynchronous, ou au worker de pino-pretty](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/pino-path-of-a-line.fr.svg)
+![Le chemin d'un appel à logger.info : sous le seuil, il s'arrête après une comparaison ; sinon l'adaptateur décrit les erreurs parmi les champs et écarte les clés level et time ; pino écrit l'en-tête, puis service, environment et base, les champs des enfants, ce que renvoie fields() et les champs de la ligne ; il remplace la valeur de chaque clé de secret par [redacted] ; puis il confie la ligne JSON à sa destination : tout de suite sur la sortie standard, par un tampon de 4 Kio avec asynchronous, ou au worker de pino-pretty](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/pino-path-of-a-line.fr.svg)
 
 **Corrélation.** `fields` est lu à chaque ligne écrite, par le `mixin` de pino : aucun point
 d'appel ne passe d'identifiant. `traceLogFields(scope)` renvoie les identifiants de trace et de
@@ -97,7 +97,7 @@ si bien qu'une clé donnée par les deux est écrite deux fois et qu'un analyseu
 `fields`. `StdoutLogger` les ordonne de la même façon ; `@ddd-ts-kit/winston` non (là, un enfant
 l'emporte sur `fields`). Ne liez pas dans un enfant une clé que `fields` renvoie.
 
-![La valeur que prend une clé donnée deux fois, de la plus faible à la plus forte : avec pino et StdoutLogger, service, environment et base, puis les enfants, puis fields(), puis la ligne, qui l'emporte ; avec winston, fields(), puis les enfants, puis la ligne, puis service, environment et base, qui l'emportent](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/pino-which-value-wins.fr.svg)
+![La valeur que prend une clé donnée deux fois, de la plus faible à la plus forte : avec pino et StdoutLogger, service, environment et base, puis les enfants, puis fields(), puis la ligne, qui l'emporte ; avec winston, fields(), puis les enfants, puis la ligne, puis service, environment et base, qui l'emportent](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/pino-which-value-wins.fr.svg)
 
 **Une instance à vous.** Le projet qui configure déjà pino continue de le faire, et prend les
 pièces qu'il veut :

@@ -14,6 +14,6 @@
     <text x="96" y="368" font-size="44" fill="#bfe6d4">for TypeScript and Node.js backends</text>
     <text x="96" y="452" font-size="30" fill="#c4cdd2">CLI to bootstrap, scaffold and check · runtime packages</text>
     <text x="96" y="496" font-size="30" fill="#c4cdd2">ESLint plugin · plugin for Claude Code, Codex and Copilot</text>
-    <text x="96" y="572" font-size="28" fill="#7cc7a6">gbourgeat.github.io/ddd-ts-kit</text>
+    <text x="96" y="572" font-size="28" fill="#7cc7a6">ddd-ts-kit.github.io/ddd-ts-kit</text>
   </g>
 </svg>

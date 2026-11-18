@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:45a52493f2ac63aa -->
+<!-- translation-of: README.md sha256:0ae3807a8591ff8f -->
 
 # @ddd-ts-kit/auth
 
@@ -34,7 +34,7 @@ implémentations.
 | Autorisation | cet acteur a-t-il le droit de faire ceci, sur ceci ? | la couche application de chaque contexte (`application/authorization/`) | des permissions déclarées comme des données, une exigence par cas d'usage vérifiée par un *middleware* du bus, des politiques pour les règles qui ont besoin d'un état chargé, le tout à travers le port `Authorizer` |
 | Invariants | est-ce un état valide du métier ? | le domaine | les agrégats et les `DomainError`. « Une facture ne peut pas être payée deux fois » n'est pas une permission |
 
-![La place du package dans une application : la plateforme transforme le jeton bearer en une Session et son Actor avec principalResolver et un Authenticator ; la route met l'acteur dans la commande ; la garde du bus de commandes refuse un cas d'usage non déclaré et interroge l'Authorizer avant le gestionnaire ; le gestionnaire charge l'élément et interroge Access, qui applique les politiques puis l'Authorizer ; l'agrégat n'importe rien du package ; quatre classes implémentent le port unique Authorizer](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/auth-package-place.fr.svg)
+![La place du package dans une application : la plateforme transforme le jeton bearer en une Session et son Actor avec principalResolver et un Authenticator ; la route met l'acteur dans la commande ; la garde du bus de commandes refuse un cas d'usage non déclaré et interroge l'Authorizer avant le gestionnaire ; le gestionnaire charge l'élément et interroge Access, qui applique les politiques puis l'Authorizer ; l'agrégat n'importe rien du package ; quatre classes implémentent le port unique Authorizer](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/auth-package-place.fr.svg)
 
 Rien n'est accessible par défaut. Une commande ou une requête qui ne déclare ni une permission
 ni qu'elle est publique est refusée, à l'exécution par le *middleware* et, si vous le
@@ -286,7 +286,7 @@ Un cas d'usage protégé rencontre deux points de contrôle. La garde du bus dé
 avant le gestionnaire et avant toute transaction ; `Access` décide de l'élément, une fois que le
 gestionnaire l'a chargé. Chaque refus a son erreur, son code et son statut HTTP :
 
-![Les deux points de contrôle. La garde du bus : un message non déclaré échoue avec UndeclaredUseCaseError, un message public s'exécute sans contrôle, un message protégé sans acteur échoue avec MissingActorError, l'acteur anonyme est refusé avec UnauthenticatedError (401), et un refus de l'Authorizer est une ForbiddenError (403) avec sa raison ; autorisé, l'unité de travail s'ouvre et le gestionnaire s'exécute. Access dans le gestionnaire : l'acteur anonyme est refusé avec UnauthenticatedError, chaque politique de la permission est interrogée, puis l'Authorizer sur la ressource ; autorisé, l'agrégat change. Les deux transmettent chaque décision à onDecision](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/auth-package-two-checkpoints.fr.svg)
+![Les deux points de contrôle. La garde du bus : un message non déclaré échoue avec UndeclaredUseCaseError, un message public s'exécute sans contrôle, un message protégé sans acteur échoue avec MissingActorError, l'acteur anonyme est refusé avec UnauthenticatedError (401), et un refus de l'Authorizer est une ForbiddenError (403) avec sa raison ; autorisé, l'unité de travail s'ouvre et le gestionnaire s'exécute. Access dans le gestionnaire : l'acteur anonyme est refusé avec UnauthenticatedError, chaque politique de la permission est interrogée, puis l'Authorizer sur la ressource ; autorisé, l'agrégat change. Les deux transmettent chaque décision à onDecision](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/auth-package-two-checkpoints.fr.svg)
 
 `UndeclaredUseCaseError` et `MissingActorError` ne sont pas des refus : elles disent que le code
 est faux, font échouer le premier test qui envoie le message, et ne sont jamais traduites en
@@ -1194,7 +1194,7 @@ Une liste est filtrée par la requête, jamais en mémoire après le chargement.
 après sa lecture montre moins de lignes que demandé, et son total compte des lignes que l'acteur
 ne peut pas voir :
 
-![Filtrer une liste. Au lieu de lire une page de tous les tenants et de la filtrer en mémoire, ce qui montre 3 lignes au lieu de 20 et un total faux, le gestionnaire demande un AccessScope à access.scope et le port de lecture le traduit en clause WHERE : la base de données renvoie la bonne page et le bon total. Pour chaque sorte de périmètre, le port de lecture n'ajoute rien pour all, n'exécute aucune requête pour none, ajoute une égalité par entrée pour filter, et une liste id IN pour ids ; les politiques sur des attributs ne savent pas lister](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/auth-package-list-scope.fr.svg)
+![Filtrer une liste. Au lieu de lire une page de tous les tenants et de la filtrer en mémoire, ce qui montre 3 lignes au lieu de 20 et un total faux, le gestionnaire demande un AccessScope à access.scope et le port de lecture le traduit en clause WHERE : la base de données renvoie la bonne page et le bon total. Pour chaque sorte de périmètre, le port de lecture n'ajoute rien pour all, n'exécute aucune requête pour none, ajoute une égalité par entrée pour filter, et une liste id IN pour ids ; les politiques sur des attributs ne savent pas lister](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/auth-package-list-scope.fr.svg)
 
 Le gestionnaire demande un périmètre et le remet au port de lecture :
 

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:0b3282777bf5cc56 -->
+<!-- translation-of: README.md sha256:7cf3310adf8540a8 -->
 
 # @ddd-ts-kit/testing
 
@@ -28,7 +28,7 @@ L'entrée principale, `/contracts` et `/e2e` suivent les
 [niveaux de test](../../docs/ARCHITECTURE.fr.md#7-niveaux-de-test) ; les *builders* servent à chaque niveau, et les
 autres entrées se configurent une fois dans la configuration du runner :
 
-![Les quatre niveaux de test et ce que le package donne à chacun : given / when / then, givenEvents, givenProcess et expectRefusal pour une spec du domaine ; createTestBuses, InMemoryRepository et les builders du contexte d'exécution pour une spec d'application ; les suites de contrat pour une spec d'adaptateur, exécutées sur le fake et sur le vrai adaptateur ; startTestServer, le client HTTP, expectProblem, collectEvents et eventually pour une spec de bout en bout. Les mêmes builders alimentent chaque niveau, et les entrées vitest, coverage et faker se configurent une fois dans la configuration du runner](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/testing-package-overview.fr.svg)
+![Les quatre niveaux de test et ce que le package donne à chacun : given / when / then, givenEvents, givenProcess et expectRefusal pour une spec du domaine ; createTestBuses, InMemoryRepository et les builders du contexte d'exécution pour une spec d'application ; les suites de contrat pour une spec d'adaptateur, exécutées sur le fake et sur le vrai adaptateur ; startTestServer, le client HTTP, expectProblem, collectEvents et eventually pour une spec de bout en bout. Les mêmes builders alimentent chaque niveau, et les entrées vitest, coverage et faker se configurent une fois dans la configuration du runner](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/testing-package-overview.fr.svg)
 
 ## Un premier test
 
@@ -199,7 +199,7 @@ const order = anOrder().paid().withLine(aLine().with('sku', 'sku-1')).build();
 const orders = anOrder().placedBy(aCustomer().named('Ada')).buildMany(3);
 ```
 
-![Comment un builder fabrique sa valeur : les valeurs par défaut déclarées une fois et ce que le test a énoncé sont fusionnés par props(), qui tire chaque valeur sequence, lazy et generated et construit chaque builder imbriqué ; build() remet les propriétés à construct, qui passe par l'API publique et donne un agrégat valide par construction, et buildRequest(), une méthode que le projet écrit sur son propre builder, donne, à partir des mêmes propriétés, le contenu de la requête HTTP d'une spec de bout en bout](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/testing-package-builder.fr.svg)
+![Comment un builder fabrique sa valeur : les valeurs par défaut déclarées une fois et ce que le test a énoncé sont fusionnés par props(), qui tire chaque valeur sequence, lazy et generated et construit chaque builder imbriqué ; build() remet les propriétés à construct, qui passe par l'API publique et donne un agrégat valide par construction, et buildRequest(), une méthode que le projet écrit sur son propre builder, donne, à partir des mêmes propriétés, le contenu de la requête HTTP d'une spec de bout en bout](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/testing-package-builder.fr.svg)
 
 Pour des données simples (contenus de requête, DTO, objets-valeurs simples), la forme fonctionnelle suffit.
 Elle donne les méthodes génériques `with(key, value)` et `withMany(partial)`, toutes deux vérifiées contre
@@ -493,7 +493,7 @@ Le gestionnaire ne fait que sauvegarder : `await this.orders.save(order); return
 toute méthode à qui l'on remet l'agrégat) résolu, les événements que l'agrégat a enregistrés sont remis
 à `domainEvents`.
 
-![Une spec de gestionnaire sur createTestBuses : la spec exécute une commande sur le bus de commandes, qui l'exécute dans l'unité de travail ; le vrai gestionnaire sauvegarde l'agrégat dans le fake du repository enveloppé par dispatching, qui garde une copie pendant que les événements enregistrés attendent ; une fois que le gestionnaire a rendu la main, domainEvents remet les événements à un gestionnaire before-commit, qui publie un événement d'intégration sur le bus d'événements en mémoire ; quand execute est résolu, la spec lit l'état du fake et les événements publiés](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/testing-package-handler-spec.fr.svg)
+![Une spec de gestionnaire sur createTestBuses : la spec exécute une commande sur le bus de commandes, qui l'exécute dans l'unité de travail ; le vrai gestionnaire sauvegarde l'agrégat dans le fake du repository enveloppé par dispatching, qui garde une copie pendant que les événements enregistrés attendent ; une fois que le gestionnaire a rendu la main, domainEvents remet les événements à un gestionnaire before-commit, qui publie un événement d'intégration sur le bus d'événements en mémoire ; quand execute est résolu, la spec lit l'état du fake et les événements publiés](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/testing-package-handler-spec.fr.svg)
 
 Une spec de gestionnaire a le minutage de la production. `commandBus` exécute chaque commande dans
 `unitOfWork` (une `InMemoryUnitOfWork`), comme le fait le bus de l'application : les événements de chaque
@@ -826,7 +826,7 @@ chaque *fake* sous le nom de son port ([Stratégie de test, mondes](../../docs/c
 Un *fake* ne mérite la confiance que s'il se comporte comme l'adaptateur qu'il remplace. Chaque suite
 prend les fonctions du runner et une fabrique (factory), et s'exécute sur les deux.
 
-![Une suite de contrat, deux sujets : repositoryContract exécute les mêmes tests sur le fake en mémoire, qu'utilisent les specs de gestionnaire, et sur l'adaptateur Drizzle sur une vraie base de données, qu'utilise la production ; les deux implémentent le port repository du domaine, si bien que ce qu'une spec de gestionnaire prouve sur le fake vaut pour la production](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/testing-package-contract-suite.fr.svg)
+![Une suite de contrat, deux sujets : repositoryContract exécute les mêmes tests sur le fake en mémoire, qu'utilisent les specs de gestionnaire, et sur l'adaptateur Drizzle sur une vraie base de données, qu'utilise la production ; les deux implémentent le port repository du domaine, si bien que ce qu'une spec de gestionnaire prouve sur le fake vaut pour la production](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/testing-package-contract-suite.fr.svg)
 
 <!-- checked sample -->
 ```ts

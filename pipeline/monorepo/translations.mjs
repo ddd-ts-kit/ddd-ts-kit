@@ -59,7 +59,7 @@ const SKIPPED_FILES = new Set([
   'examples/scheduling/docs/privacy/register.md',
 ]);
 const DIAGRAMS = 'docs/assets/diagrams/';
-const RAW = 'https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/';
+const RAW = 'https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/';
 const TRANSLATION_OF = /^<!-- translation-of: (\S+) sha256:([0-9a-f]{16}) -->$/;
 const MAX_DIAGRAM_WIDTH = 960;
 const MIN_FONT_SIZE = 13;

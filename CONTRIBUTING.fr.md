@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:6e3d0c0792370dcf -->
+<!-- translation-of: CONTRIBUTING.md sha256:0062d59802df1aea -->
 
 # Contribuer
 
@@ -10,12 +10,12 @@ une règle. Cette page dit comment commencer, puis les règles que suit chaque c
 ## Votre première contribution
 
 1. **Choisir un sujet.** Les issues étiquetées
-   [good first issue](https://github.com/gbourgeat/ddd-ts-kit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+   [good first issue](https://github.com/ddd-ts-kit/ddd-ts-kit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
    ne demandent pas de connaître le checker en profondeur ; celles étiquetées
-   [help wanted](https://github.com/gbourgeat/ddd-ts-kit/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+   [help wanted](https://github.com/ddd-ts-kit/ddd-ts-kit/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
    sont plus grandes. Dites sur l'issue que vous la prenez, pour que deux personnes ne fassent
    pas le même travail. Pour une idée qui n'a pas encore d'issue, ouvrez d'abord une
-   [discussion](https://github.com/gbourgeat/ddd-ts-kit/discussions) ou une proposition.
+   [discussion](https://github.com/ddd-ts-kit/ddd-ts-kit/discussions) ou une proposition.
 2. **Installer.** Forkez le dépôt, clonez-le, et lancez les commandes ci-dessous : ce sont
    celles que lance la CI. Node 22.12 ou ultérieur.
 3. **Changer, puis vérifier ce que vous avez touché.** Un changement de documentation demande
@@ -41,7 +41,7 @@ Les contributions particulièrement bienvenues :
 - des tests pour les branches d'un package qu'aucune spec ne prend encore ;
 - la documentation : une page qui vous a paru obscure, un exemple qui manque, une traduction ;
 - un retour d'un vrai projet : ce qui a tenu, ce qui a gêné, dans les
-  [Discussions](https://github.com/gbourgeat/ddd-ts-kit/discussions).
+  [Discussions](https://github.com/ddd-ts-kit/ddd-ts-kit/discussions).
 
 Vous n'écrivez pas le français ? Dites-le dans la pull request : le mainteneur peut écrire la
 page française dans la même pull request.
@@ -150,7 +150,7 @@ bout prend 2,5 à 7 Go, et plusieurs à la fois (plusieurs sessions de code, un 
   même pull request : voir [docs/translation.fr.md](docs/translation.fr.md) pour les conventions,
   le glossaire, le style des schémas et les exemples de code vérifiés
   (`npm run docs:translations` et `npm run docs:samples`, lancés par la CI).
-- Le site de la documentation (`site/`, publié à <https://gbourgeat.github.io/ddd-ts-kit/fr/>)
+- Le site de la documentation (`site/`, publié à <https://ddd-ts-kit.github.io/ddd-ts-kit/fr/>)
   est construit à partir de ces mêmes pages, qui restent sa seule source. `npm run site:dev`
   assemble les pages et sert le site sur `http://localhost:4321/ddd-ts-kit/` (relancez-le après
   avoir changé une page) ; `npm run site:build` le construit comme la CI, et échoue sur un lien
@@ -331,7 +331,7 @@ mkdir /tmp/reserve && cd /tmp/reserve
 npm init -y --scope=@ddd-ts-kit && npm pkg set name=<package> version=0.0.0 license=MIT
 npm publish --access public --tag reserved
 npm deprecate <package>@0.0.0 "Placeholder that reserves the name: install a released version."
-npm trust github <package> --file release.yml --repository gbourgeat/ddd-ts-kit --environment npm --allow-publish
+npm trust github <package> --file release.yml --repository ddd-ts-kit/ddd-ts-kit --environment npm --allow-publish
 ```
 
 Tant que ce n'est pas fait, la publication échoue sur ce seul package, et l'étape de

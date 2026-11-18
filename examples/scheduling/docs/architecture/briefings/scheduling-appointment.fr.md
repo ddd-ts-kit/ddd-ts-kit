@@ -1,5 +1,5 @@
 [English](scheduling-appointment.md) · **Français**
-<!-- translation-of: scheduling-appointment.md sha256:a5180cf11e52076b -->
+<!-- translation-of: scheduling-appointment.md sha256:bb21f02fb40c738b -->
 
 # Consigne : scheduling, rendez-vous
 
@@ -41,7 +41,7 @@ processus des tests), l'adaptateur qui traduit cette violation en l'erreur du do
 d'un même créneau à la fois et en voit exactement une gagner. Avec `DATABASE_URL` défini, les
 *specs* tournent sur un vrai serveur, où les deux transactions sont vraiment concurrentes ; en
 processus, elles sont sérialisées par la session unique : écrivez la *spec* de sorte qu'elle soit
-vraie dans les deux cas. Lisez `/home/gbourgeat/ddd-ts-kit/packages/redis/README.md` sur la raison
+vraie dans les deux cas. Lisez `/home/ddd-ts-kit/ddd-ts-kit/packages/redis/README.md` sur la raison
 pour laquelle le verrou n'est pas la garde, et dites-le dans un commentaire là où la contrainte est
 déclarée. Les projections n'ont pas de générateur : écrivez
 `application/projections/<name>.projection.ts` d'après le README de `@ddd-ts-kit/kernel`

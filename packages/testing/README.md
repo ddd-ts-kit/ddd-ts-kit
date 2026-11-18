@@ -27,7 +27,7 @@ The main entry, `/contracts` and `/e2e` follow the
 [test levels](../../docs/ARCHITECTURE.md#7-test-levels); the builders serve every level, and the
 other entries are set up once in the runner config:
 
-![The four test levels and what the package gives each one: given / when / then, givenEvents, givenProcess and expectRefusal for a domain spec; createTestBuses, InMemoryRepository and the execution context builders for an application spec; the contract suites for an adapter spec, run on the fake and on the real adapter; startTestServer, the HTTP client, expectProblem, collectEvents and eventually for an end-to-end spec. The same builders feed every level, and the vitest, coverage and faker entries are set up once in the runner config](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/testing-package-overview.svg)
+![The four test levels and what the package gives each one: given / when / then, givenEvents, givenProcess and expectRefusal for a domain spec; createTestBuses, InMemoryRepository and the execution context builders for an application spec; the contract suites for an adapter spec, run on the fake and on the real adapter; startTestServer, the HTTP client, expectProblem, collectEvents and eventually for an end-to-end spec. The same builders feed every level, and the vitest, coverage and faker entries are set up once in the runner config](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/testing-package-overview.svg)
 
 ## A first test
 
@@ -196,7 +196,7 @@ const order = anOrder().paid().withLine(aLine().with('sku', 'sku-1')).build();
 const orders = anOrder().placedBy(aCustomer().named('Ada')).buildMany(3);
 ```
 
-![How a builder makes its value: the defaults declared once and what the test stated are merged by props(), which draws each sequence, lazy and generated value and builds each nested builder; build() hands the properties to construct, which goes through the public API and gives an aggregate valid by construction, and buildRequest(), a method the project writes on its own builder, gives the request payload of an end-to-end spec from the same properties](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/testing-package-builder.svg)
+![How a builder makes its value: the defaults declared once and what the test stated are merged by props(), which draws each sequence, lazy and generated value and builds each nested builder; build() hands the properties to construct, which goes through the public API and gives an aggregate valid by construction, and buildRequest(), a method the project writes on its own builder, gives the request payload of an end-to-end spec from the same properties](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/testing-package-builder.svg)
 
 For plain data (payloads, DTOs, simple value objects) the functional form is enough. It gives
 the generic `with(key, value)` and `withMany(partial)`, both checked against the properties:
@@ -486,7 +486,7 @@ The handler only saves: `await this.orders.save(order); return order.id;`. `disp
 gives the fake what the application gives every repository: once `save` (or any method handed
 the aggregate) resolved, the events the aggregate recorded are handed over to `domainEvents`.
 
-![A handler spec on createTestBuses: the spec executes a command on the command bus, which runs it in the unit of work; the real handler saves into the repository fake wrapped by dispatching, which keeps a copy while the recorded events wait; once the handler has returned, domainEvents hands the events to a before-commit handler, which publishes an integration event on the in-memory event bus; when execute has resolved, the spec reads the state of the fake and the published events](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/testing-package-handler-spec.svg)
+![A handler spec on createTestBuses: the spec executes a command on the command bus, which runs it in the unit of work; the real handler saves into the repository fake wrapped by dispatching, which keeps a copy while the recorded events wait; once the handler has returned, domainEvents hands the events to a before-commit handler, which publishes an integration event on the in-memory event bus; when execute has resolved, the spec reads the state of the fake and the published events](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/testing-package-handler-spec.svg)
 
 A handler spec has the production timing. `commandBus` runs every command in `unitOfWork`
 (an `InMemoryUnitOfWork`), as the bus of the application does: the events of every save wait
@@ -816,7 +816,7 @@ returns each fake under the name of its port ([Testing strategy, worlds](../../d
 A fake is only worth trusting if it behaves like the adapter it stands for. Each suite takes
 the runner's functions and a factory, and is run against both.
 
-![One contract suite, two subjects: repositoryContract runs the same tests against the in-memory fake, which the handler specs use, and against the Drizzle adapter on a real database, which production uses; both implement the repository port of the domain, so what a handler spec proves on the fake holds for production](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/testing-package-contract-suite.svg)
+![One contract suite, two subjects: repositoryContract runs the same tests against the in-memory fake, which the handler specs use, and against the Drizzle adapter on a real database, which production uses; both implement the repository port of the domain, so what a handler spec proves on the fake holds for production](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/testing-package-contract-suite.svg)
 
 <!-- checked sample -->
 ```ts
