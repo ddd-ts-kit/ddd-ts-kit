@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:5e1b99cb7e74086d -->
+<!-- translation-of: README.md sha256:999737d5a7ac3129 -->
 
 # @ddd-ts-kit/audit
 
@@ -48,7 +48,7 @@ Ce n'est pas un journal applicatif (les journaux sont échantillonnés, tournés
 l'*event sourcing* (il ne reconstruit pas d'état) et pas l'`AuditStamp` du noyau (`createdBy`,
 `updatedBy` : le dernier auteur d'une ligne, pas l'historique).
 
-![Les sources auditGuardRefusals, auditDecisions, auditMiddleware, auditIntegrationEvents et, à la main, auditRecordOf appellent le port AuditTrail ; un store (en mémoire, knex ou drizzle) l'implémente, scelle chaque enregistrement avec sa chaîne, sa séquence, le hachage précédent et son hachage, et écrit dans PostgreSQL derrière des triggers d'ajout seul ; le même store implémente AuditReader, que lisent le gestionnaire de SearchAuditEntriesQuery et verifyChain ; le scellement remet des points de contrôle à un endroit où l'application ne peut pas écrire](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/audit-place-in-an-application.fr.svg)
+![Les sources auditGuardRefusals, auditDecisions, auditMiddleware, auditIntegrationEvents et, à la main, auditRecordOf appellent le port AuditTrail ; un store (en mémoire, knex ou drizzle) l'implémente, scelle chaque enregistrement avec sa chaîne, sa séquence, le hachage précédent et son hachage, et écrit dans PostgreSQL derrière des triggers d'ajout seul ; le même store implémente AuditReader, que lisent le gestionnaire de SearchAuditEntriesQuery et verifyChain ; le scellement remet des points de contrôle à un endroit où l'application ne peut pas écrire](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/audit-place-in-an-application.fr.svg)
 
 Le schéma est la carte de cette page : [l'entrée](#lentrée) et son hachage, les
 [sources](#brancher-les-sources), le [caviardage](#caviardage), la
@@ -352,7 +352,7 @@ d'audit le passe à `auditMiddleware`, `auditedSubjectKeys`, `auditedPersonalDat
 `auditedPersonalDataExport` et `auditedPersonalDataRetention`, dans l'application et dans les
 scripts de `--privacy on`.
 
-![CancelAppointment passe d'abord par l'autorisation : refusée, elle laisse une entrée authorization denied et n'ouvre aucune transaction ; autorisée, le middleware d'audit ouvre la transaction et le gestionnaire s'y exécute ; en cas de succès, l'entrée succeeded est écrite dans la même transaction et validée avec le changement, ou aucun des deux n'existe ; en cas d'échec, la transaction est annulée, puis l'entrée failed est écrite hors de celle-ci avec le code de l'erreur](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/audit-trail-transaction.fr.svg)
+![CancelAppointment passe d'abord par l'autorisation : refusée, elle laisse une entrée authorization denied et n'ouvre aucune transaction ; autorisée, le middleware d'audit ouvre la transaction et le gestionnaire s'y exécute ; en cas de succès, l'entrée succeeded est écrite dans la même transaction et validée avec le changement, ou aucun des deux n'existe ; en cas d'échec, la transaction est annulée, puis l'entrée failed est écrite hors de celle-ci avec le code de l'erreur](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/audit-trail-transaction.fr.svg)
 
 Sans `unitOfWork` (pas de base de données, le journal en mémoire), le *middleware* enregistre
 après le gestionnaire. Enregistrer par l'outbox serait aussi atomique pour les succès, mais une
@@ -647,7 +647,7 @@ auditedFields(RescheduleAppointmentCommand, ['status', 'startsAt', masked('patie
 auditedProjection(ExportAppointmentsCommand, (command) => ({ plain: { format: command.options.format } }));
 ```
 
-![Une RescheduleAppointmentCommand et ses cinq champs, la déclaration, et l'entrée : appointmentId devient la ressource, status est gardé tel quel, startsAt comme un instant ISO, patientEmail comme le HMAC de la valeur sous un secret, et note, du texte libre qui n'est pas listé, n'est jamais lu et ne laisse aucune trace](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/audit-redaction.fr.svg)
+![Une RescheduleAppointmentCommand et ses cinq champs, la déclaration, et l'entrée : appointmentId devient la ressource, status est gardé tel quel, startsAt comme un instant ISO, patientEmail comme le HMAC de la valeur sous un secret, et note, du texte libre qui n'est pas listé, n'est jamais lu et ne laisse aucune trace](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/audit-redaction.fr.svg)
 
 - Un champ qui n'est pas listé n'est jamais lu. Le compilateur refuse un nom que le message n'a
   pas.
@@ -762,7 +762,7 @@ confiance à cette entrée :
 await verifyChain(reader, { chain: 'tenant:acme', from: 313 });
 ```
 
-![Quatre entrées de la chaîne tenant:acme, chacune gardant le hachage de l'entrée précédente et le sien, la première liée au hachage d'origine ; une entrée modifiée est signalée comme altered-content, une entrée supprimée comme missing-entry, deux entrées interverties comme reordered ; une chaîne réécrite en entier redevient valide : c'est donc un point de contrôle copié là où le propriétaire du journal ne peut pas écrire qui le révèle](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/audit-trail-hash-chain.fr.svg)
+![Quatre entrées de la chaîne tenant:acme, chacune gardant le hachage de l'entrée précédente et le sien, la première liée au hachage d'origine ; une entrée modifiée est signalée comme altered-content, une entrée supprimée comme missing-entry, deux entrées interverties comme reordered ; une chaîne réécrite en entier redevient valide : c'est donc un point de contrôle copié là où le propriétaire du journal ne peut pas écrire qui le révèle](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/audit-trail-hash-chain.fr.svg)
 
 **Pourquoi l'ancrage.** La chaîne protège contre quiconque peut modifier quelques lignes.
 Quiconque peut réécrire toute la table (un administrateur de base de données, un attaquant qui a
@@ -956,7 +956,7 @@ verrouillée jusqu'à la fin de cette transaction. Une unité de travail d'une a
 ouverte dans celle en cours se termine avant elle : ses entrées sont écrites à la validation de
 celle du dehors, dans une transaction à elles.
 
-![Trois transactions ajoutent en même temps : T1 verrouille la tête de tenant:acme, écrit l'entrée 42 et valide ; T2, sur la même chaîne, attend cette validation, puis lit 42 et écrit l'entrée 43 ; T3, sur tenant:globex, écrit l'entrée 8 sans attendre](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/audit-chain-append.fr.svg)
+![Trois transactions ajoutent en même temps : T1 verrouille la tête de tenant:acme, écrit l'entrée 42 et valide ; T2, sur la même chaîne, attend cette validation, puis lit 42 et écrit l'entrée 43 ; T3, sur tenant:globex, écrit l'entrée 8 sans attendre](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/audit-chain-append.fr.svg)
 
 **En ajout seul dans la base de données aussi.** Le *helper* de migration crée la fonction
 `audit_entries_append_only` et deux triggers : `UPDATE`, `DELETE` et `TRUNCATE` sur

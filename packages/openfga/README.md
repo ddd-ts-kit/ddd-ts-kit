@@ -16,7 +16,7 @@ npm install @ddd-ts-kit/openfga @openfga/sdk
 only. The main entry takes any client that fits `OpenFgaApi`, the subset of the official
 client the adapters call.
 
-![The three jobs of the package in an application: the use cases ask the Authorizer port, which OpenFgaAuthorizer implements with Check and ListObjects; a context adapter writes tuples after the commit through the RelationTupleStore port, which OpenFgaRelationTupleStore implements with Write and Read; the relationship schema is the one source of the model, which authorizationModelOf generates and ensureAuthorizationModel or modelDrift write or compare on the server](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/openfga-place-in-an-application.svg)
+![The three jobs of the package in an application: the use cases ask the Authorizer port, which OpenFgaAuthorizer implements with Check and ListObjects; a context adapter writes tuples after the commit through the RelationTupleStore port, which OpenFgaRelationTupleStore implements with Write and Read; the relationship schema is the one source of the model, which authorizationModelOf generates and ensureAuthorizationModel or modelDrift write or compare on the server](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/openfga-place-in-an-application.svg)
 
 The package does three jobs, each against one store of an OpenFGA server: it decides
 (`OpenFgaAuthorizer`), it holds the tuples (`OpenFgaRelationTupleStore`) and it keeps the model
@@ -190,7 +190,7 @@ export const authorizer = new OpenFgaAuthorizer({ client, schema: relationshipSc
   `NO_RELATION`): `Check` decides, `ListObjects` gives the scope of a search (`{ kind: 'ids' }`).
   A project moves between the two by binding, nothing else changes.
 
-![Left, check: an anonymous actor is denied ANONYMOUS, a check without a resource RESOURCE_REQUIRED, an unmapped permission UNMAPPED_PERMISSION, all before any call; otherwise Check on the server answers allowed or NO_RELATION. Right, listAccessible: anonymous or unmapped gives the scope none; otherwise ListObjects, refused with ReverseExpansionLimitError when the answer reaches listObjectsLimit, else the scope ids](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/openfga-authorizer-decisions.svg)
+![Left, check: an anonymous actor is denied ANONYMOUS, a check without a resource RESOURCE_REQUIRED, an unmapped permission UNMAPPED_PERMISSION, all before any call; otherwise Check on the server answers allowed or NO_RELATION. Right, listAccessible: anonymous or unmapped gives the scope none; otherwise ListObjects, refused with ReverseExpansionLimitError when the answer reaches listObjectsLimit, else the scope ids](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/openfga-authorizer-decisions.svg)
 
 What the authorization middleware and a search handler receive, with the tuples of the
 example (`ada` assists the calendar of Dr Grace, which holds appointment 42):

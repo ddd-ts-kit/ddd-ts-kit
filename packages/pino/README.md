@@ -16,7 +16,7 @@ npm i -D pino-pretty        # only for the pretty format
 Written against pino 10. `pino-pretty` 13 is an optional peer: it is loaded only when the
 `pretty` format is asked for.
 
-![Where the pino logger sits in an application: the domain and the handlers log nothing; the adapters of infrastructure, the controllers of presentation and the aspects write through the kernel Logger port; the composition root binds PinoLogger to that port; pino writes JSON lines to the standard output, which the platform collects](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/pino-place-in-an-application.svg)
+![Where the pino logger sits in an application: the domain and the handlers log nothing; the adapters of infrastructure, the controllers of presentation and the aspects write through the kernel Logger port; the composition root binds PinoLogger to that port; pino writes JSON lines to the standard output, which the platform collects](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/pino-place-in-an-application.svg)
 
 The domain and the handlers say what happened with events and errors, never with a log line.
 What writes is around them: the adapters of `infrastructure/`, the controllers of
@@ -79,7 +79,7 @@ One line of the application, as it is written:
 {"level":"info","time":"2026-03-01T10:00:00.000Z","service":"shop-api","environment":"production","correlationId":"9f2c","origin":"http","actorId":"user-1","tenantId":"acme","trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","span_id":"00f067aa0ba902b7","context":"shipping","message":"order shipped"}
 ```
 
-![The path of one call to logger.info: below the threshold it stops after one comparison; otherwise the adapter describes the errors among the fields and drops the level and time keys; pino writes the header, then service, environment and base, the fields of the children, what fields() answers and the fields of the line; it replaces the value of every credential key by [redacted]; then it hands the JSON line to its destination, at once on the standard output, through a 4 KiB buffer with asynchronous, or to the pino-pretty worker](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/pino-path-of-a-line.svg)
+![The path of one call to logger.info: below the threshold it stops after one comparison; otherwise the adapter describes the errors among the fields and drops the level and time keys; pino writes the header, then service, environment and base, the fields of the children, what fields() answers and the fields of the line; it replaces the value of every credential key by [redacted]; then it hands the JSON line to its destination, at once on the standard output, through a 4 KiB buffer with asynchronous, or to the pino-pretty worker](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/pino-path-of-a-line.svg)
 
 **Correlation.** `fields` is read at each line that is written, through the pino `mixin`: no
 call site passes an id. `traceLogFields(scope)` answers the trace and span ids inside a span,
@@ -92,7 +92,7 @@ by both is written twice and a JSON parser reads the one of `fields`. `StdoutLog
 them the same way; `@ddd-ts-kit/winston` does not (there a child wins over `fields`). Do not
 bind in a child a key that `fields` answers.
 
-![Which value a key gets when it is given twice, from the weakest to the strongest: with pino and StdoutLogger, service, environment and base, then the children, then fields(), then the line, which wins; with winston, fields(), then the children, then the line, then service, environment and base, which win](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/pino-which-value-wins.svg)
+![Which value a key gets when it is given twice, from the weakest to the strongest: with pino and StdoutLogger, service, environment and base, then the children, then fields(), then the line, which wins; with winston, fields(), then the children, then the line, then service, environment and base, which win](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/pino-which-value-wins.svg)
 
 **An instance of your own.** The project that already configures pino keeps doing so, and
 takes the pieces it wants:

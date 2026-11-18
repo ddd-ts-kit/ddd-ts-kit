@@ -92,7 +92,7 @@ terms:
 | `allowManagedPermissionRulesOnly: true` | managed settings | the permission rules of the organisation are the only ones: a project or a user file cannot widen them |
 | `permissions.disableBypassPermissionsMode: "disable"` | managed | the mode that skips every permission prompt is refused: no session runs without the gates |
 | `allowManagedHooksOnly: true` | managed | only the hooks of the organisation run; copy the hooks of the profile there, or a project file cannot keep them. A project cannot drop the production gate |
-| `strictKnownMarketplaces: [{ "source": "github", "repo": "gbourgeat/ddd-ts-kit" }]` | managed | plugins come from the marketplaces the organisation names (the kit's, or your mirror of it): no unreviewed skill |
+| `strictKnownMarketplaces: [{ "source": "github", "repo": "ddd-ts-kit/ddd-ts-kit" }]` | managed | plugins come from the marketplaces the organisation names (the kit's, or your mirror of it): no unreviewed skill |
 | `requiredMinimumVersion: "<version>"` | managed | a Claude Code older than the version named does not start: every session has the controls of that version |
 | `hooks.PreToolUse`: `production-gate.mjs` on `Bash` | project, `.claude/hooks/` | a command that names the production environment with a release action does not run without a named approval: the release authorisation of the change process, held at the moment the command would run |
 | `hooks.PreToolUse`: `change-reference.mjs` on `Edit\|Write\|MultiEdit` | project, `.claude/hooks/` | an edit of a migration or of the containers is confirmed by a person with a change reference in mind, recorded as the `Change:` trailer of the commit: the change ticket of the change process, on what reaches production otherwise than through the code |

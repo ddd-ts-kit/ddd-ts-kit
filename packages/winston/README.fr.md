@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:bc4f0653dd403f2d -->
+<!-- translation-of: README.md sha256:db0dfa2f49b8977b -->
 
 # @ddd-ts-kit/winston
 
@@ -79,7 +79,7 @@ Une ligne de l'application, telle qu'elle est écrite :
 {"actorId":"user-1","context":"shipping","correlationId":"9f2c","environment":"production","level":"info","message":"order shipped","origin":"http","service":"shop-api","span_id":"00f067aa0ba902b7","tenantId":"acme","time":"2026-03-01T10:00:00.000Z","trace_id":"4bf92f3577b34da6a3ce929d0e0e4736"}
 ```
 
-![Le chemin d'un appel à logger.info à travers winston : sous le seuil, l'adaptateur s'arrête après une comparaison ; sinon il décrit les erreurs parmi les champs et en tient à l'écart level et message ; winston fusionne les champs de la ligne, les champs des enfants et son defaultMeta ; puis les formats s'exécutent dans l'ordre : correlationFields remplit depuis fields() les clés que personne n'a données, redactCredentials masque les clés de secret, isoTime écrit time, json ou la ligne lisible sérialise ; chaque transport écrit la ligne : la console par défaut, ou les fichiers, syslog ou le flux que vous donnez](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/winston-path-of-a-line.fr.svg)
+![Le chemin d'un appel à logger.info à travers winston : sous le seuil, l'adaptateur s'arrête après une comparaison ; sinon il décrit les erreurs parmi les champs et en tient à l'écart level et message ; winston fusionne les champs de la ligne, les champs des enfants et son defaultMeta ; puis les formats s'exécutent dans l'ordre : correlationFields remplit depuis fields() les clés que personne n'a données, redactCredentials masque les clés de secret, isoTime écrit time, json ou la ligne lisible sérialise ; chaque transport écrit la ligne : la console par défaut, ou les fichiers, syslog ou le flux que vous donnez](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/winston-path-of-a-line.fr.svg)
 
 **Corrélation.** `fields` est lu à chaque ligne écrite, par un format winston : aucun point
 d'appel ne passe d'identifiant. `traceLogFields(scope)` renvoie les identifiants de trace et de
@@ -93,7 +93,7 @@ l'emportent sur `fields` : le format ne remplit que les clés que personne n'a d
 un enfant) : ne liez donc pas dans un enfant une clé que `fields` renvoie si le *logger* peut
 être remplacé.
 
-![La valeur que prend une clé donnée deux fois, de la plus faible à la plus forte : avec pino et StdoutLogger, service, environment et base, puis les enfants, puis fields(), puis la ligne, qui l'emporte ; avec winston, fields(), puis les enfants, puis la ligne, puis service, environment et base, qui l'emportent](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/pino-which-value-wins.fr.svg)
+![La valeur que prend une clé donnée deux fois, de la plus faible à la plus forte : avec pino et StdoutLogger, service, environment et base, puis les enfants, puis fields(), puis la ligne, qui l'emporte ; avec winston, fields(), puis les enfants, puis la ligne, puis service, environment et base, qui l'emportent](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/pino-which-value-wins.fr.svg)
 
 **Une instance à vous.** Le projet qui configure déjà winston continue de le faire, et prend les
 formats qu'il veut :

@@ -32,7 +32,7 @@ The actor model lives in `@ddd-ts-kit/kernel`: `Actor`, `anonymousActor()`, `sys
 | Authorization | may this actor do this, on this? | the application layer of each context (`application/authorization/`) | permissions declared as data, one requirement per use case checked by a bus middleware, policies for rules that need loaded state, all through the `Authorizer` port |
 | Invariants | is this a valid state of the business? | the domain | aggregates and `DomainError`s. "An invoice cannot be paid twice" is not a permission |
 
-![The place of the package in an application: the platform turns the bearer token into a Session and its Actor with principalResolver and an Authenticator; the route puts the actor in the command; the guard of the command bus refuses an undeclared use case and asks the Authorizer before the handler; the handler loads the element and asks Access, which runs the policies then the Authorizer; the aggregate imports nothing of the package; four classes implement the one Authorizer port](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/auth-package-place.svg)
+![The place of the package in an application: the platform turns the bearer token into a Session and its Actor with principalResolver and an Authenticator; the route puts the actor in the command; the guard of the command bus refuses an undeclared use case and asks the Authorizer before the handler; the handler loads the element and asks Access, which runs the policies then the Authorizer; the aggregate imports nothing of the package; four classes implement the one Authorizer port](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/auth-package-place.svg)
 
 Nothing is reachable by default. A command or a query that declares neither a permission nor
 that it is public is refused, at run time by the middleware and, when you ask for it, when the
@@ -278,7 +278,7 @@ A protected use case meets two checkpoints. The guard of the bus decides on the 
 the handler and before any transaction; `Access` decides on the element, once the handler has
 loaded it. Each refusal has its error, its code and its HTTP status:
 
-![The two checkpoints. The guard of the bus: an undeclared message fails with UndeclaredUseCaseError, a public one runs with no check, a protected one without actor fails with MissingActorError, the anonymous actor is refused with UnauthenticatedError (401), and a refusal of the Authorizer is a ForbiddenError (403) with its reason; allowed, the unit of work opens and the handler runs. Access in the handler: the anonymous actor is refused with UnauthenticatedError, each policy of the permission is asked, then the Authorizer about the resource; allowed, the aggregate changes. Both hand every decision to onDecision](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/auth-package-two-checkpoints.svg)
+![The two checkpoints. The guard of the bus: an undeclared message fails with UndeclaredUseCaseError, a public one runs with no check, a protected one without actor fails with MissingActorError, the anonymous actor is refused with UnauthenticatedError (401), and a refusal of the Authorizer is a ForbiddenError (403) with its reason; allowed, the unit of work opens and the handler runs. Access in the handler: the anonymous actor is refused with UnauthenticatedError, each policy of the permission is asked, then the Authorizer about the resource; allowed, the aggregate changes. Both hand every decision to onDecision](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/auth-package-two-checkpoints.svg)
 
 `UndeclaredUseCaseError` and `MissingActorError` are not refusals: they say the code is wrong,
 fail the first test that sends the message, and are never answered as a 403.
@@ -1139,7 +1139,7 @@ the decider then asks `decide`, which records everything. The how-to is in the R
 A list is filtered by the query, never in memory after loading. A page filtered after it was
 read shows fewer rows than asked, and its total counts rows the actor may not see:
 
-![Filtering a list. Instead of reading a page of every tenant and filtering it in memory, which shows 3 rows instead of 20 and a wrong total, the handler asks access.scope for an AccessScope and the read port turns it into a WHERE clause, so the database answers the right page and the right total. For each kind of scope, the read port adds nothing for all, runs no query for none, one equality per entry for filter, and an id IN list for ids; the attribute policies cannot list](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/auth-package-list-scope.svg)
+![Filtering a list. Instead of reading a page of every tenant and filtering it in memory, which shows 3 rows instead of 20 and a wrong total, the handler asks access.scope for an AccessScope and the read port turns it into a WHERE clause, so the database answers the right page and the right total. For each kind of scope, the read port adds nothing for all, runs no query for none, one equality per entry for filter, and an id IN list for ids; the attribute policies cannot list](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/auth-package-list-scope.svg)
 
 The handler asks for a scope and hands it to the read port:
 

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:831516864474490b -->
+<!-- translation-of: README.md sha256:59c4d00f9d43a2f9 -->
 
 # @ddd-ts-kit/rabbitmq
 
@@ -26,7 +26,7 @@ donné à l'application sous la forme de deux ports du noyau : `IntegrationEvent
 l'outbox, et `EventSubscribers` remet à chaque contexte l'abonné de son propre nom de
 consommateur.
 
-![Le gestionnaire de ordering écrit la commande client et un enregistrement d'outbox dans une seule transaction ; le relais de l'outbox donne l'enregistrement à RabbitMqEventBus, qui le publie sur l'exchange topic integration-events avec le type d'événement comme clé de routage et attend la confirmation du broker ; l'exchange route une copie vers la file de travail de chaque consommateur lié pour ce type, billing.ordering.order.placed et shipping.ordering.order.placed ; chaque file la remet aux gestionnaires de son contexte, acquittée après la validation de leur unité de travail](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/rabbitmq-outbox-to-queues.fr.svg)
+![Le gestionnaire de ordering écrit la commande client et un enregistrement d'outbox dans une seule transaction ; le relais de l'outbox donne l'enregistrement à RabbitMqEventBus, qui le publie sur l'exchange topic integration-events avec le type d'événement comme clé de routage et attend la confirmation du broker ; l'exchange route une copie vers la file de travail de chaque consommateur lié pour ce type, billing.ordering.order.placed et shipping.ordering.order.placed ; chaque file la remet aux gestionnaires de son contexte, acquittée après la validation de leur unité de travail](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/rabbitmq-outbox-to-queues.fr.svg)
 
 `init --broker rabbitmq` écrit ce câblage dans la plateforme du projet : le bus est construit par
 `platform/events/create-event-provider.ts`, `platform/composition/platform.module.ts` lie à nouveau
@@ -245,7 +245,7 @@ Deux instances d'un même consommateur partagent sa file : chaque événement va
 
 ## Comportement des nouvelles tentatives et de la file de rejet
 
-![Les trois files du consommateur billing pour le type ordering.order.placed : la file de travail remet un message aux gestionnaires avec sa tentative n lue dans x-attempt ; quand un gestionnaire a levé une exception et que n est inférieur à retry.maxAttempts, le bus envoie une copie confirmée à la file de nouvelles tentatives avec x-attempt n plus 1, puis acquitte l'original ; la copie attend retry.delayMs, la durée de vie de la file de nouvelles tentatives, et le broker la renvoie en dead-letter vers la file de travail ; à n égal à retry.maxAttempts, et aussitôt pour un message empoisonné, la copie va à la place dans la file de rejet ; un consommateur qui plante sans cesse voit le broker lui-même envoyer le message dans la file de rejet, par la limite de livraisons d'une file quorum](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/rabbitmq-retry-and-dead-letter.fr.svg)
+![Les trois files du consommateur billing pour le type ordering.order.placed : la file de travail remet un message aux gestionnaires avec sa tentative n lue dans x-attempt ; quand un gestionnaire a levé une exception et que n est inférieur à retry.maxAttempts, le bus envoie une copie confirmée à la file de nouvelles tentatives avec x-attempt n plus 1, puis acquitte l'original ; la copie attend retry.delayMs, la durée de vie de la file de nouvelles tentatives, et le broker la renvoie en dead-letter vers la file de travail ; à n égal à retry.maxAttempts, et aussitôt pour un message empoisonné, la copie va à la place dans la file de rejet ; un consommateur qui plante sans cesse voit le broker lui-même envoyer le message dans la file de rejet, par la limite de livraisons d'une file quorum](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/rabbitmq-retry-and-dead-letter.fr.svg)
 
 1. Un message est acquitté après que chaque gestionnaire abonné à sa file s'est résolu. Un
    `@IntegrationEventHandler` déclaré (ou `consume` de `@ddd-ts-kit/events` à la main) valide son

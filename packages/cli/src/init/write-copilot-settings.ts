@@ -29,7 +29,7 @@ export function writeCopilotSettings(ws: Workspace): void {
     ...settings,
     extraKnownMarketplaces: {
       ...marketplaces,
-      [MARKETPLACE]: marketplaces[MARKETPLACE] ?? { source: { source: 'github', repo: 'gbourgeat/ddd-ts-kit' } },
+      [MARKETPLACE]: marketplaces[MARKETPLACE] ?? { source: { source: 'github', repo: 'ddd-ts-kit/ddd-ts-kit' } },
     },
     enabledPlugins: { ...plugins, [PLUGIN]: plugins[PLUGIN] ?? true },
   };

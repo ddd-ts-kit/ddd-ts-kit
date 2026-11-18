@@ -47,7 +47,7 @@ The first command starts the containers, the second migrates the database and st
 processes of the application, the third plays the scenario of
 [docs/demo-transcript.md](docs/demo-transcript.md) with real tokens of the local Keycloak.
 
-![The two processes of the application and the containers they use: a client calls the API on port 54300, or Varnish on port 54081, which answers public reads from its cache and passes the rest to the API; the API process runs the HTTP server, the use cases of the four contexts, the event consumers, the outbox relay and the catch-up of the event store; the worker process runs the scheduled jobs and the event consumers; both use PostgreSQL, Dragonfly, Keycloak, Jaeger and GlitchTip; the relay purges Varnish by tag after a commit](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/scheduling-example-runtime.svg)
+![The two processes of the application and the containers they use: a client calls the API on port 54300, or Varnish on port 54081, which answers public reads from its cache and passes the rest to the API; the API process runs the HTTP server, the use cases of the four contexts, the event consumers, the outbox relay and the catch-up of the event store; the worker process runs the scheduled jobs and the event consumers; both use PostgreSQL, Dragonfly, Keycloak, Jaeger and GlitchTip; the relay purges Varnish by tag after a commit](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/scheduling-example-runtime.svg)
 
 Everything listens on 127.0.0.1, on ports 54xxx chosen not to meet another stack:
 
@@ -219,7 +219,7 @@ relationships stored as tuples `object#relation@subject` and derived as Zanzibar
 valid at all: the domain. The contexts never name a role or a relation: they name permissions,
 and write relationships through a port of their own when a fact happens.
 
-![A request crosses four checks in order: the HTTP boundary verifies the Keycloak token (401 without a valid one), the authorizer decides before the handler from the roles of the token, then the relationships (403 when neither grants), the handler loads the element and runs the policies of the permission (403 when one says no), and the domain keeps its invariants (422); three cases are followed through: an assistant booking on a delegated calendar gets 201, a patient cancelling less than 24 hours before gets 403 from the policy, a practitioner cancelling without a reason gets 422 from the domain](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/scheduling-example-authorization-path.svg)
+![A request crosses four checks in order: the HTTP boundary verifies the Keycloak token (401 without a valid one), the authorizer decides before the handler from the roles of the token, then the relationships (403 when neither grants), the handler loads the element and runs the policies of the permission (403 when one says no), and the domain keeps its invariants (422); three cases are followed through: an assistant booking on a delegated calendar gets 201, a patient cancelling less than 24 hours before gets 403 from the policy, a practitioner cancelling without a reason gets 422 from the domain](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/scheduling-example-authorization-path.svg)
 
 So a handler never tests a role or a relation itself. Instead of:
 
@@ -244,7 +244,7 @@ practice. The tuple `desk:<practice>.<practitioner>#delegate@user:<assistant>` w
 it 201, and after the revocation 403 again. Changing opening hours asks for `plan`, which a
 delegate has only through `availability_delegate`. `scheduling` never copied the delegation.
 
-![The check of scheduling:appointment.book on calendar:c1 for user:linus: the permission means run on the calendar, which is run on its desk desk:p1.grace through the tuple written by scheduling when the calendar was created; run on the desk holds for its holder user:grace, for a delegate, and for the managers of its practice practice:p1 such as user:ada; the path is found through the tuple desk:p1.grace#delegate@user:linus that identity wrote when the delegation was granted, and deleted when it was revoked](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/scheduling-example-delegation-tuples.svg)
+![The check of scheduling:appointment.book on calendar:c1 for user:linus: the permission means run on the calendar, which is run on its desk desk:p1.grace through the tuple written by scheduling when the calendar was created; run on the desk holds for its holder user:grace, for a delegate, and for the managers of its practice practice:p1 such as user:ada; the path is found through the tuple desk:p1.grace#delegate@user:linus that identity wrote when the delegation was granted, and deleted when it was revoked](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/scheduling-example-delegation-tuples.svg)
 
 The same check, run with the in-memory store of `@ddd-ts-kit/auth/rebac` on the part of
 `src/platform/auth/relationships/relationship-schema.ts` it walks through (the example binds a store on
@@ -418,7 +418,7 @@ projection, the outbox append), then, later and in the same trace,
 `process notification.scheduling-appointment-booked` with the commands it sends (the
 notification, then the reminder), `process analytics.outcomes` with the row it writes.
 
-![The span tree of one booking, in two parts: in the request, before the answer 201, POST /appointments contains the command BookAppointmentCommand, its repository calls and its unit of work, where the domain event scheduling.appointment.booked runs its handlers: the relationships, the confirmation deadline, the agenda and the outbox append; after the response, the outbox relay publishes the event in the same trace, and notification and analytics each process it, notification sending a mail through its mailer and planning a reminder, analytics writing the outcome of the appointment](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/scheduling-example-booking-trace.svg)
+![The span tree of one booking, in two parts: in the request, before the answer 201, POST /appointments contains the command BookAppointmentCommand, its repository calls and its unit of work, where the domain event scheduling.appointment.booked runs its handlers: the relationships, the confirmation deadline, the agenda and the outbox append; after the response, the outbox relay publishes the event in the same trace, and notification and analytics each process it, notification sending a mail through its mailer and planning a reminder, analytics writing the outcome of the appointment](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/scheduling-example-booking-trace.svg)
 
 No context imports a tracing library: the spans are opened around the buses, the repositories,
 the adapters and the relay by the platform. The same trace id is on the log lines and on the
@@ -434,7 +434,7 @@ A change of the hours asks for that tag to be purged, in the transaction of the 
 request goes into the outbox with the event, so a refused change purges nothing, and a committed
 one is purged even if the process stops right after the commit.
 
-![The sequence of a cached answer: a first GET of the opening hours misses in Varnish, reaches the API and is kept under the tag calendar:c1; a second GET is a HIT and never reaches the API; a PUT of the hours runs the command, whose domain event handler writes a purge request into the outbox in the same transaction; after the commit the outbox relay sends a PURGE of the tag to Varnish, and a second one two seconds later; the next GET misses and reads the new hours](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/scheduling-example-cache-purge.svg)
+![The sequence of a cached answer: a first GET of the opening hours misses in Varnish, reaches the API and is kept under the tag calendar:c1; a second GET is a HIT and never reaches the API; a PUT of the hours runs the command, whose domain event handler writes a purge request into the outbox in the same transaction; after the commit the outbox relay sends a PURGE of the tag to Varnish, and a second one two seconds later; the next GET misses and reads the new hours](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/scheduling-example-cache-purge.svg)
 
 The route declares how its answer is cached, and under which tag (an excerpt of
 `presentation/http/calendars/get-opening-hours/get-opening-hours.controller.ts`):

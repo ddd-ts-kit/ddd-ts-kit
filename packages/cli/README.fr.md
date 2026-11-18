@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:d66d20ef651ad8e6 -->
+<!-- translation-of: README.md sha256:89fd905ca1eaa777 -->
 
 # ddd-ts-kit
 
@@ -22,7 +22,7 @@ actuelle. La seconde relit le projet sans le modifier : `check` le juge, `list` 
 disent ce qu'il contient, `status` et `todo` disent ce qui reste à faire, `affected` dit ce
 qu'une *pull request* doit exécuter.
 
-![Les commandes de la CLI autour d'un projet : à gauche celles qui l'écrivent (init, generate, docs, sdk et depcruise-config, les trois migrations), au milieu le projet (ddd-ts-kit.config.json, les contextes délimités et la plateforme sous src/, les documents générés), à droite celles qui le relisent (check et check-file, list et describe, status et todo, affected)](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/cli-commands-and-project.fr.svg)
+![Les commandes de la CLI autour d'un projet : à gauche celles qui l'écrivent (init, generate, docs, sdk et depcruise-config, les trois migrations), au milieu le projet (ddd-ts-kit.config.json, les contextes délimités et la plateforme sous src/, les documents générés), à droite celles qui le relisent (check et check-file, list et describe, status et todo, affected)](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/cli-commands-and-project.fr.svg)
 
 Aucune dépendance d'exécution. Node 22.12 ou ultérieur. Windows via WSL 2 uniquement : hors de WSL,
 `affected --run`, `verify-slice`, `worker-scope`, `story-scope`, `worktree` (sauf `--no-install` ou
@@ -61,7 +61,7 @@ faire), `3` une commande qui écrit des fichiers n'a pas pu en écrire certains 
 autres fichiers sont écrits et aucun n'est supprimé ; `4` une erreur interne du kit, dite en une
 ligne avec sa version (`internal error of ddd-ts-kit <version>: ...`, sa pile d'appels à la suite
 quand `DDD_TS_KIT_DEBUG` est défini ; sous `--json` une `error` avec sa `stack` et
-`"internal": true`) : signalez-la sur https://github.com/gbourgeat/ddd-ts-kit/issues avec la
+`"internal": true`) : signalez-la sur https://github.com/ddd-ts-kit/ddd-ts-kit/issues avec la
 commande et la pile d'appels.
 
 ## init
@@ -406,7 +406,7 @@ la forme de 0.1 (`@CommandHandler(M, [Ports])`), qui continue de fonctionner san
 liste ce que reçoit chaque classe. Chaque fichier généré exporte une classe, une interface ou une
 fonction, et porte son nom.
 
-![Comment un contexte déclaré rejoint la racine de composition : les fichiers de rôle portent leur décorateur et typent les paramètres de leur constructeur par des classes ; generate, docs et le script dev lisent ces signatures et écrivent les déclarations de chaque couche, un export par fichier de rôle de la couche et une instruction injected par classe qui reçoit quelque chose, et un récapitulatif à la racine du contexte qui les réexporte ; la racine de composition inclut le récapitulatif avec contextModule et @ddd-ts-kit/di injecte à partir de lui ; check et docs --check signalent des déclarations générées qui ne correspondent plus aux fichiers de rôle](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/cli-declared-barrel.fr.svg)
+![Comment un contexte déclaré rejoint la racine de composition : les fichiers de rôle portent leur décorateur et typent les paramètres de leur constructeur par des classes ; generate, docs et le script dev lisent ces signatures et écrivent les déclarations de chaque couche, un export par fichier de rôle de la couche et une instruction injected par classe qui reçoit quelque chose, et un récapitulatif à la racine du contexte qui les réexporte ; la racine de composition inclut le récapitulatif avec contextModule et @ddd-ts-kit/di injecte à partir de lui ; check et docs --check signalent des déclarations générées qui ne correspondent plus aux fichiers de rôle](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/cli-declared-barrel.fr.svg)
 
 Un extrait des déclarations du contexte `notification` de l'application d'exemple, telles que
 la CLI les écrit (jamais à la main) : un fichier par couche, au-dessus des dossiers de rôle dont
@@ -799,7 +799,7 @@ Un passage de `generate` fait cinq choses, dans cet ordre, et n'écrit rien quan
 refuse (chaque fichier écrit en entier, un genre qui écrit des fichiers partagés sous le verrou du
 projet : [init](#init)) :
 
-![Un passage de generate command : le nom est vérifié dans le glossaire du contexte (refusé avec le code de sortie 2 et le --term à ajouter quand un mot n'est pas défini), les fichiers sont écrits depuis les templates, les nouvelles pièces sont enregistrées entre des commentaires marqueurs, les documents dérivés sont rafraîchis, et les endroits qui attendent une décision métier sont affichés en fichier:ligne](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/cli-generate-one-run.fr.svg)
+![Un passage de generate command : le nom est vérifié dans le glossaire du contexte (refusé avec le code de sortie 2 et le --term à ajouter quand un mot n'est pas défini), les fichiers sont écrits depuis les templates, les nouvelles pièces sont enregistrées entre des commentaires marqueurs, les documents dérivés sont rafraîchis, et les endroits qui attendent une décision métier sont affichés en fichier:ligne](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/cli-generate-one-run.fr.svg)
 
 Dans l'application d'exemple, un cas d'usage nommé avec un mot que son glossaire ne définit pas
 est refusé, et le message dit comment continuer :
@@ -2346,7 +2346,7 @@ sélection n'est jamais plus étroite que les relations déclarées, parce que
 `context/declared-relationship` garde chaque import entre contextes à l'intérieur d'elles, et que
 cette règle tourne sur le projet entier dans chaque *pipeline*.
 
-![Un changement dans le contexte scheduling de l'application d'exemple : scheduling est retenu, et avec lui notification et analytics, qui sont en aval de lui dans la carte des contextes ; identity, en amont, est laissé à la branche par défaut](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/cli-affected-selection.fr.svg)
+![Un changement dans le contexte scheduling de l'application d'exemple : scheduling est retenu, et avec lui notification et analytics, qui sont en aval de lui dans la carte des contextes ; identity, en amont, est laissé à la branche par défaut](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/cli-affected-selection.fr.svg)
 
 Dans l'application d'exemple, une branche qui modifie un agrégat de `scheduling` :
 

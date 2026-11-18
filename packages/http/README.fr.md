@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:c1e19772dde9e37c -->
+<!-- translation-of: README.md sha256:84d504cf4373feae -->
 
 # @ddd-ts-kit/http
 
@@ -11,7 +11,7 @@ Chaque adaptateur passe par un seul pipeline (`executeRoute`) : validation, gest
 (handler), correspondance des erreurs. Le comportement est donc le même sur les quatre
 frameworks, et une seule suite de tests le prouve.
 
-![La place du package dans une application : l'adaptateur de chaque framework remet chaque requête HTTP au même pipeline executeRoute, qui lance le gestionnaire de la route, et le gestionnaire appelle un cas d'usage ; la même liste de routes est montée sur le serveur et donnée à generateOpenApi, qui écrit le contrat](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/http-package-overview.fr.svg)
+![La place du package dans une application : l'adaptateur de chaque framework remet chaque requête HTTP au même pipeline executeRoute, qui lance le gestionnaire de la route, et le gestionnaire appelle un cas d'usage ; la même liste de routes est montée sur le serveur et donnée à generateOpenApi, qui écrit le contrat](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/http-package-overview.fr.svg)
 
 Le package vit dans la couche présentation : il transforme une requête HTTP en un appel de
 votre gestionnaire, et la réponse du gestionnaire (ou son refus) en une réponse HTTP. Il ne
@@ -189,7 +189,7 @@ fait que copier la requête HTTP de son framework dans une `RawRequest` (`params
 `headers`, `body`, `raw`, et le flux du corps, `stream`), l'appeler, et réécrire la
 `RouteResponse` qu'elle renvoie.
 
-![Les étapes que suit executeRoute pour une requête HTTP : les identifiants, puis, dans le hook around, authentification, téléversement, validation, If-Match, contexte d'exécution et tenant, puis les gardes et handle dans la portée d'exécution, le contrôle de la réponse, les en-têtes et le 304 ; chaque étape qui peut refuser nomme son statut, et chaque refus devient un document problem](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/http-package-pipeline.fr.svg)
+![Les étapes que suit executeRoute pour une requête HTTP : les identifiants, puis, dans le hook around, authentification, téléversement, validation, If-Match, contexte d'exécution et tenant, puis les gardes et handle dans la portée d'exécution, le contrôle de la réponse, les en-têtes et le 304 ; chaque étape qui peut refuser nomme son statut, et chaque refus devient un document problem](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/http-package-pipeline.fr.svg)
 
 Les étapes inutiles sont sautées : pas de téléversement, pas d'`If-Match`, pas de garde, pas de
 validateur. Le premier refus termine la requête HTTP : une requête HTTP invalide n'atteint
@@ -558,7 +558,7 @@ et la réponse est en `application/problem+json` (RFC 9457) :
   "detail": "Order 7 does not exist.", "requestId": "..." }
 ```
 
-![Comment la réponse à une erreur est choisie : une erreur qui n'est pas une DomainError répond 500 sans détail ; une DomainError reçoit le statut auquel son code correspond, d'après les défauts, les codes de l'application, sinon 422 ; un 5xx ne répond que son statut et son code, un 4xx un document problem avec son détail, ses faits exposés et ses erreurs de validation](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/http-package-error-answer.fr.svg)
+![Comment la réponse à une erreur est choisie : une erreur qui n'est pas une DomainError répond 500 sans détail ; une DomainError reçoit le statut auquel son code correspond, d'après les défauts, les codes de l'application, sinon 422 ; un 5xx ne répond que son statut et son code, un 4xx un document problem avec son détail, ses faits exposés et ses erreurs de validation](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/http-package-error-answer.fr.svg)
 
 Un refus construit par une fabrique porte des faits, et ils sont privés : le document ne
 contient, sous `facts`, que ceux que sa fabrique a exposés par leur nom, et aucun membre `facts`
@@ -975,7 +975,7 @@ Une route continue de répondre une valeur typée que vérifie son schéma de r�
 l'en-tête `Accept` parmi ceux que la route déclare. L'application enregistre ses représentations
 une fois et donne le même ensemble aux adaptateurs et au générateur du contrat :
 
-![Un gestionnaire répond une valeur typée ; le schéma de réponse la vérifie ; l'accès aux champs écarte ce que l'appelant ne peut pas lire ; la négociation sur Accept choisit JSON, XML ou CSV parmi ce que produit la route, ou refuse par un 406 quand aucun n'est en commun](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/representations-and-forms-one-value.fr.svg)
+![Un gestionnaire répond une valeur typée ; le schéma de réponse la vérifie ; l'accès aux champs écarte ce que l'appelant ne peut pas lire ; la négociation sur Accept choisit JSON, XML ou CSV parmi ce que produit la route, ou refuse par un 406 quand aucun n'est en commun](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/representations-and-forms-one-value.fr.svg)
 
 ```ts
 import { Representations, type ExecuteOptions } from '@ddd-ts-kit/http';
@@ -1197,7 +1197,7 @@ déjà : son schéma de corps de requête, les champs restreints de ce schéma, 
 indications de présentation. `formRoutes` sert un `GET /forms/<operationId>` par route de ce
 genre, monté et documenté comme toute route :
 
-![Le schéma du corps de la réservation réserve la note interne ; la route du formulaire demande la permission de réserver et interroge Access à propos de l'agenda ; le praticien titulaire du bureau peut poser chaque champ, un assistant sur un bureau délégué voit la note en lecture seule, un patient qui réserve pour lui-même ne la voit pas, et un assistant sans délégation est refusé par un 403](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/representations-and-forms-one-form-per-caller.fr.svg)
+![Le schéma du corps de la réservation réserve la note interne ; la route du formulaire demande la permission de réserver et interroge Access à propos de l'agenda ; le praticien titulaire du bureau peut poser chaque champ, un assistant sur un bureau délégué voit la note en lecture seule, un patient qui réserve pour lui-même ne la voit pas, et un assistant sans délégation est refusé par un 403](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/representations-and-forms-one-form-per-caller.fr.svg)
 
 ```ts
 // presentation/http/appointments/book-appointment/book-appointment.controller.ts, à côté de ses schémas

@@ -25,7 +25,7 @@ the kernel and nothing else. `@ddd-ts-kit/di` binds `JobScheduler` to an `InProc
 in its kernel module and registers the declared jobs: an application built with it needs no line
 of this README but the job itself.
 
-![The application layer of a bounded context declares its jobs against the kernel, which holds the declarations and the JobScheduler, JobQueue and ProcessRunner ports, and never imports this package; this package implements those ports, runs the jobs and calls the Lock, the JobStore and the JobCheckpoints the platform binds; the kernel module of @ddd-ts-kit/di binds every port to its implementation and registers the declared jobs](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/scheduling-package-place.svg)
+![The application layer of a bounded context declares its jobs against the kernel, which holds the declarations and the JobScheduler, JobQueue and ProcessRunner ports, and never imports this package; this package implements those ports, runs the jobs and calls the Lock, the JobStore and the JobCheckpoints the platform binds; the kernel module of @ddd-ts-kit/di binds every port to its implementation and registers the declared jobs](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/scheduling-package-place.svg)
 
 `JobScheduler` is not the `Scheduler` of `@ddd-ts-kit/aspects`. That one is a timer for retry
 and timeout (`schedule(work, delayMs)`); this one knows jobs, schedules and instances.
@@ -151,7 +151,7 @@ instance name the same instants, and a restart keep them. An interval that does 
 day (`'7h'`) drifts against the wall clock, and none follows a time zone: for "every morning",
 write a cron.
 
-![Two instances started at 10:07 and 10:11: aligned on the epoch, both name the occurrences 10:15, 10:30, 10:45 and 11:00, so one lock key per occurrence and one instance runs it; counted from the start of each process, the first would name 10:22, 10:37, 10:52 and the second 10:26, 10:41, 10:56, different keys, and both would run](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/scheduling-package-interval-alignment.svg)
+![Two instances started at 10:07 and 10:11: aligned on the epoch, both name the occurrences 10:15, 10:30, 10:45 and 11:00, so one lock key per occurrence and one instance runs it; counted from the start of each process, the first would name 10:22, 10:37, 10:52 and the second 10:26, 10:41, 10:56, different keys, and both would run](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/scheduling-package-interval-alignment.svg)
 
 **Cron** has the five standard fields, no seconds:
 
@@ -223,7 +223,7 @@ Written next to the schedule: `{ every: '15m', overlap: 'queue', timeoutMs: 60_0
 Each option acts at one step of an occurrence, and each step that stops it records an outcome
 (see "Observability"):
 
-![An occurrence becomes due; reached later than lateAfterMs with missed skip, it is recorded missed; with the previous run still in progress and overlap skip, skipped-overlap; for a singleInstance job the scheduler takes the lock of the occurrence, held by another instance it records skipped-locked, unreachable failed with JOB_LOCK_UNAVAILABLE; taken, the job runs in an execution scope and succeeds or fails with its code, JOB_TIMEOUT or JOB_ABORTED; every outcome is logged, counted and given to onRun](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/scheduling-package-one-occurrence.svg)
+![An occurrence becomes due; reached later than lateAfterMs with missed skip, it is recorded missed; with the previous run still in progress and overlap skip, skipped-overlap; for a singleInstance job the scheduler takes the lock of the occurrence, held by another instance it records skipped-locked, unreachable failed with JOB_LOCK_UNAVAILABLE; taken, the job runs in an execution scope and succeeds or fails with its code, JOB_TIMEOUT or JOB_ABORTED; every outcome is logged, counted and given to onRun](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/scheduling-package-one-occurrence.svg)
 
 **Missed** means reached later than `lateAfterMs` (60 s by default, an option of the
 scheduler) after the instant, jitter aside: the process was down, asleep, or its event loop

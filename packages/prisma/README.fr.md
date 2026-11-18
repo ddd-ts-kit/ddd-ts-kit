@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:1199cc9f704b653e -->
+<!-- translation-of: README.md sha256:1b8cce0f119675d8 -->
 
 # @ddd-ts-kit/prisma
 
@@ -27,7 +27,7 @@ ports du noyau (`UnitOfWork`, `IntegrationEventPublisher`) et de son domaine (un
 ce *package* donne les adaptateurs des ports du noyau, votre `infrastructure/` écrit par-dessus
 les adaptateurs des ports du domaine, et la plateforme les lie tous au démarrage.
 
-![L'adaptateur PrismaInvoiceRepository du projet implémente le port InvoiceRepository qu'appelle un gestionnaire de commande, et interroge database.client() ; le package donne l'unité de travail (liée à UnitOfWork et à Database), le registre des événements traités et le registre de l'outbox, où sont ajoutés les événements du gestionnaire ; l'OutboxRelay de @ddd-ts-kit/events les réclame et les publie vers le broker ; chaque instruction passe par le client Prisma généré jusqu'à PostgreSQL](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/prisma-place-in-an-application.fr.svg)
+![L'adaptateur PrismaInvoiceRepository du projet implémente le port InvoiceRepository qu'appelle un gestionnaire de commande, et interroge database.client() ; le package donne l'unité de travail (liée à UnitOfWork et à Database), le registre des événements traités et le registre de l'outbox, où sont ajoutés les événements du gestionnaire ; l'OutboxRelay de @ddd-ts-kit/events les réclame et les publie vers le broker ; chaque instruction passe par le client Prisma généré jusqu'à PostgreSQL](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/prisma-place-in-an-application.fr.svg)
 
 | Pièce | Ce qu'elle fournit | Section |
 |---|---|---|
@@ -202,7 +202,7 @@ transaction dans une unité de travail et sur le client racine en dehors. Comme 
 le client courant, un événement publié par un gestionnaire qui échoue ensuite est annulé avec
 l'écriture métier : c'est tout l'intérêt de l'outbox.
 
-![Une commande dans une unité de travail Prisma : le bus de commandes appelle run, qui ouvre la transaction Prisma et garde son client dans un AsyncLocalStorage ; le gestionnaire enregistre la facture et ajoute ses événements sur ce client ; quand le travail rend la main, les événements du domaine vont à leurs gestionnaires before-commit, puis la transaction est validée, puis les gestionnaires after-commit s'exécutent ; un échec avant la validation ne laisse aucune ligne et aucun enregistrement d'outbox](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/prisma-unit-of-work-timeline.fr.svg)
+![Une commande dans une unité de travail Prisma : le bus de commandes appelle run, qui ouvre la transaction Prisma et garde son client dans un AsyncLocalStorage ; le gestionnaire enregistre la facture et ajoute ses événements sur ce client ; quand le travail rend la main, les événements du domaine vont à leurs gestionnaires before-commit, puis la transaction est validée, puis les gestionnaires after-commit s'exécutent ; un échec avant la validation ne laisse aucune ligne et aucun enregistrement d'outbox](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/prisma-unit-of-work-timeline.fr.svg)
 
 Les deux mêmes appels, avec le *publisher* lié au *broker* ou à l'outbox, ne donnent pas la
 même garantie :
@@ -393,7 +393,7 @@ lève `UniqueViolationError` (code `CONFLICT`, 409), ce que répondent les autre
 instruction que la base refuse pour une valeur unique (`P2002`) est levée de même par
 `optimisticUpdate`.
 
-![Deux transactions chargent la facture inv-1 en version 3 ; A enregistre d'abord, sa mise à jour correspond à la version 3 et la ligne passe en version 4 ; B enregistre ensuite, sa mise à jour attend toujours la version 3, ne correspond à aucune ligne, et optimisticUpdate lève une ConcurrencyError de code CONCURRENCY_CONFLICT ; la transaction de B est annulée](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/persistence-optimistic-concurrency.fr.svg)
+![Deux transactions chargent la facture inv-1 en version 3 ; A enregistre d'abord, sa mise à jour correspond à la version 3 et la ligne passe en version 4 ; B enregistre ensuite, sa mise à jour attend toujours la version 3, ne correspond à aucune ligne, et optimisticUpdate lève une ConcurrencyError de code CONCURRENCY_CONFLICT ; la transaction de B est annulée](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/persistence-optimistic-concurrency.fr.svg)
 
 Une `ConcurrencyError` est une issue attendue, pas un bogue : la commande peut être rejouée sur
 un chargement frais, ou l'appelant prévenu que quelqu'un d'autre a modifié la facture.
@@ -917,7 +917,7 @@ garderait ce qu'il ne doit pas. L'adaptateur implémente `PersonalDataRetention`
   consommateurs s'exécutent alors dans ce *tenant*. Un modèle qui porte le champ est relu dans tous
   les cas.
 
-![Les deux stratégies de réclamation côte à côte : skip-locked verrouille les lignes dues par un select for update skip locked en SQL brut, les lit et leur donne un bail en une transaction courte, si bien que les relais sautent les lignes des autres ; compare-and-set lit les lignes dues, prend chacune par un updateMany gardé par le nombre de tentatives lu, et relit pour remplacer les lignes qu'un autre relais a prises ; dans les deux cas un enregistrement réclamé est caché pendant leaseMs, si bien que les enregistrements d'un relais mort sont réclamés de nouveau](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/prisma-outbox-claim.fr.svg)
+![Les deux stratégies de réclamation côte à côte : skip-locked verrouille les lignes dues par un select for update skip locked en SQL brut, les lit et leur donne un bail en une transaction courte, si bien que les relais sautent les lignes des autres ; compare-and-set lit les lignes dues, prend chacune par un updateMany gardé par le nombre de tentatives lu, et relit pour remplacer les lignes qu'un autre relais a prises ; dans les deux cas un enregistrement réclamé est caché pendant leaseMs, si bien que les enregistrements d'un relais mort sont réclamés de nouveau](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/prisma-outbox-claim.fr.svg)
 
 <!-- checked sample -->
 ```ts

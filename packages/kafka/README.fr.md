@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:62021d366d69c70e -->
+<!-- translation-of: README.md sha256:80626f5ce9b8665b -->
 
 # @ddd-ts-kit/kafka
 
@@ -67,7 +67,7 @@ donné à l'application sous la forme de deux ports du noyau : `IntegrationEvent
 l'outbox, et `EventSubscribers` remet à chaque contexte l'abonné de son propre nom de
 consommateur.
 
-![Dans le contexte producteur, le gestionnaire de commande écrit la commande client et son événement dans l'outbox en une transaction ; l'OutboxRelay réclame l'enregistrement et le donne à KafkaEventBus.publish (producteur idempotent, acks=all), qui l'écrit dans le topic de son type, avec pour clé l'id de la commande ; chaque contexte consommateur est un groupe de consommateurs, notifications et billing reçoivent tous deux chaque événement, les deux instances de billing se partagent les partitions ; le gestionnaire de billing valide sa marque et son travail en une unité de travail avant que l'offset soit validé ; un enregistrement qui échoue encore et encore part dans le topic de rejet de billing](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/kafka-place-in-an-application.fr.svg)
+![Dans le contexte producteur, le gestionnaire de commande écrit la commande client et son événement dans l'outbox en une transaction ; l'OutboxRelay réclame l'enregistrement et le donne à KafkaEventBus.publish (producteur idempotent, acks=all), qui l'écrit dans le topic de son type, avec pour clé l'id de la commande ; chaque contexte consommateur est un groupe de consommateurs, notifications et billing reçoivent tous deux chaque événement, les deux instances de billing se partagent les partitions ; le gestionnaire de billing valide sa marque et son travail en une unité de travail avant que l'offset soit validé ; un enregistrement qui échoue encore et encore part dans le topic de rejet de billing](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/kafka-place-in-an-application.fr.svg)
 
 `init --broker kafka` écrit ce câblage dans la plateforme du projet : le bus est construit par
 `platform/events/create-event-provider.ts`, avec la clé de `platform/events/aggregate-key-of.ts`,
@@ -289,7 +289,7 @@ Kafka ordonne les enregistrements d'une partition, et la clé choisit la partiti
    les dupliquer), un consommateur traite les enregistrements d'une partition un à la fois, et
    un enregistrement en échec est retenté **sur place**, voir plus bas.
 
-![Deux événements de la commande 1, placée puis payée : avec la clé par défaut, l'id de l'événement, ils tombent sur deux partitions possédées par deux instances, et payée peut être traitée avant placée ; avec keyOf qui donne l'id de la commande, les deux tombent sur une partition possédée par une seule instance et sont traités dans l'ordre du journal](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/kafka-keys-and-partitions.fr.svg)
+![Deux événements de la commande 1, placée puis payée : avec la clé par défaut, l'id de l'événement, ils tombent sur deux partitions possédées par deux instances, et payée peut être traitée avant placée ; avec keyOf qui donne l'id de la commande, les deux tombent sur une partition possédée par une seule instance et sont traités dans l'ordre du journal](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/kafka-keys-and-partitions.fr.svg)
 
 <!-- checked sample -->
 ```ts
@@ -359,7 +359,7 @@ sont traités sans lui, et un rejeu le ramène en retard. Un consommateur qui ne
 tolérer doit s'arrêter lui-même sur le rejet (porter une version dans la charge utile, refuser
 un trou).
 
-![Deux enregistrements de la commande 1 sur une partition, placée puis payée : avec un topic de nouvelles tentatives, l'enregistrement placée en échec est mis de côté, payée est traitée, et placée plus tard, si bien que payée est appliquée avant placée ; avec la nouvelle tentative sur place de ce bus, la partition est mise en pause pendant retry.delayMs tandis que les autres partitions continuent, placée est relue et traitée, puis payée ; après retry.maxAttempts livraisons en échec, l'enregistrement part dans le topic de rejet et la partition avance](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/kafka-retry-in-place.fr.svg)
+![Deux enregistrements de la commande 1 sur une partition, placée puis payée : avec un topic de nouvelles tentatives, l'enregistrement placée en échec est mis de côté, payée est traitée, et placée plus tard, si bien que payée est appliquée avant placée ; avec la nouvelle tentative sur place de ce bus, la partition est mise en pause pendant retry.delayMs tandis que les autres partitions continuent, placée est relue et traitée, puis payée ; après retry.maxAttempts livraisons en échec, l'enregistrement part dans le topic de rejet et la partition avance](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/kafka-retry-in-place.fr.svg)
 
 Le bus décide d'après ce que fait le gestionnaire : un gestionnaire qui cache son échec le cache
 aussi au bus.

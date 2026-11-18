@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:3fd61e7ea4097204 -->
+<!-- translation-of: README.md sha256:751e1117aa72432c -->
 
 # @ddd-ts-kit/events
 
@@ -12,7 +12,7 @@ une outbox transactionnelle, ainsi que le document AsyncAPI et le catalogue d'é
 npm i @ddd-ts-kit/events @ddd-ts-kit/validation zod
 ```
 
-![Un événement d'intégration à travers le package : dans la transaction de la commande, l'agrégat enregistre un événement du domaine, son publisher crée l'événement d'intégration à partir de sa déclaration et le publie vers le port IntegrationEventPublisher, lié à l'OutboxPublisher, qui ajoute un enregistrement en attente à la table outbox ; après la validation, l'OutboxRelay réclame l'enregistrement et le publie vers le broker ou le bus en mémoire, qui le livre au moins une fois à consume dans le contexte consommateur, qui le déduplique et lance le gestionnaire, ici la commande IssueInvoice. Une seule déclaration alimente le producteur, le consommateur, le registre, le document AsyncAPI et le catalogue](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/events-package-place.fr.svg)
+![Un événement d'intégration à travers le package : dans la transaction de la commande, l'agrégat enregistre un événement du domaine, son publisher crée l'événement d'intégration à partir de sa déclaration et le publie vers le port IntegrationEventPublisher, lié à l'OutboxPublisher, qui ajoute un enregistrement en attente à la table outbox ; après la validation, l'OutboxRelay réclame l'enregistrement et le publie vers le broker ou le bus en mémoire, qui le livre au moins une fois à consume dans le contexte consommateur, qui le déduplique et lance le gestionnaire, ici la commande IssueInvoice. Une seule déclaration alimente le producteur, le consommateur, le registre, le document AsyncAPI et le catalogue](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/events-package-place.fr.svg)
 
 ## Ce que contient le package
 
@@ -352,7 +352,7 @@ efface une personne des enregistrements des événements listés, quel que soit 
 lit la liste qu'écrit `ddd-ts-kit docs`), et `store.purgePublished(before)` garde
 la table petite.
 
-![La vie d'un enregistrement de l'outbox : ajouté en attente par la validation de la commande, réclamé par le relais quand il est dû, publié puis purgé ; une publication en échec le laisse en attente jusqu'à sa tentative suivante, après une attente exponentielle ; après maxAttempts tentatives, il est mort jusqu'à ce que retryDead le remette en attente](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/transactional-outbox-record-lifecycle.fr.svg)
+![La vie d'un enregistrement de l'outbox : ajouté en attente par la validation de la commande, réclamé par le relais quand il est dû, publié puis purgé ; une publication en échec le laisse en attente jusqu'à sa tentative suivante, après une attente exponentielle ; après maxAttempts tentatives, il est mort jusqu'à ce que retryDead le remette en attente](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/transactional-outbox-record-lifecycle.fr.svg)
 
 Le relais publie les enregistrements d'un lot un par un, si bien qu'un événement refusé par le
 fournisseur ne fait pas échouer ses voisins. Avec les valeurs par défaut (`baseMs: 1000`,
@@ -428,7 +428,7 @@ antérieur de même clé est encore en attente ou en échec. Le prix est le bloc
 suivants de sa clé (et de sa clé seulement) jusqu'à ce qu'il parte ou soit mort. Les événements
 pour lesquels `keyOf` donne `undefined` ne sont pas ordonnés.
 
-![Cinq enregistrements dans l'outbox, dans l'ordre de leur ajout : A1, A2, B1, A3, B2, où A est la clé order-1 et B la clé order-2, et la publication de A1 échoue. Avec l'ordre par défaut, A2, B1, A3 et B2 sont publiés dans le même tour et A1 est retenté plus tard, si bien que A2 et A3 doublent A1. Avec l'ordre per-key, B1 et B2 sont publiés, A2 et A3 sont retenus avec le code OUTBOX_HELD_FOR_ORDER, et une fois A1 parti lors de sa nouvelle tentative, A2 puis A3 suivent dans l'ordre](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/events-package-per-key-ordering.fr.svg)
+![Cinq enregistrements dans l'outbox, dans l'ordre de leur ajout : A1, A2, B1, A3, B2, où A est la clé order-1 et B la clé order-2, et la publication de A1 échoue. Avec l'ordre par défaut, A2, B1, A3 et B2 sont publiés dans le même tour et A1 est retenté plus tard, si bien que A2 et A3 doublent A1. Avec l'ordre per-key, B1 et B2 sont publiés, A2 et A3 sont retenus avec le code OUTBOX_HELD_FOR_ORDER, et une fois A1 parti lors de sa nouvelle tentative, A2 puis A3 suivent dans l'ordre](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/events-package-per-key-ordering.fr.svg)
 
 Ce sur quoi il repose, et ce qu'il ne donne pas :
 
@@ -517,7 +517,7 @@ dont le gestionnaire a levé une exception est traité de nouveau quand il revie
 `run` imbriqué rejoint la transaction englobante), si bien que le gestionnaire n'a besoin de rien
 de particulier.
 
-![Une livraison à travers consume : la déclaration analyse l'événement ; un autre type ou une autre version est ignoré sans marque ; une charge utile invalide lève InvalidEventPayloadError, si bien que le fournisseur la retente ou l'envoie en file de rejet. Un événement valide entre dans une seule unité de travail, dans la portée d'exécution quand elle est fournie : le stockage des événements traités marque le couple du consommateur et de l'identifiant de l'événement ; quand le couple était déjà marqué, le gestionnaire est sauté ; sinon le gestionnaire s'exécute, et son succès valide la marque avec le changement d'état, tandis que son échec annule les deux, si bien que la nouvelle livraison est traitée](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/events-package-consume.fr.svg)
+![Une livraison à travers consume : la déclaration analyse l'événement ; un autre type ou une autre version est ignoré sans marque ; une charge utile invalide lève InvalidEventPayloadError, si bien que le fournisseur la retente ou l'envoie en file de rejet. Un événement valide entre dans une seule unité de travail, dans la portée d'exécution quand elle est fournie : le stockage des événements traités marque le couple du consommateur et de l'identifiant de l'événement ; quand le couple était déjà marqué, le gestionnaire est sauté ; sinon le gestionnaire s'exécute, et son succès valide la marque avec le changement d'état, tandis que son échec annule les deux, si bien que la nouvelle livraison est traitée](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/events-package-consume.fr.svg)
 
 Le nom du consommateur est la portée de l'idempotence : deux consommateurs du même événement le
 traitent chacun une fois, et renommer un consommateur lui fait traiter de nouveau chaque

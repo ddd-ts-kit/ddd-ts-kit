@@ -25,7 +25,7 @@ ports and the application its query ports; the adapters written with this packag
 the hinge: `createKnexUnitOfWork(db)` answers the `UnitOfWork` the command bus runs every
 command in, and the `KnexContext` every adapter reaches the database through.
 
-![The command bus calls run on the UnitOfWork port; repositories, readers, the stores of the package and the audit trail call executor on the KnexContext port; both ports are the one object createKnexUnitOfWork answers, which keeps the open transaction in an AsyncLocalStorage, so every statement of a command runs in one PostgreSQL transaction, one schema per context](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/knex-place-in-an-application.svg)
+![The command bus calls run on the UnitOfWork port; repositories, readers, the stores of the package and the audit trail call executor on the KnexContext port; both ports are the one object createKnexUnitOfWork answers, which keeps the open transaction in an AsyncLocalStorage, so every statement of a command runs in one PostgreSQL transaction, one schema per context](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/knex-place-in-an-application.svg)
 
 Instead of handing a transaction down the calls, which puts a knex type in every signature from
 the handler to the adapter and makes forgetting it a silent bug, the adapter asks the context
@@ -381,7 +381,7 @@ ignores a conflict on `conflict` alone (the id): a row that takes a value anothe
 under a unique constraint (an email) is refused by the database, and `optimisticUpdate` raises
 `UniqueViolationError` (code `CONFLICT`, 409), not a lost update; on MySQL, which has no conflict target and whose `INSERT IGNORE` skips that row too, the helper asks whether a row holds the key when nothing was written, and raises `UniqueViolationError` when none does. Two first saves of one aggregate made at once (a request delivered twice) are not refused for the unique value they both write: on PostgreSQL a conflict target on the key alone lets them meet on the other unique index first, so the helper inserts with a statement that skips on any unique value, and only when it wrote nothing with a second one that names the key. The one that lost writes no row, a `ConcurrencyError`.
 
-![Two transactions load invoice inv-1 at version 3; the first saves, its update matches version 3 and the row moves to version 4; the second saves afterwards, its update still expects version 3, writes no row, and optimisticUpdate throws ConcurrencyError, code CONCURRENCY_CONFLICT](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/persistence-optimistic-concurrency.svg)
+![Two transactions load invoice inv-1 at version 3; the first saves, its update matches version 3 and the row moves to version 4; the second saves afterwards, its update still expects version 3, writes no row, and optimisticUpdate throws ConcurrencyError, code CONCURRENCY_CONFLICT](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/persistence-optimistic-concurrency.svg)
 
 The second writer is refused instead of silently overwriting the first. Nothing retries it for
 you: the caller receives the `ConcurrencyError` and decides whether to load the invoice again.
@@ -602,7 +602,7 @@ The rules these examples hold, and that the tests of this package check on a rea
 
 What the cursor buys, on invoices sorted by amount, when a row is inserted between two pages:
 
-![Invoices in total order by amount then id; page 1 reads four rows for a limit of 3 and keeps the position of the last, amount 40 and id inv-7, as its cursor; after an invoice of 10 is inserted, page 2 by offset 3 reads inv-7 a second time, while page 2 after the cursor compares the position as a tuple and answers inv-9, inv-2 and inv-4, nothing repeated, nothing skipped, no count](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/knex-cursor-page.svg)
+![Invoices in total order by amount then id; page 1 reads four rows for a limit of 3 and keeps the position of the last, amount 40 and id inv-7, as its cursor; after an invoice of 10 is inserted, page 2 by offset 3 reads inv-7 a second time, while page 2 after the cursor compares the position as a tuple and answers inv-9, inv-2 and inv-4, nothing repeated, nothing skipped, no count](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/knex-cursor-page.svg)
 
 ## Tenant isolation
 
@@ -610,7 +610,7 @@ Four strategies, chosen per project ([Multitenancy](../../docs/concepts/multiten
 when each fits). Every one of them is proven here by `tenantIsolationContract` of
 `@ddd-ts-kit/testing/contracts`, on PGlite and on PostgreSQL.
 
-![The four strategies from the most shared to the most separated, and the helpers of each: shared tables with tenantColumn, tenantTable, ownTenantTable, tenantRow and whereTenant; row-level security with enableTenantIsolation or tenantIsolationStatements, tenantSession and a role without BYPASSRLS; schema per tenant with tenantSchemaOf, tenantSchemaTable, tenantOfMigration, migrateTenantSchema and tenantSearchPath; database per tenant with TenantDatabases, createTenantRoutedUnitOfWork and migrateEveryTenant](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/knex-tenant-isolation-helpers.svg)
+![The four strategies from the most shared to the most separated, and the helpers of each: shared tables with tenantColumn, tenantTable, ownTenantTable, tenantRow and whereTenant; row-level security with enableTenantIsolation or tenantIsolationStatements, tenantSession and a role without BYPASSRLS; schema per tenant with tenantSchemaOf, tenantSchemaTable, tenantOfMigration, migrateTenantSchema and tenantSearchPath; database per tenant with TenantDatabases, createTenantRoutedUnitOfWork and migrateEveryTenant](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/knex-tenant-isolation-helpers.svg)
 
 **Shared tables.** One table per aggregate, a `tenant_id` column, and every statement confined
 by the kit instead of by a condition written by hand:
@@ -864,7 +864,7 @@ The life of one record in the `outbox` table. The relay of `@ddd-ts-kit/events` 
 `claimBatch`, `markPublished` and `markFailed`; `retryDead`, `purgePublished` and `stats` are
 called by an operator or a scheduled job, never by the relay:
 
-![A record is appended pending by the commit of the command; the relay claims it when due and publishes it, then marks it published, and purgePublished removes it later; a failed publication leaves it pending, retried after an exponential backoff; after the last attempt it is dead until retryDead puts it back pending; stats counts pending, failed and dead records](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/transactional-outbox-record-lifecycle.svg)
+![A record is appended pending by the commit of the command; the relay claims it when due and publishes it, then marks it published, and purgePublished removes it later; a failed publication leaves it pending, retried after an exponential backoff; after the last attempt it is dead until retryDead puts it back pending; stats counts pending, failed and dead records](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/transactional-outbox-record-lifecycle.svg)
 
 ## Event store
 

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:7389dc2d40830bbe -->
+<!-- translation-of: README.md sha256:aa05c4bd223ba67c -->
 
 # @ddd-ts-kit/openfga
 
@@ -17,7 +17,7 @@ npm install @ddd-ts-kit/openfga @openfga/sdk
 seul point d'entrée `/sdk`. Le point d'entrée principal accepte tout client conforme à
 `OpenFgaApi`, le sous-ensemble du client officiel qu'appellent les adaptateurs.
 
-![Les trois fonctions du package dans une application : les cas d'usage interrogent le port Authorizer, que OpenFgaAuthorizer implémente avec Check et ListObjects ; un adaptateur du contexte écrit les tuples après la validation par le port RelationTupleStore, que OpenFgaRelationTupleStore implémente avec Write et Read ; le schéma de relations est la seule source du modèle, qu'authorizationModelOf génère et que ensureAuthorizationModel ou modelDrift écrivent ou comparent sur le serveur](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/openfga-place-in-an-application.fr.svg)
+![Les trois fonctions du package dans une application : les cas d'usage interrogent le port Authorizer, que OpenFgaAuthorizer implémente avec Check et ListObjects ; un adaptateur du contexte écrit les tuples après la validation par le port RelationTupleStore, que OpenFgaRelationTupleStore implémente avec Write et Read ; le schéma de relations est la seule source du modèle, qu'authorizationModelOf génère et que ensureAuthorizationModel ou modelDrift écrivent ou comparent sur le serveur](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/openfga-place-in-an-application.fr.svg)
 
 Le *package* remplit trois fonctions, chacun auprès d'un magasin d'un serveur OpenFGA : il décide
 (`OpenFgaAuthorizer`), il tient les tuples (`OpenFgaRelationTupleStore`) et il garde le modèle du
@@ -192,7 +192,7 @@ export const authorizer = new OpenFgaAuthorizer({ client, schema: relationshipSc
   `NO_RELATION`) : `Check` décide, `ListObjects` donne le périmètre d'une recherche
   (`{ kind: 'ids' }`). Un projet passe de l'un à l'autre par la liaison, rien d'autre ne change.
 
-![À gauche, check : un acteur anonyme est refusé avec ANONYMOUS, une vérification sans ressource avec RESOURCE_REQUIRED, une permission sans relation associée avec UNMAPPED_PERMISSION, tous avant le moindre appel ; sinon Check sur le serveur renvoie allowed ou NO_RELATION. À droite, listAccessible : un acteur anonyme ou une permission sans relation associée donne le périmètre none ; sinon ListObjects, refusé avec ReverseExpansionLimitError quand la réponse atteint listObjectsLimit, et sinon le périmètre ids](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/openfga-authorizer-decisions.fr.svg)
+![À gauche, check : un acteur anonyme est refusé avec ANONYMOUS, une vérification sans ressource avec RESOURCE_REQUIRED, une permission sans relation associée avec UNMAPPED_PERMISSION, tous avant le moindre appel ; sinon Check sur le serveur renvoie allowed ou NO_RELATION. À droite, listAccessible : un acteur anonyme ou une permission sans relation associée donne le périmètre none ; sinon ListObjects, refusé avec ReverseExpansionLimitError quand la réponse atteint listObjectsLimit, et sinon le périmètre ids](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/openfga-authorizer-decisions.fr.svg)
 
 Ce que reçoivent le *middleware* d'autorisation et un gestionnaire de recherche, avec les tuples
 de l'exemple (`ada` assiste l'agenda du Dr Grace, qui contient le rendez-vous 42) :

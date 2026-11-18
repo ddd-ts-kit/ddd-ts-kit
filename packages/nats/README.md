@@ -31,7 +31,7 @@ each consuming context listens through the bus under its own name. The bus is gi
 application as two ports of the kernel: `IntegrationEventPublisher` stays the outbox, and
 `EventSubscribers` hands each context the subscriber of its own consumer name.
 
-![The handler of ordering writes the order and an outbox record in one transaction; the outbox relay gives the record to NatsEventBus, which publishes it to the stream integration-events with the event id as Nats-Msg-Id and waits for the acknowledgement; the stream drops a second message with the same id within its duplicate window; one durable consumer per consumer and event type pulls the message and hands it to the handlers of its context, acknowledged after their unit of work committed; what a consumer gives up on is copied to the stream integration-events-dead](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/nats-outbox-to-consumers.svg)
+![The handler of ordering writes the order and an outbox record in one transaction; the outbox relay gives the record to NatsEventBus, which publishes it to the stream integration-events with the event id as Nats-Msg-Id and waits for the acknowledgement; the stream drops a second message with the same id within its duplicate window; one durable consumer per consumer and event type pulls the message and hands it to the handlers of its context, acknowledged after their unit of work committed; what a consumer gives up on is copied to the stream integration-events-dead](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/nats-outbox-to-consumers.svg)
 
 `init --broker nats` writes this wiring in the platform of the project: the bus is built by
 `platform/events/create-event-provider.ts`, `platform/composition/platform.module.ts` rebinds
@@ -262,7 +262,7 @@ aggregate matters.
 
 ## Retry and dead-letter behaviour
 
-![What becomes of a message delivered to a durable consumer: a message replayed for another consumer is acknowledged and skipped; a body that is not an envelope is copied to the dead-letter stream as poison and terminated; otherwise every handler of the type runs; when they all resolved the message is acknowledged; when one threw before the last attempt the message is refused with a delay and the server delivers it again, delivery count plus one; at the attempt retry.maxAttempts it is copied to the dead-letter stream with max-attempts, then terminated](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/nats-retry-and-dead-letter.svg)
+![What becomes of a message delivered to a durable consumer: a message replayed for another consumer is acknowledged and skipped; a body that is not an envelope is copied to the dead-letter stream as poison and terminated; otherwise every handler of the type runs; when they all resolved the message is acknowledged; when one threw before the last attempt the message is refused with a delay and the server delivers it again, delivery count plus one; at the attempt retry.maxAttempts it is copied to the dead-letter stream with max-attempts, then terminated](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/nats-retry-and-dead-letter.svg)
 
 1. A message is acknowledged after every handler subscribed to its durable consumer
    resolved. A declared `@IntegrationEventHandler` (or `consume` of `@ddd-ts-kit/events` by

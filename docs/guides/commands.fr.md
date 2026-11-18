@@ -1,5 +1,5 @@
 [English](commands.md) · **Français**
-<!-- translation-of: commands.md sha256:e6de78ddd99a9dbc -->
+<!-- translation-of: commands.md sha256:0874e41d77517faa -->
 
 # Quelle commande, quand
 
@@ -272,7 +272,7 @@ tant que l'index nomme encore, après la commande, ce qui n'est pas lu, et sans 
 le nomme plus ; le kit compare les noms que l'index exporte, pas les tables derrière eux. `4` est
 une erreur interne du kit, jamais une erreur de l'appelant : une ligne avec la version du kit et où
 la signaler (sous `--json`, une `error` avec `"internal": true`) ; signalez-la sur
-https://github.com/gbourgeat/ddd-ts-kit/issues avec la commande qu'elle donne.
+https://github.com/ddd-ts-kit/ddd-ts-kit/issues avec la commande qu'elle donne.
 
 Sous `--json`, un refus est `{"error": {"message": "...", "fix": "..."}}`. Le refus de
 `move-to-module` qui fermerait un cycle entre modules y ajoute ce qu'un script lit sans analyser

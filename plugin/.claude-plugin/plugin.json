@@ -5,7 +5,7 @@
   "author": {
     "name": "Gary Bourgeat"
   },
-  "repository": "https://github.com/gbourgeat/ddd-ts-kit",
+  "repository": "https://github.com/ddd-ts-kit/ddd-ts-kit",
   "license": "MIT",
   "keywords": [
     "ddd",
@@ -23,5 +23,5 @@
     "codex",
     "github-copilot"
   ],
-  "homepage": "https://github.com/gbourgeat/ddd-ts-kit#readme"
+  "homepage": "https://github.com/ddd-ts-kit/ddd-ts-kit#readme"
 }

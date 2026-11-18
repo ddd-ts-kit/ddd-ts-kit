@@ -75,7 +75,7 @@ One line of the application, as it is written:
 {"actorId":"user-1","context":"shipping","correlationId":"9f2c","environment":"production","level":"info","message":"order shipped","origin":"http","service":"shop-api","span_id":"00f067aa0ba902b7","tenantId":"acme","time":"2026-03-01T10:00:00.000Z","trace_id":"4bf92f3577b34da6a3ce929d0e0e4736"}
 ```
 
-![The path of one call to logger.info through winston: below the threshold the adapter stops after one comparison; otherwise it describes the errors among the fields and keeps level and message out of them; winston merges the fields of the line, the fields of the children and its defaultMeta; then the formats run in order: correlationFields fills the keys nobody gave from fields(), redactCredentials hides the credential keys, isoTime writes time, json or the pretty line serializes; each transport writes the line: the console by default, or the files, syslog or stream you give](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/winston-path-of-a-line.svg)
+![The path of one call to logger.info through winston: below the threshold the adapter stops after one comparison; otherwise it describes the errors among the fields and keeps level and message out of them; winston merges the fields of the line, the fields of the children and its defaultMeta; then the formats run in order: correlationFields fills the keys nobody gave from fields(), redactCredentials hides the credential keys, isoTime writes time, json or the pretty line serializes; each transport writes the line: the console by default, or the files, syslog or stream you give](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/winston-path-of-a-line.svg)
 
 **Correlation.** `fields` is read at each line that is written, by a winston format: no call
 site passes an id. `traceLogFields(scope)` answers the trace and span ids inside a span, and
@@ -87,7 +87,7 @@ format only fills the keys nobody gave. `StdoutLogger` and `@ddd-ts-kit/pino` di
 second step (there `fields` win over a child), so do not bind in a child a key that `fields`
 answers if the logger may be swapped.
 
-![Which value a key gets when it is given twice, from the weakest to the strongest: with pino and StdoutLogger, service, environment and base, then the children, then fields(), then the line, which wins; with winston, fields(), then the children, then the line, then service, environment and base, which win](https://raw.githubusercontent.com/gbourgeat/ddd-ts-kit/main/docs/assets/diagrams/pino-which-value-wins.svg)
+![Which value a key gets when it is given twice, from the weakest to the strongest: with pino and StdoutLogger, service, environment and base, then the children, then fields(), then the line, which wins; with winston, fields(), then the children, then the line, then service, environment and base, which win](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/pino-which-value-wins.svg)
 
 **An instance of your own.** The project that already configures winston keeps doing so, and
 takes the formats it wants:
