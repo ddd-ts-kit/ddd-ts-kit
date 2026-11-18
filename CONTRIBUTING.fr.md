@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:6e3d0c0792370dcf -->
+<!-- translation-of: CONTRIBUTING.md sha256:66d9db714d54f02c -->
 
 # Contribuer
 
@@ -269,7 +269,10 @@ ligne n'est pas retirée ou renouvelée. Une vulnérabilité se signale en priv�
 
 ## Publier une version
 
-Les packages de `packages/` sont publiés ensemble, sous une seule version.
+Les packages de `packages/` sont publiés ensemble, sous une seule version. Une version
+corrective ne casse jamais : `--set` en refuse une tant qu'un fichier de `changes/` contient une
+ligne `To move:` qui demande à un projet d'agir, et nomme la version mineure à poser à la place
+([Versions et stabilité](docs/versioning.fr.md)).
 
 ```bash
 node pipeline/monorepo/release-version.mjs --set 0.2.0   # chaque manifeste et les versions qu'écrit la CLI

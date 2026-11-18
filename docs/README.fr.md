@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:ad774532121dcd4b -->
+<!-- translation-of: README.md sha256:2f087e95bdc76ace -->
 
 # Documentation
 
@@ -31,6 +31,7 @@ source.
 |---|---|
 | [Référence d'architecture](ARCHITECTURE.fr.md) | l'arborescence canonique, chaque identifiant de règle, les règles tactiques, les tests, le clean code |
 | [Configuration](CONFIG.fr.md) | chaque clé de `ddd-ts-kit.config.json` |
+| [Versions et stabilité](versioning.fr.md) | ce que peut contenir une version corrective ou mineure avant 1.0, les plages que tient un projet, la mise à jour, ce que garantira 1.0 |
 | [Lignes laissées hors de la mesure de couverture](adr/0001-lines-left-out-of-the-coverage-measure.fr.md) | les vérifications que rien n'atteint, pourquoi, et quand chacune part |
 | [Entrées de `cached` par locataire](adr/0002-cached-keeps-its-entries-per-tenant-and-needs-the-scope.fr.md) | pourquoi `cached` range une entrée sous le locataire, lève sans la portée et saute une élévation |
 | [Le magasin de tuples en mémoire refuse la production](adr/0003-the-in-memory-tuple-store-refuses-production.fr.md) | ce que `createTupleStore` permet, ce que fait un `NODE_ENV` absent, et ce qui l'inverserait |
@@ -166,7 +167,7 @@ a vérifié, les limites, et une recommandation selon la situation.
 | Comment tester un gestionnaire sans *mock* ? | [Stratégie de test](concepts/testing-strategy.fr.md) |
 | Quelle valeur pour une clé de `stack` ? | la page d'outils de la décision, puis [Configuration](CONFIG.fr.md#stack) |
 | Une règle ne convient pas à ce projet | [Dérogations](CONFIG.fr.md#dérogations) : une décision enregistrée, jamais un `off` silencieux |
-| Qu'est-ce qui change après une mise à jour du kit ? | [Migrer après une mise à jour du kit](guides/commands.fr.md#migrer-après-une-mise-à-jour-du-kit) et [une clé absente de `stack`](CONFIG.fr.md#une-clé-absente-de-stack) |
+| Qu'est-ce qui change après une mise à jour du kit ? | [Versions et stabilité](versioning.fr.md#mettre-à-jour), [Migrer après une mise à jour du kit](guides/commands.fr.md#migrer-après-une-mise-à-jour-du-kit) et [une clé absente de `stack`](CONFIG.fr.md#une-clé-absente-de-stack) |
 
 Une partie de la référence répond aussi dans le terminal d'un projet, depuis la version installée
 du kit, si bien qu'elle ne contredit jamais le code que vous exécutez :

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { foldChanges, problemsOf } from './changes.mjs';
+import { allowsABreak, asksToMove, breakingChanges, foldChanges, problemsOf } from './changes.mjs';
 
 const MANIFEST = 'plugin/.claude-plugin/plugin.json';
 
@@ -106,6 +106,36 @@ test('the release folds the files in the order they reached the trunk, after wha
       '# Changelog\n\nIntro.\n\n## 0.28.0\n\n**Older.** Written before.\n\n**Second.** It landed after.\n\n**First.** Named first, landed last.\n\n## 0.27.0\n\n**Released.**\n',
     );
     assert.deepEqual(fs.readdirSync(path.join(root, 'changes')), ['README.md']);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a To move line asks a project to act, unless it says there is nothing to do', () => {
+  assert.equal(asksToMove('**Renamed.** Detail.\n\nTo move: run `npx ddd-ts-kit init --force`.\n'), true);
+  assert.equal(asksToMove('**Fixed.** Detail.\n\nTo move: nothing for a project that kept the default.\n'), false);
+  assert.equal(asksToMove('**Added.** Detail.\n'), false);
+});
+
+test('a break needs a new minor before 1.0 and a new major from 1.0, never a patch', () => {
+  assert.equal(allowsABreak('0.113.2', '0.114.0'), true);
+  assert.equal(allowsABreak('0.113.2', '1.0.0'), true);
+  assert.equal(allowsABreak('0.113.2', '0.113.3'), false);
+  assert.equal(allowsABreak('0.113.2', '0.114.0-rc.1'), true);
+  assert.equal(allowsABreak('1.2.3', '1.3.0'), false);
+  assert.equal(allowsABreak('1.2.3', '2.0.0'), true);
+});
+
+test('the release lists the files of changes/ that break', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'changes-break-'));
+
+  try {
+    assert.deepEqual(breakingChanges(root), []);
+    fs.mkdirSync(path.join(root, 'changes'));
+    fs.writeFileSync(path.join(root, 'changes/README.md'), '# changes\n\nTo move: an example.\n');
+    fs.writeFileSync(path.join(root, 'changes/renamed.md'), '**Renamed.**\n\nTo move: rename it.\n');
+    fs.writeFileSync(path.join(root, 'changes/fixed.md'), '**Fixed.**\n\nTo move: nothing.\n');
+    assert.deepEqual(breakingChanges(root), ['changes/renamed.md']);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

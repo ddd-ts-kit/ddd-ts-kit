@@ -305,6 +305,10 @@ PostgreSQL, the transactional outbox, Keycloak and relationship-based authorizat
 Node 22.12 or later. The generated projects type-check with the native TypeScript 7 compiler and
 keep TypeScript 6 for the tools that still need its API.
 
+The kit is in its 0.x versions: a patch never breaks, a minor version may, and each break says
+what to run in `CHANGELOG.md`. What each version promises, how to upgrade and the road to 1.0:
+[Versions and stability](docs/versioning.md).
+
 ## Community and support
 
 - **Questions and ideas**: [GitHub Discussions](https://github.com/gbourgeat/ddd-ts-kit/discussions).

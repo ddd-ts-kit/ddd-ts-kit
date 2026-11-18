@@ -250,7 +250,9 @@ A vulnerability is reported privately: see [SECURITY.md](SECURITY.md). Conduct:
 
 ## Releasing
 
-The packages of `packages/` are released together, under one version.
+The packages of `packages/` are released together, under one version. A patch version never
+breaks: `--set` refuses one while a file of `changes/` holds a `To move:` line that asks a project to
+act, and names the minor version to set instead ([Versions and stability](docs/versioning.md)).
 
 ```bash
 node pipeline/monorepo/release-version.mjs --set 0.2.0   # every manifest and the versions the CLI writes

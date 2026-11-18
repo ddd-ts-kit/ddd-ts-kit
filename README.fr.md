@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:d0ca08d1f02c37be -->
+<!-- translation-of: README.md sha256:6bf3fad2a3a42552 -->
 
 <div align="center">
 
@@ -318,6 +318,10 @@ transactionnelle, Keycloak et une autorisation par relations.
 
 Node 22.12 ou ultérieur. Les projets générés vérifient leurs types avec le compilateur
 TypeScript 7 natif et gardent TypeScript 6 pour les outils qui ont encore besoin de son API.
+
+Le kit en est à ses versions 0.x : une version corrective ne casse jamais, une version mineure le
+peut, et chaque rupture dit quoi lancer dans `CHANGELOG.md`. Ce que promet chaque version, comment
+mettre à jour et le chemin vers 1.0 : [Versions et stabilité](docs/versioning.fr.md).
 
 ## Communauté et aide
 

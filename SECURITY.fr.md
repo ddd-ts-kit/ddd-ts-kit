@@ -1,5 +1,5 @@
 [English](SECURITY.md) · **Français**
-<!-- translation-of: SECURITY.md sha256:40f9efe6b6a6abc4 -->
+<!-- translation-of: SECURITY.md sha256:f562d967055b0804 -->
 
 # Politique de sécurité
 
@@ -7,7 +7,8 @@
 
 Seules la dernière version publiée sur npm et la branche `main` reçoivent des correctifs de
 sécurité. Un correctif arrive sur `main` et sort dans la version suivante de chaque package ;
-une version plus ancienne n'est pas corrigée : passez à la dernière.
+une version plus ancienne n'est pas corrigée : passez à la dernière ([Versions et
+stabilité](docs/versioning.fr.md) dit ce que demande une mise à jour).
 
 ## Signaler une vulnérabilité
 
