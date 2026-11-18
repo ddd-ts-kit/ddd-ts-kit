@@ -3,6 +3,9 @@ name: Pull request title
 on:
   pull_request:
     types: [opened, edited, reopened, synchronize]
+  # A required check: the merge queue waits for it on the queued commit, whose subject is the title.
+  merge_group:
+    types: [checks_requested]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -25,5 +28,5 @@ jobs:
           build: 'false'
       - name: The title is a conventional commit subject
         env:
-          TITLE: ${{ github.event.pull_request.title }}
-        run: printf '%s\n' "$TITLE" | npx --no -- commitlint --verbose
+          TITLE: ${{ github.event.pull_request.title || github.event.merge_group.head_commit.message }}
+        run: printf '%s\n' "${TITLE%%$'\n'*}" | npx --no -- commitlint --verbose
