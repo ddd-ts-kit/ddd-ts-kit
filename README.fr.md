@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:2643ad0434ce29a3 -->
+<!-- translation-of: README.md sha256:889c47c061772caf -->
 
 <div align="center">
 
@@ -18,15 +18,14 @@ le construit avec le kit, et le kit le tient à l'architecture.
 [![Téléchargements npm](https://img.shields.io/npm/dm/ddd-ts-kit?color=3f9a77)](https://www.npmjs.com/package/ddd-ts-kit)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/ddd-ts-kit/ddd-ts-kit/badge)](https://scorecard.dev/viewer/?uri=github.com/ddd-ts-kit/ddd-ts-kit)
 [![Node](https://img.shields.io/node/v/ddd-ts-kit?color=3f9a77)](#prérequis)
-[![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](docs/ARCHITECTURE.fr.md)
 [![Licence MIT](https://img.shields.io/badge/license-MIT-3f9a77)](LICENSE)
-[![PRs bienvenues](https://img.shields.io/badge/PRs-welcome-3f9a77)](#contribuer)
 
 **[Documentation](https://ddd-ts-kit.github.io/ddd-ts-kit/fr/)** ·
 [Démarrage rapide](#démarrage-rapide) ·
 [Exemple](examples/scheduling/README.fr.md) ·
 [Article](https://medium.com/@gary.bourgeat/domain-driven-design-typescript-agents-ia-71200e05b261) ·
 [Changelog](CHANGELOG.md) ·
+[Sécurité](SECURITY.fr.md) ·
 [Discussions](https://github.com/ddd-ts-kit/ddd-ts-kit/discussions) ·
 [Contribuer](#contribuer)
 
@@ -320,6 +319,41 @@ transactionnelle, Keycloak et une autorisation par relations.
 Node 22.12 ou ultérieur. Les projets générés vérifient leurs types avec le compilateur
 TypeScript 7 natif et gardent TypeScript 6 pour les outils qui ont encore besoin de son API.
 
+## État du projet
+
+ddd-ts-kit en est à ses versions 0.x et il est maintenu activement : il est publié souvent,
+parfois plusieurs fois par semaine, et chaque version est petite. La CLI, chaque package
+`@ddd-ts-kit/*` et le plugin partagent une seule version. Une version corrective ne casse jamais
+un projet ; une version mineure le peut, et chaque rupture dit alors quoi lancer dans une ligne
+`To move:` de [CHANGELOG.md](CHANGELOG.md), sans alias ni cale entre les deux
+([ADR 0005](docs/adr/0005-a-refusal-is-an-error-at-once-before-1-0.fr.md)). La dernière version
+reçoit les corrections, de sécurité comprises ([SECURITY.fr.md](SECURITY.fr.md)).
+
+## Comment le kit est construit
+
+Le kit est tenu à ce qu'il demande à un projet, et chaque affirmation ci-dessous se vérifie dans
+ce dépôt :
+
+- **Testé comme il vous demande de tester.** Chaque pull request tient chaque package à son
+  plancher de couverture, et la suite de bout en bout génère de vrais projets, les installe avec
+  npm et avec pnpm et lance toute leur barrière. Chaque nuit, le score de mutation de
+  l'application d'exemple est tenu à son plancher.
+- **Un seul chemin vers `main`.** Un changement est une pull request ; la file de fusion relance
+  son pipeline par-dessus le tronc avant qu'elle n'arrive, si bien que `main` n'est jamais une
+  combinaison que personne n'a testée.
+- **Des versions que vous pouvez vérifier.** Les packages sont publiés depuis la CI par la
+  publication de confiance de npm : aucun jeton durable n'existe, et un mainteneur approuve chaque
+  publication. Chaque archive porte sa provenance npm et, à partir de la version 0.114.0, une
+  attestation signée du commit et du workflow qui l'ont construite et la nomenclature logicielle de
+  la version.
+  [SECURITY.fr.md](SECURITY.fr.md#vérifier-une-version) donne la commande qui en vérifie une.
+- **Une chaîne d'approvisionnement surveillée.** CodeQL, l'audit des dépendances de production et
+  une recherche de secrets tournent sur chaque pull request, les actions des workflows sont
+  épinglées par commit, et l'[OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/ddd-ts-kit/ddd-ts-kit)
+  note le dépôt chaque semaine.
+- **Des décisions consignées.** Ce qui a été décidé, pourquoi, et ce qui l'inverserait est gardé
+  dans des enregistrements de décision, indexés dans [docs/README.fr.md](docs/README.fr.md).
+
 ## Communauté et aide
 
 - **Questions et idées** : [GitHub Discussions](https://github.com/ddd-ts-kit/ddd-ts-kit/discussions).
@@ -344,10 +378,7 @@ départ :
   ce qui a tenu, ce qui a gêné.
 
 [CONTRIBUTING.fr.md](CONTRIBUTING.fr.md) donne l'installation, les règles de base et le chemin
-d'un changement jusqu'à `main`. Si ddd-ts-kit vous est utile, une étoile sur GitHub aide d'autres
-personnes à le trouver.
-
-[![Historique des étoiles de ddd-ts-kit](https://api.star-history.com/svg?repos=ddd-ts-kit/ddd-ts-kit&type=Date)](https://star-history.com/#ddd-ts-kit/ddd-ts-kit&Date)
+d'un changement jusqu'à `main`.
 
 ## Contributeurs
 
