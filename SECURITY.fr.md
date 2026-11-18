@@ -1,5 +1,5 @@
 [English](SECURITY.md) · **Français**
-<!-- translation-of: SECURITY.md sha256:af63f505c846ea8b -->
+<!-- translation-of: SECURITY.md sha256:cac2200ff22dc78d -->
 
 # Politique de sécurité
 
@@ -22,6 +22,20 @@ du pipeline), comment le reproduire et ce qu'un attaquant y gagne.
 Vous pouvez attendre un accusé de réception sous sept jours. Une vulnérabilité confirmée est
 corrigée sur `main` et livrée dans une nouvelle version, puis divulguée dans un avis de
 sécurité GitHub qui crédite la personne qui l'a signalée, sauf si elle demande le contraire.
+
+## Vérifier une version
+
+Chaque package est publié par le workflow `Release` de ce dépôt, jamais depuis une machine :
+npm affiche sa provenance sur la page de chaque version (`npm audit signatures` la vérifie dans
+un projet). Chaque archive est aussi attestée par GitHub : où et depuis quel commit elle a été
+construite, et la nomenclature logicielle de la release (CycloneDX), jointe à la release GitHub :
+
+```bash
+npm pack @ddd-ts-kit/kernel@<version>
+gh attestation verify ddd-ts-kit-kernel-<version>.tgz --repo ddd-ts-kit/ddd-ts-kit
+gh attestation verify ddd-ts-kit-kernel-<version>.tgz --repo ddd-ts-kit/ddd-ts-kit \
+  --predicate-type https://cyclonedx.org/bom
+```
 
 ## Périmètre
 

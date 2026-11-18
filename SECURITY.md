@@ -22,6 +22,20 @@ You can expect an acknowledgement within seven days. A confirmed vulnerability i
 `main` and shipped in a new version, then disclosed in a GitHub security advisory that credits
 the reporter unless they ask otherwise.
 
+## Verifying a release
+
+Every package is published from the `Release` workflow of this repository, never from a
+machine: npm shows its provenance on the page of each version (`npm audit signatures` checks it
+in a project). Each tarball is also attested by GitHub with where and from which commit it was
+built, and with the bill of materials of the release (CycloneDX), attached to the GitHub release:
+
+```bash
+npm pack @ddd-ts-kit/kernel@<version>
+gh attestation verify ddd-ts-kit-kernel-<version>.tgz --repo ddd-ts-kit/ddd-ts-kit
+gh attestation verify ddd-ts-kit-kernel-<version>.tgz --repo ddd-ts-kit/ddd-ts-kit \
+  --predicate-type https://cyclonedx.org/bom
+```
+
 ## Scope
 
 In scope: the code of this repository, including what `ddd-ts-kit init` and
