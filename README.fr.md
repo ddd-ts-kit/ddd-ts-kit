@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:d0ca08d1f02c37be -->
+<!-- translation-of: README.md sha256:82b52bc2a9926e8f -->
 
 <div align="center">
 
@@ -16,6 +16,7 @@ le construit avec le kit, et le kit le tient à l'architecture.
 [![Couverture](https://codecov.io/gh/gbourgeat/ddd-ts-kit/graph/badge.svg?branch=main)](https://codecov.io/gh/gbourgeat/ddd-ts-kit)
 [![Version npm](https://img.shields.io/npm/v/ddd-ts-kit?color=3f9a77&label=npm)](https://www.npmjs.com/package/ddd-ts-kit)
 [![Téléchargements npm](https://img.shields.io/npm/dm/ddd-ts-kit?color=3f9a77)](https://www.npmjs.com/package/ddd-ts-kit)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/ddd-ts-kit/ddd-ts-kit/badge)](https://scorecard.dev/viewer/?uri=github.com/ddd-ts-kit/ddd-ts-kit)
 [![Node](https://img.shields.io/node/v/ddd-ts-kit?color=3f9a77)](#prérequis)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](docs/ARCHITECTURE.fr.md)
 [![Licence MIT](https://img.shields.io/badge/license-MIT-3f9a77)](LICENSE)

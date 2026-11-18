@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:6e3d0c0792370dcf -->
+<!-- translation-of: CONTRIBUTING.md sha256:1f0bf739d8dae1ba -->
 
 # Contribuer
 
@@ -264,7 +264,11 @@ propose les mises à jour. Le job Security échoue sur un avis de gravité high 
 dépendance de production (`npm run ci:audit`). Un avis sans version corrigée qui ne peut pas atteindre
 un projet utilisant le kit est inscrit dans `pipeline/monorepo/audit-exceptions.json` avec sa raison
 et une date à un mois au plus : passé cette date, ou dès que l'avis disparaît, le job échoue tant que la
-ligne n'est pas retirée ou renouvelée. Une vulnérabilité se signale en privé : voir
+ligne n'est pas retirée ou renouvelée.
+L'OpenSSF Scorecard (`.github/workflows/scorecard.yml`) note la tenue de la chaîne
+d'approvisionnement du dépôt, à chaque push sur `main` et chaque semaine ; sa note est le badge du
+README et ses constats sont des alertes d'analyse de code. Ce n'est jamais une porte : une
+vérification qui baisse se reprend dans une pull request à part. Une vulnérabilité se signale en privé : voir
 [SECURITY.fr.md](SECURITY.fr.md). Conduite : [CODE_OF_CONDUCT.fr.md](CODE_OF_CONDUCT.fr.md).
 
 ## Publier une version
