@@ -1,5 +1,5 @@
 [English](build-and-test-velocity.md) · **Français**
-<!-- translation-of: build-and-test-velocity.md sha256:b8b4787c1fce713b -->
+<!-- translation-of: build-and-test-velocity.md sha256:6c4700b5a5bc204d -->
 
 # Proposition : vélocité du build, des contrôles et des tests
 
@@ -412,7 +412,8 @@ payants et demandent un plan Team. Le cache tient 10 Go par dépôt, évincé ch
 usage le moins récent ; sa clé devrait hacher le *lockfile*, l'OS, l'architecture et la ligne de
 Node, pas le *commit*. Un filtre de chemins ne peut pas sauter un contrôle requis, d'où le
 motif d'un job porte qui lit tous les autres (que ce dépôt a). Une file de fusion est disponible
-pour les dépôts publics d'une organisation.
+pour les dépôts publics d'une organisation (ce dépôt s'en sert depuis son passage dans
+l'organisation `ddd-ts-kit` : `CONTRIBUTING.md`).
 
 ## Jugement : les options comparées
 

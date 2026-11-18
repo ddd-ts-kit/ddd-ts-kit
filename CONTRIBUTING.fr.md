@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:aee4448b84ca1ba5 -->
+<!-- translation-of: CONTRIBUTING.md sha256:b918356623b50f4c -->
 
 # Contribuer
 
@@ -240,6 +240,13 @@ résolue. Activez la fusion automatique et passez à autre chose :
 gh pr create --fill
 gh pr merge --auto --squash
 ```
+
+Une fois ces vérifications passées, la fusion automatique confie la pull request à la file de
+fusion (merge queue) de `main`. La file la réduit en un commit posé sur le tronc et sur les pull
+requests entrées avant elle, et relance les mêmes vérifications sur ce commit (l'événement
+`merge_group`) : une pull request verte seule mais qui casse avec une autre n'atteint jamais
+`main`, et personne ne met à jour une branche seulement parce que `main` a avancé. Un échec dans
+la file l'en retire, avec le run qui a échoué.
 
 Une revue par IA commente chaque pull request ouverte depuis une branche de ce dépôt, prête pour la
 revue (`.github/workflows/pr-review.yml`) : PR-Agent, le relecteur open source de Qodo, sur NVIDIA

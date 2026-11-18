@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # A required check: the merge queue waits for it on the queued commit.
+  merge_group:
+    types: [checks_requested]
   schedule:
     - cron: '17 4 * * 1'
 

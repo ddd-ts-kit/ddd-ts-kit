@@ -224,6 +224,12 @@ gh pr create --fill
 gh pr merge --auto --squash
 ```
 
+Once these checks pass, auto-merge hands the pull request to the merge queue of `main`. The queue
+squashes it on top of the trunk and of the pull requests queued before it, and runs the same
+checks again on that commit (the `merge_group` event): a pull request that was green alone but
+breaks with another one never reaches `main`, and nobody updates a branch only because `main`
+moved. A failure in the queue takes the pull request out of it, with the run that failed.
+
 An AI review comments on each pull request opened from a branch of this repository, ready for
 review (`.github/workflows/pr-review.yml`): PR-Agent, the open source reviewer of Qodo, on NVIDIA
 Nemotron, with the rules of `AGENTS.md` and `.pr_agent.toml`. It is one comment, never a required
