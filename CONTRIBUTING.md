@@ -245,6 +245,10 @@ updates. The Security job fails on an advisory of severity high or critical in a
 dependency (`npm run ci:audit`). An advisory with no fixed version that cannot reach a project using the
 kit is listed in `pipeline/monorepo/audit-exceptions.json` with its reason and a date at most a month
 away: past that date, or once the advisory is gone, the job fails until the line is removed or renewed.
+The OpenSSF Scorecard (`.github/workflows/scorecard.yml`) scores how the supply chain of the
+repository is held, on each push to `main` and every week; its score is the badge of the README and
+its findings are code scanning alerts. It is never a gate: a check that drops is taken up in a pull
+request of its own.
 A vulnerability is reported privately: see [SECURITY.md](SECURITY.md). Conduct:
 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 

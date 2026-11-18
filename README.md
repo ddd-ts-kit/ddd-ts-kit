@@ -15,6 +15,7 @@ the kit holds it to the architecture.
 [![Coverage](https://codecov.io/gh/ddd-ts-kit/ddd-ts-kit/graph/badge.svg?branch=main)](https://codecov.io/gh/ddd-ts-kit/ddd-ts-kit)
 [![npm version](https://img.shields.io/npm/v/ddd-ts-kit?color=3f9a77&label=npm)](https://www.npmjs.com/package/ddd-ts-kit)
 [![npm downloads](https://img.shields.io/npm/dm/ddd-ts-kit?color=3f9a77)](https://www.npmjs.com/package/ddd-ts-kit)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/ddd-ts-kit/ddd-ts-kit/badge)](https://scorecard.dev/viewer/?uri=github.com/ddd-ts-kit/ddd-ts-kit)
 [![Node](https://img.shields.io/node/v/ddd-ts-kit?color=3f9a77)](#requirements)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](docs/ARCHITECTURE.md)
 [![License MIT](https://img.shields.io/badge/license-MIT-3f9a77)](LICENSE)
