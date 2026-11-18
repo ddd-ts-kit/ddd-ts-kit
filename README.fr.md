@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:889c47c061772caf -->
+<!-- translation-of: README.md sha256:836f5a0a8c361dd2 -->
 
 <div align="center">
 
@@ -323,9 +323,9 @@ TypeScript 7 natif et gardent TypeScript 6 pour les outils qui ont encore besoin
 
 ddd-ts-kit en est à ses versions 0.x et il est maintenu activement : il est publié souvent,
 parfois plusieurs fois par semaine, et chaque version est petite. La CLI, chaque package
-`@ddd-ts-kit/*` et le plugin partagent une seule version. Une version corrective ne casse jamais
-un projet ; une version mineure le peut, et chaque rupture dit alors quoi lancer dans une ligne
-`To move:` de [CHANGELOG.md](CHANGELOG.md), sans alias ni cale entre les deux
+`@ddd-ts-kit/*` et le plugin partagent une seule version. Son API et l'arborescence d'un projet
+généré bougent encore : un changement qui casse dit quoi lancer dans une ligne `To move:` de
+[CHANGELOG.md](CHANGELOG.md), sans alias ni cale entre les deux
 ([ADR 0005](docs/adr/0005-a-refusal-is-an-error-at-once-before-1-0.fr.md)). La dernière version
 reçoit les corrections, de sécurité comprises ([SECURITY.fr.md](SECURITY.fr.md)).
 

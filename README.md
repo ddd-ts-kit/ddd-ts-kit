@@ -309,9 +309,9 @@ keep TypeScript 6 for the tools that still need its API.
 
 ddd-ts-kit is in its 0.x versions and actively maintained: it is released often, several times a
 week at times, and each release is small. The CLI, every `@ddd-ts-kit/*` package and the plugin
-share one version. A patch version never breaks a project; a minor version may, and each break
-then says what to run in a `To move:` line of [CHANGELOG.md](CHANGELOG.md), with no alias or shim
-in between ([ADR 0005](docs/adr/0005-a-refusal-is-an-error-at-once-before-1-0.md)). The latest
+share one version. Its API and the layout of a generated project still move: a change that breaks
+says what to run in a `To move:` line of [CHANGELOG.md](CHANGELOG.md), with no alias or shim in
+between ([ADR 0005](docs/adr/0005-a-refusal-is-an-error-at-once-before-1-0.md)). The latest
 version receives the fixes, security fixes included ([SECURITY.md](SECURITY.md)).
 
 ## How the kit is built
