@@ -8,7 +8,8 @@ import { ON_A_SERVER } from './pipeline/monorepo/affected-packages.mjs';
 /**
  * The spec files measured over twenty seconds in a full run (2026-10-23, longest first): started
  * first, so that a run does not end waiting on one of them. The runner orders the others by the
- * durations it cached, or by their size when it has none, as on a runner of the pipeline.
+ * durations it cached, or by their size when it has none, as on a runner of the pipeline. A run with
+ * `--shard` first takes the files of its shard, by a hash of their path, then orders them so.
  */
 const SLOW_FIRST = [
   'packages/kernel/test/declarations.spec.ts',
@@ -89,6 +90,15 @@ const MEASURED = Object.entries(FLOORS).filter(([name]) => AFFECTED.length === 0
  */
 const INTEGRATION = process.env['KIT_COVERAGE'] === 'integration';
 
+/**
+ * The unit job runs the specs in shards (`--shard=<index>/<count>`), each measuring the spec files it runs: a package
+ * whose specs fall in several shards is covered by none of them alone. A shard writes its measure in its blob report
+ * and is held to no floor; `vitest run --coverage --merge-reports` adds the measures of every shard and holds each
+ * package to its floor, as a run of every file does. Read from the command line, so that the run that merges, which
+ * has no `--shard`, can never skip a floor.
+ */
+const SHARD = process.argv.some((argument) => argument.startsWith('--shard'));
+
 const ENTRY_POINTS = ['packages/cli/src/bin.ts', 'packages/cli/src/refresh-declarations.ts'];
 const MEASURED_SOURCES = INTEGRATION ? ON_A_SERVER : AFFECTED;
 
@@ -158,16 +168,17 @@ export default defineConfig({
       // The two entry points of the CLI run as a process and are never imported: one call each, which the
       // end-to-end specs run from the built package. Left out rather than counted at zero.
       exclude: [...coverageConfigDefaults.exclude, ...ENTRY_POINTS],
-      reporter: INTEGRATION ? ['text-summary', 'lcov'] : ['text', 'cobertura', 'lcov'],
+      reporter: INTEGRATION ? ['text-summary', 'lcov'] : SHARD ? [] : ['text', 'cobertura', 'lcov'],
       reportsDirectory: INTEGRATION ? 'coverage/integration' : 'coverage',
-      thresholds: INTEGRATION
-        ? {}
-        : Object.fromEntries(
-            MEASURED.map(([name, [statements, branches, functions, lines]]) => [
-              `packages/${name}/src/**`,
-              { statements, branches, functions, lines },
-            ]),
-          ),
+      thresholds:
+        INTEGRATION || SHARD
+          ? {}
+          : Object.fromEntries(
+              MEASURED.map(([name, [statements, branches, functions, lines]]) => [
+                `packages/${name}/src/**`,
+                { statements, branches, functions, lines },
+              ]),
+            ),
     },
   },
 });
