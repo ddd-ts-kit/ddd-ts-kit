@@ -26,6 +26,17 @@ test('the job that holds the publishing identity installs and builds nothing', (
   }
 });
 
+test('the tarballs are attested, with their provenance and the bill of materials, before they are published', () => {
+  const [publish] = jobs().filter((entry) => entry.id === 'publish');
+  const step = (pattern) => publish?.text.search(pattern) ?? -1;
+
+  assert.match(publish?.text ?? '', /attestations:\s*write/);
+  assert.ok(step(/actions\/attest-build-provenance@/) > 0, 'the provenance of the tarballs is attested');
+  assert.ok(step(/actions\/attest-sbom@/) > 0, 'the bill of materials is attested');
+  assert.ok(step(/actions\/attest-build-provenance@/) < step(/publish-packages\.mjs/), 'attested before published');
+  assert.ok(step(/actions\/attest-sbom@/) < step(/publish-packages\.mjs/), 'attested before published');
+});
+
 function jobs() {
   const [, body] = WORKFLOW.split(/^jobs:\n/m);
 

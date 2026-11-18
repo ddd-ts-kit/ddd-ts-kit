@@ -281,8 +281,9 @@ run of the night asked on `main`, `gh workflow run ci.yml --ref main`: the tag p
 that code; if `generated-stacks` still fails, nothing reached npm, so fix on `main`, delete the
 tag, `git push --delete origin v0.2.0 && git tag -d v0.2.0`, and tag the fixed commit with the
 same version), then checks that the tag is the version every package states, builds, checks the tarballs,
-publishes each package to the npm registry with provenance
-and creates the GitHub release. A version with a pre-release part (`0.2.0-rc.1`) is published
+attests each tarball (its build provenance and the bill of materials of the release, CycloneDX,
+written by `pipeline/monorepo/sbom.mjs` from the lockfile), publishes each package to the npm
+registry with provenance and creates the GitHub release, the bill of materials attached. A version with a pre-release part (`0.2.0-rc.1`) is published
 under the `next` tag. A run that stopped half-way is run again: what is already published is
 skipped. The notes of the GitHub release are generated from the merged pull requests;
 `CHANGELOG.md` at the root says in a few lines what a version changes for a user: setting the

@@ -73,15 +73,28 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: node pipeline/monorepo/publish-packages.mjs "${TAG#v}" --pack tarballs
+      - name: The bill of materials of the release (CycloneDX), from the lockfile it was built with
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node pipeline/monorepo/sbom.mjs "${TAG#v}" --output sbom/ddd-ts-kit.cdx.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tarballs
           path: tarballs/*.tgz
           if-no-files-found: error
           retention-days: 7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom
+          path: sbom/ddd-ts-kit.cdx.json
+          if-no-files-found: error
+          retention-days: 7
 
   # Publishes the tarballs of the job above: nothing is installed or built here, so no script of a
-  # dependency runs next to the identity token.
+  # dependency runs next to the identity token. Before it publishes, it attests each tarball: where
+  # and from which commit it was built (SLSA provenance), and the bill of materials of the release,
+  # both signed for this workflow and checked by `gh attestation verify <tarball> --repo
+  # ddd-ts-kit/ddd-ts-kit`. npm adds its own provenance to each version it publishes.
   publish:
     name: Publish to npm
     needs: pack
@@ -89,6 +102,7 @@ jobs:
     timeout-minutes: 20
     environment: npm
     permissions:
+      attestations: write
       contents: write
       id-token: write
     steps:
@@ -104,6 +118,19 @@ jobs:
         with:
           name: tarballs
           path: tarballs
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sbom
+          path: sbom
+      - name: Each tarball attested, with where and from which commit it was built
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: tarballs/*.tgz
+      - name: Each tarball attested with the bill of materials of the release
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-path: tarballs/*.tgz
+          sbom-path: sbom/ddd-ts-kit.cdx.json
       - name: The npm of this runner exchanges an identity token (trusted publishing needs 11.5.1 or later)
         run: |
           npm --version
@@ -120,7 +147,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
-        run: gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag
+          gh release upload "$TAG" sbom/ddd-ts-kit.cdx.json --clobber
 
   # GitHub Packages accepts a scope only from the account or organization of that name: this
   # job runs once the repository variable is set and a token of the `ddd-ts-kit` organization
