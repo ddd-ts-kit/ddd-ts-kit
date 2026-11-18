@@ -278,11 +278,16 @@ jobs:
           flags: integration
           fail_ci_if_error: false
 
+  # 13 to 22 minutes on one runner on 2026-11-17 and 18, the longest unit job once the coverage run was split: three shards too.
   unit-oldest:
-    name: Unit tests (Node 22)
+    name: Unit tests (Node 22, shard ${{ matrix.shard }}/3)
     needs: install
     runs-on: ubuntu-26.04
-    timeout-minutes: 25
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -290,11 +295,12 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           node-version: 22
-      - name: The same specs on the oldest supported Node (coverage is measured once, on Node 24)
+      # A pull request that reaches one small package has fewer spec files than shards: a shard left without one passes.
+      - name: A third of the specs on the oldest supported Node (coverage is measured once, on Node 24)
         if: ${{ needs.install.outputs.scope != 'none' }}
         env:
           FILTERS: ${{ needs.install.outputs.filters }}
-        run: npm test -- $FILTERS
+        run: npm test -- --shard=${{ matrix.shard }}/3 --passWithNoTests $FILTERS
 
   alias:
     name: Import alias at run time (Node ${{ matrix.node }})
