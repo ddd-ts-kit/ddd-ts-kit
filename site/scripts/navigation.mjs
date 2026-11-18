@@ -63,7 +63,7 @@ export function sidebar(root) {
     group('tools', indexedItems(site, ['docs/README.md', 'Tools'], 'tools/')),
     group('reference', [
       // The decision records follow the reference they decide on, in the order of their numbers.
-      ...site.take(['architecture', 'config', ...under(site.routes, 'adr/')]).map(slug),
+      ...site.take(['architecture', 'config', 'versioning', ...under(site.routes, 'adr/')]).map(slug),
       group('proposals', indexedItems(site, ['docs/README.md', 'Proposals'], 'proposals/')),
     ]),
     group('packages', packageItems(site)),
