@@ -1,8 +1,18 @@
 # Changelog
 
 What each version changes for someone who uses the kit. The packages of `packages/` are released
-together, under one version; the notes of each [GitHub release](https://github.com/gbourgeat/ddd-ts-kit/releases)
+together, under one version; the notes of each [GitHub release](https://github.com/ddd-ts-kit/ddd-ts-kit/releases)
 list the pull requests behind it.
+
+## 0.114.0
+
+**The repository moves to the `ddd-ts-kit` organization: `github.com/ddd-ts-kit/ddd-ts-kit`, and the site to `ddd-ts-kit.github.io/ddd-ts-kit`.** The packages keep their names on npm. GitHub sends the old address of the repository to the new one, so a plugin already installed from the marketplace `gbourgeat/ddd-ts-kit` keeps updating; the old address of the site leads nowhere. `init` now writes the marketplace `ddd-ts-kit/ddd-ts-kit` into the settings of a new project, and the links of the generated files and of the rule documentation name the new address.
+
+To move: in `.claude/settings.json` and `.github/copilot/settings.json`, replace `gbourgeat/ddd-ts-kit` by `ddd-ts-kit/ddd-ts-kit` in the marketplace of the kit, and replace any link to `gbourgeat.github.io/ddd-ts-kit` by `ddd-ts-kit.github.io/ddd-ts-kit`.
+
+**Each published tarball is attested by GitHub, with where and from which commit it was built and with the bill of materials of the release (CycloneDX), which the GitHub release also carries.** `gh attestation verify <tarball> --repo ddd-ts-kit/ddd-ts-kit` checks the provenance, and with `--predicate-type https://cyclonedx.org/bom` the bill of materials; `SECURITY.md` says how. The provenance npm shows on each version is unchanged.
+
+**A patch version never breaks, and the release enforces it: what each version may hold before 1.0, the ranges a project holds, how to upgrade and what 1.0 will guarantee are in [Versions and stability](docs/versioning.md).** A change that asks a project to act (a `To move:` line) now ships only in a new minor version; the ranges `init` writes (`^0.x.y`) take patches alone, so a break reaches a project only when its range is changed.
 
 ## 0.113.2
 
