@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:836f5a0a8c361dd2 -->
+<!-- translation-of: README.md sha256:33110bd2cd5848db -->
 
 <div align="center">
 
@@ -342,8 +342,8 @@ ce dépôt :
   son pipeline par-dessus le tronc avant qu'elle n'arrive, si bien que `main` n'est jamais une
   combinaison que personne n'a testée.
 - **Des versions que vous pouvez vérifier.** Les packages sont publiés depuis la CI par la
-  publication de confiance de npm : aucun jeton durable n'existe, et un mainteneur approuve chaque
-  publication. Chaque archive porte sa provenance npm et, à partir de la version 0.114.0, une
+  publication de confiance de npm : le dépôt ne garde aucun jeton de publication, et un mainteneur
+  approuve chaque publication. Chaque archive porte sa provenance npm et, à partir de la version 0.114.0, une
   attestation signée du commit et du workflow qui l'ont construite et la nomenclature logicielle de
   la version.
   [SECURITY.fr.md](SECURITY.fr.md#vérifier-une-version) donne la commande qui en vérifie une.
