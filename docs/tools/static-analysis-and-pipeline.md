@@ -118,7 +118,9 @@ Versions and licences were read from npm on 2026-10-10.
 | Blind spots | no compiler: barrels and re-exports not resolved, arrow functions not judged for some rules, heuristics on comments | one file at a time: nothing about the project as a whole | says nothing about what a file does, only what it imports | needs correct entry points; discovered files must be declared as entries | does not know the architecture |
 
 Other tools exist for parts of this job (import-boundary ESLint plugins, monorepo boundary
-rules, other dead-code finders). None was evaluated for this page. The kit's configuration for
+rules, other dead-code finders). None was evaluated for this page; the module boundary rule of Nx
+was tried beside the kit in [Composing the kit with other tools](../guides/with-other-tools.md#which-tool-reports-what).
+The kit's configuration for
 dependency-cruiser, `.dependency-cruiser.cjs`, is generated from `ddd-ts-kit.config.json`,
 which is what makes it follow the context map without hand editing:
 `ddd-ts-kit depcruise-config --write` rewrites it (`generate context` does too), and the
