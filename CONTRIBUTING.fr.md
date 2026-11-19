@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:47fbe6e4016f4506 -->
+<!-- translation-of: CONTRIBUTING.md sha256:e20589b4e0da5a5a -->
 
 # Contribuer
 
@@ -304,7 +304,7 @@ verts, ou un run de la nuit demandé sur `main`, `gh workflow run ci.yml --ref m
 npm : corrigez sur `main`, supprimez l'étiquette, `git push --delete origin v0.2.0 && git tag -d
 v0.2.0`, et posez-la sur le commit corrigé avec la même version), puis vérifie que l'étiquette est la version qu'annonce chaque package, construit, vérifie les archives, atteste chaque archive (sa provenance de construction et la nomenclature logicielle de la
 release, en CycloneDX, écrite par `pipeline/monorepo/sbom.mjs` depuis le lockfile), publie chaque
-package sur le registre npm avec sa provenance et crée la release GitHub, la nomenclature jointe. Une version qui a une partie de préversion
+package sur le registre npm avec sa provenance et crée la release GitHub, la nomenclature et la provenance signée des archives jointes. Une version qui a une partie de préversion
 (`0.2.0-rc.1`) est publiée sous l'étiquette `next`. Une exécution arrêtée à mi-chemin se
 relance : ce qui est déjà publié est sauté. Les notes de la release GitHub sont générées à
 partir des pull requests fusionnées ; `CHANGELOG.md` à la racine dit en quelques lignes ce qu'une version change pour un utilisateur :

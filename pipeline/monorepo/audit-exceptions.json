@@ -1,8 +1,1 @@
-[
-  {
-    "advisory": "GHSA-fc5q-39xc-vjpf",
-    "package": "picomatch",
-    "reason": "no fixed version; it reaches production only through @ddd-ts-kit/eslint-plugin (@typescript-eslint/utils, @stylistic/eslint-plugin), a devDependency of a generated project, whose globs come from the configuration of the project, never from a request",
-    "until": "2026-12-17"
-  }
-]
+[]
