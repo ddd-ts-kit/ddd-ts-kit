@@ -18,6 +18,7 @@ const FIXED_ROUTES = new Map([
   ['docs/README.md', 'documentation'],
   ['docs/ARCHITECTURE.md', 'architecture'],
   ['docs/CONFIG.md', 'config'],
+  ['docs/versioning.md', 'versioning'],
   ['docs/translation.md', 'contributing/translation'],
   ['examples/README.md', 'example'],
 ]);

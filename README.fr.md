@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:33110bd2cd5848db -->
+<!-- translation-of: README.md sha256:708d403724a21d1b -->
 
 <div align="center">
 
@@ -327,7 +327,9 @@ parfois plusieurs fois par semaine, et chaque version est petite. La CLI, chaque
 généré bougent encore : un changement qui casse dit quoi lancer dans une ligne `To move:` de
 [CHANGELOG.md](CHANGELOG.md), sans alias ni cale entre les deux
 ([ADR 0005](docs/adr/0005-a-refusal-is-an-error-at-once-before-1-0.fr.md)). La dernière version
-reçoit les corrections, de sécurité comprises ([SECURITY.fr.md](SECURITY.fr.md)).
+reçoit les corrections, de sécurité comprises ([SECURITY.fr.md](SECURITY.fr.md)). Ce que promet
+chaque version, comment mettre à jour et le chemin vers 1.0 :
+[Versions et stabilité](docs/versioning.fr.md).
 
 ## Comment le kit est construit
 

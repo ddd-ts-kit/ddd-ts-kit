@@ -27,6 +27,7 @@ also published as a website, with search, in English and in French:
 |---|---|
 | [Architecture reference](ARCHITECTURE.md) | the canonical tree, every rule id, the tactical rules, tests, clean code |
 | [Configuration](CONFIG.md) | every key of `ddd-ts-kit.config.json` |
+| [Versions and stability](versioning.md) | what a patch and a minor version may hold before 1.0, the ranges a project holds, upgrading, what 1.0 will guarantee |
 | [Lines left out of the coverage measure](adr/0001-lines-left-out-of-the-coverage-measure.md) | the checks nothing can reach, why, and when each one goes |
 | [Cached entries per tenant](adr/0002-cached-keeps-its-entries-per-tenant-and-needs-the-scope.md) | why `cached` files an entry under the tenant, throws without the scope, and skips an elevation |
 | [The in-memory tuple store refuses production](adr/0003-the-in-memory-tuple-store-refuses-production.md) | what `createTupleStore` allows, what an unset `NODE_ENV` does, and what reverses it |
@@ -162,7 +163,7 @@ limits, and a recommendation by situation.
 | How do I test a handler without a mock? | [Testing strategy](concepts/testing-strategy.md) |
 | Which value for a `stack` key? | the tools page of the decision, then [Configuration](CONFIG.md#stack) |
 | A rule does not fit this project | [Deviations](CONFIG.md#deviations): a recorded decision, never a silent `off` |
-| What changes after an upgrade of the kit? | [Migrate after a kit upgrade](guides/commands.md#migrate-after-a-kit-upgrade) and [a key left out of `stack`](CONFIG.md#a-key-left-out-of-stack) |
+| What changes after an upgrade of the kit? | [Versions and stability](versioning.md#upgrading), [Migrate after a kit upgrade](guides/commands.md#migrate-after-a-kit-upgrade) and [a key left out of `stack`](CONFIG.md#a-key-left-out-of-stack) |
 
 Part of the reference also answers in the terminal of a project, from the installed version of
 the kit, so it never disagrees with the code you run:

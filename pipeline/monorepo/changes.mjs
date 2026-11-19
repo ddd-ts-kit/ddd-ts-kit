@@ -5,7 +5,7 @@
 //
 //   node pipeline/monorepo/changes.mjs --check --base <git-ref>   what a pull request has to hold
 //
-// `foldChanges` is called by `release-version.mjs --set`.
+// `foldChanges` and `breakingChanges` are called by `release-version.mjs --set`.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -181,6 +181,38 @@ function isFragment(file) {
  * they reached the trunk (the commit that added each one), and are deleted. What a section
  * `## Unreleased` holds, written before this folder existed, comes first. Answers how many it folded.
  */
+/**
+ * The files of changes/ that ask a project to act: a `To move:` line other than one that says
+ * there is nothing to do. They break, so the version that carries them is a new minor before 1.0
+ * and a new major from 1.0 (`docs/versioning.md`).
+ */
+export function breakingChanges(root) {
+  const directory = path.join(root, CHANGES);
+
+  if (!fs.existsSync(directory)) {
+    return [];
+  }
+
+  return fs
+    .readdirSync(directory)
+    .filter((name) => name.endsWith('.md') && name !== README)
+    .filter((name) => asksToMove(fs.readFileSync(path.join(directory, name), 'utf8')))
+    .map((name) => `${CHANGES}/${name}`)
+    .sort();
+}
+
+export function asksToMove(text) {
+  return /^To move:(?!\s*nothing\b)/im.test(text);
+}
+
+/** Whether going from `current` to `next` may break: a new minor before 1.0, a new major from 1.0. */
+export function allowsABreak(current, next) {
+  const [major, minor] = current.split(/[.-]/).map(Number);
+  const [nextMajor, nextMinor] = next.split(/[.-]/).map(Number);
+
+  return major === 0 ? nextMajor > 0 || nextMinor > minor : nextMajor > major;
+}
+
 export function foldChanges(root, version) {
   const directory = path.join(root, CHANGES);
   const files = fs.existsSync(directory)

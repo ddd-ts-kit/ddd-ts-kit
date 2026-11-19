@@ -312,7 +312,9 @@ week at times, and each release is small. The CLI, every `@ddd-ts-kit/*` package
 share one version. Its API and the layout of a generated project still move: a change that breaks
 says what to run in a `To move:` line of [CHANGELOG.md](CHANGELOG.md), with no alias or shim in
 between ([ADR 0005](docs/adr/0005-a-refusal-is-an-error-at-once-before-1-0.md)). The latest
-version receives the fixes, security fixes included ([SECURITY.md](SECURITY.md)).
+version receives the fixes, security fixes included ([SECURITY.md](SECURITY.md)). What each
+version promises, how to upgrade and the road to 1.0:
+[Versions and stability](docs/versioning.md).
 
 ## How the kit is built
 

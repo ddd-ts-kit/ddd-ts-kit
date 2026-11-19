@@ -8,7 +8,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { foldChanges } from './changes.mjs';
+import { allowsABreak, breakingChanges, foldChanges } from './changes.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const SEMVER = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
@@ -82,6 +82,18 @@ function set(version) {
 
     console.error(
       `The plugin is at ${pluginVersion()}, and a release sets the plugin's version too, above it so that an installed plugin is updated: set ${major}.${minor + 1}.0 or later.`,
+    );
+
+    return 2;
+  }
+
+  const breaking = breakingChanges(ROOT);
+
+  if (breaking.length > 0 && !allowsABreak(current, version)) {
+    const [major, minor] = current.split('.').map(Number);
+
+    console.error(
+      `${breaking.join(', ')} ${breaking.length === 1 ? 'asks' : 'ask'} a project to act (a To move line): a patch never breaks, so ${version} cannot carry them after ${current}. Set ${major === 0 ? `0.${minor + 1}.0` : `${major + 1}.0.0`} (docs/versioning.md).`,
     );
 
     return 2;

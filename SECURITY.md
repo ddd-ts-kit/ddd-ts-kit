@@ -6,7 +6,8 @@
 
 Only the latest version published on npm and the `main` branch receive security fixes. A fix
 lands on `main` and ships in the next release of every package; an older version is not
-patched, so upgrade to the latest one.
+patched, so upgrade to the latest one ([Versions and stability](docs/versioning.md) says what an
+upgrade asks for).
 
 ## Reporting a vulnerability
 
