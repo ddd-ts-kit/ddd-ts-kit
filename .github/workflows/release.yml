@@ -153,8 +153,14 @@ jobs:
         # tarball without the API of GitHub (`gh attestation verify <tarball> --bundle <file>`).
         run: |
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag
-          cp "$BUNDLE" sbom/ddd-ts-kit.intoto.jsonl
-          gh release upload "$TAG" sbom/ddd-ts-kit.cdx.json sbom/ddd-ts-kit.intoto.jsonl --clobber
+          gh release upload "$TAG" sbom/ddd-ts-kit.cdx.json --clobber
+          # The packages are published by now: a missing bundle is a warning, never a failed release.
+          if [ -s "$BUNDLE" ]; then
+            cp "$BUNDLE" sbom/ddd-ts-kit.intoto.jsonl
+            gh release upload "$TAG" sbom/ddd-ts-kit.intoto.jsonl --clobber
+          else
+            echo "::warning::No attestation bundle at '$BUNDLE': the release carries the bill of materials alone."
+          fi
 
   # GitHub Packages accepts a scope only from the account or organization of that name: this
   # job runs once the repository variable is set and a token of the `ddd-ts-kit` organization
