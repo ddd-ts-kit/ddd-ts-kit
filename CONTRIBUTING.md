@@ -283,7 +283,7 @@ tag, `git push --delete origin v0.2.0 && git tag -d v0.2.0`, and tag the fixed c
 same version), then checks that the tag is the version every package states, builds, checks the tarballs,
 attests each tarball (its build provenance and the bill of materials of the release, CycloneDX,
 written by `pipeline/monorepo/sbom.mjs` from the lockfile), publishes each package to the npm
-registry with provenance and creates the GitHub release, the bill of materials attached. A version with a pre-release part (`0.2.0-rc.1`) is published
+registry with provenance and creates the GitHub release, the bill of materials and the signed provenance of the tarballs attached. A version with a pre-release part (`0.2.0-rc.1`) is published
 under the `next` tag. A run that stopped half-way is run again: what is already published is
 skipped. The notes of the GitHub release are generated from the merged pull requests;
 `CHANGELOG.md` at the root says in a few lines what a version changes for a user: setting the

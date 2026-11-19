@@ -10,14 +10,16 @@ on:
   pull_request:
     types: [closed]
 
-permissions:
-  actions: write
+# No permission for the workflow: the one job asks for the only one it needs.
+permissions: {}
 
 jobs:
   cleanup:
     name: The caches of the pull request, deleted
     runs-on: ubuntu-26.04
     timeout-minutes: 5
+    permissions:
+      actions: write
     steps:
       - name: Delete every cache written under the merge ref of the pull request
         env:
