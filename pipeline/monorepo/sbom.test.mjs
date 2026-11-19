@@ -46,6 +46,20 @@ test('each component carries its purl, its license and its SHA-512 in hexadecima
   assert.equal(components.find(({ name }) => name === '@ddd-ts-kit/kernel')?.hashes, undefined);
 });
 
+test('the file carries the three fields the attestation reads to recognise CycloneDX', () => {
+  const { bomFormat, specVersion, serialNumber } = sbomOf(lock(), ['packages/kernel'], '1.0.0', NOW);
+  const another = sbomOf(lock(), ['packages/kernel'], '1.0.0', NOW);
+
+  assert.equal(bomFormat, 'CycloneDX');
+  assert.equal(specVersion, '1.6');
+  assert.match(serialNumber, /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  assert.notEqual(another.serialNumber, serialNumber);
+  assert.equal(
+    sbomOf(lock(), ['packages/kernel'], '1.0.0', NOW, '3e671687-395b-41f5-a30f-a58921a69b79').serialNumber,
+    'urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79',
+  );
+});
+
 test('the release is the root of the graph, at its version and time', () => {
   const { bomFormat, specVersion, metadata, dependencies } = sbomOf(lock(), ['packages/kernel'], '1.0.0', NOW);
 

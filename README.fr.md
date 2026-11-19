@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:708d403724a21d1b -->
+<!-- translation-of: README.md sha256:fecb3ad579374ce7 -->
 
 <div align="center">
 
@@ -345,7 +345,7 @@ ce dépôt :
   combinaison que personne n'a testée.
 - **Des versions que vous pouvez vérifier.** Les packages sont publiés depuis la CI par la
   publication de confiance de npm : le dépôt ne garde aucun jeton de publication, et un mainteneur
-  approuve chaque publication. Chaque archive porte sa provenance npm et, à partir de la version 0.114.0, une
+  approuve chaque publication. Chaque archive porte sa provenance npm et, à partir de la version 0.114.1, une
   attestation signée du commit et du workflow qui l'ont construite et la nomenclature logicielle de
   la version.
   [SECURITY.fr.md](SECURITY.fr.md#vérifier-une-version) donne la commande qui en vérifie une.
