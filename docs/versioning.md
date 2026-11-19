@@ -26,7 +26,8 @@ CHANGELOG.md are short.
 A break is any change after which a project has to act: an API renamed or removed, a rule that now
 refuses what it accepted, a generated file the project must write again, a layout that moves. The
 release enforces the line between the two: `pipeline/monorepo/release-version.mjs --set` refuses a
-patch version while a pending change asks a project to act.
+patch version while a pending change asks a project to act. It does so from version 0.114.0: three
+earlier patch versions (0.83.1, 0.83.4 and 0.84.1) carried a `To move:` line.
 
 Before 1.0 a break carries no transition: no alias, no shim, no warning first (the decision and its
 reasons are in [ADR 0005](adr/0005-a-refusal-is-an-error-at-once-before-1-0.md)). What replaces

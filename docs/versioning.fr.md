@@ -1,5 +1,5 @@
 [English](versioning.md) · **Français**
-<!-- translation-of: versioning.md sha256:63945acd2b7870b3 -->
+<!-- translation-of: versioning.md sha256:b51a981f8166b167 -->
 
 # Versions et stabilité
 
@@ -29,7 +29,8 @@ Une rupture est tout changement après lequel un projet doit agir : une API reno
 règle qui refuse désormais ce qu'elle acceptait, un fichier généré que le projet doit réécrire, une
 arborescence qui bouge. La release fait respecter la frontière entre les deux :
 `pipeline/monorepo/release-version.mjs --set` refuse une version corrective tant qu'un changement en
-attente demande à un projet d'agir.
+attente demande à un projet d'agir. Elle le fait à partir de la version 0.114.0 : trois versions
+correctives antérieures (0.83.1, 0.83.4 et 0.84.1) portaient une ligne `To move:`.
 
 Avant 1.0, une rupture n'apporte aucune transition : pas d'alias, pas de cale, pas d'avertissement
 d'abord (la décision et ses raisons sont dans
