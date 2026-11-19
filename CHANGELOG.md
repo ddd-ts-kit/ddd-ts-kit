@@ -4,6 +4,10 @@ What each version changes for someone who uses the kit. The packages of `package
 together, under one version; the notes of each [GitHub release](https://github.com/ddd-ts-kit/ddd-ts-kit/releases)
 list the pull requests behind it.
 
+## 0.114.1
+
+**Version 0.114.0 was tagged and never published: 0.114.1 carries what it announced.** The release run stopped before the publication, when it attested the tarballs with the bill of materials: the file had no `serialNumber`, the field the attestation reads to recognise CycloneDX. The bill of materials now carries one, a new `urn:uuid` at each release. No package exists at 0.114.0 on the registry: a project that follows the kit goes from 0.113.2 to 0.114.1, and the line `To move:` of 0.114.0 applies to that step.
+
 ## 0.114.0
 
 **The repository moves to the `ddd-ts-kit` organization: `github.com/ddd-ts-kit/ddd-ts-kit`, and the site to `ddd-ts-kit.github.io/ddd-ts-kit`.** The packages keep their names on npm. GitHub sends the old address of the repository to the new one, so a plugin already installed from the marketplace `gbourgeat/ddd-ts-kit` keeps updating; the old address of the site leads nowhere. `init` now writes the marketplace `ddd-ts-kit/ddd-ts-kit` into the settings of a new project, and the links of the generated files and of the rule documentation name the new address.
