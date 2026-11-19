@@ -123,6 +123,7 @@ jobs:
           name: sbom
           path: sbom
       - name: Each tarball attested, with where and from which commit it was built
+        id: provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: tarballs/*.tgz
@@ -147,9 +148,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
+          BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
+        # The signed provenance of the tarballs goes beside the bill of materials: a reader checks a
+        # tarball without the API of GitHub (`gh attestation verify <tarball> --bundle <file>`).
         run: |
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag
-          gh release upload "$TAG" sbom/ddd-ts-kit.cdx.json --clobber
+          cp "$BUNDLE" sbom/ddd-ts-kit.intoto.jsonl
+          gh release upload "$TAG" sbom/ddd-ts-kit.cdx.json sbom/ddd-ts-kit.intoto.jsonl --clobber
 
   # GitHub Packages accepts a scope only from the account or organization of that name: this
   # job runs once the repository variable is set and a token of the `ddd-ts-kit` organization
