@@ -17,15 +17,14 @@ the kit holds it to the architecture.
 [![npm downloads](https://img.shields.io/npm/dm/ddd-ts-kit?color=3f9a77)](https://www.npmjs.com/package/ddd-ts-kit)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/ddd-ts-kit/ddd-ts-kit/badge)](https://scorecard.dev/viewer/?uri=github.com/ddd-ts-kit/ddd-ts-kit)
 [![Node](https://img.shields.io/node/v/ddd-ts-kit?color=3f9a77)](#requirements)
-[![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](docs/ARCHITECTURE.md)
 [![License MIT](https://img.shields.io/badge/license-MIT-3f9a77)](LICENSE)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-3f9a77)](#contributing)
 
 **[Documentation](https://ddd-ts-kit.github.io/ddd-ts-kit/)** ·
 [Quick start](#quick-start) ·
 [Example](examples/scheduling/README.md) ·
 [Article](https://medium.com/@gary.bourgeat/domain-driven-design-typescript-ai-coding-agents-6981482928aa) ·
 [Changelog](CHANGELOG.md) ·
+[Security](SECURITY.md) ·
 [Discussions](https://github.com/ddd-ts-kit/ddd-ts-kit/discussions) ·
 [Contributing](#contributing)
 
@@ -306,6 +305,38 @@ PostgreSQL, the transactional outbox, Keycloak and relationship-based authorizat
 Node 22.12 or later. The generated projects type-check with the native TypeScript 7 compiler and
 keep TypeScript 6 for the tools that still need its API.
 
+## Project status
+
+ddd-ts-kit is in its 0.x versions and actively maintained: it is released often, several times a
+week at times, and each release is small. The CLI, every `@ddd-ts-kit/*` package and the plugin
+share one version. Its API and the layout of a generated project still move: a change that breaks
+says what to run in a `To move:` line of [CHANGELOG.md](CHANGELOG.md), with no alias or shim in
+between ([ADR 0005](docs/adr/0005-a-refusal-is-an-error-at-once-before-1-0.md)). The latest
+version receives the fixes, security fixes included ([SECURITY.md](SECURITY.md)).
+
+## How the kit is built
+
+The kit is held to what it asks of a project, and each claim below can be checked in this
+repository:
+
+- **Tested as it asks you to test.** Every pull request holds each package to its coverage floor,
+  and the end-to-end suite generates real projects, installs them with npm and with pnpm and runs
+  their whole gate. Every night the mutation score of the example application is held to its
+  floor.
+- **One way to `main`.** A change is a pull request; the merge queue runs its pipeline again on
+  top of the trunk before it lands, so `main` is never a combination nobody tested.
+- **Releases you can verify.** Packages are published from CI by npm trusted publishing: the
+  repository stores no publish token, and a maintainer approves each publication. Each tarball carries its
+  npm provenance and, from version 0.114.0, a signed attestation of the commit and workflow that
+  built it and the bill of materials of the release.
+  [SECURITY.md](SECURITY.md#verifying-a-release) gives the command that verifies one.
+- **A watched supply chain.** CodeQL, the audit of production dependencies and a secret scan run
+  on every pull request, the actions of the workflows are pinned by commit, and the
+  [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/ddd-ts-kit/ddd-ts-kit) scores
+  the repository every week.
+- **Decisions on record.** What was decided, why, and what would reverse it is kept as decision
+  records, indexed in [docs/README.md](docs/README.md).
+
 ## Community and support
 
 - **Questions and ideas**: [GitHub Discussions](https://github.com/ddd-ts-kit/ddd-ts-kit/discussions).
@@ -329,9 +360,7 @@ translation, a test, an adapter or a new rule. Good places to start:
   what held, what got in the way.
 
 [CONTRIBUTING.md](CONTRIBUTING.md) gives the setup, the ground rules and how a change reaches
-`main`. If ddd-ts-kit helps you, a star on GitHub helps others find it.
-
-[![Star history of ddd-ts-kit](https://api.star-history.com/svg?repos=ddd-ts-kit/ddd-ts-kit&type=Date)](https://star-history.com/#ddd-ts-kit/ddd-ts-kit&Date)
+`main`.
 
 ## Contributors
 
