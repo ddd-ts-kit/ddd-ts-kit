@@ -28,13 +28,17 @@ test('the job that holds the publishing identity installs and builds nothing', (
 
 test('the tarballs are attested, with their provenance and the bill of materials, before they are published', () => {
   const [publish] = jobs().filter((entry) => entry.id === 'publish');
-  const step = (pattern) => publish?.text.search(pattern) ?? -1;
+  const steps = (publish?.text ?? '').split(/\n {6}- /);
+  const attest = steps.filter((text) => /uses: actions\/attest@/.test(text));
+  const provenance = attest.findIndex((text) => !/sbom-path:/.test(text) && !/predicate/.test(text));
+  const bill = attest.findIndex((text) => /sbom-path: sbom\/ddd-ts-kit\.cdx\.json/.test(text));
+  const published = steps.findIndex((text) => /publish-packages\.mjs/.test(text));
 
   assert.match(publish?.text ?? '', /attestations:\s*write/);
-  assert.ok(step(/actions\/attest-build-provenance@/) > 0, 'the provenance of the tarballs is attested');
-  assert.ok(step(/actions\/attest-sbom@/) > 0, 'the bill of materials is attested');
-  assert.ok(step(/actions\/attest-build-provenance@/) < step(/publish-packages\.mjs/), 'attested before published');
-  assert.ok(step(/actions\/attest-sbom@/) < step(/publish-packages\.mjs/), 'attested before published');
+  assert.ok(provenance >= 0, 'the provenance of the tarballs is attested');
+  assert.ok(bill >= 0, 'the bill of materials is attested');
+  assert.ok(steps.indexOf(attest[provenance]) < published, 'attested before published');
+  assert.ok(steps.indexOf(attest[bill]) < published, 'attested before published');
 });
 
 function jobs() {
