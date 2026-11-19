@@ -158,6 +158,10 @@ Cursor, Gemini CLI, Codex, OpenCode and Copilot. `init` writes the instructions 
 | scaffolding | "ALWAYS invoke the `nx-generate` skill FIRST" | the generators of the kit, and the guard refuses a hand-written file of a kind they write | Nx for a new project of the workspace; the kit for anything inside a kit project |
 | a session in the kit project | nothing | the guard: refuses code on the trunk, opens a worktree, judges each write, refuses `git commit --no-verify` | the kit: its guard found the config in `packages/api` and held every one of these in the session |
 
+The last column is what this guide recommends, not what was observed: the plugin of Nx was not
+loaded in the session, so which of the two instructions an agent follows when both are loaded,
+on scaffolding above all, is still to be seen in a session started at the root of the workspace.
+
 Write it down for the agents: a line in the root `AGENTS.md`, outside the markers Nx rewrites,
 that says `packages/api` is a ddd-ts-kit project and that its own `AGENTS.md` governs work inside
 it. The permissions of the `.claude/settings.json` of `packages/api` are not read by a session

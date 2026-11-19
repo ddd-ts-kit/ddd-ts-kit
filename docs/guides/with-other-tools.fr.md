@@ -1,5 +1,5 @@
 [English](with-other-tools.md) · **Français**
-<!-- translation-of: with-other-tools.md sha256:2166da434b3cf2fc -->
+<!-- translation-of: with-other-tools.md sha256:121b28d2677d081c -->
 
 # Composer le kit avec d'autres outils
 
@@ -171,6 +171,11 @@ du kit dans `packages/api`. Là où elles se rencontrent :
 | lancer une tâche | « always prefer running the task through nx » | `npm run verify`, `npx ddd-ts-kit check` | Nx à la racine (`nx run api:verify`, `nx affected`) ; les commandes du kit dans `packages/api`, que ses *skills* nomment |
 | générer | « ALWAYS invoke the `nx-generate` skill FIRST » | les générateurs du kit, et la garde refuse un fichier écrit à la main d'une sorte qu'ils écrivent | Nx pour un nouveau projet du *workspace* ; le kit pour tout ce qui est dans un projet du kit |
 | une session dans le projet du kit | rien | la garde : refuse du code sur le tronc, ouvre un *worktree*, juge chaque écriture, refuse `git commit --no-verify` | le kit : sa garde a trouvé la configuration dans `packages/api` et a tenu chacun de ces points dans la session |
+
+La dernière colonne est ce que ce guide recommande, pas ce qui a été observé : le *plugin* de Nx
+n'était pas chargé dans la session, si bien que l'instruction que suit un agent quand les deux
+sont chargées, pour la génération surtout, reste à voir dans une session lancée à la racine du
+*workspace*.
 
 L'écrire pour les agents : une ligne dans l'`AGENTS.md` de la racine, hors des marqueurs que Nx
 réécrit, qui dit que `packages/api` est un projet ddd-ts-kit et que son propre `AGENTS.md`
