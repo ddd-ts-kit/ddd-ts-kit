@@ -4,6 +4,7 @@
 // brings is its `dependencies` and the `optionalDependencies` the lockfile installed; a peer is the
 // choice of the project that installs the kit, so it is not listed. Run by the release workflow:
 // `node pipeline/monorepo/sbom.mjs <version> --output <file>`.
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -49,7 +50,7 @@ function publishedWorkspaces() {
  * version 3. A workspace that does not state `version` refuses the document: the release names
  * one version for every package.
  */
-export function sbomOf(lock, workspaces, version, now) {
+export function sbomOf(lock, workspaces, version, now, serial = randomUUID()) {
   const entries = lock.packages ?? {};
   const components = new Map();
   const dependencies = new Map();
@@ -90,6 +91,8 @@ export function sbomOf(lock, workspaces, version, now) {
   return {
     bomFormat: 'CycloneDX',
     specVersion: '1.6',
+    // A reader that recognises the format by its fields asks for this one: `actions/attest` refuses a file without it.
+    serialNumber: `urn:uuid:${serial}`,
     version: 1,
     metadata: {
       timestamp: now.toISOString(),

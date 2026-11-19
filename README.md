@@ -329,7 +329,7 @@ repository:
   top of the trunk before it lands, so `main` is never a combination nobody tested.
 - **Releases you can verify.** Packages are published from CI by npm trusted publishing: the
   repository stores no publish token, and a maintainer approves each publication. Each tarball carries its
-  npm provenance and, from version 0.114.0, a signed attestation of the commit and workflow that
+  npm provenance and, from version 0.114.1, a signed attestation of the commit and workflow that
   built it and the bill of materials of the release.
   [SECURITY.md](SECURITY.md#verifying-a-release) gives the command that verifies one.
 - **A watched supply chain.** CodeQL, the audit of production dependencies and a secret scan run

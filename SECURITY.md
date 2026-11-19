@@ -26,7 +26,7 @@ the reporter unless they ask otherwise.
 
 Every package is published from the `Release` workflow of this repository, never from a
 machine: npm shows its provenance on the page of each version (`npm audit signatures` checks it
-in a project). From version 0.114.0, each tarball is also attested by GitHub with where and from
+in a project). From version 0.114.1, each tarball is also attested by GitHub with where and from
 which commit it was built, and with the bill of materials of the release (CycloneDX), attached to
 the GitHub release:
 
