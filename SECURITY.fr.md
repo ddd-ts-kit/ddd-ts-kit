@@ -1,5 +1,5 @@
 [English](SECURITY.md) · **Français**
-<!-- translation-of: SECURITY.md sha256:cac2200ff22dc78d -->
+<!-- translation-of: SECURITY.md sha256:a1ac7b1a3bedf839 -->
 
 # Politique de sécurité
 
@@ -27,8 +27,9 @@ sécurité GitHub qui crédite la personne qui l'a signalée, sauf si elle deman
 
 Chaque package est publié par le workflow `Release` de ce dépôt, jamais depuis une machine :
 npm affiche sa provenance sur la page de chaque version (`npm audit signatures` la vérifie dans
-un projet). Chaque archive est aussi attestée par GitHub : où et depuis quel commit elle a été
-construite, et la nomenclature logicielle de la release (CycloneDX), jointe à la release GitHub :
+un projet). À partir de la version 0.114.0, chaque archive est aussi attestée par GitHub : où et
+depuis quel commit elle a été construite, et la nomenclature logicielle de la release (CycloneDX),
+jointe à la release GitHub :
 
 ```bash
 npm pack @ddd-ts-kit/kernel@<version>
