@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { tscCommand } from '../src/commands/tsc';
 import { run } from '../src/run';
 import { cli, tempDir, write } from './helpers';
 
@@ -66,6 +67,15 @@ describe('ddd-ts-kit tsc', () => {
 
     expect(code).toBe(0);
     expect(JSON.parse(out.join('\n'))).toMatchObject({ args: ['--noEmit'] });
+  });
+
+  it('takes the directory it is run from as the project when no --cwd names one', () => {
+    const out: string[] = [];
+
+    const code = tscCommand(['--version'], { out: (text) => out.push(text), err: () => undefined });
+
+    expect(code).toBe(0);
+    expect(out.join('\n')).toMatch(/^Version 7\./);
   });
 
   it('passes --help on to the compiler, and --cwd, which the helper writes apart, is not', () => {

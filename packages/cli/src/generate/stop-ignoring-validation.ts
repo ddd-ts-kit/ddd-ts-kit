@@ -21,10 +21,7 @@ export function stopIgnoringValidation(ws: Workspace, config: Config): void {
   }
 
   editJson(ws, KNIP_FILE, (knip) => {
-    const kept = ignored(ws).filter((name) => !waiting.includes(name));
-
-    // A key without a value is left out of the file.
-    knip[IGNORED] = kept.length > 0 ? kept : undefined;
+    knip[IGNORED] = ignored(ws).filter((name) => !waiting.includes(name));
   });
 }
 

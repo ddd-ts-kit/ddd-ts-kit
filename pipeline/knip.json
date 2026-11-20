@@ -7,7 +7,7 @@
     "test/e2e/**/*.ts"
   ],
   "project": ["src/**/*.ts", "scripts/**/*.ts", "test/**/*.ts"],
-  "ignoreDependencies": ["eslint-formatter-gitlab"],
+  "ignoreDependencies": ["eslint-formatter-gitlab", "@typescript/native"],
   "ignoreExportsUsedInFile": true,
   "mcp": false,
   "ignoreIssues": {

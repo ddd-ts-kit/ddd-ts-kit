@@ -3,6 +3,8 @@ import { WITH_DATABASE } from '../stack/with-database';
 import type { RenderContext } from '../templating';
 import { validationDependencies } from './validation-dependencies';
 
+const NATIVE_COMPILER = '@typescript/native';
+
 /**
  * What knip is told beyond the sources when the project is created: the entry point of a worker,
  * and the end-to-end tree, which exists only with an HTTP stack, so that no pattern matches
@@ -10,7 +12,6 @@ import { validationDependencies } from './validation-dependencies';
  */
 export function knipVars(config: Config): RenderContext {
   const when = (text: string): string => (config.stack.http === 'none' ? '' : text);
-  const ignored = ignoredDependencies(config);
 
   return {
     // Last, where `generate service` and `generate worker` add it.
@@ -26,8 +27,7 @@ export function knipVars(config: Config): RenderContext {
     testDatabase: opensTestDatabaseLater(config)
       ? `,\n      "${config.platformDir}/database/open-test-database.ts"`
       : '',
-    ignores: ignored.length > 0,
-    ignored: JSON.stringify(ignored),
+    ignored: JSON.stringify(ignoredDependencies(config)),
   };
 }
 
@@ -44,9 +44,10 @@ function runnerConfigs(config: Config, when: (text: string) => string): string {
 }
 
 /**
- * The report formatter a GitLab pipeline names on its command line, and the validation packages
- * while nothing validates: in a new project, the route of the audit trail is their only user, or
- * the composition of Nest controllers, which reads their DTO classes with `classSchema`.
+ * The report formatter a GitLab pipeline names on its command line, the native compiler, which
+ * `ddd-ts-kit tsc` runs and no script or source names, and the validation packages while nothing
+ * validates: in a new project, the route of the audit trail is their only user, or the
+ * composition of Nest controllers, which reads their DTO classes with `classSchema`.
  */
 function ignoredDependencies(config: Config): string[] {
   const { ci, audit, http, routes } = config.stack;
@@ -54,6 +55,7 @@ function ignoredDependencies(config: Config): string[] {
 
   return [
     ...(ci === 'gitlab' || ci === 'both' ? ['eslint-formatter-gitlab'] : []),
+    NATIVE_COMPILER,
     ...(validates ? [] : validationDependencies(config)),
   ];
 }
