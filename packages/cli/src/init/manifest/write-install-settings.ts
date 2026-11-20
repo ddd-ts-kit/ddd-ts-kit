@@ -36,7 +36,7 @@ export function writeInstallSettings(ws: Workspace, config: Config, force: boole
     : '';
 
   ws.note(
-    `This project is a package of the pnpm workspace of ${path.dirname(workspace.file)}: pnpm reads the settings of ${workspace.file} alone, so no ${PNPM_WORKSPACE} is written here. ${
+    `This project is a package of the pnpm workspace of ${path.dirname(workspace.file)}: pnpm reads its settings in ${workspace.file}, so no ${PNPM_WORKSPACE} is written here, where it would make the folder a workspace apart. The Dockerfile of this folder copies a lockfile the folder does not hold: build the image from the root of the workspace. ${
       lacking.length === 0
         ? 'That file holds what the stack needs.'
         : `Add to that file what the stack needs: ${lacking.join('; ')}.`
@@ -47,7 +47,8 @@ export function writeInstallSettings(ws: Workspace, config: Config, force: boole
 /** What the file of the root lacks of what `init` writes in the one of a project that stands alone. */
 function lackingIn(text: string, config: Config): string[] {
   const allowed = allowBuildsEntries(allowBuildsBlock(text) ?? '');
-  const forced = (name: string): boolean => new RegExp(`^\\s+['"]?${name}['"]?:`, 'm').test(text);
+  const overrides = /^overrides:[^\n]*\n((?:[ \t]+.*\n?|\n)*)/m.exec(text)?.[1] ?? '';
+  const forced = (name: string): boolean => overrides.split('\n').some((line) => namesKey(line, name));
 
   return [
     ...(/^strictDepBuilds:/m.test(text)
@@ -65,4 +66,11 @@ function lackingIn(text: string, config: Config): string[] {
       .filter(({ name }) => !allowed.some(({ key }) => namesPackage(key, name)))
       .map(({ name, does }) => `under \`allowBuilds:\`, \`'${name}': true\` (its script ${does})`),
   ];
+}
+
+/** Whether a line of a block sets the key given, quoted or not. */
+function namesKey(line: string, name: string): boolean {
+  const key = line.trim().split(':')[0] ?? '';
+
+  return key.replace(/^(['"])(.*)\1$/, '$2') === name;
 }

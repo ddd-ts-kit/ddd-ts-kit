@@ -59,7 +59,7 @@ function listInPnpmWorkspace(ws: Workspace): void {
 
   if (above !== undefined) {
     // The workspace the project is a package of lists the packages: its file is outside the project.
-    if (!above.text.includes(`${above.folder}/${PACKAGES}`)) {
+    if (!above.lists(`${above.folder}/${CLIENTS_DIRECTORY}/api`)) {
       ws.note(
         `${above.file} lists the packages of the workspace: add '${above.folder}/${PACKAGES}' to them, so that each client is a package of it.`,
       );

@@ -33,7 +33,8 @@ describe('init in a package of a pnpm workspace', () => {
 
     expect(fs.existsSync(path.join(project, OWN_FILE))).toBe(false);
     expect(read(root, OWN_FILE)).toBe("packages:\n  - 'packages/*'\n");
-    expect(notes).toContain(`pnpm reads the settings of ${root}/${OWN_FILE} alone, so no ${OWN_FILE} is written here`);
+    expect(notes).toContain(`pnpm reads its settings in ${root}/${OWN_FILE}, so no ${OWN_FILE} is written here`);
+    expect(notes).toContain('build the image from the root of the workspace');
     expect(notes).toContain('Add to that file what the stack needs: `strictDepBuilds: false`');
     expect(notes).toContain("under `overrides:`, `qs: '^6.16.0'`");
     expect(notes).toContain("under `allowBuilds:`, `'@prisma/engines': true`");
@@ -48,6 +49,14 @@ describe('init in a package of a pnpm workspace', () => {
     expect(notesOf(project)).toContain('That file holds what the stack needs.');
   });
 
+  it('reads an override in the overrides of the root file, not under another key that names the package', () => {
+    const { project } = workspace(
+      "packages:\n  - 'packages/*'\ncatalog:\n  qs: '^6.16.0'\noverrides:\n  \"lodash\": '4'\n",
+    );
+
+    expect(notesOf(project)).toContain("under `overrides:`, `qs: '^6.16.0'`");
+  });
+
   it('says to remove the file an earlier init left in the package, and does not rewrite it', () => {
     const { project } = workspace("packages:\n  - 'packages/*'\n");
 
@@ -55,6 +64,8 @@ describe('init in a package of a pnpm workspace', () => {
 
     expect(notesOf(project, '--force')).toContain(`Remove the ${OWN_FILE} of this folder`);
     expect(read(project, OWN_FILE)).toBe('strictDepBuilds: false\n');
+    // pnpm reads the nearest file: while the one of the package stays, it is the one that counts.
+    expect(pnpmSettingsFile(project)).toBe(`${project}/${OWN_FILE}`);
   });
 
   it.each([
@@ -63,6 +74,20 @@ describe('init in a package of a pnpm workspace', () => {
     ['a glob of any depth', 'packages:\n  - "apps/**"\n', 'apps/back/api'],
     ['a glob of any depth before a name', "packages:\n  - './**/api/'\n", 'apps/back/api'],
     ['globs between brackets', "packages: ['tools/*', 'packages/*']\n", 'packages/api'],
+    ['globs between brackets on several lines', "packages: [\n  'tools/*',\n  'packages/*'\n]\n", 'packages/api'],
+    [
+      'comments after the key and between the globs',
+      'packages: # ours\n  # tools\n  - tools/*\n\n  - packages/*\n',
+      'packages/api',
+    ],
+    [
+      'a list that is not indented, before another key',
+      'packages:\n- packages/*\nstrictDepBuilds: false\n',
+      'packages/api',
+    ],
+    ['line endings of Windows', "packages:\r\n  - 'packages/*'\r\n", 'packages/api'],
+    ['names between braces', 'packages:\n  - "packages/{api,web}"\n', 'packages/api'],
+    ['one character left open', "packages:\n  - 'packages/ap?'\n", 'packages/api'],
   ])('reads the project as a package of the workspace: %s', (_, settings, folder) => {
     const { root, project } = workspace(settings, folder);
 
@@ -76,6 +101,8 @@ describe('init in a package of a pnpm workspace', () => {
     ['lists other folders', "packages:\n  - 'tools/*'\n"],
     ['leaves the folder out', "packages:\n  - 'packages/*'\n  - '!packages/api'\n"],
     ['lists no package', 'strictDepBuilds: false\n'],
+    ['lists it under another key', "catalog:\n  - 'packages/*'\n"],
+    ['names other folders between braces', 'packages:\n  - "packages/{web,docs}"\n'],
   ])('keeps a file of its own under a workspace that %s: the project installs alone', (_, settings) => {
     const { project } = workspace(settings);
 
@@ -106,6 +133,10 @@ describe('init in a package of a pnpm workspace', () => {
     );
 
     write(root, OWN_FILE, "packages:\n  - 'packages/*'\n  - 'packages/api/clients/*'\n");
+
+    expect(cli(project, 'sdk').stdout).not.toContain('lists the packages of the workspace');
+
+    write(root, OWN_FILE, "packages:\n  - 'packages/**'\n");
 
     expect(cli(project, 'sdk').stdout).not.toContain('lists the packages of the workspace');
     expect(fs.existsSync(path.join(project, OWN_FILE))).toBe(false);

@@ -10,6 +10,8 @@ export interface PnpmWorkspace {
   readonly text: string;
   /** The project, from the root of the workspace. */
   readonly folder: string;
+  /** Whether the workspace lists a folder, named from its root, among its packages. */
+  readonly lists: (folder: string) => boolean;
 }
 
 /**
@@ -28,7 +30,9 @@ export function pnpmWorkspaceOf(root: string): PnpmWorkspace | undefined {
       const text = fs.readFileSync(file, 'utf8');
       const folder = path.relative(directory, project).split(path.sep).join('/');
 
-      return lists(packagesOf(text), folder) ? { file, text, folder } : undefined;
+      const lists = (named: string): boolean => listedBy(packagesOf(text), named);
+
+      return lists(folder) ? { file, text, folder, lists } : undefined;
     }
 
     if (path.dirname(directory) === directory) {
@@ -37,42 +41,54 @@ export function pnpmWorkspaceOf(root: string): PnpmWorkspace | undefined {
   }
 }
 
-/** The globs of `packages:`, written as a block or between brackets. */
+/**
+ * The globs of `packages:`, as a block or between brackets, on one line or several. The file is
+ * read without a YAML parser: comments and empty lines are left out, and the list ends at the
+ * next key.
+ */
 function packagesOf(text: string): string[] {
-  const inline = /^packages:[ \t]*\[(.*)\]/m.exec(text)?.[1];
-  const block = /^packages:[ \t]*\n((?:[ \t]*-.*\n?|[ \t]*\n)*)/m.exec(text)?.[1] ?? '';
+  const lines = text
+    .replace(/\r/g, '')
+    .split('\n')
+    .filter((line) => !/^\s*(#.*)?$/.test(line));
 
-  const items =
-    inline === undefined ? block.split('\n').map((line) => line.replace(/^[ \t]*-/, '')) : inline.split(',');
+  const at = lines.findIndex((line) => line.startsWith('packages:'));
+  const rest = at === -1 ? [] : lines.slice(at + 1);
+  const end = rest.findIndex((line) => /^[^\s\-\]]/.test(line));
+  const list = [(lines[at] ?? '').replace(/^packages:/, ''), ...(end === -1 ? rest : rest.slice(0, end))];
 
-  return items
+  return list
+    .join('\n')
+    .split(/\n|,(?![^{]*\})/)
     .map((item) =>
       item
         .replace(/\s#.*$/, '')
-        .trim()
+        .replace(/^[\s\-[]+|[\s\]]+$/g, '')
         .replace(/^(['"])(.*)\1$/, '$2'),
     )
     .filter(Boolean);
 }
 
 /** A glob that starts with `!` leaves out what the others list. */
-function lists(globs: readonly string[], folder: string): boolean {
-  const matches = (glob: string): boolean => patternOf(glob).test(folder);
+function listedBy(globs: readonly string[], folder: string): boolean {
+  const matches = (glob: string): boolean =>
+    new RegExp(`^${sourceOf(glob.replace(/^\.\//, '').replace(/\/$/, ''))}$`).test(folder);
+
   const left = globs.filter((glob) => glob.startsWith('!')).map((glob) => glob.slice(1));
 
   return globs.some((glob) => !glob.startsWith('!') && matches(glob)) && !left.some(matches);
 }
 
-/** `*` stands for one folder, `**` for any depth. */
-function patternOf(glob: string): RegExp {
-  const source = glob
-    .replace(/^\.\//, '')
-    .replace(/\/$/, '')
-    .split(/(\*\*\/|\*\*|\*)/)
-    .map((part) => WILDCARDS[part] ?? part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+const WILDCARDS: Record<string, string | undefined> = { '**/': '(?:.+/)?', '**': '.*', '*': '[^/]*', '?': '[^/]' };
+
+/** `*` stands for one folder, `**` for any depth, `?` for one character, `{a,b}` for either. */
+function sourceOf(glob: string): string {
+  return glob
+    .split(/(\*\*\/|\*\*|\*|\?|\{[^}]*\})/)
+    .map((part) =>
+      part.startsWith('{')
+        ? `(?:${part.slice(1, -1).split(',').map(sourceOf).join('|')})`
+        : (WILDCARDS[part] ?? part.replace(/[.+^$()|[\]\\]/g, '\\$&')),
+    )
     .join('');
-
-  return new RegExp(`^${source}$`);
 }
-
-const WILDCARDS: Record<string, string | undefined> = { '**/': '(?:.+/)?', '**': '.*', '*': '[^/]*' };
