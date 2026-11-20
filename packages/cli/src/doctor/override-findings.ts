@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Config } from '../config';
 import { isRecord } from '../config/values/is-record';
 import { PINNED_BELOW_A_FIX, type PinnedBelowAFix } from '../init/manifest/pinned-below-a-fix';
+import { pnpmSettingsFile } from '../package-manager/pnpm-settings-file';
 import type { DoctorFinding } from './doctor-finding';
 import { inRange } from './in-range';
 import { installedFrom } from './installed-from';
@@ -103,7 +104,8 @@ function forcedIn(root: string, file: string, manifest: unknown): (name: string)
     return (name) => overrides[name] !== undefined;
   }
 
-  const text = fs.existsSync(path.join(root, file)) ? fs.readFileSync(path.join(root, file), 'utf8') : '';
+  const settings = pnpmSettingsFile(root);
+  const text = fs.existsSync(settings) ? fs.readFileSync(settings, 'utf8') : '';
   const block = /^overrides:\n((?:[ \t]+.*\n?|\n)*)/m.exec(text)?.[1] ?? '';
 
   return (name) => new RegExp(`^\\s+['"]?${name}['"]?:`, 'm').test(block);
