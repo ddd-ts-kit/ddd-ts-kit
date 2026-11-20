@@ -73,8 +73,11 @@ to `docs/context-map.md`, then deletes the draft.
 
 After the bootstrap, the relationships live in `contexts.<downstream>.upstreams` of
 `ddd-ts-kit.config.json` (the owner confirms the edit; a new context takes
-`--upstream <ctx>:<pattern>` at creation). Then `npx ddd-ts-kit docs` redraws the diagram and
-the table between the markers of `docs/context-map.md`. Write outside the markers, and only
+`--upstream <ctx>:<pattern>` at creation, and an existing one gains a new upstream by the same
+command, `generate context <name> --classification <its classification> --upstream
+<ctx>:<pattern>`; the pattern of a declared pair changes in the config only). Then
+`npx ddd-ts-kit docs` redraws the diagram and the table between the markers of
+`docs/context-map.md`. Write outside the markers, and only
 what the diagram cannot say: the reading guide (three lines on the main flow), why each
 debated boundary, why each pattern other than `published-language` and what it costs, known
 tensions with the signal that would trigger a split or a merge.

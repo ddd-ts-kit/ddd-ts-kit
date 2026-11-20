@@ -1,5 +1,5 @@
 [English](with-other-tools.md) · **Français**
-<!-- translation-of: with-other-tools.md sha256:62a360e15e0c6f3b -->
+<!-- translation-of: with-other-tools.md sha256:d7881623f77fbc90 -->
 
 # Composer le kit avec d'autres outils
 
@@ -232,7 +232,7 @@ du *workspace* avec son propre `node_modules` (521 Mo ici). Nx ne l'a pas pris p
 | `typecheck` et `build` appellent `tsc` par un chemin qu'un *workspace* remonté casse | le kit | [#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855) |
 | `init` dans un *package* d'un *workspace* npm a choisi pnpm | le kit | [#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856) |
 | `ddd-ts-kit lint` échoue quand un *plugin* ESLint écrit sur la sortie standard | le kit | [#857](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/857), corrigée après 0.114.1 |
-| `generate context <existant> --upstream <ctx>` n'enregistre rien et ne dit rien | le kit | [#858](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/858) |
+| `generate context <existant> --upstream <ctx>` n'enregistre rien et ne dit rien | le kit | [#858](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/858), corrigée après 0.114.1 |
 | `vite` laissé à côté du projet quand `@vitest/mocker` est monté à la racine | npm | `vite` à la racine |
 | Prettier du *workspace* contre Biome du projet | les deux | `.prettierignore` |
 | `lefthook.yml` écrit dans le projet, lu en haut du dépôt seulement | *hooks* git | ses commandes reportées à la racine |
