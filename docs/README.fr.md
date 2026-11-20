@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:fee65b4c386fff99 -->
+<!-- translation-of: README.md sha256:bf857ca0d46921e7 -->
 
 # Documentation
 
@@ -126,6 +126,7 @@ a vérifié, les limites, et une recommandation selon la situation.
 | [Quelle commande, quand](guides/commands.fr.md) | la commande ou la *skill* de chaque moment d'un projet, une première fonctionnalité en partant de zéro, et la référence de chaque commande et de chaque option |
 | [Une tranche, de bout en bout](guides/first-slice.fr.md) | la requête HTTP `POST /orders` à travers les quatre couches d'une tranche générée, et son code de domaine et d'application une fois rempli |
 | [Le plugin pour agents de code](guides/coding-agents.fr.md) | installer le plugin dans Claude Code, Codex et Copilot, ses vingt-six *skills*, ses six agents et son *hook*, et ce que chaque hôte exécute |
+| [Composer le kit avec d'autres outils](guides/with-other-tools.fr.md) | le kit dans un *workspace* Nx, à partir d'une vraie session : un seul projet Nx pour le projet du kit, ce qu'il faut contourner, quel outil signale quel import, deux jeux d'instructions pour agents ; Spec Kit, BMAD et Superpowers à venir |
 | [Travail en équipe](guides/team-workflow.fr.md) | la propriété par contexte, le glossaire, les contrats d'abord, la revue, les décisions, l'arrivée d'un nouveau membre |
 | [Travail en parallèle](guides/parallel-work.fr.md) | plusieurs personnes ou agents à la fois : ce qui est sûr, ce qui est séquencé, un plan concret |
 | [Parcours d'une story](guides/story-workflow.fr.md) | une session par *user story*, une *story* par terminal : les questions d'abord, la revue de conception et les tests d'acceptation avant le code, un rapport de chaque décision provisoire |

@@ -1,5 +1,5 @@
 [English](static-analysis-and-pipeline.md) · **Français**
-<!-- translation-of: static-analysis-and-pipeline.md sha256:db565cb471c19c25 -->
+<!-- translation-of: static-analysis-and-pipeline.md sha256:d52d62acbe8b76b0 -->
 
 # L'analyse statique et le pipeline
 
@@ -121,7 +121,8 @@ Versions et licences lues sur npm le 2026-10-10.
 
 D'autres outils existent pour des parties de ce travail (*plugins* ESLint de frontières
 d'import, règles de frontières de monorepo, autres détecteurs de code mort). Aucun n'a été évalué
-pour cette page. La configuration de dependency-cruiser du kit, `.dependency-cruiser.cjs`, est
+pour cette page ; la règle de frontières de modules de Nx a été essayée à côté du kit dans
+[Composer le kit avec d'autres outils](../guides/with-other-tools.fr.md#quel-outil-signale-quoi). La configuration de dependency-cruiser du kit, `.dependency-cruiser.cjs`, est
 générée à partir de `ddd-ts-kit.config.json`, et c'est ce qui lui fait suivre la carte des
 contextes sans retouche à la main : `ddd-ts-kit depcruise-config --write` la réécrit
 (`generate context` aussi), et le `npm run depcruise` généré commence par
