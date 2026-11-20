@@ -165,8 +165,9 @@ does not look: between projects of the workspace (a front end that must not impo
 shared libraries).
 
 When the project graph of Nx is not cached, the rule prints a warning to standard output and
-skips itself; `ddd-ts-kit lint` then fails on that output
-([#857](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/857)). `npx eslint` alone runs.
+skips itself; `ddd-ts-kit lint` 0.114.1 failed on that output
+([#857](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/857)). The next release reads the answer of
+ESLint apart and passes the warning on to standard error.
 
 ### Agents: two sets of instructions
 
@@ -217,8 +218,8 @@ matches one level). Run Nx from the root of the worktree.
 |---|---|---|
 | `typecheck` and `build` call `tsc` by a path a hoisted workspace breaks | the kit | [#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855) |
 | `init` in a package of an npm workspace chose pnpm | the kit | [#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856), fixed after 0.114.1 |
-| `ddd-ts-kit lint` fails when an ESLint plugin writes to standard output | the kit | [#857](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/857) |
-| `generate context <existing> --upstream <ctx>` records nothing and says nothing | the kit | [#858](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/858) |
+| `ddd-ts-kit lint` fails when an ESLint plugin writes to standard output | the kit | [#857](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/857), fixed after 0.114.1 |
+| `generate context <existing> --upstream <ctx>` records nothing and says nothing | the kit | [#858](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/858), fixed after 0.114.1 |
 | `vite` left beside the project while `@vitest/mocker` went to the root | npm | `vite` at the root |
 | Prettier of the workspace against Biome of the project | both | `.prettierignore` |
 | `lefthook.yml` written in the project, read at the top of the repository only | git hooks | its commands carried to the root |

@@ -1,4 +1,12 @@
-import { addContextToConfigText, CLASSIFICATIONS, CONFIG_FILE, isOneOf, type Config } from '../../config';
+import {
+  addContextToConfigText,
+  CLASSIFICATIONS,
+  CONFIG_FILE,
+  isOneOf,
+  type Config,
+  type Upstream,
+} from '../../config';
+import { addUpstreamsToConfigText } from '../../config/add-upstreams-to-config-text';
 import { refreshContextDoc } from '../../docs/refresh-context-doc';
 import { CliError } from '../../cli-error';
 import { MissingPrerequisite } from '../missing-prerequisite';
@@ -27,19 +35,17 @@ export function generateContext(ws: Workspace, config: Config, request: ContextR
 
   const existing = ownEntry(config.contexts, context.kebab);
 
-  const entry = existing ?? {
-    classification,
-    upstreams: request.upstreams,
-    extraDirectories: [],
-    modules: [],
-    deployable: false,
-    owners: [],
-  };
+  const entry =
+    existing === undefined
+      ? newEntry(classification, request.upstreams)
+      : withUpstreams(config, { here: context.kebab, existing, asked: request.upstreams });
 
   const next: Config = { ...config, contexts: { ...config.contexts, [context.kebab]: entry } };
 
   if (existing === undefined) {
     declareInConfig(ws, context, entry);
+  } else if (entry !== existing) {
+    declareUpstreams(ws, context, entry.upstreams.slice(existing.upstreams.length));
   }
 
   writeContextFiles(ws, { config: next, context, request });
@@ -172,7 +178,121 @@ function assertUpstreamsExist(config: Config, context: Name, { upstreams, builtO
   }
 }
 
-function declareInConfig(ws: Workspace, context: Name, entry: Config['contexts'][string]): void {
+type ContextEntry = Config['contexts'][string];
+
+/** What `--upstream <ctx>` without a pattern declares. */
+const DEFAULT_RELATIONSHIP = 'published-language';
+
+function newEntry(classification: string, upstreams: readonly Upstream[]): ContextEntry {
+  return { classification, upstreams, extraDirectories: [], modules: [], deployable: false, owners: [] };
+}
+
+/** What `generate context` asks of a context that exists: the upstreams it names, beside the entry it has. */
+interface UpstreamsAsked {
+  readonly here: string;
+  readonly existing: ContextEntry;
+  readonly asked: readonly Upstream[];
+}
+
+/**
+ * A context that exists keeps what it declares, and gains each `--upstream` it does not declare
+ * yet: the relationship found after the context was created is declared by the same command. An
+ * upstream that already reaches the context through its own upstreams would close a cycle.
+ */
+function withUpstreams(config: Config, { here, existing, asked }: UpstreamsAsked): ContextEntry {
+  asked.forEach((upstream) => {
+    refuseOtherRelationship(here, existing, upstream);
+  });
+
+  const added = asked.filter(
+    (upstream, index) =>
+      !existing.upstreams.some((known) => known.context === upstream.context) &&
+      asked.findIndex((first) => first.context === upstream.context) === index,
+  );
+
+  if (added.length === 0) {
+    return existing;
+  }
+
+  for (const upstream of added) {
+    refuseCycle(config, here, upstream.context);
+  }
+
+  return { ...existing, upstreams: [...existing.upstreams, ...added] };
+}
+
+/**
+ * The pattern of a pair is chosen once, in the config: an `--upstream` that names another one for a
+ * declared upstream would be lost. A bare `--upstream <ctx>` reads as `published-language`, the
+ * default, and asks for no pattern: run again on a pair declared otherwise, it keeps it.
+ */
+function refuseOtherRelationship(here: string, existing: ContextEntry, upstream: Upstream): void {
+  const known = existing.upstreams.find((candidate) => candidate.context === upstream.context);
+
+  if (
+    known === undefined ||
+    known.relationship === upstream.relationship ||
+    upstream.relationship === DEFAULT_RELATIONSHIP
+  ) {
+    return;
+  }
+
+  throw new CliError(
+    `"${here}" already declares "${upstream.context}" as an upstream, as ${known.relationship}, not ${upstream.relationship}.`,
+    `Change the pattern of the pair where it is declared: { "context": "${upstream.context}", "relationship": "${upstream.relationship}" } in contexts.${here}.upstreams of ${CONFIG_FILE}, then run \`ddd-ts-kit docs\`.`,
+  );
+}
+
+function refuseCycle(config: Config, here: string, upstream: string): void {
+  const path = pathBetween(config, { from: upstream, to: here, seen: [] });
+
+  if (path === undefined) {
+    return;
+  }
+
+  throw new CliError(
+    `"${upstream}" already depends on "${here}" (${[...path, here].join(' -> ')}): declaring it as an upstream of "${here}" closes a cycle (context/no-cycle).`,
+    `Keep the dependency in one direction: let "${here}" react to an integration event of "${upstream}" without declaring it, or declare "${here}" upstream of "${upstream}" only.`,
+  );
+}
+
+/** A walk along the upstreams: where it is, where it goes, and the contexts it went through. */
+interface Walk {
+  readonly from: string;
+  readonly to: string;
+  readonly seen: readonly string[];
+}
+
+/** The chain of upstreams from `from` to `to`, `from` first, or undefined when `to` is not one of them. */
+function pathBetween(config: Config, { from, to, seen }: Walk): readonly string[] | undefined {
+  if (from === to) {
+    return seen;
+  }
+
+  if (seen.includes(from)) {
+    return undefined;
+  }
+
+  for (const upstream of ownEntry(config.contexts, from)?.upstreams ?? []) {
+    const found = pathBetween(config, { from: upstream.context, to, seen: [...seen, from] });
+
+    if (found !== undefined) {
+      return found;
+    }
+  }
+
+  return undefined;
+}
+
+function declareUpstreams(ws: Workspace, context: Name, added: readonly Upstream[]): void {
+  const text = ws.read(CONFIG_FILE);
+
+  if (text !== undefined) {
+    ws.update(CONFIG_FILE, addUpstreamsToConfigText(text, context.kebab, added));
+  }
+}
+
+function declareInConfig(ws: Workspace, context: Name, entry: ContextEntry): void {
   const text = ws.read(CONFIG_FILE);
 
   if (text !== undefined) {
