@@ -68,7 +68,7 @@ describe('ddd-ts-kit tsc', () => {
     expect(JSON.parse(out.join('\n'))).toMatchObject({ args: ['--noEmit'] });
   });
 
-  it('passes --help on to the compiler, and the separate form of --cwd is not passed on', () => {
+  it('passes --help on to the compiler, and --cwd, which the helper writes apart, is not', () => {
     const root = tempDir('tsc');
 
     installCompiler(root);
@@ -78,6 +78,14 @@ describe('ddd-ts-kit tsc', () => {
 
     expect(result.code).toBe(0);
     expect(JSON.parse(result.stdout)).toMatchObject({ args: ['--help'] });
+  });
+
+  it('leaves `help tsc` to the help of the kit', () => {
+    const result = cli(tempDir('tsc'), 'help', 'tsc');
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('ddd-ts-kit tsc');
+    expect(result.stdout).toContain('@typescript/native');
   });
 
   it('refuses a project where the native compiler is not installed, naming the install', () => {
