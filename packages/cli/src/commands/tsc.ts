@@ -16,11 +16,15 @@ const NATIVE_COMPILER = '@typescript/native';
 export const tscCommand: Command = (argv, io) => {
   const { root, compilerArguments } = splitCwd(argv);
 
-  const run = spawnSync(process.execPath, [compilerOf(root), ...compilerArguments], {
-    cwd: root,
-    encoding: 'utf8',
-    maxBuffer: 1024 * 1024 * 1024,
-  });
+  const run = spawnSync(
+    process.execPath,
+    [compilerOf(root), ...compilerArguments, ...prettyInATerminal(compilerArguments)],
+    {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 1024 * 1024 * 1024,
+    },
+  );
 
   if (run.stdout.trim() !== '') {
     io.out(run.stdout.trimEnd());
@@ -32,6 +36,13 @@ export const tscCommand: Command = (argv, io) => {
 
   return run.status ?? 1;
 };
+
+/** The compiler writes through a pipe here, where it would leave its colours out: asked back when the output is a terminal, unless the arguments say. */
+function prettyInATerminal(compilerArguments: readonly string[]): string[] {
+  return process.stdout.isTTY && !compilerArguments.some((argument) => argument.startsWith('--pretty'))
+    ? ['--pretty']
+    : [];
+}
 
 /** `--cwd` names the project, as for every command of the kit; every other argument is the compiler's. */
 function splitCwd(argv: readonly string[]): { root: string; compilerArguments: string[] } {

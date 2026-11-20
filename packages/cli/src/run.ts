@@ -100,6 +100,9 @@ export const COMMANDS: Readonly<Record<string, Command>> = {
   explain: explainCommand,
 };
 
+/** The commands whose arguments belong to the tool they run: `ddd-ts-kit tsc --help` is the help of the compiler. */
+const PASSES_ARGUMENTS_ON: readonly string[] = ['tsc'];
+
 /** The exit code of a fault of the kit itself, apart from `1` (violations) and `2` (a mistake of the caller). */
 const INTERNAL_ERROR = 4;
 
@@ -130,7 +133,8 @@ export function run(asked: readonly string[], io: Io = processIo, options?: RunO
     if (
       command === undefined ||
       command === 'help' ||
-      [command, ...rest].some((argument) => argument === '--help' || argument === '-h')
+      (!PASSES_ARGUMENTS_ON.includes(command) &&
+        [command, ...rest].some((argument) => argument === '--help' || argument === '-h'))
     ) {
       io.out(helpFor(argv));
 

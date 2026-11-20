@@ -68,6 +68,18 @@ describe('ddd-ts-kit tsc', () => {
     expect(JSON.parse(out.join('\n'))).toMatchObject({ args: ['--noEmit'] });
   });
 
+  it('passes --help on to the compiler, and the separate form of --cwd is not passed on', () => {
+    const root = tempDir('tsc');
+
+    installCompiler(root);
+    write(root, 'package.json', '{}');
+
+    const result = cli(root, 'tsc', '--help');
+
+    expect(result.code).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({ args: ['--help'] });
+  });
+
   it('refuses a project where the native compiler is not installed, naming the install', () => {
     const root = tempDir('tsc');
 
