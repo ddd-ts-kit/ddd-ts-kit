@@ -30,6 +30,7 @@ function installEslint(messages: readonly Message[], meta: Readonly<Record<strin
       '  constructor(options) { this.options = options; const { cache, cacheLocation, cacheStrategy } = options; fs.writeFileSync("cache.json", JSON.stringify({ cache, cacheLocation, cacheStrategy })); }',
       '  static async outputFixes() {}',
       '  async lintFiles(patterns) {',
+      "    if (fs.existsSync('noisy.flag')) console.log('warning No cached ProjectGraph is available. The rule will be skipped.');",
       "    fs.writeFileSync('asked.json', JSON.stringify({ patterns, fix: this.options.fix, ignores: this.options.overrideConfig?.[0]?.ignores }));",
       "    if (patterns.includes('nothere.ts')) throw Object.assign(new Error('No files matching'), { messageTemplate: 'file-not-found' });",
       "    return [{ filePath: 'src/a.ts', messages }];",
@@ -205,6 +206,31 @@ describe('ddd-ts-kit lint --json', () => {
 
     expect(result.code).toBe(1);
     expect(result.json()).toMatchObject({ errors: 1, warnings: 0, report: 'json: 1 problem(s)' });
+  });
+});
+
+describe('ddd-ts-kit lint beside a plugin that prints on standard output', () => {
+  it('reads the answer of ESLint all the same, and passes what the plugin printed on to stderr', () => {
+    installEslint([{ ruleId: 'no-var', severity: 2 }]);
+    write(root, 'noisy.flag', '');
+
+    const result = cli(root, 'lint', 'src');
+
+    expect(result.code).toBe(1);
+    expect(result.stdout).toBe('stylish: 1 problem(s)');
+    expect(result.stderr).toContain('warning No cached ProjectGraph is available');
+  });
+
+  it('keeps --json one line on stdout', () => {
+    installEslint([]);
+    write(root, 'noisy.flag', '');
+
+    const result = cli(root, 'lint', '--json');
+
+    expect(result.code).toBe(0);
+    expect(result.stdout.split('\n')).toHaveLength(1);
+    expect(result.json()).toMatchObject({ errors: 0, warnings: 0 });
+    expect(result.stderr).toContain('warning No cached ProjectGraph is available');
   });
 });
 

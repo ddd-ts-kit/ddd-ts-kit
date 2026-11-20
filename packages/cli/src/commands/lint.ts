@@ -1,8 +1,10 @@
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 import { createRequire } from 'node:module';
+import os from 'node:os';
 import path from 'node:path';
 import { CliError } from '../cli-error';
-import { ESLINT_IN_PROJECT, LINT_RUN_VARIABLE } from '../lint/eslint-in-project';
+import { ESLINT_IN_PROJECT, LINT_ANSWER_VARIABLE, LINT_RUN_VARIABLE } from '../lint/eslint-in-project';
 import { lintCacheOf } from '../lint/lint-cache-of';
 import { type LintAnswer, parseLintAnswer } from '../lint/parse-lint-answer';
 import type { LintRun } from '../lint/lint-run';
@@ -99,26 +101,41 @@ function refuseWithoutEslint(root: string): void {
   }
 }
 
-/** What ESLint answered, or undefined once its failure (a config that does not load, a pattern that matches nothing) is printed. */
+/**
+ * What ESLint answered, or undefined once its failure (a config that does not load, a pattern that
+ * matches nothing) is printed. The answer comes back in a file: what a plugin of the project prints
+ * on standard output is passed on to standard error, which keeps `--json` one line.
+ */
 function runEslint(lint: LintRun, io: Io): LintAnswer | undefined {
-  const run = spawnSync(process.execPath, ['--input-type=module', '--eval', ESLINT_IN_PROJECT], {
-    cwd: lint.root,
-    encoding: 'utf8',
-    env: { ...process.env, [LINT_RUN_VARIABLE]: JSON.stringify(lint) },
-    maxBuffer: 1024 * 1024 * 1024,
-  });
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'ddd-ts-kit-lint-'));
+  const answerFile = path.join(folder, 'answer.json');
 
-  if (run.stderr.trim() !== '') {
-    io.err(run.stderr.trimEnd());
+  try {
+    const run = spawnSync(process.execPath, ['--input-type=module', '--eval', ESLINT_IN_PROJECT], {
+      cwd: lint.root,
+      encoding: 'utf8',
+      env: { ...process.env, [LINT_RUN_VARIABLE]: JSON.stringify(lint), [LINT_ANSWER_VARIABLE]: answerFile },
+      maxBuffer: 1024 * 1024 * 1024,
+    });
+
+    const printed = `${run.stdout}${run.stderr}`;
+
+    if (printed.trim() !== '') {
+      io.err(printed.trimEnd());
+    }
+
+    if (run.status !== 0) {
+      return undefined;
+    }
+
+    const answer = fs.readFileSync(answerFile, 'utf8');
+
+    refuseWhatEslintRefused(answer, lint);
+
+    return parseLintAnswer(answer);
+  } finally {
+    fs.rmSync(folder, { recursive: true, force: true });
   }
-
-  if (run.status !== 0) {
-    return undefined;
-  }
-
-  refuseWhatEslintRefused(run.stdout, lint);
-
-  return parseLintAnswer(run.stdout);
 }
 
 /** ESLint stopped on a pattern that matches no file or a formatter it cannot load: said as a refusal with its next step, not as the stack of Node. */
