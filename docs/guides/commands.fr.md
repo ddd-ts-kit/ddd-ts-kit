@@ -1,5 +1,5 @@
 [English](commands.md) · **Français**
-<!-- translation-of: commands.md sha256:39d2e3e9d964ee2f -->
+<!-- translation-of: commands.md sha256:cd64cc82b8879ac1 -->
 
 # Quelle commande, quand
 
@@ -334,6 +334,7 @@ Usage
   ddd-ts-kit docs [--check] [--dry-run] [--stored-events] [--behaviour]
   ddd-ts-kit sdk [--check] [--dry-run]
   ddd-ts-kit depcruise-config [--check|--write]
+  ddd-ts-kit tsc <arguments of tsc>
   ddd-ts-kit build-aliases [--project <tsconfig>]
   ddd-ts-kit drizzle-generate --name <what-it-does> [--custom]
   ddd-ts-kit drizzle-generate --replay [--base <git-ref>]
@@ -368,6 +369,8 @@ ddd-ts-kit <command> --help prints the usage and the notes of that command alone
                    --run <script> runs that script of the project on them (DDD_TS_KIT_AFFECTED set,
                    --passWithNoTests on a partial run) and nothing when nothing that runs changed:
                    the pre-push hook tests the contexts its branch reaches
+  tsc              the typecheck and build of a project: the native TypeScript compiler (@typescript/native)
+                   wherever it is installed, in the project or hoisted to the root of a workspace
   build-aliases    after the compiler: rewrites the import aliases left in the emitted .js and .d.ts files
                    into relative paths, so that plain node runs the output (tsconfig.build.json by default)
   drizzle-generate the db:generate of a Drizzle project: drizzle-kit generate --name, which without a terminal

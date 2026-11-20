@@ -708,8 +708,8 @@ removing `generated/` writes them again). Two runs in one project take turns on
 `.ddd-ts-kit/prisma-client`: two test runs started together never write the client at once.
 
 `package.json` carries two compilers: `typescript ~6.0.3`, which the tools load as a library,
-and `@typescript/native` (`npm:typescript@~7.0.2`), which `build` and `typecheck` call by path
-(`node node_modules/@typescript/native/bin/tsc`). `npx tsc` would run the older one.
+and `@typescript/native` (`npm:typescript@~7.0.2`), which `build` and `typecheck` run through
+`ddd-ts-kit tsc`, wherever the package manager installed it. `npx tsc` would run the older one.
 
 `init` and `generate context` start with the language: the first entry of `todos` is the glossary
 of the context to fill in. Both refuse a context named `schema`, on every ORM: on Prisma the models

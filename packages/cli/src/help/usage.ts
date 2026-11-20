@@ -53,6 +53,7 @@ export const USAGE = `Usage
   ddd-ts-kit docs [--check] [--dry-run] [--stored-events] [--behaviour]
   ddd-ts-kit sdk [--check] [--dry-run]
   ddd-ts-kit depcruise-config [--check|--write]
+  ddd-ts-kit tsc <arguments of tsc>
   ddd-ts-kit build-aliases [--project <tsconfig>]
   ddd-ts-kit drizzle-generate --name <what-it-does> [--custom]
   ddd-ts-kit drizzle-generate --replay [--base <git-ref>]

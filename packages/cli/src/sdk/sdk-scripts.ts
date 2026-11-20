@@ -1,7 +1,7 @@
 /** A script that already runs the generator or its check, whatever runs the CLI (`ddd-ts-kit`, a wrapper script). */
 const RUNS_SDK = /\bsdk\b/;
 
-const BUILD = 'node node_modules/@typescript/native/bin/tsc -b clients';
+const BUILD = 'ddd-ts-kit tsc -b clients';
 
 /**
  * The scripts of a project whose contract has clients: `sdk:generate` and `sdk:build`, the

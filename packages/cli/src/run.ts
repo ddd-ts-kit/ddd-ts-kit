@@ -4,6 +4,7 @@ import type { Io } from './commands/io';
 import { acceptanceCommand } from './commands/acceptance';
 import { affectedCommand } from './commands/affected';
 import { buildAliasesCommand } from './commands/build-aliases';
+import { tscCommand } from './commands/tsc';
 import { checkFileCommand, explainCommand, rulesCommand } from './commands/check';
 import { checksCommand } from './commands/checks';
 import { citedCommand } from './commands/cited';
@@ -79,6 +80,7 @@ export const COMMANDS: Readonly<Record<string, Command>> = {
   doctor: doctorCommand,
   sdk: sdkCommand,
   'depcruise-config': depcruiseConfigCommand,
+  tsc: tscCommand,
   'build-aliases': buildAliasesCommand,
   'drizzle-generate': drizzleGenerateCommand,
   'knex-generate': knexGenerateCommand,
@@ -98,6 +100,9 @@ export const COMMANDS: Readonly<Record<string, Command>> = {
   explain: explainCommand,
 };
 
+/** The commands whose arguments belong to the tool they run: `ddd-ts-kit tsc --help` is the help of the compiler, `ddd-ts-kit help tsc` the one of the kit. */
+const PASSES_ARGUMENTS_ON: readonly string[] = ['tsc'];
+
 /** The exit code of a fault of the kit itself, apart from `1` (violations) and `2` (a mistake of the caller). */
 const INTERNAL_ERROR = 4;
 
@@ -116,7 +121,7 @@ export interface RunOptions {
 
 export function run(asked: readonly string[], io: Io = processIo, options?: RunOptions): number {
   const argv = canonical(asked);
-  const [command, ...rest] = argv;
+  const [command] = argv;
 
   try {
     if (command === '--version' || command === '-v') {
@@ -125,11 +130,7 @@ export function run(asked: readonly string[], io: Io = processIo, options?: RunO
       return 0;
     }
 
-    if (
-      command === undefined ||
-      command === 'help' ||
-      [command, ...rest].some((argument) => argument === '--help' || argument === '-h')
-    ) {
+    if (asksForHelp(asked, argv)) {
       io.out(helpFor(argv));
 
       return 0;
@@ -143,6 +144,19 @@ export function run(asked: readonly string[], io: Io = processIo, options?: RunO
 
     return refused(error, argv, io);
   }
+}
+
+/** No command, `help`, or `--help` anywhere but in the arguments of a command that passes them on. */
+function asksForHelp(asked: readonly string[], argv: readonly string[]): boolean {
+  const [command] = argv;
+
+  if (command === undefined || command === 'help') {
+    return true;
+  }
+
+  return (
+    !PASSES_ARGUMENTS_ON.includes(asked[0] ?? '') && argv.some((argument) => argument === '--help' || argument === '-h')
+  );
 }
 
 /** The command named, once it is known and, on Windows outside WSL 2, allowed to run a script: refused before any work. */

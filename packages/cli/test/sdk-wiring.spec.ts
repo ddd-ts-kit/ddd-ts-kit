@@ -21,7 +21,7 @@ describe('the wiring of the clients', () => {
       'ci:docs': 'npm run docs:check',
       'ci:build': 'npm run build && npm run sdk:build',
       'sdk:generate': 'ddd-ts-kit sdk',
-      'sdk:build': 'node node_modules/@typescript/native/bin/tsc -b clients',
+      'sdk:build': 'ddd-ts-kit tsc -b clients',
     });
 
     expect(sdkScripts(wired)).toEqual(wired);

@@ -6,7 +6,7 @@ import type { FixtureFiles } from './fixture-files';
 
 const RULE = 'imports/alias-declared';
 const PATHS = { '@/*': ['./src/*'], '$test/*': ['./test/*'], '$scripts/*': ['./scripts/*'] };
-const COMPILE = 'node node_modules/@typescript/native/bin/tsc -p tsconfig.build.json';
+const COMPILE = 'ddd-ts-kit tsc -p tsconfig.build.json';
 const BUILD = `${COMPILE} && ddd-ts-kit build-aliases`;
 const JEST_MAPPER = String.raw`moduleNameMapper: { '^\\$app/(.*)\\.js$': '<rootDir>/src/$1.ts', '^\\$test/(.*)\\.js$': '<rootDir>/test/$1.ts', '^\\$scripts/(.*)\\.js$': '<rootDir>/scripts/$1.ts' }`;
 

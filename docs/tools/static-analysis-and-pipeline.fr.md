@@ -1,5 +1,5 @@
 [English](static-analysis-and-pipeline.md) · **Français**
-<!-- translation-of: static-analysis-and-pipeline.md sha256:d52d62acbe8b76b0 -->
+<!-- translation-of: static-analysis-and-pipeline.md sha256:acb6a478dc443961 -->
 
 # L'analyse statique et le pipeline
 
@@ -263,8 +263,10 @@ Ce qui a été constaté le 2026-10-10 :
 La réponse du kit, telle que l'énoncent ses README : un projet généré installe les deux.
 `typescript` 6 sert les outils qui lisent les sources par l'API du compilateur (ESLint avec les
 types, dependency-cruiser), et `@typescript/native`, un alias npm de `typescript` 7, compile et
-vérifie les types ; il est appelé par son chemin, parce que les deux *packages* déclarent un
-binaire `tsc` et que `npx tsc` en choisirait un.
+vérifie les types ; il est lancé par `ddd-ts-kit tsc`, parce que les deux *packages* déclarent un
+binaire `tsc` et que `npx tsc` en choisirait un. `ddd-ts-kit tsc` trouve le natif où que le
+gestionnaire de paquets l'ait mis, dans le projet ou remonté à la racine d'un *workspace*, et lui
+passe ses arguments.
 
 ![typescript 6 est chargé par ESLint avec les types et par dependency-cruiser ; @typescript/native, typescript 7, fait la vérification de types et le build](../assets/diagrams/static-analysis-and-pipeline-two-compilers.fr.svg)
 
@@ -273,8 +275,8 @@ Dans le `package.json` d'un projet généré :
 ```json
 {
   "scripts": {
-    "typecheck": "node node_modules/@typescript/native/bin/tsc -p tsconfig.json --noEmit",
-    "build": "node node_modules/@typescript/native/bin/tsc -p tsconfig.build.json && ddd-ts-kit build-aliases"
+    "typecheck": "ddd-ts-kit tsc -p tsconfig.json --noEmit",
+    "build": "ddd-ts-kit tsc -p tsconfig.build.json && ddd-ts-kit build-aliases"
   },
   "devDependencies": {
     "@typescript/native": "npm:typescript@~7.0.2",

@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { cli, read, write } from './helpers';
 import { initProject } from './support/init-project';
-import { keysAt } from './support/keys-at';
 import { readJson } from './support/read-json';
 import { stringsAt } from './support/strings-at';
 
 const VALIDATION = '@ddd-ts-kit/validation';
 const BILLING = ['--context', 'billing:core'];
+/** What `ddd-ts-kit tsc` runs: no script and no source names it, in every project. */
+const COMPILER = '@typescript/native';
 
 const ignored = (root: string): string[] => stringsAt(readJson(root, 'knip.json'), 'ignoreDependencies');
 
@@ -18,25 +19,32 @@ const ignored = (root: string): string[] => stringsAt(readJson(root, 'knip.json'
  */
 describe('the validation packages of a project that validates nothing yet', () => {
   it('are reported by nobody where the route of the audit trail uses them: the default stack', () => {
-    expect(keysAt(readJson(initProject(), 'knip.json'))).not.toContain('ignoreDependencies');
-    expect(ignored(initProject('--ci', 'gitlab'))).toEqual(['eslint-formatter-gitlab']);
+    expect(ignored(initProject())).toEqual([COMPILER]);
+    expect(ignored(initProject('--ci', 'gitlab'))).toEqual(['eslint-formatter-gitlab', COMPILER]);
   });
 
   it.each([
     [
       ['--audit', 'off'],
-      [VALIDATION, 'zod'],
+      [COMPILER, VALIDATION, 'zod'],
     ],
-    [['--orm', 'none', '--validation', 'standard-schema'], [VALIDATION]],
-    [['--http', 'none', '--validation', 'none'], [VALIDATION]],
+    [
+      ['--orm', 'none', '--validation', 'standard-schema'],
+      [COMPILER, VALIDATION],
+    ],
+    [
+      ['--http', 'none', '--validation', 'none'],
+      [COMPILER, VALIDATION],
+    ],
     [
       ['--orm', 'none', '--validation', 'class-validator'],
-      [VALIDATION, 'class-validator', 'class-transformer', 'class-validator-jsonschema'],
+      [COMPILER, VALIDATION, 'class-validator', 'class-transformer', 'class-validator-jsonschema'],
     ],
     [
       ['--di', 'manual', '--audit', 'off', '--validation', 'class-validator', '--ci', 'gitlab'],
       [
         'eslint-formatter-gitlab',
+        COMPILER,
         VALIDATION,
         'class-validator',
         'class-transformer',
@@ -46,14 +54,14 @@ describe('the validation packages of a project that validates nothing yet', () =
     ],
     [
       ['--http', 'nest', '--orm', 'none', '--validation', 'class-validator', '--routes', 'controllers'],
-      [VALIDATION, 'class-validator-jsonschema'],
+      [COMPILER, VALIDATION, 'class-validator-jsonschema'],
     ],
   ])('wait in knip.json where nothing uses them, with what the library brings (%j)', (flags, waiting) => {
     expect(ignored(initProject(...flags))).toEqual(waiting);
   });
 
   it('do not wait under Nest controllers, whose composition reads their DTO classes from the start', () => {
-    expect(ignored(initProject('--http', 'nest', '--orm', 'none'))).toEqual([]);
+    expect(ignored(initProject('--http', 'nest', '--orm', 'none'))).toEqual([COMPILER]);
   });
 
   it('stop waiting with the first file that validates, and knip.json keeps what else it ignores', () => {
@@ -63,31 +71,31 @@ describe('the validation packages of a project that validates nothing yet', () =
 
     expect(ignored(root)).toContain('zod');
     expect(routed(root).code).toBe(0);
-    expect(ignored(root)).toEqual(['eslint-formatter-gitlab']);
+    expect(ignored(root)).toEqual(['eslint-formatter-gitlab', COMPILER]);
 
     expect(
       read(root, 'src/contexts/billing/presentation/http/invoices/issue-invoice/issue-invoice.controller.ts'),
     ).toContain(`from '${VALIDATION}/zod'`);
   });
 
-  it('leave no key behind when nothing else was ignored', () => {
+  it('leave the compiler alone, which `ddd-ts-kit tsc` runs and no script names', () => {
     const root = initProject('--orm', 'none', ...BILLING);
 
     routed(root);
 
-    expect(keysAt(readJson(root, 'knip.json'))).not.toContain('ignoreDependencies');
+    expect(ignored(root)).toEqual([COMPILER]);
   });
 
   it('are left to the trunk by a worker confined to its context: `docs` settles it there', () => {
     const root = initProject('--orm', 'none', ...BILLING);
 
     expect(routed(root, '--local-only').stderr).toBe('');
-    expect(ignored(root)).toEqual([VALIDATION, 'zod']);
+    expect(ignored(root)).toEqual([COMPILER, VALIDATION, 'zod']);
     // The page of what the tests of the context state is a shared file too: the trunk writes it.
     expect(cli(root, 'docs', '--check').stdout).toContain('docs/behaviour/billing.md');
     expect(cli(root, 'docs').code).toBe(0);
     expect(cli(root, 'docs', '--check').code).toBe(0);
-    expect(ignored(root)).toEqual([]);
+    expect(ignored(root)).toEqual([COMPILER]);
   });
 
   it('are never told to wait again: a list the team emptied or rewrote is theirs', () => {
