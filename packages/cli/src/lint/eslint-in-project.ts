@@ -1,12 +1,18 @@
 export const LINT_RUN_VARIABLE = 'DDD_TS_KIT_LINT_RUN';
 
+/** The file the process that runs ESLint writes its answer to: its standard output belongs to the plugins of the project, which may print there. */
+export const LINT_ANSWER_VARIABLE = 'DDD_TS_KIT_LINT_ANSWER';
+
 /**
  * The ESLint of the project, through its API, which is asynchronous where a command of the CLI is
  * not: run by `node --input-type=module --eval`, so that it is the same script from the sources and
  * from the build. A formatter that writes its own file (`gitlab`) writes it here. The cache of
- * ESLint, keyed by the content of each file, lives where the command prepared it.
+ * ESLint, keyed by the content of each file, lives where the command prepared it. The answer goes
+ * to a file of its own, since a plugin may print on standard output (`@nx/enforce-module-boundaries`
+ * warns there while the graph of Nx is not cached).
  */
 export const ESLINT_IN_PROJECT = `
+import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -17,8 +23,9 @@ const { ESLint } = await import(pathToFileURL(entry).href);
 const withCache = cache === undefined ? {} : { cache: true, cacheLocation: cache, cacheStrategy: 'content' };
 const leftOut = ignored.length === 0 ? {} : { overrideConfig: [{ ignores: ignored }] };
 const eslint = new ESLint({ cwd: root, fix, ...withCache, ...leftOut });
+const answer = (value) => fs.writeFileSync(process.env.${LINT_ANSWER_VARIABLE}, JSON.stringify(value));
 const stop = (refusal) => {
-  process.stdout.write(JSON.stringify({ refusal }));
+  answer({ refusal });
   process.exit(0);
 };
 const results = await eslint.lintFiles(patterns.length === 0 ? ['.'] : patterns).catch((error) =>
@@ -36,5 +43,5 @@ const formatter = await eslint.loadFormatter(format).catch((error) =>
 const report = await formatter.format(results, { cwd: root, rulesMeta });
 const messages = results.flatMap((result) => result.messages.map(({ ruleId, severity }) => ({ ruleId, severity })));
 
-process.stdout.write(JSON.stringify({ report, messages }));
+answer({ report, messages });
 `;
