@@ -8,8 +8,8 @@ const MANIFEST = {
   name: 'fixture',
   type: 'module',
   scripts: {
-    build: 'node node_modules/@typescript/native/bin/tsc -p tsconfig.build.json && ddd-ts-kit build-aliases',
-    typecheck: 'node node_modules/@typescript/native/bin/tsc -p tsconfig.json --noEmit',
+    build: 'ddd-ts-kit tsc -p tsconfig.build.json && ddd-ts-kit build-aliases',
+    typecheck: 'ddd-ts-kit tsc -p tsconfig.json --noEmit',
     start: 'node dist/src/main.js',
     dev: 'tsx watch --env-file-if-exists=.env src/main.ts',
   },

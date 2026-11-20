@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:89fd905ca1eaa777 -->
+<!-- translation-of: README.md sha256:58eb529e95ab27de -->
 
 # ddd-ts-kit
 
@@ -743,8 +743,8 @@ le client en même temps.
 
 `package.json` porte deux compilateurs : `typescript ~6.0.3`, que les outils chargent comme une
 bibliothèque, et `@typescript/native` (`npm:typescript@~7.0.2`), que `build` et `typecheck`
-appellent par son chemin (`node node_modules/@typescript/native/bin/tsc`). `npx tsc` lancerait
-l'ancien.
+lancent par `ddd-ts-kit tsc`, où que le gestionnaire de paquets l'ait installé. `npx tsc`
+lancerait l'ancien.
 
 `init` et `generate context` commencent par le langage : la première entrée de `todos` est le
 glossaire du contexte à remplir. Tous deux refusent un contexte nommé `schema`, quel que soit

@@ -47,6 +47,6 @@
   <text x="628" y="216" font-size="13" fill="#3d4449">runs</text>
   <text x="838" y="216" font-size="13" fill="#3d4449">runs</text>
   <!-- note -->
-  <text x="40" y="356" font-size="14" fill="#1f2328">Both packages declare a tsc binary: the scripts call node node_modules/@typescript/native/bin/tsc,</text>
+  <text x="40" y="356" font-size="14" fill="#1f2328">Both packages declare a tsc binary: the scripts call ddd-ts-kit tsc, which finds the native one,</text>
   <text x="40" y="378" font-size="14" fill="#1f2328">never npx tsc. Refuse a bump of typescript to 7 until the lint tools accept it.</text>
 </svg>

@@ -15,6 +15,14 @@ export const TOOL_NOTES: readonly Note[] = [
     ],
   },
   {
+    name: 'tsc',
+    command: 'tsc',
+    lines: [
+      'the typecheck and build of a project: the native TypeScript compiler (@typescript/native)',
+      'wherever it is installed, in the project or hoisted to the root of a workspace',
+    ],
+  },
+  {
     name: 'build-aliases',
     command: 'build-aliases',
     lines: [
