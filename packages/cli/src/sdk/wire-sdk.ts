@@ -1,4 +1,5 @@
 import type { Config } from '../config';
+import { pnpmWorkspaceOf } from '../package-manager/pnpm-workspace-of';
 import type { Workspace } from '../workspace';
 import { CLIENTS_DIRECTORY } from './clients-directory';
 import { editJsonFile } from './edit-json-file';
@@ -54,6 +55,19 @@ function withFormatterExclusion(biome: Record<string, unknown>): Record<string, 
 }
 
 function listInPnpmWorkspace(ws: Workspace): void {
+  const above = pnpmWorkspaceOf(ws.root);
+
+  if (above !== undefined) {
+    // The workspace the project is a package of lists the packages: its file is outside the project.
+    if (!above.text.includes(`${above.folder}/${PACKAGES}`)) {
+      ws.note(
+        `${above.file} lists the packages of the workspace: add '${above.folder}/${PACKAGES}' to them, so that each client is a package of it.`,
+      );
+    }
+
+    return;
+  }
+
   const text = ws.read(PNPM_WORKSPACE) ?? '';
 
   if (/^packages:/m.test(text)) {

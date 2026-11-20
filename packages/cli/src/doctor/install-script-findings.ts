@@ -6,6 +6,7 @@ import { allowBuildsBlock } from '../init/manifest/allow-builds-block';
 import { allowBuildsEntries, type AllowBuildsEntry } from '../init/manifest/allow-builds-entries';
 import { installScriptsOf, type InstallScript } from '../init/manifest/install-scripts-of';
 import { namesPackage } from '../init/manifest/names-package';
+import { pnpmSettingsFile } from '../package-manager/pnpm-settings-file';
 import type { DoctorFinding } from './doctor-finding';
 import { installedFrom } from './installed-from';
 
@@ -78,7 +79,7 @@ function covers(key: string, name: string, version: string): boolean {
 
 function allowListOf(root: string, config: Config, manifest: unknown): AllowList {
   if (config.stack.packageManager === 'pnpm') {
-    const file = path.join(root, 'pnpm-workspace.yaml');
+    const file = pnpmSettingsFile(root);
     const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
 
     return { where: 'allowBuilds of pnpm-workspace.yaml', entries: allowBuildsEntries(allowBuildsBlock(text) ?? '') };

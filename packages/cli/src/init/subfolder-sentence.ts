@@ -8,7 +8,7 @@ const ROOT_ONLY_FILES = '.github/ (the workflows and dependabot.yml), .gitlab-ci
 export function subfolderSentence(folder: string, manager: string): string {
   const workspace =
     manager === 'pnpm'
-      ? ' pnpm reads allowBuilds and strictDepBuilds in the pnpm-workspace.yaml of the workspace root: put them there, the one in this folder is not read from the root.'
+      ? ' pnpm reads allowBuilds and strictDepBuilds in the pnpm-workspace.yaml of the workspace root alone: a package of a workspace keeps none of its own, which would make it a workspace apart.'
       : '';
 
   return `${ROOT_ONLY_FILES} are read at the top of the git repository only, so the copies in ${folder} never run there: move them to the top (GitHub jobs then need working-directory: ${folder}), or run the checks and hooks from this folder yourself.${workspace}`;

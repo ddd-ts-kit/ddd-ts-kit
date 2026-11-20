@@ -38,8 +38,8 @@ import { keptFlagNotes } from './stack/kept-flag-notes';
 import { keptOrMerged } from './kept-or-merged';
 import { writeManifest } from './manifest/write-manifest';
 import { dependenciesAgainstStack } from './manifest/dependencies-against-stack';
-import { writeOverrides } from './manifest/write-overrides';
-import { writeInstallScripts } from './manifest/write-install-scripts';
+import { leftToWorkspaceRoot } from './manifest/left-to-workspace-root';
+import { writeInstallSettings } from './manifest/write-install-settings';
 import { recordAgentProfile } from './record-agent-profile';
 import { recordNoOutbox } from './record-no-outbox';
 import { runGit } from '../commit/run-git';
@@ -88,7 +88,7 @@ export function runInit(root: string, options: InitOptions, disk: DiskWrites = f
 
   const projectName = existingName(root) ?? (toName(path.basename(path.resolve(root))).kebab || 'app');
   const flat = keepFlatPlatform(ws, config);
-  const earlier = keptPrismaFiles(ws, config);
+  const earlier = [...keptPrismaFiles(ws, config), ...leftToWorkspaceRoot(root, config)];
 
   writeConfig(ws, config);
   recordAgentProfile(ws, config);
@@ -255,9 +255,7 @@ function writeFiles(ws: Workspace, { config, projectName, flat, force, earlier }
     }
   }
 
-  // After the files: under pnpm the overrides join the pnpm-workspace.yaml just written.
-  writeOverrides(ws, config, force);
-  writeInstallScripts(ws, config);
+  writeInstallSettings(ws, config, force);
 
   // Initialised again, a project may keep code lists where 0.86 and 0.87 wrote them: knip is told of both places.
   ignoreCodeTypesWhereTheyAre(ws, config);
@@ -322,7 +320,7 @@ interface Written {
   readonly projectName: string;
   readonly flat: Relocation;
   readonly force: boolean;
-  /** Files of the stack the project keeps in an earlier layout: not written, not even with --force. */
+  /** Files of the stack the project keeps in an earlier layout, or that its pnpm workspace holds: not written, not even with --force. */
   readonly earlier: readonly string[];
 }
 
