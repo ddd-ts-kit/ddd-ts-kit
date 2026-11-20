@@ -44,8 +44,9 @@ aggregate `Product` with its event `ProductListed` in `catalog`, the integration
 `ordering` declaring `catalog` as its upstream. `nx run api:verify` was green. Then two forbidden
 imports were written on purpose, one in each direction, to see which tool reports what.
 
-The coding agent was Claude Code (Opus 5.5) with the plugin of the kit (0.113.2). Three more
-sessions were then started at the root of the worktree with the Claude Code plugin that Nx
+The coding agent was Claude Code (Opus 5.5) with the plugin of the kit installed then, 0.113.2,
+one release behind the CLI. Three more sessions were then started at the root of that worktree,
+which holds the whole workspace on a branch, with the Claude Code plugin that Nx
 proposes in the `.claude/settings.json` of the workspace (`nx` 0.2.36, its skills and its MCP
 server) loaded beside the plugin of the kit, each with one request that names neither tool: what
 they chose is under *Agents* below.
@@ -57,11 +58,16 @@ Nx infers the project from the `package.json` of `packages/api`: every script be
 to the script of the same name. What it took:
 
 1. **The package manager of the workspace.** Started in an empty folder, `init` chose pnpm in a
-   workspace installed by npm ([#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856)): pass `--package-manager` explicitly.
+   workspace installed by npm
+   ([#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856)): pass `--package-manager`
+   explicitly.
 2. **The compiler path.** npm hoists `@typescript/native` to the root `node_modules`, so the
    `typecheck` and `build` scripts, which call `node node_modules/@typescript/native/bin/tsc`,
-   fail with `Cannot find module` ([#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855)). Until it is fixed, point them at the root:
-   `node ../../node_modules/@typescript/native/bin/tsc`.
+   fail with `Cannot find module`
+   ([#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855)). Until it is fixed, point them
+   at the root: `node ../../node_modules/@typescript/native/bin/tsc`. `ddd-ts-kit doctor` then
+   reports both scripts as written otherwise, and `init --force` would write back the path that
+   fails: keep the edit until the fix ships.
 3. **`vite` at the root.** npm placed `@vitest/mocker` at the root and `vite`, its optional peer,
    in `packages/api/node_modules`, so Vitest stopped at startup with
    `Cannot find package 'vite' imported from .../node_modules/@vitest/mocker`. `npm dedupe` did
@@ -71,36 +77,46 @@ to the script of the same name. What it took:
    Nx writes); the kit project formats with Biome at width 120. Prettier reported 94 files of the
    kit project. Add `packages/api` to the `.prettierignore` of the root: Biome holds that folder.
 5. **The CI.** The workflow Nx writes runs `nx run-many -t lint test build typecheck e2e`: on the
-   kit project that runs `ddd-ts-kit lint`, Vitest, the build and the type check, but not the
-   architecture check, dependency-cruiser, knip or the contract check. Add the targets the kit
-   puts in `verify` (`check:arch`, `depcruise`, `deadcode`, `docs:check`), or run `verify`
-   itself. The `.github/` and `lefthook.yml` that `init` writes in `packages/api` never run there,
-   as its note says: use `--ci none` and keep the CI of the workspace.
+   kit project that runs `ddd-ts-kit lint`, `vitest run`, the build and the type check, and
+   nothing else `verify` runs: not the format check of Biome, the coverage thresholds
+   (`test:coverage`), the end-to-end specs (`test:e2e`, which no `e2e` target matches), the
+   architecture check, dependency-cruiser, knip or the contract check. Run `verify` itself
+   (`nx affected -t verify`), or add each of its scripts as a target. The `.github/` that `init`
+   writes in `packages/api` never runs there, as its note says: use `--ci none` and keep the CI
+   of the workspace.
+6. **The git hooks.** `init` writes `lefthook.yml` whatever `--ci` says, and lefthook reads it at
+   the top of the git repository only: in `packages/api` no pre-commit, commit-msg or pre-push
+   hook of the kit runs. Carry its commands into a hook configuration at the root of the
+   workspace, run from `packages/api`, or the CI is the only gate.
 
 With these, `nx run api:verify` passed, then again in the worktree after the two slices.
 
 **The cache.** `nx.json` declares no cache for inferred script targets. Declaring it works for the
-checks of the kit; every file they read (`ddd-ts-kit.config.json`, the `CONTEXT.md` of each
-context, the sources) lies under the project root, which is the default input:
+checks of the kit: the files they read (`ddd-ts-kit.config.json`, the `CONTEXT.md` of each
+context, the sources) lie under the project root, which is the default input. One input lies
+outside: `ddd-ts-kit check` asks git which files it ignores, and the root `.gitignore` answers
+too, so a change to that file alone would replay an old `check:arch`. Name it among the inputs
+(written from the source of the checker, not tried in the session):
 
 ```json
 {
   "targetDefaults": {
     "typecheck": { "cache": true },
     "lint": { "cache": true },
-    "check:arch": { "cache": true },
+    "check:arch": { "cache": true, "inputs": ["default", "{workspaceRoot}/.gitignore"] },
     "test": { "cache": true }
   }
 }
 ```
 
-A second `nx run-many -t typecheck lint check:arch test` read all four from the cache (8 ms).
+With the cache declared, a second `nx run-many -t typecheck lint check:arch test` read all four
+from the cache (8 ms).
 
 **Affected, at two levels.** `nx affected` answers per project: a change in `catalog` gives `api`.
 `npx ddd-ts-kit affected --base <ref>` answers per context inside it: a change in `catalog`
 gives `catalog` and `ordering`, its downstream, with the spec globs of each. Keep both: Nx skips
 the backend when a change does not reach it, and the scripts of the kit narrow inside it, as its
-pre-push hook does with `affected --run ci:test:unit`.
+pre-push hook does with `affected --run ci:test:unit` once carried to the root (step 6).
 
 ### One Nx project per bounded context (not recommended)
 
@@ -137,14 +153,19 @@ Two forbidden imports, written by the agent with the rule of Nx enabled and the 
 | The import | the guard of the plugin (after the write) | `ddd-ts-kit check` | ESLint plugin of the kit | dependency-cruiser | `@nx/enforce-module-boundaries` |
 |---|---|---|---|---|---|
 | `ordering` imports the aggregate of `catalog` (its upstream, but not its published language) | `context/published-language-only` | same | same | same | nothing: `scope:ordering` may depend on `scope:catalog`, and the rule does not know which files of a project are its published language |
-| `catalog` imports an event of `ordering` (against the map) | `context/published-language-only` | same | same | same | "Circular dependency between catalog and ordering" |
+| `catalog` imports a domain event of `ordering` (its downstream, against the map) | `context/published-language-only` | same | same | same | "Circular dependency between catalog and ordering" |
 
-So inside a kit project the rule of Nx adds no finding, and on an import against the map it
-reports the same line a second time, in other words. Use it where the kit does not look: between
-projects of the workspace (a front end that must not import the backend, shared libraries).
+Both imports reached inside a context, so the kit reported both as
+`context/published-language-only`. The map itself is held by `context/declared-relationship` and
+`context/no-cycle`: an import of the published language of `ordering` from `catalog` would be
+reported by those, a case this session did not write. So inside a kit project the rule of Nx
+added no finding, and reported the second import a second time, as a cycle. Use it where the kit
+does not look: between projects of the workspace (a front end that must not import the backend,
+shared libraries).
 
 When the project graph of Nx is not cached, the rule prints a warning to standard output and
-skips itself; `ddd-ts-kit lint` then fails on that output ([#857](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/857)). `npx eslint` alone runs.
+skips itself; `ddd-ts-kit lint` then fails on that output
+([#857](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/857)). `npx eslint` alone runs.
 
 ### Agents: two sets of instructions
 
@@ -158,10 +179,11 @@ Cursor, Gemini CLI, Codex, OpenCode and Copilot. `init` writes the instructions 
 |---|---|---|---|
 | running a task | "always prefer running the task through nx" | `npm run verify`, `npx ddd-ts-kit check` | Nx at the root (`nx run api:verify`, `nx affected`); the commands of the kit inside `packages/api`, which its skills name |
 | scaffolding | "ALWAYS invoke the `nx-generate` skill FIRST" | the generators of the kit, and the guard refuses a hand-written file of a kind they write | Nx for a new project of the workspace; the kit for anything inside a kit project |
-| a session in the kit project | nothing | the guard: refuses code on the trunk, opens a worktree, judges each write, refuses `git commit --no-verify` | the kit: its guard found the config in `packages/api` and held every one of these in the session |
+| a session in the kit project | nothing | the guard: refuses code on the trunk and names `npx ddd-ts-kit worktree <name>`, judges each write, refuses `git commit --no-verify` | the kit: its guard found the config in `packages/api` and held every one of these in the session |
 
-**Three sessions with both plugins.** Each was started at the root of the workspace with the plugin
-of the kit and the plugin of Nx loaded together, and nothing added to the root `AGENTS.md`:
+**Three sessions with both plugins.** Each was started at the root of the workspace, in the
+worktree of the session (on a branch, so the guard let code be written), with the plugin of the
+kit and the plugin of Nx loaded together, and nothing added to the root `AGENTS.md`:
 
 | Request | First skill | What it ran | Result |
 |---|---|---|---|
@@ -178,10 +200,10 @@ commands, without its cache. For the library, the generator of Nx added `@nx/vit
 at the root and a Vitest plugin in `nx.json`; the agent excluded `packages/api` from that plugin,
 which keeps its own Vitest configuration.
 
-Write it down anyway, for other models and other agents: a line in the root `AGENTS.md`, outside the markers Nx rewrites,
-that says `packages/api` is a ddd-ts-kit project and that its own `AGENTS.md` governs work inside
-it. The permissions of the `.claude/settings.json` of `packages/api` are not read by a session
-started at the root of the workspace.
+Write it down anyway, for other models and other agents: a line in the root `AGENTS.md`, outside the
+markers Nx rewrites, that says `packages/api` is a ddd-ts-kit project and that its own `AGENTS.md`
+governs work inside it. The permissions of the `.claude/settings.json` of `packages/api` are not
+read by a session started at the root of the workspace.
 
 **Worktrees.** `ddd-ts-kit worktree` opened the worktree under `packages/api/.worktrees/` and ran
 `npm ci` at the root of the workspace inside it: each worktree is a whole copy of the workspace
@@ -198,4 +220,5 @@ matches one level). Run Nx from the root of the worktree.
 | `generate context <existing> --upstream <ctx>` records nothing and says nothing | the kit | [#858](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/858) |
 | `vite` left beside the project while `@vitest/mocker` went to the root | npm | `vite` at the root |
 | Prettier of the workspace against Biome of the project | both | `.prettierignore` |
+| `lefthook.yml` written in the project, read at the top of the repository only | git hooks | its commands carried to the root |
 | Nx reads `paths` from the root only, and asks relative imports inside a project | Nx | one Nx project for the kit project |
