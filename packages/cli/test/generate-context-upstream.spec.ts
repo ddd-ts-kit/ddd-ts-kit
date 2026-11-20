@@ -30,6 +30,59 @@ describe('generate context --upstream on a context that exists', () => {
     expect(read(root, 'ddd-ts-kit.config.json')).toBe(config);
   });
 
+  it('refuses another pattern for an upstream declared already, naming the key that holds it', () => {
+    const root = initProject('--context', 'catalog:core', '--audit', 'off');
+
+    cli(root, 'generate', 'context', 'ordering', '--classification', 'core', '--upstream', 'catalog');
+    const config = read(root, 'ddd-ts-kit.config.json');
+
+    const refused = cli(
+      root,
+      'generate',
+      'context',
+      'ordering',
+      '--classification',
+      'core',
+      '--upstream',
+      'catalog:anti-corruption-layer',
+    );
+
+    expect(refused.code).toBe(2);
+    expect(refused.stderr).toContain('as published-language, not anti-corruption-layer');
+    expect(refused.stderr).toContain('contexts.ordering.upstreams');
+    expect(read(root, 'ddd-ts-kit.config.json')).toBe(config);
+  });
+
+  it('declares an upstream named twice once, and keeps what the config held on the others', () => {
+    const root = initProject('--context', 'catalog:core', '--context', 'billing:core', '--audit', 'off');
+
+    cli(root, 'generate', 'context', 'ordering', '--classification', 'core', '--upstream', 'catalog');
+    const config = JSON.parse(read(root, 'ddd-ts-kit.config.json'));
+
+    config.contexts.ordering.upstreams[0].note = 'kept as written';
+    write(root, 'ddd-ts-kit.config.json', JSON.stringify(config, null, 2));
+
+    const result = cli(
+      root,
+      'generate',
+      'context',
+      'ordering',
+      '--classification',
+      'core',
+      '--upstream',
+      'billing',
+      '--upstream',
+      'billing',
+    );
+
+    expect(result.code).toBe(0);
+
+    expect(upstreamsOf(root, 'ordering')).toEqual([
+      { context: 'catalog', relationship: 'published-language', note: 'kept as written' },
+      { context: 'billing', relationship: 'published-language' },
+    ]);
+  });
+
   it('refuses an upstream that already depends on the context, nothing written', () => {
     const root = initProject('--context', 'catalog:core', '--audit', 'off');
 

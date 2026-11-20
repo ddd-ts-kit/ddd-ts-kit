@@ -6,7 +6,7 @@ import {
   type Config,
   type Upstream,
 } from '../../config';
-import { setUpstreamsInConfigText } from '../../config/set-upstreams-in-config-text';
+import { addUpstreamsToConfigText } from '../../config/add-upstreams-to-config-text';
 import { refreshContextDoc } from '../../docs/refresh-context-doc';
 import { CliError } from '../../cli-error';
 import { MissingPrerequisite } from '../missing-prerequisite';
@@ -45,7 +45,7 @@ export function generateContext(ws: Workspace, config: Config, request: ContextR
   if (existing === undefined) {
     declareInConfig(ws, context, entry);
   } else if (entry !== existing) {
-    declareUpstreams(ws, context, entry.upstreams);
+    declareUpstreams(ws, context, entry.upstreams.slice(existing.upstreams.length));
   }
 
   writeContextFiles(ws, { config: next, context, request });
@@ -197,7 +197,15 @@ interface UpstreamsAsked {
  * upstream that already reaches the context through its own upstreams would close a cycle.
  */
 function withUpstreams(config: Config, { here, existing, asked }: UpstreamsAsked): ContextEntry {
-  const added = asked.filter((upstream) => !existing.upstreams.some((known) => known.context === upstream.context));
+  asked.forEach((upstream) => {
+    refuseOtherRelationship(here, existing, upstream);
+  });
+
+  const added = asked.filter(
+    (upstream, index) =>
+      !existing.upstreams.some((known) => known.context === upstream.context) &&
+      asked.findIndex((first) => first.context === upstream.context) === index,
+  );
 
   if (added.length === 0) {
     return existing;
@@ -208,6 +216,20 @@ function withUpstreams(config: Config, { here, existing, asked }: UpstreamsAsked
   }
 
   return { ...existing, upstreams: [...existing.upstreams, ...added] };
+}
+
+/** The pattern of a pair is chosen once, in the config: an `--upstream` that names another one for a declared upstream would be lost. */
+function refuseOtherRelationship(here: string, existing: ContextEntry, upstream: Upstream): void {
+  const known = existing.upstreams.find((candidate) => candidate.context === upstream.context);
+
+  if (known === undefined || known.relationship === upstream.relationship) {
+    return;
+  }
+
+  throw new CliError(
+    `"${here}" already declares "${upstream.context}" as an upstream, as ${known.relationship}, not ${upstream.relationship}.`,
+    `Change the pattern of the pair where it is declared: { "context": "${upstream.context}", "relationship": "${upstream.relationship}" } in contexts.${here}.upstreams of ${CONFIG_FILE}, then run \`ddd-ts-kit docs\`.`,
+  );
 }
 
 function refuseCycle(config: Config, here: string, upstream: string): void {
@@ -251,11 +273,11 @@ function pathBetween(config: Config, { from, to, seen }: Walk): readonly string[
   return undefined;
 }
 
-function declareUpstreams(ws: Workspace, context: Name, upstreams: readonly Upstream[]): void {
+function declareUpstreams(ws: Workspace, context: Name, added: readonly Upstream[]): void {
   const text = ws.read(CONFIG_FILE);
 
   if (text !== undefined) {
-    ws.update(CONFIG_FILE, setUpstreamsInConfigText(text, context.kebab, upstreams));
+    ws.update(CONFIG_FILE, addUpstreamsToConfigText(text, context.kebab, added));
   }
 }
 
