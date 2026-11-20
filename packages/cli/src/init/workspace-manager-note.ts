@@ -10,6 +10,6 @@ export function workspaceManagerNote(root: string, options: StackOptions, config
   return workspace === undefined || workspace.manager !== config.stack.packageManager
     ? []
     : [
-        `This project is a package of the workspace of ${path.dirname(workspace.from)}: it uses ${workspace.manager}, read from ${workspace.from}. Install from the root of the workspace; --package-manager names another one.`,
+        `This project is a package of the workspace of ${path.dirname(workspace.from)}: it uses ${workspace.manager}, read from ${workspace.from}. --package-manager names another one.`,
       ];
 }

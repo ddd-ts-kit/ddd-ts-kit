@@ -64,6 +64,30 @@ describe('init in a package of a workspace', () => {
     expect(managerOf(project)).toBe('pnpm');
   });
 
+  it('reads npm from the package-lock.json of a workspace that pins nothing, and says so', () => {
+    const { root, project } = workspace({
+      'package.json': JSON.stringify({ workspaces: ['packages/*'] }),
+      'package-lock.json': '{}',
+    });
+
+    const result = cli(project, 'init', ...FLAGS);
+
+    expect(managerOf(project)).toBe('npm');
+    expect(result.stdout + result.stderr).toContain(`read from ${root}/package-lock.json`);
+  });
+
+  it.each(['yarn.lock', 'bun.lock'])(
+    'keeps the default, with no note, in a workspace that %s says is not npm',
+    (lockfile) => {
+      const { project } = workspace({ 'package.json': JSON.stringify({ workspaces: ['packages/*'] }), [lockfile]: '' });
+
+      const result = cli(project, 'init', ...FLAGS);
+
+      expect(managerOf(project)).toBe('pnpm');
+      expect(result.stdout + result.stderr).not.toContain('read from');
+    },
+  );
+
   it('lets --package-manager name another one, without the note', () => {
     const { project } = workspace({
       'package.json': JSON.stringify({ workspaces: ['packages/*'], packageManager: 'npm@11.20.0' }),
