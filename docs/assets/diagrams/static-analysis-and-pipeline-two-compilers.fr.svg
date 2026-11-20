@@ -47,6 +47,6 @@
   <text x="628" y="216" font-size="13" fill="#3d4449">lance</text>
   <text x="838" y="216" font-size="13" fill="#3d4449">lance</text>
   <!-- note -->
-  <text x="40" y="356" font-size="14" fill="#1f2328">Les deux packages déclarent un binaire tsc : les scripts appellent node node_modules/@typescript/native/bin/tsc,</text>
+  <text x="40" y="356" font-size="14" fill="#1f2328">Les deux packages déclarent un binaire tsc : les scripts appellent ddd-ts-kit tsc, qui trouve le natif,</text>
   <text x="40" y="378" font-size="14" fill="#1f2328">jamais npx tsc. Refusez de monter typescript en 7 tant que les outils de lint ne l'acceptent pas.</text>
 </svg>

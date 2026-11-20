@@ -255,8 +255,9 @@ What was found on 2026-10-10:
 The kit's answer, as its READMEs state: a generated project installs both. `typescript` 6
 serves the tools that read sources through the compiler API (ESLint with types,
 dependency-cruiser), and `@typescript/native`, an npm alias of `typescript` 7, compiles and
-type-checks, called by its path because both packages declare a `tsc` binary and `npx tsc`
-would pick one of them.
+type-checks, run by `ddd-ts-kit tsc` because both packages declare a `tsc` binary and `npx tsc`
+would pick one of them. `ddd-ts-kit tsc` finds the native one wherever the package manager put
+it, in the project or hoisted to the root of a workspace, and passes its arguments on.
 
 ![typescript 6 is loaded by ESLint with types and by dependency-cruiser; @typescript/native, typescript 7, runs the type check and the build](../assets/diagrams/static-analysis-and-pipeline-two-compilers.svg)
 
@@ -265,8 +266,8 @@ In the `package.json` of a generated project:
 ```json
 {
   "scripts": {
-    "typecheck": "node node_modules/@typescript/native/bin/tsc -p tsconfig.json --noEmit",
-    "build": "node node_modules/@typescript/native/bin/tsc -p tsconfig.build.json && ddd-ts-kit build-aliases"
+    "typecheck": "ddd-ts-kit tsc -p tsconfig.json --noEmit",
+    "build": "ddd-ts-kit tsc -p tsconfig.build.json && ddd-ts-kit build-aliases"
   },
   "devDependencies": {
     "@typescript/native": "npm:typescript@~7.0.2",

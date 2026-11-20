@@ -1,5 +1,5 @@
 [English](import-aliases.md) · **Français**
-<!-- translation-of: import-aliases.md sha256:32f7edaa76b8a69a -->
+<!-- translation-of: import-aliases.md sha256:5dada1155464487d -->
 
 # Alias d'import : les `paths` de tsconfig, réécrits à la construction
 
@@ -206,7 +206,7 @@ npm run build   =   tsc -p tsconfig.build.json && ddd-ts-kit build-aliases
 ```
 
 (Le script généré appelle le compilateur natif,
-`node node_modules/@typescript/native/bin/tsc -p tsconfig.build.json`.)
+`ddd-ts-kit tsc -p tsconfig.build.json`.)
 
 ![Les deux étapes de npm run build : le compilateur transforme la source TypeScript en JavaScript et garde le spécificateur d'alias tel qu'il est écrit, que node seul ne peut pas charger ; ddd-ts-kit build-aliases le réécrit ensuite en un chemin relatif qui se termine par .js, que node dist/src/main.js charge sans chargeur ni option](../assets/diagrams/import-aliases-build-step.fr.svg)
 

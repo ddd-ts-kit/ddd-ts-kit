@@ -199,7 +199,7 @@ npm run build   =   tsc -p tsconfig.build.json && ddd-ts-kit build-aliases
 ```
 
 (The generated script calls the native compiler,
-`node node_modules/@typescript/native/bin/tsc -p tsconfig.build.json`.)
+`ddd-ts-kit tsc -p tsconfig.build.json`.)
 
 ![The two steps of npm run build: the compiler turns the TypeScript source into JavaScript and keeps the alias specifier as written, which plain node cannot load; ddd-ts-kit build-aliases then rewrites it into a relative path ending in .js, which node dist/src/main.js loads without a loader or a flag](../assets/diagrams/import-aliases-build-step.svg)
 

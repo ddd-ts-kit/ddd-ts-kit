@@ -1,7 +1,7 @@
 {
   "scripts": {
-    "typecheck": "node node_modules/@typescript/native/bin/tsc -p tsconfig.json --noEmit",
-    "build": "node node_modules/@typescript/native/bin/tsc -p tsconfig.build.json && ddd-ts-kit build-aliases",
+    "typecheck": "ddd-ts-kit tsc -p tsconfig.json --noEmit",
+    "build": "ddd-ts-kit tsc -p tsconfig.build.json && ddd-ts-kit build-aliases",
     "lint": "ddd-ts-kit lint",
     "format": "biome format --write .",
     "format:check": "biome format .",

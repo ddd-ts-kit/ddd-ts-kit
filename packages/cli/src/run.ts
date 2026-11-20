@@ -4,6 +4,7 @@ import type { Io } from './commands/io';
 import { acceptanceCommand } from './commands/acceptance';
 import { affectedCommand } from './commands/affected';
 import { buildAliasesCommand } from './commands/build-aliases';
+import { tscCommand } from './commands/tsc';
 import { checkFileCommand, explainCommand, rulesCommand } from './commands/check';
 import { checksCommand } from './commands/checks';
 import { citedCommand } from './commands/cited';
@@ -79,6 +80,7 @@ export const COMMANDS: Readonly<Record<string, Command>> = {
   doctor: doctorCommand,
   sdk: sdkCommand,
   'depcruise-config': depcruiseConfigCommand,
+  tsc: tscCommand,
   'build-aliases': buildAliasesCommand,
   'drizzle-generate': drizzleGenerateCommand,
   'knex-generate': knexGenerateCommand,

@@ -1,5 +1,5 @@
 [English](with-other-tools.md) · **Français**
-<!-- translation-of: with-other-tools.md sha256:656d44b573468fcc -->
+<!-- translation-of: with-other-tools.md sha256:e9a787eace1f65a5 -->
 
 # Composer le kit avec d'autres outils
 
@@ -64,12 +64,11 @@ devant le script du même nom. Ce qu'il a fallu :
    ([#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856)) : passer `--package-manager`
    explicitement.
 2. **Le chemin du compilateur.** npm remonte `@typescript/native` dans le `node_modules` de la
-   racine, si bien que les scripts `typecheck` et `build`, qui appellent
+   racine, si bien que les scripts `typecheck` et `build` de 0.114.1, qui appellent
    `node node_modules/@typescript/native/bin/tsc`, échouent sur `Cannot find module`
-   ([#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855)). En attendant la correction,
-   les faire pointer vers la racine : `node ../../node_modules/@typescript/native/bin/tsc`.
-   `ddd-ts-kit doctor` signale alors les deux scripts comme écrits autrement, et `init --force`
-   réécrirait le chemin qui échoue : garder la modification jusqu'à la sortie du correctif.
+   ([#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855)). La version suivante écrit
+   `ddd-ts-kit tsc`, qui trouve le compilateur où qu'il soit installé ; en 0.114.1, faire pointer
+   les deux scripts vers la racine, `node ../../node_modules/@typescript/native/bin/tsc`.
 3. **`vite` à la racine.** npm a placé `@vitest/mocker` à la racine et `vite`, son pair
    optionnel, dans `packages/api/node_modules`, si bien que Vitest s'arrêtait au démarrage sur
    `Cannot find package 'vite' imported from .../node_modules/@vitest/mocker`. `npm dedupe` ne
@@ -228,7 +227,7 @@ du *workspace* avec son propre `node_modules` (521 Mo ici). Nx ne l'a pas pris p
 
 | Quoi | Où | État |
 |---|---|---|
-| `typecheck` et `build` appellent `tsc` par un chemin qu'un *workspace* remonté casse | le kit | [#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855) |
+| `typecheck` et `build` appellent `tsc` par un chemin qu'un *workspace* remonté casse | le kit | [#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855), corrigée après 0.114.1 |
 | `init` dans un *package* d'un *workspace* npm a choisi pnpm | le kit | [#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856) |
 | `ddd-ts-kit lint` échoue quand un *plugin* ESLint écrit sur la sortie standard | le kit | [#857](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/857) |
 | `generate context <existant> --upstream <ctx>` n'enregistre rien et ne dit rien | le kit | [#858](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/858) |

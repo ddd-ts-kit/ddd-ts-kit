@@ -1,0 +1,3 @@
+**`typecheck` and `build` find the native compiler in a workspace.** The scripts called `node node_modules/@typescript/native/bin/tsc`, a path that fails with `Cannot find module` once a workspace hoists the package to its root (an npm or Nx workspace, a kit project in `packages/api`). They now run `ddd-ts-kit tsc`, which finds `@typescript/native` wherever the package manager installed it and passes its arguments on; `sdk:build` too.
+
+To move: in `package.json`, replace `node node_modules/@typescript/native/bin/tsc` by `ddd-ts-kit tsc` in `typecheck`, `build` and `sdk:build`; `npx ddd-ts-kit doctor` lists the scripts that still differ.

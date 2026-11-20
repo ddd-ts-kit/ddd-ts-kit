@@ -62,12 +62,11 @@ to the script of the same name. What it took:
    ([#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856)): pass `--package-manager`
    explicitly.
 2. **The compiler path.** npm hoists `@typescript/native` to the root `node_modules`, so the
-   `typecheck` and `build` scripts, which call `node node_modules/@typescript/native/bin/tsc`,
-   fail with `Cannot find module`
-   ([#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855)). Until it is fixed, point them
-   at the root: `node ../../node_modules/@typescript/native/bin/tsc`. `ddd-ts-kit doctor` then
-   reports both scripts as written otherwise, and `init --force` would write back the path that
-   fails: keep the edit until the fix ships.
+   `typecheck` and `build` scripts of 0.114.1, which call
+   `node node_modules/@typescript/native/bin/tsc`, fail with `Cannot find module`
+   ([#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855)). The next release writes
+   `ddd-ts-kit tsc`, which finds the compiler wherever it is installed; on 0.114.1, point the two
+   scripts at the root, `node ../../node_modules/@typescript/native/bin/tsc`.
 3. **`vite` at the root.** npm placed `@vitest/mocker` at the root and `vite`, its optional peer,
    in `packages/api/node_modules`, so Vitest stopped at startup with
    `Cannot find package 'vite' imported from .../node_modules/@vitest/mocker`. `npm dedupe` did
@@ -214,7 +213,7 @@ matches one level). Run Nx from the root of the worktree.
 
 | What | Where | Status |
 |---|---|---|
-| `typecheck` and `build` call `tsc` by a path a hoisted workspace breaks | the kit | [#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855) |
+| `typecheck` and `build` call `tsc` by a path a hoisted workspace breaks | the kit | [#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855), fixed after 0.114.1 |
 | `init` in a package of an npm workspace chose pnpm | the kit | [#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856) |
 | `ddd-ts-kit lint` fails when an ESLint plugin writes to standard output | the kit | [#857](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/857) |
 | `generate context <existing> --upstream <ctx>` records nothing and says nothing | the kit | [#858](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/858) |
