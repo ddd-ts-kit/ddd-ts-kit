@@ -189,7 +189,12 @@ describe('merge-trunk: a deleted file, a drizzle refusal, and the refusals to st
       expect(refused.code).toBe(2);
       expect(refused.stderr).toContain('git does not know who commits in this repository');
     } finally {
-      process.env = saved;
+      // In place: from Node 26 a child process no longer inherits a process.env that was replaced.
+      Object.keys(config).forEach((key) => {
+        delete process.env[key];
+      });
+
+      Object.assign(process.env, saved);
     }
 
     expect(merging(root)).toBe(false);
