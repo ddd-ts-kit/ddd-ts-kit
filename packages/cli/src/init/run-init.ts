@@ -15,6 +15,7 @@ import { laidOut } from './laid-out';
 import { toName } from '../naming';
 import { ignoreCodeTypesWhereTheyAre } from '../knip';
 import { inDialect } from '../package-manager/in-dialect';
+import { workspaceManagerNote } from './workspace-manager-note';
 import { setUpSdk } from '../sdk';
 import { readTemplate, renderTemplate, type RenderContext } from '../templating';
 import { VERSION } from '../version';
@@ -138,6 +139,7 @@ function closingNotes(root: string, report: WorkspaceReport, options: InitOption
   return [
     ...unwritable,
     ...subfolderNote(root, config),
+    ...(created ? workspaceManagerNote(root, options, config) : []),
     ...(options.force ? [forcedNote(report, options.dryRun)] : []),
     ...(created
       ? [

@@ -99,7 +99,8 @@ On an existing project, a note of the dry run that starts with `package.json dep
 dependency the flags contradict: put it to the owner, and run the dry run again with the flag it
 names, or with the owner's reason to change the stack under `## Decisions`.
 
-A project is on pnpm unless `--package-manager npm` was chosen: every command below is said for
+A project is on pnpm unless `--package-manager npm` was chosen, or it is a package of an npm
+workspace (`init` then takes npm and says so in a note): every command below is said for
 pnpm, and reads `npm run <script>` and `npx ddd-ts-kit <command>` on npm. pnpm is pinned in
 `package.json` and installed by npm (`npm install --global pnpm`, once per machine; pnpm then runs the release it pins). A red `verify`
 on a project nothing was generated in is a bug of the kit: report it, do not patch the project.

@@ -33,6 +33,7 @@ import {
 } from '../../config';
 import { aliasProblem } from '../../alias';
 import { DEFAULT_PACKAGE_MANAGER } from '../../package-manager/default-package-manager';
+import { workspacePackageManager } from '../../package-manager/workspace-package-manager';
 import { CliError } from '../../cli-error';
 import { choose } from './choose';
 import { refuseUnusedNoOutbox } from './refuse-unused-no-outbox';
@@ -64,7 +65,9 @@ export function resolveStack(root: string, options: StackOptions): Config {
     return supportedAlias({ ...recorded, agents: agentsOf(options, recorded) });
   }
 
-  const asked = recorded === undefined ? options : { ...recordedOptions(recorded), ...options };
+  const asked =
+    recorded === undefined ? withWorkspaceManager(root, options) : { ...recordedOptions(recorded), ...options };
+
   const fresh = parseConfig({ ...spelling(asked, recorded), stack: stackOf(asked), contexts: {}, rules: {} });
   const { importAlias, importExtension } = fresh;
   // No flag and nothing to ask again: the config publishes its events in a way `init` does not offer, written by hand.
@@ -295,6 +298,17 @@ function resolveBroker(options: StackOptions, orm: string): string {
     `--broker ${broker} cannot be combined with --orm none.`,
     'A broker is reached through the transactional outbox, which needs a database: pick an ORM, or keep --broker none.',
   );
+}
+
+/** A new project in a package of a workspace takes the package manager of the workspace when no flag names one. */
+function withWorkspaceManager(root: string, options: StackOptions): StackOptions {
+  if (options.packageManager !== undefined) {
+    return options;
+  }
+
+  const workspace = workspacePackageManager(root);
+
+  return workspace === undefined ? options : { ...options, packageManager: workspace.manager };
 }
 
 type Tooling = Record<'validation' | 'tests' | 'ci' | 'packageManager', string>;
