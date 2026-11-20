@@ -128,6 +128,13 @@ function runEslint(lint: LintRun, io: Io): LintAnswer | undefined {
       return undefined;
     }
 
+    if (!fs.existsSync(answerFile)) {
+      throw new CliError(
+        'ESLint ended without an answer.',
+        'Something in the project ended the process that runs ESLint before its report, a plugin or the config calling process.exit: run `npx eslint .` to see where.',
+      );
+    }
+
     const answer = fs.readFileSync(answerFile, 'utf8');
 
     refuseWhatEslintRefused(answer, lint);

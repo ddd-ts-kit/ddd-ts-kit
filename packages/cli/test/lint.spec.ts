@@ -269,6 +269,17 @@ describe('ddd-ts-kit lint refuses with a next step', () => {
     expect(result.stderr).not.toContain('ERR_MODULE_NOT_FOUND');
   });
 
+  it('refuses a run that ended before ESLint answered, without a stack', () => {
+    installEslint([]);
+    write(root, 'node_modules/eslint/index.js', 'process.exit(0);\n');
+
+    const result = cli(root, 'lint');
+
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('error: ESLint ended without an answer.');
+    expect(result.stderr).not.toContain('ENOENT');
+  });
+
   it('prints the failure of ESLint itself and exits 2', () => {
     installEslint([]);
     write(root, 'node_modules/eslint/index.js', "throw new Error('the config does not load');\n");
