@@ -1,5 +1,5 @@
 [English](with-other-tools.md) · **Français**
-<!-- translation-of: with-other-tools.md sha256:121b28d2677d081c -->
+<!-- translation-of: with-other-tools.md sha256:a933912322f8d0ef -->
 
 # Composer le kit avec d'autres outils
 
@@ -46,9 +46,11 @@ consommateur de cet événement, `ordering` déclarant `catalog` comme son amont
 `nx run api:verify` était vert. Puis deux imports interdits ont été écrits exprès, un dans chaque
 sens, pour voir quel outil signale quoi.
 
-L'agent de code était Claude Code avec le *plugin* du kit. Le *plugin* Claude Code que Nx propose
-dans le `.claude/settings.json` du *workspace*, et son serveur MCP, n'étaient pas installés : ce
-qu'ils ajouteraient n'est pas couvert ici.
+L'agent de code était Claude Code (Opus 5.5) avec le *plugin* du kit (0.113.2). Trois autres
+sessions ont ensuite été lancées à la racine du *worktree* avec le *plugin* Claude Code que Nx
+propose dans le `.claude/settings.json` du *workspace* (`nx` 0.2.36, ses *skills* et son serveur
+MCP) chargé à côté du *plugin* du kit, chacune avec une demande qui ne nomme aucun des deux
+outils : ce qu'elles ont choisi est sous *Agents* plus bas.
 
 ### Un seul projet Nx pour le projet du kit
 
@@ -172,12 +174,26 @@ du kit dans `packages/api`. Là où elles se rencontrent :
 | générer | « ALWAYS invoke the `nx-generate` skill FIRST » | les générateurs du kit, et la garde refuse un fichier écrit à la main d'une sorte qu'ils écrivent | Nx pour un nouveau projet du *workspace* ; le kit pour tout ce qui est dans un projet du kit |
 | une session dans le projet du kit | rien | la garde : refuse du code sur le tronc, ouvre un *worktree*, juge chaque écriture, refuse `git commit --no-verify` | le kit : sa garde a trouvé la configuration dans `packages/api` et a tenu chacun de ces points dans la session |
 
-La dernière colonne est ce que ce guide recommande, pas ce qui a été observé : le *plugin* de Nx
-n'était pas chargé dans la session, si bien que l'instruction que suit un agent quand les deux
-sont chargées, pour la génération surtout, reste à voir dans une session lancée à la racine du
-*workspace*.
+**Trois sessions avec les deux *plugins*.** Chacune a été lancée à la racine du *workspace* avec
+le *plugin* du kit et celui de Nx chargés ensemble, sans rien ajouter à l'`AGENTS.md` de la
+racine :
 
-L'écrire pour les agents : une ligne dans l'`AGENTS.md` de la racine, hors des marqueurs que Nx
+| Demande | Premier *skill* | Ce qu'il a lancé | Résultat |
+|---|---|---|---|
+| un agrégat `Customer` avec son événement dans `ordering` | `ddd-ts-kit:scaffold` | `ddd-ts-kit generate aggregate`, puis les contrôles du kit par `npm run` et `npx ddd-ts-kit` | commité, aucun fichier écrit à la main |
+| un nouveau contexte délimité `billing`, en aval d'`ordering` | `ddd-ts-kit:scaffold` | `ddd-ts-kit generate context` | commité |
+| une bibliothèque partagée `money` pour l'api et un futur *front end* | `nx:nx-generate`, en citant le `CLAUDE.md` de la racine | `nx g @nx/js:library` dans `packages/money`, après avoir lu les règles du kit sur les objets valeur | commité |
+
+`nx run-many -t verify typecheck test` était ensuite vert sur les deux projets. La dernière
+colonne a donc tenu sans être écrite : le kit pour ce qui vit dans son projet, Nx pour un nouveau
+projet du *workspace*. C'est une session par demande sur un seul modèle ; un modèle plus petit, ou
+une demande qui mêle un dossier du projet du kit et le mot « bibliothèque », peut choisir
+autrement. Dans le projet du kit, les agents ont lancé les contrôles par `npm run` et
+`npx ddd-ts-kit`, pas par Nx : les mêmes commandes, sans son cache. Pour la bibliothèque, le
+générateur de Nx a ajouté `@nx/vitest` et `vitest` à la racine et un *plugin* Vitest dans
+`nx.json` ; l'agent en a exclu `packages/api`, qui garde sa propre configuration Vitest.
+
+L'écrire quand même, pour d'autres modèles et d'autres agents : une ligne dans l'`AGENTS.md` de la racine, hors des marqueurs que Nx
 réécrit, qui dit que `packages/api` est un projet ddd-ts-kit et que son propre `AGENTS.md`
 gouverne le travail à l'intérieur. Les permissions du `.claude/settings.json` de `packages/api`
 ne sont pas lues par une session lancée à la racine du *workspace*.

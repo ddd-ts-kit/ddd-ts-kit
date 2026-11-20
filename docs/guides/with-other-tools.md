@@ -44,9 +44,11 @@ aggregate `Product` with its event `ProductListed` in `catalog`, the integration
 `ordering` declaring `catalog` as its upstream. `nx run api:verify` was green. Then two forbidden
 imports were written on purpose, one in each direction, to see which tool reports what.
 
-The coding agent was Claude Code with the plugin of the kit. The Claude Code plugin that Nx
-proposes in the `.claude/settings.json` of the workspace, and its MCP server, were not installed:
-what they would add is not covered here.
+The coding agent was Claude Code (Opus 5.5) with the plugin of the kit (0.113.2). Three more
+sessions were then started at the root of the worktree with the Claude Code plugin that Nx
+proposes in the `.claude/settings.json` of the workspace (`nx` 0.2.36, its skills and its MCP
+server) loaded beside the plugin of the kit, each with one request that names neither tool: what
+they chose is under *Agents* below.
 
 ### One Nx project for the kit project
 
@@ -158,11 +160,25 @@ Cursor, Gemini CLI, Codex, OpenCode and Copilot. `init` writes the instructions 
 | scaffolding | "ALWAYS invoke the `nx-generate` skill FIRST" | the generators of the kit, and the guard refuses a hand-written file of a kind they write | Nx for a new project of the workspace; the kit for anything inside a kit project |
 | a session in the kit project | nothing | the guard: refuses code on the trunk, opens a worktree, judges each write, refuses `git commit --no-verify` | the kit: its guard found the config in `packages/api` and held every one of these in the session |
 
-The last column is what this guide recommends, not what was observed: the plugin of Nx was not
-loaded in the session, so which of the two instructions an agent follows when both are loaded,
-on scaffolding above all, is still to be seen in a session started at the root of the workspace.
+**Three sessions with both plugins.** Each was started at the root of the workspace with the plugin
+of the kit and the plugin of Nx loaded together, and nothing added to the root `AGENTS.md`:
 
-Write it down for the agents: a line in the root `AGENTS.md`, outside the markers Nx rewrites,
+| Request | First skill | What it ran | Result |
+|---|---|---|---|
+| an aggregate `Customer` with its event in `ordering` | `ddd-ts-kit:scaffold` | `ddd-ts-kit generate aggregate`, then the checks of the kit through `npm run` and `npx ddd-ts-kit` | committed, no file written by hand |
+| a new bounded context `billing`, downstream of `ordering` | `ddd-ts-kit:scaffold` | `ddd-ts-kit generate context` | committed |
+| a shared library `money` for the api and a future front end | `nx:nx-generate`, citing the `CLAUDE.md` of the root | `nx g @nx/js:library` in `packages/money`, after reading the rules of the kit on value objects | committed |
+
+`nx run-many -t verify typecheck test` was then green on both projects. So the last column held
+without being written down: the kit for what lives inside its project, Nx for a new project of the
+workspace. It is one session per request on one model; a smaller model, or a request that mixes a
+folder of the kit project with the word "library", may choose otherwise. Inside the kit project
+the agents ran the checks through `npm run` and `npx ddd-ts-kit`, not through Nx: the same
+commands, without its cache. For the library, the generator of Nx added `@nx/vitest` and `vitest`
+at the root and a Vitest plugin in `nx.json`; the agent excluded `packages/api` from that plugin,
+which keeps its own Vitest configuration.
+
+Write it down anyway, for other models and other agents: a line in the root `AGENTS.md`, outside the markers Nx rewrites,
 that says `packages/api` is a ddd-ts-kit project and that its own `AGENTS.md` governs work inside
 it. The permissions of the `.claude/settings.json` of `packages/api` are not read by a session
 started at the root of the workspace.
