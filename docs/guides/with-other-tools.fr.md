@@ -1,5 +1,5 @@
 [English](with-other-tools.md) · **Français**
-<!-- translation-of: with-other-tools.md sha256:656d44b573468fcc -->
+<!-- translation-of: with-other-tools.md sha256:2600547bbe089d19 -->
 
 # Composer le kit avec d'autres outils
 
@@ -59,10 +59,11 @@ Nx déduit le projet du `package.json` de `packages/api` : chaque script devient
 (`nx run api:verify`, `nx run api:check:arch`), et le `typecheck` que déduit `@nx/js` s'efface
 devant le script du même nom. Ce qu'il a fallu :
 
-1. **Le gestionnaire de paquets du *workspace*.** Lancé dans un dossier vide, `init` a choisi
-   pnpm dans un *workspace* installé par npm
-   ([#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856)) : passer `--package-manager`
-   explicitement.
+1. **Le gestionnaire de paquets du *workspace*.** Lancé dans un dossier vide, `init` 0.114.1 a
+   choisi pnpm dans un *workspace* installé par npm
+   ([#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856)) : y passer `--package-manager`
+   explicitement. La version suivante prend le gestionnaire de paquets du *workspace* et dit dans
+   une note où elle l'a lu.
 2. **Le chemin du compilateur.** npm remonte `@typescript/native` dans le `node_modules` de la
    racine, si bien que les scripts `typecheck` et `build`, qui appellent
    `node node_modules/@typescript/native/bin/tsc`, échouent sur `Cannot find module`
@@ -229,7 +230,7 @@ du *workspace* avec son propre `node_modules` (521 Mo ici). Nx ne l'a pas pris p
 | Quoi | Où | État |
 |---|---|---|
 | `typecheck` et `build` appellent `tsc` par un chemin qu'un *workspace* remonté casse | le kit | [#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855) |
-| `init` dans un *package* d'un *workspace* npm a choisi pnpm | le kit | [#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856) |
+| `init` dans un *package* d'un *workspace* npm a choisi pnpm | le kit | [#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856), corrigée après 0.114.1 |
 | `ddd-ts-kit lint` échoue quand un *plugin* ESLint écrit sur la sortie standard | le kit | [#857](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/857) |
 | `generate context <existant> --upstream <ctx>` n'enregistre rien et ne dit rien | le kit | [#858](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/858) |
 | `vite` laissé à côté du projet quand `@vitest/mocker` est monté à la racine | npm | `vite` à la racine |

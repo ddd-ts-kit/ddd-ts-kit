@@ -57,10 +57,11 @@ Nx infers the project from the `package.json` of `packages/api`: every script be
 (`nx run api:verify`, `nx run api:check:arch`), and the inferred `typecheck` of `@nx/js` gives way
 to the script of the same name. What it took:
 
-1. **The package manager of the workspace.** Started in an empty folder, `init` chose pnpm in a
-   workspace installed by npm
+1. **The package manager of the workspace.** Started in an empty folder, `init` 0.114.1 chose
+   pnpm in a workspace installed by npm
    ([#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856)): pass `--package-manager`
-   explicitly.
+   explicitly there. The next release takes the package manager of the workspace and says in a
+   note where it read it.
 2. **The compiler path.** npm hoists `@typescript/native` to the root `node_modules`, so the
    `typecheck` and `build` scripts, which call `node node_modules/@typescript/native/bin/tsc`,
    fail with `Cannot find module`
@@ -215,7 +216,7 @@ matches one level). Run Nx from the root of the worktree.
 | What | Where | Status |
 |---|---|---|
 | `typecheck` and `build` call `tsc` by a path a hoisted workspace breaks | the kit | [#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855) |
-| `init` in a package of an npm workspace chose pnpm | the kit | [#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856) |
+| `init` in a package of an npm workspace chose pnpm | the kit | [#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856), fixed after 0.114.1 |
 | `ddd-ts-kit lint` fails when an ESLint plugin writes to standard output | the kit | [#857](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/857) |
 | `generate context <existing> --upstream <ctx>` records nothing and says nothing | the kit | [#858](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/858) |
 | `vite` left beside the project while `@vitest/mocker` went to the root | npm | `vite` at the root |
