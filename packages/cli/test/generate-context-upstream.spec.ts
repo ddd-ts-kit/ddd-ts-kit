@@ -53,6 +53,18 @@ describe('generate context --upstream on a context that exists', () => {
     expect(read(root, 'ddd-ts-kit.config.json')).toBe(config);
   });
 
+  it('keeps the pattern of a declared pair when run again with a bare --upstream', () => {
+    const root = initProject('--context', 'catalog:core', '--audit', 'off');
+
+    cli(root, 'generate', 'context', 'ordering', '--classification', 'core', '--upstream', 'catalog:conformist');
+    const config = read(root, 'ddd-ts-kit.config.json');
+
+    const again = cli(root, 'generate', 'context', 'ordering', '--classification', 'core', '--upstream', 'catalog');
+
+    expect(again.code).toBe(0);
+    expect(read(root, 'ddd-ts-kit.config.json')).toBe(config);
+  });
+
   it('declares an upstream named twice once, and keeps what the config held on the others', () => {
     const root = initProject('--context', 'catalog:core', '--context', 'billing:core', '--audit', 'off');
 

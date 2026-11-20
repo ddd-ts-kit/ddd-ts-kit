@@ -180,6 +180,9 @@ function assertUpstreamsExist(config: Config, context: Name, { upstreams, builtO
 
 type ContextEntry = Config['contexts'][string];
 
+/** What `--upstream <ctx>` without a pattern declares. */
+const DEFAULT_RELATIONSHIP = 'published-language';
+
 function newEntry(classification: string, upstreams: readonly Upstream[]): ContextEntry {
   return { classification, upstreams, extraDirectories: [], modules: [], deployable: false, owners: [] };
 }
@@ -218,11 +221,19 @@ function withUpstreams(config: Config, { here, existing, asked }: UpstreamsAsked
   return { ...existing, upstreams: [...existing.upstreams, ...added] };
 }
 
-/** The pattern of a pair is chosen once, in the config: an `--upstream` that names another one for a declared upstream would be lost. */
+/**
+ * The pattern of a pair is chosen once, in the config: an `--upstream` that names another one for a
+ * declared upstream would be lost. A bare `--upstream <ctx>` reads as `published-language`, the
+ * default, and asks for no pattern: run again on a pair declared otherwise, it keeps it.
+ */
 function refuseOtherRelationship(here: string, existing: ContextEntry, upstream: Upstream): void {
   const known = existing.upstreams.find((candidate) => candidate.context === upstream.context);
 
-  if (known === undefined || known.relationship === upstream.relationship) {
+  if (
+    known === undefined ||
+    known.relationship === upstream.relationship ||
+    upstream.relationship === DEFAULT_RELATIONSHIP
+  ) {
     return;
   }
 
