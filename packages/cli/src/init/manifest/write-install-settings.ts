@@ -36,7 +36,7 @@ export function writeInstallSettings(ws: Workspace, config: Config, force: boole
     : '';
 
   ws.note(
-    `This project is a package of the pnpm workspace of ${path.dirname(workspace.file)}: pnpm reads its settings in ${workspace.file}, so no ${PNPM_WORKSPACE} is written here, where it would make the folder a workspace apart. The Dockerfile of this folder copies a lockfile the folder does not hold: build the image from the root of the workspace. ${
+    `This project is a package of the pnpm workspace of ${path.dirname(workspace.file)}: pnpm reads its settings in ${workspace.file}, so no ${PNPM_WORKSPACE} is written here, where it would make the folder a workspace apart. ${
       lacking.length === 0
         ? 'That file holds what the stack needs.'
         : `Add to that file what the stack needs: ${lacking.join('; ')}.`

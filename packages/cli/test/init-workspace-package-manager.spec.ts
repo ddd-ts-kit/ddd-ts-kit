@@ -106,3 +106,72 @@ describe('init in a package of a workspace', () => {
     expect(managerOf(project)).toBe('pnpm');
   });
 });
+
+describe('the Dockerfile of a package of a workspace', () => {
+  const IMAGE = 'the image builds from there';
+
+  it('is said to build from the root of an npm workspace, which holds the lockfile it copies', () => {
+    const { root, project } = workspace({ 'package.json': JSON.stringify({ workspaces: ['packages/*'] }) });
+
+    const result = cli(project, 'init', ...FLAGS);
+
+    expect(result.stdout + result.stderr).toContain(
+      `copies package-lock.json, which the workspace keeps at its root (${root}): ${IMAGE}, with \`docker build -f packages/api/Dockerfile .\``,
+    );
+
+    expect(result.stdout + result.stderr).toContain('`npm ci --workspace packages/api`');
+  });
+
+  it('reads the packages of a workspace declared as an object', () => {
+    const { project } = workspace({ 'package.json': JSON.stringify({ workspaces: { packages: ['packages/*'] } }) });
+
+    const result = cli(project, 'init', ...FLAGS);
+
+    expect(result.stdout + result.stderr).toContain(IMAGE);
+  });
+
+  it.each([
+    ['does not list the project', { workspaces: ['apps/*'] }],
+    ['declares no list of packages', { workspaces: {} }],
+  ])('is left alone under a workspace that %s: the project installs alone', (_, manifest) => {
+    const { project } = workspace({ 'package.json': JSON.stringify(manifest) });
+
+    const result = cli(project, 'init', ...FLAGS, '--package-manager', 'npm');
+
+    expect(result.code).toBe(0);
+    expect(result.stdout + result.stderr).not.toContain(IMAGE);
+  });
+
+  it('passes over a nearer folder that declares a workspace without the project, as npm does', () => {
+    const { root, project } = workspace({
+      'package.json': JSON.stringify({ workspaces: ['packages/*'] }),
+      'packages/package.json': JSON.stringify({ workspaces: ['libs/*'] }),
+    });
+
+    const result = cli(project, 'init', ...FLAGS, '--package-manager', 'npm');
+
+    expect(result.stdout + result.stderr).toContain(`at its root (${root}): ${IMAGE}`);
+  });
+
+  it('is said again when --force rewrites the file', () => {
+    const { project } = workspace({ 'package.json': JSON.stringify({ workspaces: ['packages/*'] }) });
+
+    expect(cli(project, 'init', ...FLAGS).code).toBe(0);
+
+    const forced = cli(project, 'init', ...FLAGS, '--force');
+
+    expect(forced.stdout + forced.stderr).toContain(IMAGE);
+  });
+
+  it('is left alone outside a workspace, and when init runs again without rewriting it', () => {
+    const { project } = workspace({ 'package.json': JSON.stringify({ workspaces: ['packages/*'] }) });
+    const alone = tempDir('alone');
+
+    expect(cli(alone, 'init', ...FLAGS, '--package-manager', 'npm').stdout).not.toContain(IMAGE);
+    expect(cli(project, 'init', ...FLAGS).code).toBe(0);
+
+    const again = cli(project, 'init', ...FLAGS);
+
+    expect(again.stdout + again.stderr).not.toContain(IMAGE);
+  });
+});

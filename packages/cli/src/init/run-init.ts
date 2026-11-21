@@ -15,6 +15,7 @@ import { laidOut } from './laid-out';
 import { toName } from '../naming';
 import { ignoreCodeTypesWhereTheyAre } from '../knip';
 import { inDialect } from '../package-manager/in-dialect';
+import { workspaceImageNote } from './workspace-image-note';
 import { workspaceManagerNote } from './workspace-manager-note';
 import { setUpSdk } from '../sdk';
 import { readTemplate, renderTemplate, type RenderContext } from '../templating';
@@ -140,6 +141,7 @@ function closingNotes(root: string, report: WorkspaceReport, options: InitOption
     ...unwritable,
     ...subfolderNote(root, config),
     ...(created ? workspaceManagerNote(root, options, config) : []),
+    ...([...report.created, ...report.updated].includes('Dockerfile') ? workspaceImageNote(root, config) : []),
     ...(options.force ? [forcedNote(report, options.dryRun)] : []),
     ...(created
       ? [
