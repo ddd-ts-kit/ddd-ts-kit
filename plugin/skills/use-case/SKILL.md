@@ -124,7 +124,7 @@ identifies a person. Declare the code in `errors` of the route by its list membe
 (`errors/known-code`). A refusal answers 422; another status, 404 for an `Unknown<Aggregate>`, 409
 for a state that forbids the action, is one entry of `src/platform/composition/platform-error-mapper.ts`,
 the place `init` writes for it: `createErrorMapper({ [SchedulingCodes.UnknownCalendar]: 404 })`. An entry
-maps one code and changes no other context. Under
+maps one code, in every context that refuses with it. Under
 `stack.refusals: factories`, read [factories.md](factories.md) first: a refusal is a factory of
 the error class of its concept.
 
