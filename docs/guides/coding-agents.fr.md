@@ -1,5 +1,5 @@
 [English](coding-agents.md) · **Français**
-<!-- translation-of: coding-agents.md sha256:d81181320440d181 -->
+<!-- translation-of: coding-agents.md sha256:4de2a209d315d4a0 -->
 
 # Le plugin pour agents de code : Claude Code, Codex, GitHub Copilot
 
@@ -98,7 +98,9 @@ lance une commande dans chaque *checkout* (`core.fsmonitor`, `core.pager`, `core
 programme `gpg`, un `protocol.*`), donnée par `-c` ou `--config-env`, ou une variable
 d'environnement qui confie à git un programme ou des réglages (`GIT_EXTERNAL_DIFF`, `GIT_PAGER`,
 `GIT_EDITOR`, `GIT_SSH_COMMAND`, `GIT_CONFIG_*`...), demande l'avis du propriétaire du projet avant qu'une
-désactivation, un test sauté ou un changement des règles soit écrit par les outils d'édition, vérifie chaque fichier
+désactivation ou un test sauté soit écrit dans un source, un test ou un script (un document qui
+ne fait que le nommer est de la prose), ou qu'un changement des règles soit écrit par les outils
+d'édition, vérifie chaque fichier
 écrit et renvoie les violations avec leur correction (les cinq premiers d'un *patch* de Codex,
 les autres nommés comme non vérifiés ; avec `"dependenciesBeforeWrite": true`, à
 l'essai, il refuse avant l'écriture un nouvel import qui enfreint une règle de dépendance), et
