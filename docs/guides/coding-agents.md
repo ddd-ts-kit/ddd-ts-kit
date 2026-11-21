@@ -95,8 +95,9 @@ an `alias.*`, a diff, merge or filter driver, `diff.external`, an `include.path`
 helper, a pager, a tool of `mergetool` or `difftool`, a `gpg` program, a `protocol.*`), given by
 `-c` or `--config-env`, or a variable of the environment that hands git a program or settings
 (`GIT_EXTERNAL_DIFF`, `GIT_PAGER`, `GIT_EDITOR`, `GIT_SSH_COMMAND`, `GIT_CONFIG_*`...), asks the
-project owner before a suppression, a skipped test or a change of the rules is written by the
-editor tools, checks
+project owner before a suppression or a skipped test is written in a source, a test or a script
+(a document that only names one is prose), or a change of the rules is written by the editor
+tools, checks
 every written file and returns the violations with their fix (the first five of a Codex patch, the
 others named as not checked; with `"dependenciesBeforeWrite": true`, on trial,
 it refuses before the write a new import that breaks a dependency rule), and refuses to finish while

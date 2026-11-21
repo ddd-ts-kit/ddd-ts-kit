@@ -122,6 +122,16 @@ test('a new suppression is put to the project owner, an untouched one is not', (
   assert.equal(keeping.output, undefined);
 });
 
+test('a document that names a suppression suppresses nothing, and is not put to the owner', () => {
+  const root = project();
+  const prose = 'Silent `eslint-disable`, `@ts-ignore`, `it.skip` and `as any` are forbidden.\n';
+  const writing = (file, content) => ({ tool_name: 'Write', tool_input: { file_path: join(root, file), content } });
+  for (const file of ['docs/adr/0002-no-silent-suppression.md', '.specify/memory/constitution.md', 'notes.yml']) {
+    assert.equal(run('pre-write', writing(file, prose)).output, undefined, file);
+  }
+  assert.equal(decision(run('pre-write', writing('scripts/seed.mjs', '// eslint-disable-next-line\n'))), 'ask');
+});
+
 test('a MultiEdit that adds a suppression in one of its edits is put to the project owner', () => {
   const root = project();
   const file = join(root, 'src/contexts/ordering/ordering.module.ts');

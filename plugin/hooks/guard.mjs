@@ -240,6 +240,10 @@ const DEPENDENCY_RULES = [
   'context/published-language-only',
 ];
 
+// The files a compiler, a linter or a test runner reads a suppression from: in Markdown or YAML the
+// same words are prose, a constitution or a decision record that names the rule they break.
+const SCRIPT_FILE = /\.[cm]?[jt]sx?$/;
+
 const ESCAPES = [
   [/ddd-ts-kit-disable/g, 'an architecture rule suppression'],
   [/eslint-disable/g, 'a lint suppression'],
@@ -921,7 +925,9 @@ function deviationOf({ project, file, written, replaced, deleted }, input) {
     return undefined;
   }
   const deviation =
-    governedFileReason(project, file) ?? scriptsChangeReason(project, file, input) ?? escapeReason(written, replaced);
+    governedFileReason(project, file) ??
+    scriptsChangeReason(project, file, input) ??
+    (SCRIPT_FILE.test(file) ? escapeReason(written, replaced) : undefined);
   return deviation ? { decision: 'ask', reason: deviation } : undefined;
 }
 
