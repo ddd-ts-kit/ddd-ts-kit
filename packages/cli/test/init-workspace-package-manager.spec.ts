@@ -142,6 +142,27 @@ describe('the Dockerfile of a package of a workspace', () => {
     expect(result.stdout + result.stderr).not.toContain(IMAGE);
   });
 
+  it('passes over a nearer folder that declares a workspace without the project, as npm does', () => {
+    const { root, project } = workspace({
+      'package.json': JSON.stringify({ workspaces: ['packages/*'] }),
+      'packages/package.json': JSON.stringify({ workspaces: ['libs/*'] }),
+    });
+
+    const result = cli(project, 'init', ...FLAGS, '--package-manager', 'npm');
+
+    expect(result.stdout + result.stderr).toContain(`at its root (${root}): ${IMAGE}`);
+  });
+
+  it('is said again when --force rewrites the file', () => {
+    const { project } = workspace({ 'package.json': JSON.stringify({ workspaces: ['packages/*'] }) });
+
+    expect(cli(project, 'init', ...FLAGS).code).toBe(0);
+
+    const forced = cli(project, 'init', ...FLAGS, '--force');
+
+    expect(forced.stdout + forced.stderr).toContain(IMAGE);
+  });
+
   it('is left alone outside a workspace, and when init runs again without rewriting it', () => {
     const { project } = workspace({ 'package.json': JSON.stringify({ workspaces: ['packages/*'] }) });
     const alone = tempDir('alone');

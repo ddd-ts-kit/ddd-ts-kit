@@ -13,19 +13,18 @@ export interface NpmWorkspace {
 
 /**
  * The npm workspace above a project that lists it: the nearest folder above whose package.json
- * declares `workspaces`, when they list the project. Undefined when they do not: the project then
- * installs alone, with a lockfile of its own.
+ * lists the project in its `workspaces`. As npm does, a folder that declares a workspace without
+ * the project is passed over. Undefined when none lists it: the project then installs alone, with
+ * a lockfile of its own.
  */
 export function npmWorkspaceOf(root: string): NpmWorkspace | undefined {
   const project = path.resolve(root);
 
   for (let directory = path.dirname(project); ; directory = path.dirname(directory)) {
-    const globs = workspacesOf(directory);
+    const folder = path.relative(directory, project).split(path.sep).join('/');
 
-    if (globs !== undefined) {
-      const folder = path.relative(directory, project).split(path.sep).join('/');
-
-      return listedBy(globs, folder) ? { root: directory, folder } : undefined;
+    if (listedBy(workspacesOf(directory), folder)) {
+      return { root: directory, folder };
     }
 
     if (path.dirname(directory) === directory) {
@@ -34,19 +33,15 @@ export function npmWorkspaceOf(root: string): NpmWorkspace | undefined {
   }
 }
 
-/** The globs of `workspaces`, a list or the `packages` of an object; undefined when the folder declares none. */
-function workspacesOf(directory: string): string[] | undefined {
+/** The globs of `workspaces`, a list or the `packages` of an object; none when the folder declares none. */
+function workspacesOf(directory: string): string[] {
   try {
     const manifest: unknown = JSON.parse(fs.readFileSync(path.join(directory, 'package.json'), 'utf8'));
     const declared = isRecord(manifest) ? manifest['workspaces'] : undefined;
     const globs = isRecord(declared) ? declared['packages'] : declared;
 
-    if (declared === undefined) {
-      return undefined;
-    }
-
     return Array.isArray(globs) ? globs.filter((glob): glob is string => typeof glob === 'string') : [];
   } catch {
-    return undefined;
+    return [];
   }
 }
