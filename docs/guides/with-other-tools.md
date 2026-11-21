@@ -12,7 +12,8 @@ worked around; a tool without its session is not described.
 |---|---|---|
 | [Nx](#nx) | 2026-11-20, Nx 24.0.6, `ddd-ts-kit` 0.114.1, npm 11.20, Node 26.13 | the kit project as one Nx project works, with `--package-manager npm` until [#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856) is fixed, the compiler path until [#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855) is, `vite` at the root and a `.prettierignore` |
 | [Superpowers](#superpowers) | 2026-11-21, Superpowers 7.0.2, `ddd-ts-kit` 0.114.1, npm 11.19, Node 24.22 | the wording decides: a request that says what to build goes to the kit, an idea ("... Let's build it.") to `brainstorming` in most interactive sessions, which then conducts the whole feature; a section of `AGENTS.md` hands it back to the kit |
-| Spec Kit, BMAD | not yet run | tracked in [#317](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/317) |
+| [Spec Kit](#spec-kit) | 2026-11-21, Spec Kit 1.4.3, `ddd-ts-kit` 0.114.1, npm 11.19, Node 24.22 | the whole flow, three stories, on the rules of the kit: the constitution copied them, the tasks named its generators, `docs/architecture/slices.md` and its reviewer; `.specify/` left out of Biome |
+| [BMAD](#bmad) | 2026-11-21, BMAD Method 6.12.4, `ddd-ts-kit` 0.114.1, npm 11.19, Node 24.22 | the whole flow, one story, through both processes: its spec, architecture and epics, then the discovery, glossary and story of the kit; two glossaries and two plans unless one is chosen |
 
 ## Nx
 
@@ -359,3 +360,113 @@ stories of the kit; the kit then checks the code, not the method.
 |---|---|---|
 | a refusal answers 422, and an agent found no way to answer 404 for a loan that does not exist | the kit | [#870](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/870): `platform-error-mapper.ts` maps a code to a status, and no skill says so; the session Superpowers conducted found the file |
 | two places for a plan, two reviewers | both | the section of `AGENTS.md` above |
+
+## Spec Kit and BMAD: the sessions
+
+Spec Kit and BMAD organise the work of an agent from the need to the code, each with its own
+documents: a specification, an architecture or a plan, a list of tasks or stories. The kit has
+its own steps for the same ground (`discover-domain`, `glossary`, `plan-slices`, the stories of
+`story`) and holds the code. Unlike Superpowers, both are called by name, one command per step,
+so the question is not which one takes a request but what each step does with the kit beside it.
+
+Each was added to a project of the kit of its own, the same library as above (`init` with
+`--context lending:core`, `npm install`), with the plugin of the kit installed (0.114.1) and
+Claude Code on Opus 5.5. The whole flow of each ran as one conversation in `claude -p`, resumed
+step after step (`--resume`), the owner answering each question; the other plugins of the
+machine were loaded. Each flow ran once.
+
+## Spec Kit
+
+```sh
+uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.4.3
+specify init --here --force --non-interactive --integration claude
+```
+
+`specify init` adds `.specify/` (templates, scripts, the constitution) and its skills under
+`.claude/skills/`, nine of them, and leaves `AGENTS.md`, `CLAUDE.md` and `.claude/settings.json` alone. The
+first commit failed: the pre-commit hook of the kit runs Biome on staged JSON, and two files of
+`.specify/` are not laid out as Biome wants. Spec Kit owns them, so they were left out of Biome:
+`"!**/.specify"` in `files.includes` of `biome.json`, beside `"!**/.claude"`.
+
+**In short: Spec Kit ran on the rules of the kit, written into its own documents.** The
+constitution copied them from `AGENTS.md`, the plan and the tasks named the generators of the
+kit, the tasks planned `docs/architecture/slices.md` and its worktree, which the implementation
+wrote and opened, and the
+implementation ended with the agent `architecture-reviewer` of the kit. Three stories, one
+branch, `npm run verify` green; no file was created by hand that a generator creates.
+
+| Step | What it wrote | What it took from the kit |
+|---|---|---|
+| `/speckit-constitution` | `.specify/memory/constitution.md` 1.0.0, five principles | read `AGENTS.md`, `REVIEW.md` and the config: the principles are the rules of the kit (contexts and glossary, layers, generators, tests without mocks, slices in worktrees). The guard asked about one sentence that named `eslint-disable` ([#873](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/873)), and the agent reworded it |
+| `/speckit-specify` | `specs/001-copy-loans/spec.md`, three user stories, a checklist; one question, answered (any identifier the desk enters, membership and catalogue later) | the spec placed in the context `lending`, its terms in a table meant for `CONTEXT.md`, before any code |
+| `/speckit-plan` | `plan.md`, `research.md` (decisions R1 to R8), `data-model.md`, a contract, a quickstart | read the rules and the skills of the kit: an aggregate `Member` holding its open loans, the uniqueness of a copy on loan through the `UniqueViolationError` of the kernel |
+| `/speckit-tasks` | `tasks.md`, 58 tasks in six phases | ran the generators with `--dry-run` and corrected the plan where the kit refused (a projection fed by a domain event); the tasks name `ddd-ts-kit worktree`, the glossary, `docs/architecture/slices.md` and every `generate`, each spec seen failing first |
+| `/speckit-implement` | six commits on the branch of `ddd-ts-kit worktree copy-loans` | the generators, the agent `architecture-reviewer`, `npm run verify`: 124 unit and integration specs, 22 end-to-end, no mock. It kept 422 where the plan said 409, thinking the error mapper too shared to touch ([#870](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/870)) |
+
+The constitution is a copy: after an upgrade of the kit that changes its rules, run
+`/speckit-constitution` again. Spec Kit creates its branch through a hook that `specify init`
+did not install here; the worktree of the kit took its place.
+
+## BMAD
+
+```sh
+npx bmad-method@6.12.4 install --yes --modules bmm --tools claude-code
+```
+
+The installer adds `_bmad/` and its skills under `.claude/skills/`, 29 of them, and the skills run their
+scripts with `uv run`. The project still passed `npm run verify`, and the commit passed the hooks
+of the kit.
+
+**In short: BMAD ran through both processes.** Its help put the steps of the kit inside its own
+(the discovery of the domain and the glossary before its architecture, `ddd-ts-kit story-scope`
+for the worktree), and its build of a story went through most of the story workflow of the kit (the story file, its
+slices, a design review, the acceptance locked before the code; the `story-verifier` agent did not
+run).
+The code is the kit's; the documents are twice: two glossaries, two plans, two specs of the
+story, unless the team says which one counts.
+
+| Step | What it wrote | What it took from the kit |
+|---|---|---|
+| `/bmad-help` | nothing: the order of the steps | `ddd-ts-kit status`, and the steps of the kit placed among its own |
+| `bmad-spec` | `_bmad-output/specs/.../SPEC.md` and `glossary.md`; four questions, answered | it warned that its epics and `ddd-ts-kit:plan-slices` would be two competing plans |
+| the steps of the kit | `docs/architecture/discovery.md` and `contexts.md`, ten terms in `CONTEXT.md`, the context map | the skills `discover-domain` and `bounded-contexts`, then the glossary written in `CONTEXT.md`, by the agent inside the BMAD flow |
+| `bmad-architecture` | `ARCHITECTURE-SPINE.md`, six decisions, an adversarial review | the stack the kit fixed, kept; decided what it leaves open: storage, where each limit is held, personal data |
+| the steps of `bmad-create-epics-and-stories` and `bmad-sprint-planning` | `epics.md` (one epic, three stories), `sprint-status.yaml` | nothing |
+| `bmad-build` | refused to start on uncommitted planning, then a planning branch, `ddd-ts-kit story-scope 1-1-lend-a-copy-to-a-member`, five commits | the story workflow of the kit: its story file and slices, a design review by `architecture-reviewer`, the acceptance locked before the code (by the main agent: a subagent may not lock it), the generators, 409 mapped in `platform-error-mapper.ts`; `npm run verify`: 57 unit and integration specs, 16 end-to-end and acceptance, no mock |
+
+The whole BMAD flow, one story built, cost about 25 USD, 19 of them and 26 minutes for the build
+of that story; the whole Spec Kit flow, three stories, about 19 USD, 12 of them for the
+implementation. One run each, on one model: an order of magnitude, not a price.
+
+**Say which one counts.** A section of `AGENTS.md`, not tried in a session:
+
+```md
+## With BMAD
+
+The glossary is `CONTEXT.md` of each context; BMAD writes no glossary of its own. A story is
+built through `ddd-ts-kit story-scope <story key>`, and its record is
+`docs/architecture/stories/<story key>.md`; the slices of `docs/architecture/slices.md` are the
+plan of the code, the epics of BMAD the plan of the product.
+```
+
+## Spec Kit and BMAD: who holds what
+
+| Moment | Spec Kit | BMAD | The kit | Who held it |
+|---|---|---|---|---|
+| principles | the constitution | none | `AGENTS.md`, the rules by layer | the kit, copied into the constitution |
+| the need | `spec.md` | `SPEC.md` | `discover-domain`, the stories | the tool; BMAD added the discovery of the kit |
+| the glossary | a table of the spec | `glossary.md` | `CONTEXT.md`, which the generators read | the kit; BMAD kept a second one |
+| the architecture | `plan.md`, `research.md` | `ARCHITECTURE-SPINE.md` | the layout and the rules, fixed; ADRs for the rest | the tool for the decisions the kit leaves open |
+| the plan of the work | `tasks.md` | `epics.md`, `sprint-status.yaml` | `slices.md`, the stories | both: the tasks of Spec Kit planned `slices.md`, which its implementation wrote; BMAD kept its epics beside the story of the kit |
+| the branch | a hook, not installed | a planning branch | `ddd-ts-kit worktree`, `story-scope` | the kit |
+| the code | `/speckit-implement` | `bmad-build` and its subagent | the generators and the guard | the kit |
+| the review | none run | three reviewers of its own | `architecture-reviewer` | the kit for Spec Kit; both for BMAD |
+
+### What clashed, in short
+
+| What | Where | Status |
+|---|---|---|
+| JSON of `.specify/` refused by the Biome of the pre-commit hook | the kit and Spec Kit | `"!**/.specify"` in `biome.json` |
+| the guard asks about `eslint-disable` named in a Markdown document | the kit | [#873](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/873) |
+| a refusal kept at 422 where the plan said 409 | the kit | [#870](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/870) |
+| two glossaries, two plans, two specs of a story | BMAD and the kit | the section of `AGENTS.md` above |

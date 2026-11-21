@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:6646b5e322e39b3d -->
+<!-- translation-of: README.md sha256:a7a1e40637bc6823 -->
 
 # Documentation
 
@@ -126,7 +126,7 @@ a vérifié, les limites, et une recommandation selon la situation.
 | [Quelle commande, quand](guides/commands.fr.md) | la commande ou la *skill* de chaque moment d'un projet, une première fonctionnalité en partant de zéro, et la référence de chaque commande et de chaque option |
 | [Une tranche, de bout en bout](guides/first-slice.fr.md) | la requête HTTP `POST /orders` à travers les quatre couches d'une tranche générée, et son code de domaine et d'application une fois rempli |
 | [Le plugin pour agents de code](guides/coding-agents.fr.md) | installer le plugin dans Claude Code, Codex et Copilot, ses vingt-six *skills*, ses six agents et son *hook*, et ce que chaque hôte exécute |
-| [Composer le kit avec d'autres outils](guides/with-other-tools.fr.md) | le kit dans un *workspace* Nx et à côté de Superpowers, à partir de vraies sessions : un seul projet Nx pour le projet du kit, ce qu'il faut contourner, quel outil signale quel import, deux jeux d'instructions pour agents ; quel *plugin* conduit une fonctionnalité, un plan, un test et un bug, et la section d'`AGENTS.md` qui en décide ; Spec Kit et BMAD à venir |
+| [Composer le kit avec d'autres outils](guides/with-other-tools.fr.md) | le kit dans un *workspace* Nx et à côté de Superpowers, à partir de vraies sessions : un seul projet Nx pour le projet du kit, ce qu'il faut contourner, quel outil signale quel import, deux jeux d'instructions pour agents ; quel *plugin* conduit une fonctionnalité, un plan, un test et un bug, et la section d'`AGENTS.md` qui en décide ; Spec Kit et BMAD sur tout un parcours chacun, et les documents que chacun écrit à côté de ceux du kit |
 | [Travail en équipe](guides/team-workflow.fr.md) | la propriété par contexte, le glossaire, les contrats d'abord, la revue, les décisions, l'arrivée d'un nouveau membre |
 | [Travail en parallèle](guides/parallel-work.fr.md) | plusieurs personnes ou agents à la fois : ce qui est sûr, ce qui est séquencé, un plan concret |
 | [Parcours d'une story](guides/story-workflow.fr.md) | une session par *user story*, une *story* par terminal : les questions d'abord, la revue de conception et les tests d'acceptation avant le code, un rapport de chaque décision provisoire |
