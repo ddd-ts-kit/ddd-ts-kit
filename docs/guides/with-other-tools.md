@@ -279,8 +279,8 @@ kit took nearly everything, and the interactive column is the one to read.
 | a plan of the next features, "Plan this work before anyone builds it." | `discover-domain` 1, `plan-slices` 1 | `plan-slices`, 1 of 1 (whole session) |
 | "the same copy was lent to two members, and both loans are open. Fix it." | not run | `systematic-debugging`, 1 of 1 (whole session) |
 
-The other plugins of the machine were loaded in every run but the conversation below; loading
-only the two changed nothing in `claude -p` (three runs each way).
+The other plugins of the machine were loaded in the interactive runs and in most of the
+`claude -p` ones; loading only the two changed nothing in `claude -p` (three runs each way).
 
 **Four whole sessions in `claude -p`.** The two features went to `use-case`: `ddd-ts-kit worktree`,
 the generators, the terms in `CONTEXT.md`, each spec failing before its code, a commit on the
@@ -346,9 +346,10 @@ someone asks for it by name; its design doc is then the statement of needs of th
 ```
 
 With it, the idea request still opened `brainstorming` in all six interactive sessions (its hook
-asks for a skill before anything is read), but in each of the three followed to the end of the
-first turn the agent then read `AGENTS.md` and moved to `ddd-ts-kit:use-case`, which asked
-its questions. Without it, `brainstorming` kept the session (two of two). A team that prefers
+asks for a skill before anything is read), but in each of the three followed past that first call the agent then read `AGENTS.md` and
+moved to `ddd-ts-kit:use-case` (one of them reached its first question within the time watched).
+Without it, in the two sessions followed the same way, `brainstorming` kept the turn and asked
+why. A team that prefers
 Superpowers to conduct can leave the section out and keep its design doc and plan beside the
 stories of the kit; the kit then checks the code, not the method.
 

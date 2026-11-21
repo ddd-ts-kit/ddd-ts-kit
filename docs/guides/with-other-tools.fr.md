@@ -1,5 +1,5 @@
 [English](with-other-tools.md) · **Français**
-<!-- translation-of: with-other-tools.md sha256:88ae0f6643e50c06 -->
+<!-- translation-of: with-other-tools.md sha256:defefe71ca91f9d8 -->
 
 # Composer le kit avec d'autres outils
 
@@ -296,9 +296,9 @@ des questions : le kit y a presque tout pris, et c'est la colonne interactive qu
 | un plan des fonctionnalités suivantes, « Plan this work before anyone builds it. » | `discover-domain` 1, `plan-slices` 1 | `plan-slices`, 1 sur 1 (session entière) |
 | « the same copy was lent to two members, and both loans are open. Fix it. » | pas lancé | `systematic-debugging`, 1 sur 1 (session entière) |
 
-Les autres *plugins* de la machine étaient chargés dans chaque lancement sauf la conversation
-ci-dessous ; ne charger que les deux n'a rien changé dans `claude -p` (trois lancements de chaque
-côté).
+Les autres *plugins* de la machine étaient chargés dans les lancements interactifs et dans la
+plupart de ceux de `claude -p` ; ne charger que les deux n'a rien changé dans `claude -p` (trois
+lancements de chaque côté).
 
 **Quatre sessions entières dans `claude -p`.** Les deux fonctionnalités sont allées à
 `use-case` : `ddd-ts-kit worktree`, les générateurs, les termes dans `CONTEXT.md`, chaque *spec*
@@ -369,9 +369,10 @@ someone asks for it by name; its design doc is then the statement of needs of th
 
 Avec elle, la demande formulée comme une idée a encore ouvert `brainstorming` dans les six
 sessions interactives (son *hook* demande une *skill* avant toute lecture), mais dans chacune des
-trois suivies jusqu'à la fin du premier tour, l'agent a ensuite lu `AGENTS.md` et est passé à
-`ddd-ts-kit:use-case`, qui a posé ses questions. Sans elle, `brainstorming` a gardé la session
-(deux sur deux). Une équipe qui préfère que Superpowers conduise peut laisser la section de côté
+trois suivies au-delà de ce premier appel, l'agent a ensuite lu `AGENTS.md` et est passé à
+`ddd-ts-kit:use-case` (l'une d'elles a atteint sa première question dans le temps observé). Sans
+elle, dans les deux sessions suivies de la même façon, `brainstorming` a gardé le tour et a
+demandé pourquoi. Une équipe qui préfère que Superpowers conduise peut laisser la section de côté
 et garder son document de conception et son plan à côté des *stories* du kit ; le kit vérifie
 alors le code, pas la méthode.
 
