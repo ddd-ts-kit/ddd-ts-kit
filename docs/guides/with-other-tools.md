@@ -11,7 +11,7 @@ worked around; a tool without its session is not described.
 | Tool | Session | Verdict |
 |---|---|---|
 | [Nx](#nx) | 2026-11-20, Nx 24.0.6, `ddd-ts-kit` 0.114.1, npm 11.20, Node 26.13 | the kit project as one Nx project works, with `--package-manager npm` until [#856](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/856) is fixed, the compiler path until [#855](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/855) is, `vite` at the root and a `.prettierignore` |
-| [Superpowers](#superpowers) | 2026-11-21, Superpowers 7.0.2, `ddd-ts-kit` 0.114.1, npm 11.19, Node 24.22 | they composed without a line written: the kit held features and plans, Superpowers the bug report; a line in `AGENTS.md` says it for other models |
+| [Superpowers](#superpowers) | 2026-11-21, Superpowers 7.0.2, `ddd-ts-kit` 0.114.1, npm 11.19, Node 24.22 | the wording decides: a request that says what to build goes to the kit, an idea ("... Let's build it.") to `brainstorming` in most interactive sessions, which then conducts the whole feature; a section of `AGENTS.md` hands it back to the kit |
 | Spec Kit, BMAD | not yet run | tracked in [#317](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/317) |
 
 ## Nx
@@ -230,17 +230,22 @@ matches one level). Run Nx from the root of the worktree.
 Superpowers is a library of skills for a coding agent that conducts the work itself: a hook at
 session start tells the agent to invoke a skill when there is "even a 1% chance" it applies, and
 its skills set the process (`brainstorming` before any feature, `writing-plans`,
-`test-driven-development`, `systematic-debugging`, `using-git-worktrees`). The kit holds the
-architecture of a backend and the steps that build it (`use-case`, `plan-slices`, `testing`),
-and its guard judges each write. Both plugins have an opinion on the same moments: how a feature
-starts, how a plan is written, how a test is written, where a branch lives.
+`executing-plans`, `test-driven-development`, `systematic-debugging`, `requesting-code-review`,
+`finishing-a-development-branch`). The kit holds the architecture of a backend and the steps
+that build it (`use-case`, `plan-slices`, `testing`, `quality-gate`), and its guard judges each
+write. Both have an opinion on the same moments: how a feature starts, how a plan is written,
+how a test is written, who reviews.
 
-**In short: they composed without a line written.** In four sessions the kit held features and
-planning, Superpowers held the bug report, and neither undid what the other wrote. Superpowers
-ranks the instructions of the project above its skills, and the `AGENTS.md` that `init` writes
-names `/ddd-ts-kit:use-case` for a feature: that is the lever.
+**In short: the wording of the request decides who conducts.** A request that says what to build
+("Add the ability for a member to borrow ...", "Members should be able to return ...") or asks
+for a plan went to the skills of the kit every time. A request phrased as an idea ("We'd like
+members to ... Let's build it."), the example the entry skill of Superpowers gives for
+`brainstorming`, went to `brainstorming` in most interactive sessions; it then conducted the
+whole feature, and the kit held only the code: its generators, its guard, its checks. Superpowers
+ranks the instructions of the project above its skills, and a section of `AGENTS.md` hands such
+a request back to the kit (tested below).
 
-### The session
+### The sessions
 
 A project of the kit on its own, a library that lends book copies:
 
@@ -252,55 +257,104 @@ npm install && npm run verify
 ```
 
 The coding agent was Claude Code (Opus 5.5) with the plugin of the kit installed (0.114.1) and
-Superpowers 7.0.2 loaded from a clone by `--plugin-dir`, never installed. Each session was one
-request in `claude -p`, started on the trunk, naming neither tool; the work of each was merged
-into the trunk before the next one.
+Superpowers 7.0.2 loaded from a clone by `--plugin-dir`, never installed; no request named either
+tool. Three kinds of runs:
 
-| Request | First skill | What followed | Result |
-|---|---|---|---|
-| borrow a copy, refused at three open loans; "nobody is here to answer questions, take the option you recommend" | `ddd-ts-kit:use-case` | `ddd-ts-kit worktree`, the generators, the terms in `CONTEXT.md`, each spec failing before its code | committed on its branch, three choices listed for the owner to confirm |
-| "Members should be able to return a book copy they borrowed." | `ddd-ts-kit:use-case` | the same | committed on its branch, three choices listed |
-| reserve a copy on loan, a fine for a late return: "Plan this work before anyone builds it." | `ddd-ts-kit:plan-slices` | `docs/architecture/slices.md`, two stories with their decisions D1 to D9, `ddd-ts-kit plan-waves` | a plan of nine slices, nothing committed, the decisions asked of the owner |
-| "the same copy was lent to two members, and both loans are open. Fix it." | `superpowers:systematic-debugging` | `ddd-ts-kit worktree`, a handler spec that reproduced the bug, `generate error`, the fix, `npm run verify` | committed on its branch |
+- **Four whole sessions in `claude -p`**, one request each, started on the trunk, the work of each
+  merged before the next.
+- **First turns**, interactive (the terminal interface of Claude Code, the folder trusted at its
+  prompt) and in `claude -p`, each in a fresh copy of the project, to see which skill takes the
+  request: the first is chosen before anything is read.
+- **One feature conducted by Superpowers to its end**, in `claude -p` resumed turn after turn
+  (`--resume`), the owner answering each question, with only the two plugins loaded.
 
-`brainstorming` was never invoked, not even for the second request, which says what without how,
-and with no word about who answers; nothing was written under `docs/superpowers/`. The plan of
-the third session also found a gap the first one left (a copy could be lent twice), which became
-the fourth request.
+**Which skill took the request.** In `claude -p` nobody answers, and Superpowers asks: there the
+kit took nearly everything, and the interactive column is the one to read.
+
+| Request | Interactive | `claude -p` |
+|---|---|---|
+| "Add the ability for a member to borrow a book copy: a loan is opened for a member and a copy, and it is refused when the member already holds three open loans." | `use-case`, 3 of 3 | `use-case`, 1 of 1 (whole session, the request adding that nobody answers) |
+| "Members should be able to return a book copy they borrowed." | `use-case`, 2 of 2 | `use-case`, 2 of 2 |
+| "We'd like members to be able to borrow book copies, with a cap on how many loans they can hold at once. Let's build it." | `brainstorming`, 4 of 5 | `brainstorming`, 1 of 8 |
+| a plan of the next features, "Plan this work before anyone builds it." | `discover-domain` 1, `plan-slices` 1 | `plan-slices`, 1 of 1 (whole session) |
+| "the same copy was lent to two members, and both loans are open. Fix it." | not run | `systematic-debugging`, 1 of 1 (whole session) |
+
+The other plugins of the machine were loaded in every run but the conversation below; loading
+only the two changed nothing in `claude -p` (three runs each way).
+
+**Four whole sessions in `claude -p`.** The two features went to `use-case`: `ddd-ts-kit worktree`,
+the generators, the terms in `CONTEXT.md`, each spec failing before its code, a commit on the
+branch, and the choices made alone listed for the owner (three each). The plan went to
+`plan-slices`: `docs/architecture/slices.md`, two stories with their decisions D1 to D9, checked
+by `ddd-ts-kit plan-waves`, nothing committed; it also found a gap the first feature left (a copy
+could be lent twice), which became the bug report. The bug report went to
+`systematic-debugging`, then `ddd-ts-kit worktree`, a handler spec that reproduced the bug,
+`generate error`, the fix and `npm run verify`.
+
+**A feature conducted by Superpowers.** The idea request, answered by the owner:
+
+1. `brainstorming` read the project, restated the request and asked why the cap; then, told the
+   reason and that returns belong to it, offered three ways (a `Borrower` aggregate holding its
+   open loans, recommended; one `Loan` per borrowing; two aggregates kept in step by events) and
+   asked which.
+2. Given the first, it opened `ddd-ts-kit worktree borrowing`, wrote a design doc under
+   `docs/superpowers/specs/` and, through `writing-plans`, a plan of three tasks under
+   `docs/superpowers/plans/`, committed both, and asked how to run it. The plan carried the rules
+   of the kit as its own: every file from `ddd-ts-kit generate`, only the `TODO(domain)` filled,
+   no `vi.mock`, `ddd-ts-kit check --changed-since main` at the end of each task.
+3. Told to run it, `executing-plans` and `test-driven-development` built it with the generators of
+   the kit, mapped its refusals to 409 in `platform-error-mapper.ts`, had the branch reviewed by a
+   subagent with the reviewer prompt of Superpowers, committed three times, and
+   asked whether to merge, push or keep the branch, the three options of
+   `finishing-a-development-branch`.
+
+The code passed every check of the kit (60 unit and integration specs, 12 end-to-end, `check`).
+What the method of the kit records was not written: no story, no `docs/architecture/slices.md`,
+no `D<n>` decisions, no `quality-gate` and no `architecture-reviewer`; `ddd-ts-kit status` still
+named the first step of the method.
 
 ### Who holds what
 
 | Moment | Superpowers says | The kit says | Who held it |
 |---|---|---|---|
-| a feature | `brainstorming` first: the human picks one approach, a design doc, then `writing-plans` | `use-case`: one vertical slice in one context, test first | the kit, in both sessions; the choices it made alone were listed for the owner, as `brainstorming` would have asked them first |
-| a plan | `writing-plans`: `docs/superpowers/plans/<date>-<feature>.md`, step by step with commands | `plan-slices`: `docs/architecture/slices.md`, stories with their `D<n>` decisions, checked by `plan-waves` | the kit |
-| a test | written first and seen failing; a mock only for a dependency that is slow or external, never an assertion on a mock | written first; fakes of the ports and builders, no `vi.mock`, `vi.fn` or `vi.spyOn` (`test/no-mocks`) | both say the same; no mock in four sessions, and the specs failed before the code |
-| a bug | `systematic-debugging`: the cause first, reproduced by a test | no skill of its own | Superpowers for the diagnosis, then the generators and the guard of the kit for the fix |
-| isolation | `using-git-worktrees`: `.worktrees/` at the root, checked as ignored | `ddd-ts-kit worktree <name>` under `.worktrees/`, which `init` ignores; the guard refuses code on the trunk | `ddd-ts-kit worktree`, in the three sessions that wrote code; the same folder, so no clash |
+| a feature | `brainstorming` first: the why, approaches the human picks, a design doc, then `writing-plans` | `use-case`: one vertical slice in one context, test first | the kit for a request that says what to build; Superpowers for an idea, in most interactive sessions |
+| a plan | `writing-plans`: `docs/superpowers/plans/<date>-<feature>.md`, step by step with commands | `plan-slices`: `docs/architecture/slices.md`, stories with their `D<n>` decisions, checked by `plan-waves` | the kit when a plan is asked; `writing-plans` when `brainstorming` led to it |
+| a test | written first and seen failing; a mock only for a dependency that is slow or external, never an assertion on a mock | written first; fakes of the ports and builders, no `vi.mock`, `vi.fn` or `vi.spyOn` (`test/no-mocks`) | both say the same; no mock in any session, the specs failed before the code |
+| a bug | `systematic-debugging`: the cause first, reproduced by a test | no skill of its own | Superpowers for the diagnosis, then the generators and the guard of the kit |
+| the review | `requesting-code-review`: a subagent with its reviewer prompt | `quality-gate`, the agent `architecture-reviewer` | whoever conducted the feature |
+| isolation | `using-git-worktrees`: `.worktrees/` at the root | `ddd-ts-kit worktree <name>` under `.worktrees/`; the guard refuses code on the trunk | `ddd-ts-kit worktree` in every session that wrote code, the one Superpowers conducted included |
 | session start | its hook injects `using-superpowers` | its hook injects the order of work of the kit | both, side by side |
 
-The permission refusals of these sessions came from the kit alone, all three on the same
+The permission refusals of the whole sessions came from the kit alone, all three on the same
 command: its `.claude/settings.json` asks before `generate --force`, and nobody answers in
 `claude -p`; the agent deleted the generated file, which nobody had changed, and generated it
-again. The other refusals were the checks of the kit doing their work: a glossary term the
-generator did not know, a plan row `plan-waves` found a worker could not follow as written.
+again. `using-git-worktrees` never ran.
 
-It is one session per request on one model. The column *Superpowers says* above is read from
-its skills, since `brainstorming`, `writing-plans` and `using-git-worktrees` never ran.
+### Who conducts: a section of AGENTS.md
 
-**Write it down anyway**, for other models and other wordings: a request that sounds like a new
-idea ("we could ...", "let's build ...") is where `brainstorming` would claim the session. A line
-in the `AGENTS.md` of the project, which Superpowers puts above its skills, says who holds what:
+When Superpowers conducts, the code is the kit's and the record of the method is not. To keep the
+kit conducting features, add a section to the `AGENTS.md` of the project (the `CLAUDE.md` that
+`init` writes imports it); Superpowers puts the instructions of the project above its skills:
 
 ```md
-Inside this project, the skills of ddd-ts-kit hold features (use-case), plans (plan-slices) and
-tests (testing). Superpowers holds debugging; `brainstorming` may come before a story whose need
-is unclear, and its design doc is then the statement of needs of the story.
+## With Superpowers
+
+Inside this project a feature starts with the skill `ddd-ts-kit:use-case`, even when it is asked
+as an idea, and a plan with `ddd-ts-kit:plan-slices`; the review before a merge is
+`ddd-ts-kit:quality-gate`. Superpowers holds debugging. Its `brainstorming` runs only when
+someone asks for it by name; its design doc is then the statement of needs of the story.
 ```
+
+With it, the idea request still opened `brainstorming` in all six interactive sessions (its hook
+asks for a skill before anything is read), but in each of the three followed to the end of the
+first turn the agent then read `AGENTS.md` and moved to `ddd-ts-kit:use-case`, which asked
+its questions. Without it, `brainstorming` kept the session (two of two). A team that prefers
+Superpowers to conduct can leave the section out and keep its design doc and plan beside the
+stories of the kit; the kit then checks the code, not the method.
 
 ### What clashed, in short
 
 | What | Where | Status |
 |---|---|---|
-| a refusal answers 422, and the agent found no way to answer 404 for a loan that does not exist | the kit | [#870](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/870): `platform-error-mapper.ts` maps a code to a status, and no skill says so |
-| two plans in two places | both | none written by Superpowers here; the line above names `docs/architecture/slices.md` |
+| a refusal answers 422, and an agent found no way to answer 404 for a loan that does not exist | the kit | [#870](https://github.com/ddd-ts-kit/ddd-ts-kit/issues/870): `platform-error-mapper.ts` maps a code to a status, and no skill says so; the session Superpowers conducted found the file |
+| two places for a plan, two reviewers | both | the section of `AGENTS.md` above |
