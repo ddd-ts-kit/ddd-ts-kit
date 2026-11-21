@@ -1,5 +1,5 @@
 [English](with-other-tools.md) · **Français**
-<!-- translation-of: with-other-tools.md sha256:85a957c2f4c901c8 -->
+<!-- translation-of: with-other-tools.md sha256:128c602a3ecac100 -->
 
 # Composer le kit avec d'autres outils
 
@@ -406,8 +406,8 @@ uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1
 specify init --here --force --non-interactive --integration claude
 ```
 
-`specify init` ajoute `.specify/` (modèles, scripts, la constitution) et neuf *skills* sous
-`.claude/skills/`, et ne touche ni `AGENTS.md`, ni `CLAUDE.md`, ni `.claude/settings.json`. Le
+`specify init` ajoute `.specify/` (modèles, scripts, la constitution) et ses *skills* sous
+`.claude/skills/`, neuf en tout, et ne touche ni `AGENTS.md`, ni `CLAUDE.md`, ni `.claude/settings.json`. Le
 premier commit a échoué : le *hook* de pre-commit du kit passe Biome sur le JSON indexé, et deux
 fichiers de `.specify/` ne sont pas mis en forme comme Biome le veut. Ils appartiennent à Spec Kit,
 ils ont donc été laissés hors de Biome : `"!**/.specify"` dans `files.includes` de `biome.json`, à
@@ -415,9 +415,10 @@ côté de `"!**/.claude"`.
 
 **En bref : Spec Kit a tourné sur les règles du kit, écrites dans ses propres documents.** La
 constitution les a recopiées depuis `AGENTS.md`, le plan et les tâches ont nommé les générateurs du
-kit, les tâches ont écrit `docs/architecture/slices.md` et demandé son *worktree*, et
+kit, les tâches ont prévu `docs/architecture/slices.md` et son *worktree*, que l'implémentation a
+écrit et ouvert, et
 l'implémentation s'est terminée par l'agent `architecture-reviewer` du kit. Trois *stories*, une
-branche, `npm run verify` vert ; rien n'a été écrit à la main de ce qu'écrit un générateur.
+branche, `npm run verify` vert ; aucun fichier n'a été créé à la main de ceux que crée un générateur.
 
 | Étape | Ce qu'elle a écrit | Ce qu'elle a pris au kit |
 |---|---|---|
@@ -437,13 +438,15 @@ ici ; le *worktree* du kit en a tenu lieu.
 npx bmad-method@6.12.4 install --yes --modules bmm --tools claude-code
 ```
 
-L'installeur ajoute `_bmad/` et 29 *skills* sous `.claude/skills/`, et les *skills* lancent leurs
+L'installeur ajoute `_bmad/` et ses *skills* sous `.claude/skills/`, 29 en tout, et les *skills* lancent leurs
 scripts par `uv run`. Le projet a toujours passé `npm run verify`, et le commit a passé les *hooks*
 du kit.
 
 **En bref : BMAD est passé par les deux processus.** Son aide a placé les étapes du kit parmi les
 siennes (la découverte du domaine et le glossaire avant son architecture, `ddd-ts-kit story-scope`
-pour le *worktree*), et sa construction d'une *story* a suivi tout le parcours de *story* du kit.
+pour le *worktree*), et sa construction d'une *story* a suivi l'essentiel du parcours de *story* du kit (la fiche de *story*,
+ses tranches, une revue de conception, l'acceptance verrouillée avant le code ; l'agent
+`story-verifier` n'a pas tourné).
 Le code est celui du kit ; les documents sont en double : deux glossaires, deux plans, deux
 spécifications de la *story*, tant que l'équipe ne dit pas lequel compte.
 
@@ -456,8 +459,9 @@ spécifications de la *story*, tant que l'équipe ne dit pas lequel compte.
 | les étapes de `bmad-create-epics-and-stories` et `bmad-sprint-planning` | `epics.md` (un *epic*, trois *stories*), `sprint-status.yaml` | rien |
 | `bmad-build` | a refusé de démarrer sur une planification non commitée, puis une branche de planification, `ddd-ts-kit story-scope 1-1-lend-a-copy-to-a-member`, cinq commits | le parcours de *story* du kit : sa fiche de *story* et ses tranches, une revue de conception par `architecture-reviewer`, l'acceptance verrouillée avant le code (par l'agent principal : un sous-agent ne peut pas la verrouiller), les générateurs, 409 associé dans `platform-error-mapper.ts` ; `npm run verify` : 57 *specs* unitaires et d'intégration, 16 de bout en bout et d'acceptance, aucun *mock* |
 
-La construction de cette seule *story* a coûté environ 19 USD et 26 minutes ; tout le parcours de
-Spec Kit, trois *stories*, environ 19 USD. Un lancement chacun, sur un seul modèle : un ordre de
+Tout le parcours BMAD, une *story* construite, a coûté environ 25 USD, dont 19 et 26 minutes pour
+la construction de cette *story* ; tout le parcours de Spec Kit, trois *stories*, environ 19 USD,
+dont 12 pour l'implémentation. Un lancement chacun, sur un seul modèle : un ordre de
 grandeur, pas un prix.
 
 **Dire lequel compte.** Une section d'`AGENTS.md`, pas essayée en session :
@@ -479,7 +483,7 @@ plan of the code, the epics of BMAD the plan of the product.
 | le besoin | `spec.md` | `SPEC.md` | `discover-domain`, les *stories* | l'outil ; BMAD a ajouté la découverte du kit |
 | le glossaire | un tableau de la spec | `glossary.md` | `CONTEXT.md`, que lisent les générateurs | le kit ; BMAD en a gardé un second |
 | l'architecture | `plan.md`, `research.md` | `ARCHITECTURE-SPINE.md` | l'arborescence et les règles, fixées ; des ADR pour le reste | l'outil pour les décisions que le kit laisse ouvertes |
-| le plan du travail | `tasks.md` | `epics.md`, `sprint-status.yaml` | `slices.md`, les *stories* | les deux : les tâches de Spec Kit ont écrit `slices.md` ; BMAD a gardé ses *epics* à côté de la *story* du kit |
+| le plan du travail | `tasks.md` | `epics.md`, `sprint-status.yaml` | `slices.md`, les *stories* | les deux : les tâches de Spec Kit ont prévu `slices.md`, que son implémentation a écrit ; BMAD a gardé ses *epics* à côté de la *story* du kit |
 | la branche | un *hook*, pas installé | une branche de planification | `ddd-ts-kit worktree`, `story-scope` | le kit |
 | le code | `/speckit-implement` | `bmad-build` et son sous-agent | les générateurs et la garde | le kit |
 | la relecture | aucune lancée | trois relecteurs à lui | `architecture-reviewer` | le kit pour Spec Kit ; les deux pour BMAD |
