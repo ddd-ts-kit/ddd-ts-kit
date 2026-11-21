@@ -34,7 +34,12 @@ describe('init in a package of a pnpm workspace', () => {
     expect(fs.existsSync(path.join(project, OWN_FILE))).toBe(false);
     expect(read(root, OWN_FILE)).toBe("packages:\n  - 'packages/*'\n");
     expect(notes).toContain(`pnpm reads its settings in ${root}/${OWN_FILE}, so no ${OWN_FILE} is written here`);
-    expect(notes).toContain('build the image from the root of the workspace');
+
+    expect(notes).toContain(
+      `copies pnpm-lock.yaml, which the workspace keeps at its root (${root}): the image builds from there, with \`docker build -f packages/api/Dockerfile .\``,
+    );
+
+    expect(notes).toContain('`pnpm install --frozen-lockfile --filter ./packages/api...`');
     expect(notes).toContain('Add to that file what the stack needs: `strictDepBuilds: false`');
     expect(notes).toContain("under `overrides:`, `qs: '^6.16.0'`");
     expect(notes).toContain("under `allowBuilds:`, `'@prisma/engines': true`");
