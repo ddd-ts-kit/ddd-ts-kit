@@ -242,7 +242,7 @@ const DEPENDENCY_RULES = [
 
 // The files a compiler, a linter or a test runner reads a suppression from: in Markdown or YAML the
 // same words are prose, a constitution or a decision record that names the rule they break.
-const SCRIPT_FILE = /\.[cm]?[jt]sx?$/;
+const SCRIPT_FILE = /\.(?:[cm]?[jt]sx?|vue|svelte|astro)$/;
 
 const ESCAPES = [
   [/ddd-ts-kit-disable/g, 'an architecture rule suppression'],

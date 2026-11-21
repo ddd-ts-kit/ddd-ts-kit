@@ -129,7 +129,9 @@ test('a document that names a suppression suppresses nothing, and is not put to 
   for (const file of ['docs/adr/0002-no-silent-suppression.md', '.specify/memory/constitution.md', 'notes.yml']) {
     assert.equal(run('pre-write', writing(file, prose)).output, undefined, file);
   }
-  assert.equal(decision(run('pre-write', writing('scripts/seed.mjs', '// eslint-disable-next-line\n'))), 'ask');
+  for (const file of ['scripts/seed.mjs', 'web/Card.vue']) {
+    assert.equal(decision(run('pre-write', writing(file, '// eslint-disable-next-line\n'))), 'ask', file);
+  }
 });
 
 test('a MultiEdit that adds a suppression in one of its edits is put to the project owner', () => {
