@@ -119,7 +119,7 @@ second class. Never `new` an error of `domain/errors/` (`errors/through-factory`
 private: add `.exposing('<fact>')` only for what a client may read, never for what
 identifies a person. Declare the code in `errors` of the route by its list member
 (`SchedulingCodes.SlotTaken`, `KitCodes.Forbidden` of `@ddd-ts-kit/kernel`), not a string
-(`errors/known-code`). It answers 422; an entry of `src/platform/composition/platform-error-mapper.ts`
+(`errors/known-code`). A refusal answers 422; an entry of `src/platform/composition/platform-error-mapper.ts`
 gives its code another status wherever it is refused: `createErrorMapper({ [SchedulingCodes.UnknownCalendar]: 404 })`. Under
 `stack.refusals: factories`, read [factories.md](factories.md) first: a refusal is a factory of
 the error class of its concept.
