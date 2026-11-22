@@ -1,5 +1,5 @@
 [English](presentation-layer.md) · **Français**
-<!-- translation-of: presentation-layer.md sha256:3f59e2f299134cb6 -->
+<!-- translation-of: presentation-layer.md sha256:e8a995dd51e4108e -->
 
 # La couche présentation : contrôleurs, groupes de routes, gardes
 
@@ -194,6 +194,9 @@ du groupe) et les deux codes du contrôleur.
 Un refus à n'importe quelle étape (un problème de validation, une garde, une permission, une
 erreur du domaine du cas d'usage) est transformé en document *problem* (RFC 9457) par le *mapper*
 d'erreurs, avec son code d'erreur ; le contrat de la route liste les codes qu'elle peut renvoyer.
+Un refus du domaine répond 422, sauf si `src/platform/composition/platform-error-mapper.ts` associe
+son code à un autre statut (`createErrorMapper({ [SchedulingCodes.UnknownCalendar]: 404 })`) : une
+entrée par code, lue par l'application comme par les *specs* des routes.
 
 ## Comment le compilateur tient `handle` à la déclaration
 

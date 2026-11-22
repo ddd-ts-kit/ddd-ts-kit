@@ -187,7 +187,10 @@ the path of the controller. Its contract lists `UNAUTHORIZED` (from `Authenticat
 
 A refusal at any step (a validation issue, a guard, a permission, a domain error of the use case)
 is turned into a problem document (RFC 9457) by the error mapper, with its error code; the
-contract of the route lists the codes it may answer.
+contract of the route lists the codes it may answer. A refusal of the domain answers 422 unless
+`src/platform/composition/platform-error-mapper.ts` maps its code to another status
+(`createErrorMapper({ [SchedulingCodes.UnknownCalendar]: 404 })`): one entry per code, read by
+the application and by the route specs alike.
 
 ## How the compiler holds `handle` to the declaration
 

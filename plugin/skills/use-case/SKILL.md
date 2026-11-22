@@ -96,9 +96,7 @@ root of the context, route groups and world in `shared/`. A use case that needs 
 belongs to the one that decides.
 
 A handler whose constructor grows long is a smell, not a limit: walk the table of
-`docs/guides/many-dependencies.md` (a middleware, an event handler, a projection, a process
-manager, one port named in the language, a domain service, or two use cases) before adding a
-dependency.
+`docs/guides/many-dependencies.md` before adding a dependency.
 
 Decide who holds the permission before you generate: in a project whose rights are roles
 (`stack.authz` `rbac`), `--grant <role>` writes the grant in `platform/auth/roles/roles.ts` and adds
@@ -121,7 +119,8 @@ second class. Never `new` an error of `domain/errors/` (`errors/through-factory`
 private: add `.exposing('<fact>')` only for what a client may read, never for what
 identifies a person. Declare the code in `errors` of the route by its list member
 (`SchedulingCodes.SlotTaken`, `KitCodes.Forbidden` of `@ddd-ts-kit/kernel`), not a string
-(`errors/known-code`). Under
+(`errors/known-code`). A refusal answers 422; an entry of `src/platform/composition/platform-error-mapper.ts`
+gives its code another status wherever it is refused: `createErrorMapper({ [SchedulingCodes.UnknownCalendar]: 404 })`. Under
 `stack.refusals: factories`, read [factories.md](factories.md) first: a refusal is a factory of
 the error class of its concept.
 
