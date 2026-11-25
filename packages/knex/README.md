@@ -701,7 +701,8 @@ maxTenants: 20 })` opens one knex (one bounded pool) per tenant on first use. At
 accept more than `maxTenants * pool.max` connections per instance of the application. Work holds
 the instance of its tenant by a lease (`databases.lease(tenantId, (knex) => ...)`): an instance is
 closed only when no work holds it, the least recently used first, and work for another tenant
-waits for a place instead of opening beyond the bound. `createTenantRoutedUnitOfWork(databases,
+waits for a place instead of opening beyond the bound. An idle instance that cannot be closed
+gives its place all the same, and `onCloseFailure(error, tenantId)` is told. `createTenantRoutedUnitOfWork(databases,
 scope)` is the unit of work and `KnexContext`: each transaction holds a lease on the database of
 the tenant of the work until it ends; every statement runs inside it
 (`StatementOutsideUnitOfWorkError` otherwise, so queries go through the unit of work too), work

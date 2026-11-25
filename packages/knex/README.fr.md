@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:3de95e02fb2c675e -->
+<!-- translation-of: README.md sha256:a7b66cc2e72f7147 -->
 
 # @ddd-ts-kit/knex
 
@@ -732,7 +732,8 @@ que le serveur n'a jamais à accepter plus de `maxTenants * pool.max` connexions
 l'application. Un travail tient l'instance de son *tenant* par un bail
 (`databases.lease(tenantId, (knex) => ...)`) : une instance n'est fermée que lorsqu'aucun travail
 ne la tient, la moins récemment utilisée d'abord, et un travail pour un autre *tenant* attend une
-place au lieu d'ouvrir au-delà de la borne. `createTenantRoutedUnitOfWork(databases, scope)` est
+place au lieu d'ouvrir au-delà de la borne. Une instance inactive qui ne peut pas être fermée
+cède sa place malgré tout, et `onCloseFailure(error, tenantId)` en est averti. `createTenantRoutedUnitOfWork(databases, scope)` est
 l'unité de travail et le `KnexContext` : chaque transaction tient un bail sur la base du *tenant*
 du travail jusqu'à sa fin ; chaque instruction s'exécute à l'intérieur
 (`StatementOutsideUnitOfWorkError` sinon, donc les requêtes passent elles aussi par l'unité de
