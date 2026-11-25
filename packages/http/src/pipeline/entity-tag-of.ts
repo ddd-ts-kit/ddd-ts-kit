@@ -1,21 +1,22 @@
 import type { EntityTagSource } from '../cache/entity-tag-source';
 import { ResponseContractError } from '../error/response-contract-error';
 import { valuesAt } from '../support/values-at';
-import type { RouteResponse } from './route-response';
-import { serializeBody } from './serialize-body';
+import type { Payload } from './payload';
+import { wholeOf } from './whole-of';
 
 /**
  * The `ETag` of an answer: strong, the SHA-256 of the bytes sent, for `representation`; weak,
  * the version the value answered carries, for `{ version }`, the same in every representation.
- * A value without that version is an answer its declaration does not allow.
+ * A value without that version is an answer its declaration does not allow. A stream, a file or a
+ * list read as it comes, has no strong one: its bytes are not known when its headers go.
  */
 export async function entityTagOf(
   source: EntityTagSource,
-  response: RouteResponse,
-  value: unknown = response.body,
-): Promise<string> {
+  payload: Payload,
+  value: unknown,
+): Promise<string | undefined> {
   if (source === 'representation') {
-    return `"${await digestOf(serializeBody(response) ?? '')}"`;
+    return payload.kind === 'stream' ? undefined : `"${await digestOf(wholeOf(payload) ?? '')}"`;
   }
 
   const [version] = valuesAt(value, source.version);

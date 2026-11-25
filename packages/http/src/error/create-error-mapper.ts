@@ -1,6 +1,7 @@
 import { DEFAULT_ERROR_MAPPING } from './default-error-mapping';
 import type { ErrorMapper } from './error-mapper';
 import type { ErrorMapping } from './error-mapping';
+import { mappedStatus } from './mapped-status';
 
 export interface ErrorMapperOptions {
   /** Status of a `DomainError` whose code is not mapped. Defaults to 422. */
@@ -17,7 +18,7 @@ export function createErrorMapper(overrides: ErrorMapping = {}, options: ErrorMa
 
   return {
     mapping,
-    statusOf: (code) => mapping[code] ?? fallbackStatus,
+    statusOf: (code) => mappedStatus(mapping, code) ?? fallbackStatus,
     typeOf,
   };
 }

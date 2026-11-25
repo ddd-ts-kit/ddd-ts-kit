@@ -1,7 +1,6 @@
 import { ASTUtils, AST_NODE_TYPES, TSESLint, type TSESTree } from '@typescript-eslint/utils';
+import { GLOBAL_OBJECTS } from '../purity/reference/global-objects';
 import { propertyName } from './property-name';
-
-const GLOBAL_OBJECTS = new Set(['globalThis', 'window', 'self', 'global']);
 
 /** How many `const` aliases are followed back to what they name: `const a = Date; const b = a;`. */
 const ALIAS_DEPTH = 4;
@@ -26,7 +25,10 @@ function nameOf(sourceCode: Readonly<TSESLint.SourceCode>, node: TSESTree.Node, 
     return undefined;
   }
 
-  if (!GLOBAL_OBJECTS.has(node.object.name) || identifierName(sourceCode, node.object, depth) !== node.object.name) {
+  if (
+    !GLOBAL_OBJECTS.includes(node.object.name) ||
+    identifierName(sourceCode, node.object, depth) !== node.object.name
+  ) {
     return undefined;
   }
 

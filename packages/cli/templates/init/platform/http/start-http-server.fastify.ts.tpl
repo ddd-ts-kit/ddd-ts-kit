@@ -40,7 +40,7 @@ export async function startHttpServer(served: Served, config: AppConfig): Promis
   const app = Fastify({ trustProxy: trustedProxies(config.trustProxy) });
 
   // Before any route: a body Fastify refuses and a failed hook are answered as problems, not with their message.
-  app.setErrorHandler(problemErrorHandler({ logger: served.logger }));
+  app.setErrorHandler(problemErrorHandler({ logger: served.logger, errorMapper: served.boundary.errorMapper }));
   // A path no route serves is answered 404 as a problem, not as `{ message, error, statusCode }`.
   app.setNotFoundHandler(problemNotFoundHandler({ logger: served.logger }));
 
