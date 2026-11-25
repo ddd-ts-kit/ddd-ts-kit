@@ -1,3 +1,4 @@
+import { safely } from '@ddd-ts-kit/kernel';
 import type { KafkaEventBusOptions } from './kafka-event-bus-options';
 import type { ReconnectOptions } from './reconnect-options';
 import type { RetryOptions } from './retry-options';
@@ -19,8 +20,9 @@ export function settingsOf(options: KafkaEventBusOptions): Settings {
     maxHandlingMs: options.maxHandlingMs ?? 300_000,
     retry: retryOf(options.retry),
     reconnect: reconnectOf(options.reconnect),
-    onFailure: guarded(options.onFailure),
-    onDelivery: guarded(options.onDelivery),
+    // A hook that throws must not leave a record uncommitted or stop a consumer.
+    onFailure: (failure) => safely(() => options.onFailure?.(failure)),
+    onDelivery: (delivery) => safely(() => options.onDelivery?.(delivery)),
   };
 }
 
@@ -41,16 +43,5 @@ function reconnectOf(reconnect: ReconnectOptions = {}): Required<ReconnectOption
     initialMs: reconnect.initialMs ?? 200,
     factor: reconnect.factor ?? 2,
     maxMs: reconnect.maxMs ?? 30_000,
-  };
-}
-
-// A hook that throws must not leave a record uncommitted or stop a consumer.
-function guarded<T>(hook: ((value: T) => void) | undefined): (value: T) => void {
-  return (value) => {
-    try {
-      hook?.(value);
-    } catch {
-      return;
-    }
   };
 }

@@ -1,8 +1,7 @@
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { jobsDeclared } from '../scheduling/jobs-declared';
-import { perFile } from '../support/per-file';
 import { callArguments } from '../text/call-arguments';
 import type { ListPart } from '../text/list-part';
 
@@ -12,17 +11,21 @@ const TENANCY_LITERAL = /^tenancy\s*:\s*(['"`])(?:global|per-tenant)\1$/;
 const FIX =
   "Say it in the options of the job: `tenancy: 'per-tenant'` to run it once per tenant of the TenantDirectory, each run in the execution scope of that tenant (the default for a job that reads or writes tenant data), or `tenancy: 'global'` for work across tenants, which runs in no tenant and so reaches no tenant-scoped repository.";
 
-export const schedulingTenancyDeclared: Rule = {
+export const schedulingTenancyDeclared: FileRule = {
   id: 'scheduling/tenancy-declared',
   description:
     'In a multi-tenant project ("stack.tenancy" other than "none"), a job states whether it runs per tenant or globally: `tenancy: \'per-tenant\'` or `tenancy: \'global\'` in the options of `@Scheduled(..)` and of `builder.job(..)`.',
+  severity: 'error',
+  doc: {
+    why: "Under tenancy, a job that declares no `tenancy` runs globally: one run per occurrence, in no tenant, as a system actor that names none. The tenant-scoped repository the handler reads refuses it at run time (`NoCurrentTenantError`), and the specs that use fakes never see it. The job says which it is: `tenancy: 'per-tenant'` runs it once per tenant of the `TenantDirectory`, each run in the execution scope of that tenant, so it reads one tenant at a time and one failing tenant does not stop the others; `tenancy: 'global'` is work across tenants, chosen on purpose. Judged on the options of every `@Scheduled(..)` and `builder.job(..)` outside the tests, in a project whose `stack.tenancy` is not `none`. What it cannot read is reported, never taken as safe: options that are not an object literal, a spread or a computed key in them, a `tenancy` that is not the literal `'per-tenant'` or `'global'`. An error from the first day.",
+    bad: `@Scheduled('billing.send-reminders', { every: '15m' })
+export class SendRemindersJob implements ScheduledJob {}`,
+    good: `@Scheduled('billing.send-reminders', { every: '15m', tenancy: 'per-tenant' })
+export class SendRemindersJob implements ScheduledJob {}`,
+  },
   scope: 'file',
-  run(project) {
-    if (project.config.stack.tenancy === 'none') {
-      return [];
-    }
-
-    return perFile(project, this.id, (file) => (file.isTest ? [] : undeclared(file)));
+  judge(file, project) {
+    return project.config.stack.tenancy === 'none' || file.isTest ? [] : undeclared(file);
   },
 };
 

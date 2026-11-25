@@ -17,8 +17,7 @@ import {
 import { declaredModules } from '../../model-modules';
 import type { Flaw } from '../model/flaw';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
-import { sourceAt } from '../project/source-at';
+import type { ProjectRule } from '../model/rule';
 import { isDeclaredStyle } from '../support/is-declared-style';
 import { reporter } from '../support/reporter';
 import { ownEntry } from '../../config/values/own-entry';
@@ -31,12 +30,39 @@ interface Judged {
   readonly flaw: Flaw | undefined;
 }
 
-export const declarationsBarrelCurrent: Rule = {
+export const declarationsBarrelCurrent: ProjectRule = {
   id: 'declarations/barrel-current',
   description:
     'In the declared style, the generated files of a context are what its tree says: with a barrel, the <layer>.declarations.ts of each layer lists exactly its role files and registers the dependency list read from each constructor, and <context>.declarations.ts re-exports those files; under discovery <context>.dependencies.ts registers the lists alone.',
+  severity: 'error',
+  doc: {
+    why: 'With stack.assembly set to barrel, the composition root assembles a context from <context>.declarations.ts and from nothing else. That file only re-exports the generated <layer>.declarations.ts of each layer of the context that holds a role file (application/application.declarations.ts, infrastructure/infrastructure.declarations.ts, presentation/presentation.declarations.ts), in each module of its model. A role file added by hand and missing from the declarations of its layer compiles, passes its unit tests and is never registered. The same file registers what each constructor of its layer is injected, read from its signature: a constructor changed without regenerating would be given the dependencies of the old one. Each file is derived from the tree, one export per role file sorted by path then one injected(Class, [Tokens]) per class that takes something, so it is compared with what the tree says, and the message names the class whose list is stale; the declarations of a layer that holds no role file any more are reported until they are deleted. A context still declared as an earlier version wrote it, the single <context>.declarations.ts of 0.84 or one <folder>.declarations.ts per role folder as 0.85 and 0.86 wrote them (application/commands/commands.declarations.ts), is reported once, at its summary, and ddd-ts-kit docs moves it to the files of its layers. With stack.assembly set to discovery the role files are found at startup, <context>.dependencies.ts holds the lists alone and is compared the same way, and generated declarations left behind are reported.',
+    bad: `// application/application.declarations.ts, while IssueInvoiceHandler now also takes a Clock
+export * from '@/contexts/billing/application/commands/issue-invoice/issue-invoice.command';
+export * from '@/contexts/billing/application/commands/issue-invoice/issue-invoice.handler';
+
+injected(IssueInvoiceHandler, [InvoiceRepository]);
+
+// application/application.declarations.ts, while application/authorization/only-issuer-voids.policy.ts exists
+export * from '@/contexts/billing/application/commands/issue-invoice/issue-invoice.handler';`,
+    good: `// application/application.declarations.ts, rewritten by \`ddd-ts-kit generate\`, \`ddd-ts-kit docs\` and \`npm run dev\`
+import { injected } from '@ddd-ts-kit/kernel/declarations';
+import { Clock } from '@ddd-ts-kit/kernel';
+import { IssueInvoiceHandler } from '@/contexts/billing/application/commands/issue-invoice/issue-invoice.handler';
+import { InvoiceRepository } from '@/contexts/billing/domain/repositories/invoice.repository';
+
+export * from '@/contexts/billing/application/authorization/only-issuer-voids.policy';
+export * from '@/contexts/billing/application/commands/issue-invoice/issue-invoice.command';
+export * from '@/contexts/billing/application/commands/issue-invoice/issue-invoice.handler';
+
+injected(IssueInvoiceHandler, [InvoiceRepository, Clock]);
+
+// billing.declarations.ts, the summary the composition root imports
+export * from '@/contexts/billing/application/application.declarations';
+export * from '@/contexts/billing/infrastructure/infrastructure.declarations';`,
+  },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!isDeclaredStyle(project)) {
       return [];
     }
@@ -55,7 +81,7 @@ function judge(project: Project, context: string): Judged[] {
   const entries = entriesOf(project, context);
   const modules = declaredModules(project.config, context);
   const specifierOfFile = (file: string): string => specifierOf(project.config, file);
-  const sources = (file: string) => sourceAt(project, file);
+  const sources = (file: string) => project.sourceAt(file);
 
   if (project.config.stack.assembly === 'discovery') {
     const injected = renderInjections(contextInjections(sources, { directory, entries, modules }), specifierOfFile);

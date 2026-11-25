@@ -6,11 +6,12 @@ import {
   type OnDecision,
   type UseCaseDeclaration,
 } from '@ddd-ts-kit/auth';
-import type { BusMiddleware } from '@ddd-ts-kit/kernel';
+import type { BusMiddleware, ExecutionScope } from '@ddd-ts-kit/kernel';
 
 /**
  * The guard both buses ask before any handler. The buses exist before the contexts are wired,
- * so the declarations arrive afterwards; until then every message is refused.
+ * so the declarations arrive afterwards; until then every message is refused. The scope tells
+ * the authorizer the tenant the work runs in.
  */
 export class UseCaseProtection {
   private declared: BusMiddleware | undefined;
@@ -18,6 +19,7 @@ export class UseCaseProtection {
   constructor(
     private readonly authorizer: Authorizer,
     private readonly onDecision: OnDecision,
+    private readonly scope: ExecutionScope,
   ) {}
 
   readonly guard: BusMiddleware = (message, next, info) => {
@@ -33,6 +35,7 @@ export class UseCaseProtection {
       authorizer: this.authorizer,
       map: new AuthorizationMap(useCases),
       onDecision: this.onDecision,
+      scope: this.scope,
     });
   }
 }

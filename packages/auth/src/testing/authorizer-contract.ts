@@ -5,6 +5,7 @@ import type { Authorizer } from '../authorization/authorizer';
 import type { CheckRequest } from '../authorization/check-request';
 import type { Decision } from '../authorization/decision';
 import type { Permission } from '../permissions/permission';
+import { TenantBoundAuthorizer } from '../tenancy/tenant-bound-authorizer';
 
 export interface AuthorizerFixture {
   readonly authorizer: Authorizer;
@@ -34,12 +35,16 @@ const NEVER_GRANTED: Permission = {
 
 const REASON_CODE = /^[A-Za-z][A-Za-z0-9_.:-]*$/;
 
+/** A tenant no fixture gives its actors. */
+const TENANT_OF_NOBODY = 'contract-tenant-of-nobody';
+
 class AuthorizerSuite extends ContractSuite<AuthorizerFixture> {
   protected tests(): void {
     this.allowsWhatWasGranted();
     this.refusesWithAStableReason();
     this.deniesByDefault();
     this.listsWhatItAllows();
+    this.staysInTheTenantsOfTheActor();
     this.explainsWhatItDecides();
   }
 
@@ -118,6 +123,41 @@ class AuthorizerSuite extends ContractSuite<AuthorizerFixture> {
 
       this.expect(allowed === undefined || covers(allowed, granted.resource?.id) !== 'no').toBe(true);
       this.expect(denied === undefined || covers(denied, refused.resource?.id) !== 'yes').toBe(true);
+    });
+  }
+
+  private staysInTheTenantsOfTheActor(): void {
+    this.it('bound to the tenants of the actor, refuses in the tenant of somebody else what it allows', async () => {
+      const { authorizer, granted } = this.subject;
+      const bound = new TenantBoundAuthorizer({ model: authorizer });
+
+      const elsewhere = (tenantId: unknown): CheckRequest => ({
+        ...granted,
+        context: { ...granted.context, tenantId },
+      });
+
+      this.expect(await bound.check(granted)).toEqual({ allowed: true });
+
+      for (const tenantId of [TENANT_OF_NOBODY, [TENANT_OF_NOBODY], '*']) {
+        this.expect((await bound.check(elsewhere(tenantId))).allowed).toBe(false);
+      }
+    });
+
+    this.it('bound to the tenants of the actor, never lists everything', async () => {
+      const { authorizer, granted } = this.subject;
+      const resourceType = granted.resource?.type;
+
+      if (authorizer.listAccessible === undefined || resourceType === undefined) {
+        return;
+      }
+
+      const bound = new TenantBoundAuthorizer({ model: authorizer });
+      const { actor, permission } = granted;
+      const inItsTenant = await bound.listAccessible({ actor, permission, resourceType });
+      const elsewhere = await bound.listAccessible({ actor, permission, resourceType, workTenantId: TENANT_OF_NOBODY });
+
+      this.expect(inItsTenant.kind === 'all').toBe(false);
+      this.expect(elsewhere).toEqual({ kind: 'none' });
     });
   }
 

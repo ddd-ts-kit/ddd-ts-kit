@@ -76,22 +76,13 @@ describe('OutboxRelay.tick when the provider refuses an event', () => {
     expect(publisher.delivered).toEqual(['evt-1']);
   });
 
-  it('stores the code of the one handler that failed when the in-memory bus delivers failures as thrown', async () => {
-    const { store, relay } = relayToInMemoryBus(new InMemoryEventBus({ failures: 'as-thrown' }));
-
-    await store.append([event('evt-1')]);
-
-    expect(await relay.tick()).toEqual({ published: 0, failed: 1 });
-    expect(store.records()[0]?.lastErrorCode).toBe('CONCURRENCY_CONFLICT');
-  });
-
-  it('stores AggregateError for the one handler that failed on the in-memory bus by default', async () => {
+  it('stores the code of the one handler that failed on the in-memory bus', async () => {
     const { store, relay } = relayToInMemoryBus(new InMemoryEventBus());
 
     await store.append([event('evt-1')]);
 
     expect(await relay.tick()).toEqual({ published: 0, failed: 1 });
-    expect(store.records()[0]?.lastErrorCode).toBe('AggregateError');
+    expect(store.records()[0]?.lastErrorCode).toBe('CONCURRENCY_CONFLICT');
   });
 
   it('stores and reports a code, never the message of the caught error', async () => {

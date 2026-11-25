@@ -80,6 +80,14 @@ describe('ConceptError', () => {
     expect(BookingError.reasonRequired().cause).toBeUndefined();
   });
 
+  it('lists its code alone among its keys: its name, its facts and what it exposes stay out of a spread or a log', () => {
+    const refusal = BookingError.storeUnreachable(new Error('down'));
+
+    expect(Object.keys(refusal)).toEqual(['code']);
+    expect({ ...refusal }).toEqual({ code: refusal.code });
+    expect(refusal.name).toBe('BookingError');
+  });
+
   it('derives the closed vocabulary of a class from its factories', () => {
     expectTypeOf<CodeOf<typeof BookingError>>().toEqualTypeOf<
       'SLOT_TAKEN' | 'BOOKING_TOO_LATE' | 'REASON_REQUIRED' | 'STORE_UNREACHABLE'

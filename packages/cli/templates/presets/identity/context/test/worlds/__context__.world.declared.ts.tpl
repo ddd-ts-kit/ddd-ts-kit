@@ -49,7 +49,6 @@ export function arrangeIdentity() {
   };
 
   const application = createTestApplication({
-    eventBusFailures: 'as-thrown',
     modules: [platformTestModule, contextModule('{{context.kebab}}', {{context.camel}}Declarations), people],
     fakes: [
       fake(AccountRepository, ports.accounts),

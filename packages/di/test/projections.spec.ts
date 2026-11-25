@@ -130,12 +130,10 @@ describe('a declared projection, in an application that binds no Metrics', () =>
       (error: unknown) => error,
     );
 
-    expect(failure instanceof AggregateError ? failure.errors : []).toMatchObject([
-      {
-        code: 'INCOMPLETE_BINDING',
-        message: 'Projection Object declares that "orderPlaced" applies an event, and has no such method.',
-      },
-    ]);
+    expect(failure).toMatchObject({
+      code: 'INCOMPLETE_BINDING',
+      message: 'Projection Object declares that "orderPlaced" applies an event, and has no such method.',
+    });
   });
 });
 
@@ -198,7 +196,7 @@ describe('a declared projection, with a unit of work and a processed-event store
 
     await app.start();
     rows.failing = true;
-    await expect(app.resolve(EventBus).publish([placed('evt-1', 1)])).rejects.toThrow('1 event handler(s) failed');
+    await expect(app.resolve(EventBus).publish([placed('evt-1', 1)])).rejects.toThrow('the table is locked');
     rows.failing = false;
     await app.resolve(EventBus).publish([placed('evt-1', 1)]);
 
@@ -227,7 +225,7 @@ describe('a declared projection, seen from outside', () => {
     await app.start();
     await app.resolve(EventBus).publish([placed('evt-2', 2), placed('evt-1', 1)]);
     rows.failing = true;
-    await expect(app.resolve(EventBus).publish([placed('evt-3', 3)])).rejects.toThrow(AggregateError);
+    await expect(app.resolve(EventBus).publish([placed('evt-3', 3)])).rejects.toThrow('the table is locked');
 
     expect(metrics.counterValue('projection_events_total', { ...labels, result: 'applied' })).toBe(1);
     expect(metrics.counterValue('projection_events_total', { ...labels, result: 'stale' })).toBe(1);

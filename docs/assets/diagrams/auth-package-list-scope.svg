@@ -45,7 +45,7 @@
   <text x="363" y="468" font-size="13" fill="#1f2328" text-anchor="middle">no query: an empty page</text>
   <rect x="488" y="406" width="214" height="74" rx="10" fill="#f1ebf5" stroke="#7a4f9a" stroke-width="2"/>
   <text x="595" y="428" font-size="14" font-weight="700" fill="#7a4f9a" text-anchor="middle">{ kind: 'filter' }</text>
-  <text x="595" y="448" font-size="13" fill="#5f6b73" text-anchor="middle">RBAC with the tenant check</text>
+  <text x="595" y="448" font-size="13" fill="#5f6b73" text-anchor="middle">a model bound to tenants</text>
   <text x="595" y="468" font-size="13" fill="#1f2328" text-anchor="middle">WHERE tenant_id = ...</text>
   <rect x="720" y="406" width="214" height="74" rx="10" fill="#f1ebf5" stroke="#7a4f9a" stroke-width="2"/>
   <text x="827" y="428" font-size="14" font-weight="700" fill="#7a4f9a" text-anchor="middle">{ kind: 'ids' }</text>

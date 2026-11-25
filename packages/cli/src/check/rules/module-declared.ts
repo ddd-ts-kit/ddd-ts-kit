@@ -3,18 +3,31 @@ import { moduleNameFlaw } from '../../model-modules';
 import { Glossaries } from '../language/glossaries';
 import { unknownWords } from '../language/unknown-words';
 import type { Report } from '../model/report';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { Violation } from '../model/violation';
 import { MODULES_HEADING, modulesSection } from '../modules/modules-section';
 import { lineOfSequence } from '../support/line-of-sequence';
 import { reporter } from '../support/reporter';
 
-export const moduleDeclared: Rule = {
+export const moduleDeclared: ProjectRule = {
   id: 'module/declared',
   description:
     'Every module of the model a context declares in contexts.<name>.modules is named with terms of the ubiquitous language of the context, never with a technical word (common, core, utils...; `shared`, the folder of what belongs to no module, is refused by config/valid), and has its row, with its purpose, in the "## Modules" table of the CONTEXT.md of the context.',
+  severity: 'error',
+  doc: {
+    why: 'A module of the model divides one bounded context, one language, one schema and one consistency, into parts a reader opens separately. Evans: "Choose modules that tell the story of the system and contain a cohesive set of concepts. Give the modules names that become part of the ubiquitous language." A module named after a technical grouping (common, core, utils) tells no story and becomes the place where everything else goes; `shared` is no module either, it is the folder of what belongs to none, and config/valid refuses it as a name. The row of the "## Modules" table of CONTEXT.md says what each holds, so that a person or an agent picks the right one before opening a file. A part that needs its own glossary, its own schema or its own published language is not a module: it is another context.',
+    bad: `"scheduling": { "modules": { "common": {}, "calendar-stuff": {} } }
+// CONTEXT.md has no "## Modules" section`,
+    good: `"scheduling": { "modules": { "calendars": { "classification": "supporting" }, "waitlist": {} } }
+// CONTEXT.md
+## Modules
+| Module | Purpose |
+|---|---|
+| \`calendars\` | The calendars, their opening hours, exceptions and time off. |
+| \`waitlist\` | The waitlist of a calendar and the offers made to waiters. |`,
+  },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const report = reporter(project, this.id);
     const glossaries = new Glossaries(project.root, project.config.contextsDir);
 

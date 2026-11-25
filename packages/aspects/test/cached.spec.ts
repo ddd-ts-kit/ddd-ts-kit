@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { FixedClock, FixedExecutionScope, InMemoryCache, type Cache } from '@ddd-ts-kit/kernel';
+import {
+  FixedClock,
+  FixedExecutionScope,
+  InMemoryCache,
+  InMemoryMetrics,
+  cacheKey,
+  type Cache,
+} from '@ddd-ts-kit/kernel';
 import {
   AspectNotAllowedError,
   cached,
@@ -66,6 +73,55 @@ describe('cached', () => {
       'id b',
       'name a',
     ]);
+  });
+
+  it('keeps apart two adapters of one class name bound in two contexts', async () => {
+    const { cache } = createCache();
+    const byId = cached({ key: byFirstArgument, ttlMs: 1000, cache });
+
+    class HttpGateway {
+      constructor(private readonly base: string) {}
+
+      async find(id: string): Promise<string> {
+        return `${this.base}/${id}`;
+      }
+    }
+
+    const billing = byId(new HttpGateway('https://billing'), { context: 'billing', token: 'CustomerGateway' });
+    const catalog = byId(new HttpGateway('https://catalog'), { context: 'catalog', token: 'CustomerGateway' });
+
+    expect([await billing.find('42'), await catalog.find('42')]).toEqual(['https://billing/42', 'https://catalog/42']);
+  });
+
+  it('keeps apart two instances of one class bound under two ports of one context', async () => {
+    const { cache } = createCache();
+    const byId = cached({ key: byFirstArgument, ttlMs: 1000, cache });
+
+    class HttpGateway {
+      constructor(private readonly base: string) {}
+
+      async find(id: string): Promise<string> {
+        return `${this.base}/${id}`;
+      }
+    }
+
+    const customers = byId(new HttpGateway('https://customers'), { context: 'billing', token: 'CustomerGateway' });
+    const invoices = byId(new HttpGateway('https://invoices'), { context: 'billing', token: 'InvoiceGateway' });
+
+    expect([await customers.find('42'), await invoices.find('42')]).toEqual([
+      'https://customers/42',
+      'https://invoices/42',
+    ]);
+  });
+
+  it('files the entry under the context and the port, then the method and the key of the call', async () => {
+    const { cache } = createCache();
+    const bound = { context: 'pricing', token: 'Quotes' };
+    const gateway = cached({ key: byFirstArgument, ttlMs: 1000, cache })(new QuoteGateway(), bound);
+
+    await gateway.quote('EUR-USD');
+
+    expect(await cache.get(cacheKey<unknown>('aspect', 'pricing', 'Quotes', 'quote', 'EUR-USD'))).toBeDefined();
   });
 
   it('does not cache a call whose key is undefined', async () => {
@@ -138,6 +194,24 @@ describe('cached, where it is allowed and what it falls back on', () => {
     expect(() => aspect(new QuoteGateway())).not.toThrow();
   });
 
+  it('refuses, by the name of the method, an object that has neither a port nor a class name', () => {
+    const aspect = cached({ key: byFirstArgument, ttlMs: 1000 });
+    const prices = { find: async (id: string): Promise<string> => `prices of ${id}` };
+
+    const unnamed = new (class {
+      async find(): Promise<void> {}
+    })();
+
+    const refusal =
+      'cached refuses to wrap find of an object that has neither a port nor a class name: its entries would be those of every other such object. Bind it under a port and wrap it with aspects(...), or name it as the second argument: { token } or { className }.';
+
+    expect(() => aspect(prices)).toThrow(AspectNotAllowedError);
+    expect(() => aspect(prices)).toThrow(refusal);
+    expect(() => aspect(unnamed)).toThrow(AspectNotAllowedError);
+    expect(() => aspect(prices, { token: 'pricing.Prices' })).not.toThrow();
+    expect(() => aspect(prices, { className: 'Prices' })).not.toThrow();
+  });
+
   it('wraps a refused kind when the decision is written down', () => {
     const aspect = cached({ key: byFirstArgument, ttlMs: 1000, allowKinds: ['repository'] });
 
@@ -174,19 +248,52 @@ describe('cached, where it is allowed and what it falls back on', () => {
     expect(fakes.cache.size).toBe(1);
   });
 
-  it('treats a cache that fails as a miss', async () => {
-    const down: Cache = {
-      get: async () => {
-        throw new Unreachable();
-      },
-      set: async () => {
-        throw new Unreachable();
-      },
-      delete: async () => undefined,
-    };
+  const down: Cache = {
+    get: async () => {
+      throw new Unreachable();
+    },
+    set: async () => {
+      throw new Unreachable();
+    },
+    delete: async () => undefined,
+  };
 
+  it('treats a cache that fails as a miss', async () => {
     const gateway = cached({ key: byFirstArgument, ttlMs: 1000, cache: down })(new QuoteGateway());
 
     expect(await gateway.quote('EUR-USD')).toMatchObject({ rate: 1.08 });
+  });
+
+  it('counts each read and each write the cache failed, on the metrics given or on those of the runtime', async () => {
+    const given = new InMemoryMetrics();
+    const fakes = createAspectFakes();
+    const options = { key: byFirstArgument, ttlMs: 1000, cache: down };
+    const info = { context: 'pricing', token: 'Quotes' };
+    const counted = cached({ ...options, metrics: given })(new QuoteGateway(), info);
+    const onRuntime = cached(options)(new QuoteGateway(), info);
+
+    await counted.quote('EUR-USD');
+    await counted.quote('EUR-USD');
+    await withAspectRuntime(fakes, () => onRuntime.quote('EUR-USD'));
+
+    const labels = { context: 'pricing', class: 'QuoteGateway', method: 'quote' };
+
+    expect(given.counterValue('cache_errors_total', { ...labels, operation: 'get' })).toBe(2);
+    expect(given.counterValue('cache_errors_total', { ...labels, operation: 'set' })).toBe(2);
+    expect(fakes.metrics.counterValue('cache_errors_total')).toBe(2);
+  });
+
+  it('serves the call when the cache fails and nothing counts, or when counting fails', async () => {
+    const broken = new InMemoryMetrics();
+
+    broken.counter = () => {
+      throw new Unreachable();
+    };
+
+    const silent = cached({ key: byFirstArgument, ttlMs: 1000, cache: down })(new QuoteGateway());
+    const breaking = cached({ key: byFirstArgument, ttlMs: 1000, cache: down, metrics: broken })(new QuoteGateway());
+
+    expect(await silent.quote('EUR-USD')).toMatchObject({ rate: 1.08 });
+    expect(await breaking.quote('EUR-USD')).toMatchObject({ rate: 1.08 });
   });
 });

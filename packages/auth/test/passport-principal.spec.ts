@@ -57,8 +57,9 @@ describe('passportPrincipal, from what the strategy answers', () => {
     );
 
     await expect(resolve(request('Bearer stolen'))).rejects.toBeInstanceOf(InvalidCredentialError);
+    await expect(resolve(request('   '))).rejects.toBeInstanceOf(InvalidCredentialError);
+    await expect(resolve(request(''))).rejects.toBeInstanceOf(InvalidCredentialError);
     await expect(resolve(request())).resolves.toEqual(anonymousSession());
-    await expect(resolve(request('   '))).resolves.toEqual(anonymousSession());
     await expect(resolve(null)).resolves.toEqual(anonymousSession());
     await expect(resolve({ headers: null })).resolves.toEqual(anonymousSession());
   });
@@ -244,13 +245,13 @@ describe('passportAuthenticator, a strategy of Passport behind the port of the k
     });
   });
 
-  it('refuses a forged credential, and answers the anonymous actor without one', async () => {
+  it('refuses a forged credential and an empty one, and answers the anonymous actor without one', async () => {
     await expect(authenticator.authenticate(await signed('another secret, long enough too'))).rejects.toBeInstanceOf(
       InvalidCredentialError,
     );
 
     await expect(authenticator.authenticate(undefined)).resolves.toEqual(anonymousActor());
-    await expect(authenticator.authenticate('')).resolves.toEqual(anonymousActor());
+    await expect(authenticator.authenticate('')).rejects.toMatchObject({ reason: 'MALFORMED_TOKEN' });
   });
 });
 

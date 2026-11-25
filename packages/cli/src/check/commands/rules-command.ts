@@ -2,10 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Arguments } from '../../commands/arguments';
 import { type Command } from '../../commands/command';
-import { CONFIG_FILE, isOneOf, projectSeverity, readConfig, SEVERITIES } from '../../config';
-import { DEFAULT_SEVERITIES } from '../catalogue/default-severities';
+import { CONFIG_FILE, readConfig } from '../../config';
 import { DELEGATED_RULES } from '../catalogue/delegated-rules';
 import { RULES } from '../catalogue/rules';
+import { severityOf } from '../catalogue/severity-of';
 import { stdoutJson } from '../../json/stdout-json';
 
 interface ListedRule {
@@ -32,22 +32,16 @@ function listedRules(root: string): ListedRule[] {
     ? readConfig(root, { leaving: 'default' }).config.rules
     : {};
 
-  const severityOf = (id: string): string => {
-    const severity = projectSeverity(configured[id]);
-
-    return isOneOf(SEVERITIES, severity) ? severity : (DEFAULT_SEVERITIES[id] ?? 'error');
-  };
-
   const own = RULES.map((rule) => ({
     id: rule.id,
-    severity: severityOf(rule.id),
+    severity: severityOf(rule, configured),
     description: rule.description,
     checkedBy: 'ddd-ts-kit check',
   }));
 
   const delegated = DELEGATED_RULES.map((rule) => ({
     id: rule.id,
-    severity: severityOf(rule.id),
+    severity: severityOf(rule, configured),
     description: `${rule.description} (${rule.authority})`,
     checkedBy: rule.checkedBy,
   }));

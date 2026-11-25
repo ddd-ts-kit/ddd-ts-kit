@@ -1,6 +1,5 @@
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
-import { perFile } from '../support/per-file';
+import type { FileRule } from '../model/rule';
 import { matchingBracket } from '../text/matching-bracket';
 
 const CONTROL = /(?<![\w$.])(?:(if|while|for(?:\s+await)?)\s*\(|(else|do)(?![\w$]))/g;
@@ -10,21 +9,40 @@ const AFTER_A_NAME = ':,)=?;.(]';
 const FIX =
   'Write the body between braces, on its own lines: `if (..) {`, the body, then `}`, and `} else {` on the line of the closing brace. A branch is then visible at a glance, and a statement added to it later cannot silently fall outside it.';
 
-export const cleanBraces: Rule = {
+export const cleanBraces: FileRule = {
   id: 'clean/braces',
   description:
     'Every `if`, `else`, `for`, `while` and `do` has braces, and its body is on its own lines; `else` follows the closing brace on the same line. A ternary and an arrow function returning an expression are not judged. An approximation of what ESLint holds in full.',
+  severity: 'error',
+  doc: {
+    why: 'A branch or a loop written between braces, its body on its own lines, is visible at a glance, and a statement added to it later cannot silently fall outside it. Every `if`, `else`, `for`, `while` and `do` is written that way, `else` on the line of the closing brace. A ternary, an arrow function returning an expression and a one-line object literal are not judged. ESLint holds the braces on the syntax tree (`curly`) and adds them; the formatter puts the body on its own lines.',
+    bad: `if (wrapped.has(repository)) return repository;
+
+for (const step of steps) await step();
+
+if (invoice.isPaid()) { return receipt; }`,
+    good: `if (wrapped.has(repository)) {
+  return repository;
+}
+
+for (const step of steps) {
+  await step();
+}
+
+if (invoice.isPaid()) {
+  return receipt;
+}`,
+  },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      const { code } = file.scan;
+  standalone: true,
+  judge(file) {
+    const { code } = file.scan;
 
-      return [...code.matchAll(CONTROL)].flatMap((match) => {
-        const defect =
-          match[1] === undefined ? defectOfWord(code, match) : defectOfBody(code, afterCondition(code, match));
+    return [...code.matchAll(CONTROL)].flatMap((match) => {
+      const defect =
+        match[1] === undefined ? defectOfWord(code, match) : defectOfBody(code, afterCondition(code, match));
 
-        return defect === undefined ? [] : [finding(file.scan.lineAt(match.index), match[1] ?? match[2] ?? '', defect)];
-      });
+      return defect === undefined ? [] : [finding(file.scan.lineAt(match.index), match[1] ?? match[2] ?? '', defect)];
     });
   },
 };

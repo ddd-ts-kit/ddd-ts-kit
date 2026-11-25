@@ -82,8 +82,8 @@ body from those fields (a string, a number or a boolean; a path parameter is rea
 any other type stays a `TODO(domain)`).
 
 `--aggregate` alone generates a command that changes an aggregate that exists: its handler receives
-the repository and writes nothing until its `TODO(domain)` is answered (load, call one intention
-method, save). Add `--creates` only when the use case is the birth of the aggregate: its handler
+the repository and refuses (`undecided`, 501) until its `TODO(domain)` is answered (load, call one
+intention method, save). Add `--creates` only when the use case is the birth of the aggregate: its handler
 calls `<Aggregate>.create`, saves and answers the identifier. A command that a job sends is almost
 never a birth: leave `--creates` out.
 

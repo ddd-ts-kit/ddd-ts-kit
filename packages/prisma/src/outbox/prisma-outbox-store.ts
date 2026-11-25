@@ -125,6 +125,13 @@ export class PrismaOutboxStore<Tx> implements OutboxStore {
     });
   }
 
+  async postpone(id: string, until: Date): Promise<void> {
+    await this.outbox().updateMany({
+      where: { id, status: 'pending', attempts: { gt: 0 } },
+      data: { attempts: { decrement: 1 }, nextAttemptAt: until },
+    });
+  }
+
   async retryDead(ids: readonly string[], now: Date): Promise<number> {
     if (ids.length === 0) {
       return 0;

@@ -17,6 +17,8 @@ import { declaredModules, wiringTextOf } from '../../../model-modules';
 export interface Reaction {
   readonly upstream: RenderContext;
   readonly e2e: RenderContext;
+  /** The file of the handler that receives the event. */
+  readonly handler: string;
 }
 
 /** What an end-to-end spec runs to start a use case no route reaches and no handler does, or the one `--job` names: the jobs that send its command. */
@@ -57,6 +59,7 @@ export function reactionOf(scope: Scope, name: Name, routeFile: string): Reactio
   return {
     upstream: upstreamVars(scope, event),
     e2e: { reads: reads.join(', '), readable: reads.length > 0, handlers: handlersOf(consumed, event.type) },
+    handler: event.file,
   };
 }
 
@@ -77,17 +80,13 @@ function eventOf(useCase: UseCaseOf, asked: string | undefined): ConsumedEventFa
   return asked === undefined ? sentFor(useCase) : handledOf(useCase, asked);
 }
 
-function sourcesOf(scope: Scope): ContextSources {
-  const { ws, config, context, dir } = scope;
+/** The sources of a context of the project: the one of the command, unless another is named. */
+function sourcesOf(scope: Scope, context = scope.context.kebab): ContextSources {
+  const { ws, config } = scope;
+  const directory = context === scope.context.kebab ? scope.dir : `${config.contextsDir}/${context}`;
+  const modules = declaredModules(config, context);
 
-  return {
-    ws,
-    config,
-    name: context.kebab,
-    directory: dir,
-    modules: declaredModules(config, context.kebab),
-    module: wiringTextOf(ws, { directory: dir, modules: declaredModules(config, context.kebab) }, context.kebab),
-  };
+  return { ws, config, name: context, directory, modules, module: wiringTextOf(ws, { directory, modules }, context) };
 }
 
 /** The event of the handlers that send the command of the use case, when they all handle the same one. */
@@ -138,15 +137,38 @@ function handledOf({ scope, name, consumed }: UseCaseOf, asked: string): Consume
     return handled;
   }
 
-  const [upstream = '<upstreamContext>'] = asked.split('.');
-  const create = `\`ddd-ts-kit generate integration-handler ${scope.context.kebab} ${upstream} ${asked}\``;
-
   throw new MissingPrerequisite(
     `No integration event handler of "${scope.context.kebab}" receives ${asked}.`,
-    consumed.length === 0
-      ? `Create the handler first with ${create}.`
-      : `Pass --event with one of the events it handles, ${typesOf(consumed).join(', ')}, or create the handler first with ${create}.`,
+    [
+      ...(consumed.length === 0 ? [] : [`It handles ${typesOf(consumed).join(', ')}: pass one of them with --event.`]),
+      ...whereItIsReceived(scope, asked),
+    ].join(' '),
   );
+}
+
+/**
+ * What to do about an event the context does not receive: the contexts that do, whose use case the
+ * spec may be about, then the handler to create here, unless the context publishes the event itself.
+ */
+function whereItIsReceived(scope: Scope, asked: string): string[] {
+  const here = scope.context.kebab;
+  const [publisher = '<upstreamContext>'] = asked.split('.');
+
+  const receivers = Object.keys(scope.config.contexts).filter(
+    (context) => context !== here && readConsumedEvents(sourcesOf(scope, context)).some(({ type }) => type === asked),
+  );
+
+  const elsewhere =
+    receivers.length === 0
+      ? `No context of the project receives ${asked} yet.`
+      : `${asked} is received by ${receivers.join(', ')}: the spec of a use case it starts there is \`ddd-ts-kit generate e2e ${receivers[0] ?? ''} <UseCaseName> --event ${asked}\`.`;
+
+  return publisher === here
+    ? [`${here} publishes ${asked}: the use case it starts belongs to the context that receives it.`, elsewhere]
+    : [
+        elsewhere,
+        `For ${here} to receive it, create the handler first with \`ddd-ts-kit generate integration-handler ${here} ${publisher} ${asked}\`.`,
+      ];
 }
 
 function typesOf(consumed: readonly ConsumedEventFact[]): string[] {

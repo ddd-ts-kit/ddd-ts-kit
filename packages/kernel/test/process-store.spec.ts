@@ -25,6 +25,18 @@ describe('the process store in memory', () => {
     expect(store.list().map(({ version }) => version)).toEqual([1]);
   });
 
+  it('keeps apart two instances whose name and id read the same once joined', async () => {
+    const store = new InMemoryProcessStore();
+
+    await store.save({ ...instance(1), name: 'billing:dunning', id: 'invoice-1' });
+    await store.save({ ...instance(1), name: 'billing', id: 'dunning:invoice-1' });
+
+    expect(store.list().map(({ name, id }) => [name, id])).toEqual([
+      ['billing:dunning', 'invoice-1'],
+      ['billing', 'dunning:invoice-1'],
+    ]);
+  });
+
   it('refuses a version that is not the next one', async () => {
     const store = new InMemoryProcessStore();
 

@@ -166,7 +166,7 @@ export const calendars = cached({
 ```
 
 Concurrent identical calls of one tenant share one call to the calendars context; a failed call is
-not cached; a cache that fails is a miss. With a container, the same aspect goes on the binding:
+not cached; a cache that fails is a miss, counted as `cache_errors_total`. With a container, the same aspect goes on the binding:
 `.as('gateway').with(cached({ ... }))`.
 
 `cached` needs the `scope` of `installAspectRuntime`, which a generated composition root gives, or

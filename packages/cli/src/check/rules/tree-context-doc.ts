@@ -3,17 +3,23 @@ import path from 'node:path';
 import { CLASSIFICATIONS } from '../../config';
 import { CONTEXT_DOC_HEADINGS } from '../canonical/context-doc-headings';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import { reporter } from '../support/reporter';
 import { toViolations } from '../support/to-violations';
 import { ownEntry } from '../../config/values/own-entry';
 
-export const treeContextDoc: Rule = {
+export const treeContextDoc: ProjectRule = {
   id: 'tree/context-doc',
   description:
     'Every context has a CONTEXT.md with the required sections and the classification declared in the config.',
+  severity: 'error',
+  doc: {
+    why: 'CONTEXT.md is where the vocabulary and the boundaries are agreed with the domain experts. Without it, names drift and nobody can tell whether a concept belongs here. The classification says how much design effort the context deserves.',
+    bad: `contexts/billing/ without CONTEXT.md, or with "## Classification" saying generic while the config says core`,
+    good: `## Purpose, ## Classification, ## Ubiquitous language, ## Aggregates, ## Published events, ## Relationships`,
+  },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const report = reporter(project, this.id);
 
     return project.contextsOnDisk.flatMap((context) => {

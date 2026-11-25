@@ -1,5 +1,5 @@
 [English](observability.md) · **Français**
-<!-- translation-of: observability.md sha256:e62e1ac4381cd9c6 -->
+<!-- translation-of: observability.md sha256:e985271125acfdd7 -->
 
 # Observabilité : backends de traçage, *loggers* et suivi des erreurs
 
@@ -242,7 +242,7 @@ Ce qui est mesuré : `use_case_duration_ms` et `use_case_total` par `metricsMidd
 bus (étiquettes `message`, `kind` et `outcome`, plus `error_code` sur le compteur),
 `dependency_call_duration_ms` et `dependency_call_total` par l'aspect `timed` sur les
 adaptateurs qu'il enveloppe (le préfixe est son option `name`), `cache_errors_total` par
-`RedisCache`, les jauges `outbox_pending`, `outbox_failed` et `outbox_dead` par un
+`RedisCache` et par l'aspect `cached`, les jauges `outbox_pending`, `outbox_failed` et `outbox_dead` par un
 `OutboxRelay` qui reçoit les métriques, et `jobs_waiting`, `jobs_running` et `jobs_dead` par
 `queue` par un `QueueWorker` qui les reçoit. Un projet que Prometheus vient lire enregistre à la
 place son propre fournisseur de métriques avant que l'adaptateur prenne son *meter* ; cet

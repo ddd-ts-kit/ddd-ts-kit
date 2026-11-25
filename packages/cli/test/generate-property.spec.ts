@@ -19,6 +19,11 @@ describe('generate property', () => {
     expect(spec).toContain('function anyMoney(): fc.Arbitrary<Money> {');
     expect(spec).toContain('  return Money.create(value);');
     expect(jsonAt(readJson(root, 'package.json'), 'devDependencies', 'fast-check')).toBe('^4.10.2');
+
+    // The typecheck and the specs are red until then: the output says what to run.
+    expect(stringsAt(report, 'notes')).toEqual([
+      'fast-check joined the development dependencies of package.json: run `pnpm install` before the typecheck and the specs, which fail until it is installed.',
+    ]);
   });
 
   it('leaves package.json alone once fast-check is there, so that a worker runs it in its context', () => {
@@ -31,6 +36,7 @@ describe('generate property', () => {
 
     expect(report.code).toBe(0);
     expect(stringsAt(report.json(), 'updated')).not.toContain('package.json');
+    expect(stringsAt(report.json(), 'notes')).toEqual([]);
   });
 
   it('unwraps the result of the factory in a project whose value objects return one', () => {

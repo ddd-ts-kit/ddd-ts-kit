@@ -1,11 +1,11 @@
 [English](0004-the-regulated-guard-runs-no-program-of-the-project.md) · **Français**
-<!-- translation-of: 0004-the-regulated-guard-runs-no-program-of-the-project.md sha256:1db0309550862bbc -->
+<!-- translation-of: 0004-the-regulated-guard-runs-no-program-of-the-project.md sha256:25bcdbd837fc2214 -->
 
 # ADR-0004 : la garde du profil régulé n'exécute aucun programme du projet
 
 ## Décision
 
-Sous le profil régulé, la garde du *plugin* (`plugin/hooks/guard.mjs`) ne démarre, à aucun *hook*, le `ddd-ts-kit` ni le Biome de `node_modules`. Les règles que la garde lit elle-même continuent de tourner : un fichier généré, la portée d'un *worker*, le verrou d'un correctif, la taille d'un commit. L'entrée du changement est `changes/the-regulated-guard-runs-no-program-of-the-project.md`.
+Sous le profil régulé, la garde du *plugin* (`plugin/hooks/guard.mjs` et les modules à côté) ne démarre, à aucun *hook*, le `ddd-ts-kit` ni le Biome de `node_modules`. Les règles que la garde lit elle-même continuent de tourner : un fichier généré, la portée d'un *worker*, le verrou d'un correctif, la taille d'un commit. L'entrée du changement est `changes/the-regulated-guard-runs-no-program-of-the-project.md`.
 
 Le profil est lu par `isRegulated`, à la racine du projet et dans chaque dossier au-dessus, depuis :
 
