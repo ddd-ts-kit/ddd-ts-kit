@@ -6,7 +6,7 @@ import type { DomainEventSubscription } from '../events/domain-event-subscriptio
 /**
  * In-context reactions to what the aggregates recorded. Cross-context reactions use
  * IntegrationEvents. Use cases do not depend on it: the save of a repository hands over what the
- * aggregate recorded, and the unit of work dispatches it at its end (`withinUnitOfWork`).
+ * aggregate recorded, and the unit of work dispatches it at its end (`unitOfWorkOver`).
  */
 export abstract class DomainEventDispatcher {
   static {

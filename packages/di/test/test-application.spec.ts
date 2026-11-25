@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { Clock, CommandBus, FixedClock, IntegrationEventPublisher, UnitOfWork } from '@ddd-ts-kit/kernel';
+import {
+  Clock,
+  CommandBus,
+  FixedClock,
+  IntegrationEventPublisher,
+  UnitOfWork,
+  unitOfWorkOver,
+} from '@ddd-ts-kit/kernel';
 import { fake, kernelModule } from '../src';
 import { createTestApplication } from './support/on-container';
 import { InvoiceLedger } from './support/billing/application/ports/invoice-ledger.port';
@@ -75,15 +82,13 @@ describe('createTestApplication', () => {
   it('runs commands in the unit of work, which a test can fake too', async () => {
     const committed: string[] = [];
 
-    const recording: UnitOfWork = {
-      run: async (work) => {
-        const result = await work();
+    const recording = unitOfWorkOver(async (work) => {
+      const result = await work();
 
-        committed.push('commit');
+      committed.push('commit');
 
-        return result;
-      },
-    };
+      return result;
+    });
 
     const app = createTestApplication({ modules: [orderingModule], fakes: [fake(UnitOfWork, recording)] });
 

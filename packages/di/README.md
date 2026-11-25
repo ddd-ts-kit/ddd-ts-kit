@@ -1517,10 +1517,10 @@ export class InvoiceIssuedEventHandler implements DomainEventHandler<InvoiceIssu
 }
 ```
 
-A `UnitOfWork` given through `kernelModule({ unitOfWork })` gets this timing for commands
-whatever it is made of: the default command bus puts `withinUnitOfWork` of the kernel around
-it. Built on `withinUnitOfWork` itself, as the ORM packages are, it gives the same timing to a
-`run` called directly, the one of a consumer included.
+A `UnitOfWork` given through `kernelModule({ unitOfWork })` is built on `unitOfWorkOver` of the
+kernel, as the ORM packages are: it gives this timing to commands and to a `run` called
+directly, the one of a consumer included. The default command bus refuses one that opens no
+scope for the domain events (`UnscopedUnitOfWorkError`).
 
 In a test application, the adapter of a module and the fake given for a repository port both
 announce to `app.domainEvents`, whether `kernelModule()` is listed or not. Without a container,

@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { Knex } from 'knex';
-import { withinUnitOfWork, type UnitOfWork } from '@ddd-ts-kit/kernel';
+import { unitOfWorkOver, type UnitOfWork } from '@ddd-ts-kit/kernel';
 import type { KnexContext } from './knex-context';
 
 /** One object for both ports: bind it to `UnitOfWork` and to `KnexContext`. */
@@ -16,9 +16,10 @@ export interface KnexUnitOfWorkOptions {
 
 /**
  * A unit of work over `knex.transaction`. The transaction travels in an AsyncLocalStorage
- * owned by this unit of work, so two databases never see each other's transaction. A nested
- * `run` joins the outer transaction: it commits or rolls back as a whole. Domain events are
- * dispatched at the end of the outermost `run`, before its commit (`withinUnitOfWork`).
+ * owned by this unit of work, so two databases never see each other's transaction: a `run`
+ * called inside the unit of work of another database opens its own. A nested `run` joins the
+ * outer transaction: it commits or rolls back as a whole. Domain events are dispatched at the
+ * end of the outermost `run`, before its commit (`unitOfWorkOver`).
  */
 export function createKnexUnitOfWork(
   knex: Knex,
@@ -28,22 +29,18 @@ export function createKnexUnitOfWork(
   const current = new AsyncLocalStorage<Knex.Transaction>();
   const { begin } = options;
 
+  const opened = async <T>(transaction: Knex.Transaction, work: () => Promise<T>): Promise<T> => {
+    await begin?.(transaction);
+
+    return work();
+  };
+
+  const unitOfWork = unitOfWorkOver((work) =>
+    knex.transaction((transaction) => current.run(transaction, () => opened(transaction, work)), config),
+  );
+
   return {
-    run<T>(work: () => Promise<T>): Promise<T> {
-      return withinUnitOfWork(work, (scoped) => {
-        if (current.getStore() !== undefined) {
-          return scoped();
-        }
-
-        const opened = async (transaction: Knex.Transaction): Promise<T> => {
-          await begin?.(transaction);
-
-          return scoped();
-        };
-
-        return knex.transaction((transaction) => current.run(transaction, () => opened(transaction)), config);
-      });
-    },
+    run: (work) => unitOfWork.run(work),
     executor: () => current.getStore() ?? knex,
     inTransaction: () => current.getStore() !== undefined,
   };
