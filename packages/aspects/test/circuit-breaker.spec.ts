@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { FixedClock, InMemoryMetrics, TransactionTimeoutError } from '@ddd-ts-kit/kernel';
 import { CIRCUIT_OPEN, CircuitOpenError, circuitBreaker, circuitStateGauge, type CircuitStateChange } from '../src';
 import { FlakyGateway } from './support/flaky-gateway';
+import { HeldGateway } from './support/held-gateway';
 import { PairNotQuoted } from './support/pair-not-quoted';
 import { QuoteGateway } from './support/quote-gateway';
+import { settled } from './support/settled';
 import { Unreachable } from './support/unreachable';
 
 const start = new Date('2026-03-01T10:00:00.000Z');
@@ -122,6 +124,94 @@ describe('circuitBreaker', () => {
     const refused = await gateway.quote('EUR-USD').catch((error: unknown) => error);
 
     expect(refused).toMatchObject({ code: CIRCUIT_OPEN, retryAt: new Date('2026-03-01T10:01:00.000Z') });
+  });
+});
+
+describe('circuitBreaker, the outcome of a call let in during an earlier state', () => {
+  function arrange(): { clock: FixedClock; gateway: HeldGateway; transitions: string[]; outcomes: Promise<unknown>[] } {
+    const clock = new FixedClock(start);
+    const transitions: string[] = [];
+    const outcomes: Promise<unknown>[] = [];
+
+    const gateway = circuitBreaker({
+      failureThreshold: 2,
+      resetAfterMs: 1000,
+      clock,
+      onStateChange: ({ from, to }) => void transitions.push(`${from} > ${to}`),
+    })(new HeldGateway());
+
+    return { clock, gateway, transitions, outcomes };
+  }
+
+  /** Calls 0 to 2 let in while closed: 1 and 2 fail and open the circuit, 0 is still running. Call 3 is the trial. */
+  async function halfOpenWithAnOldCallRunning(): Promise<ReturnType<typeof arrange>> {
+    const arranged = arrange();
+    const { clock, gateway, outcomes } = arranged;
+    const call = (): Promise<unknown> => gateway.call().catch((error: unknown) => error);
+
+    outcomes.push(call(), call(), call());
+    await settled();
+    gateway.fail(1);
+    gateway.fail(2);
+    await Promise.all(outcomes.slice(1));
+    clock.advance(1000);
+    outcomes.push(call());
+    await settled();
+
+    return arranged;
+  }
+
+  it('does not close a half-open circuit on the late answer of a call let in while it was closed', async () => {
+    const { gateway, transitions, outcomes } = await halfOpenWithAnOldCallRunning();
+
+    gateway.answer(0);
+
+    expect(await outcomes[0]).toBe('answered');
+    expect(transitions).toEqual(['closed > open', 'open > half-open']);
+    await expect(gateway.call()).rejects.toBeInstanceOf(CircuitOpenError);
+  });
+
+  it('leaves the verdict to the trial call: its failure opens the circuit again', async () => {
+    const { gateway, transitions, outcomes } = await halfOpenWithAnOldCallRunning();
+
+    gateway.answer(0);
+    await outcomes[0];
+    gateway.fail(3);
+    await outcomes[3];
+
+    expect(transitions).toEqual(['closed > open', 'open > half-open', 'half-open > open']);
+  });
+
+  it('does not open a half-open circuit again on the late failure of a call let in while it was closed', async () => {
+    const { clock, gateway, transitions, outcomes } = await halfOpenWithAnOldCallRunning();
+
+    clock.advance(500);
+    gateway.fail(0);
+    await outcomes[0];
+
+    expect(transitions).toEqual(['closed > open', 'open > half-open']);
+
+    gateway.answer(3);
+
+    expect(await outcomes[3]).toBe('answered');
+    expect(transitions).toEqual(['closed > open', 'open > half-open', 'half-open > closed']);
+  });
+
+  it('counts in a closed circuit no failure of a call let in before it opened', async () => {
+    const { gateway, transitions, outcomes } = await halfOpenWithAnOldCallRunning();
+
+    gateway.answer(3);
+    await outcomes[3];
+    gateway.fail(0);
+    await outcomes[0];
+
+    const last = gateway.call().catch((error: unknown) => error);
+
+    await settled();
+    gateway.fail(4);
+    await last;
+
+    expect(transitions).toEqual(['closed > open', 'open > half-open', 'half-open > closed']);
   });
 });
 
