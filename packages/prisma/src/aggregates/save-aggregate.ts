@@ -1,0 +1,20 @@
+import { saveAggregateRow, type AggregateSave } from '@ddd-ts-kit/kernel';
+import type { PrismaAggregateDelegate } from './prisma-aggregate-delegate';
+import { rowStatementsOn } from './row-statements-on';
+
+/**
+ * Saves an aggregate in the row of its model, under optimistic concurrency: an insert the first
+ * time, that a taken key makes a `ConcurrencyError` and a value another row holds a
+ * `UniqueViolationError`; afterwards an update of the row while it still holds the version the
+ * aggregate was loaded at, a `ConcurrencyError` otherwise. The row carries the columns of the
+ * mapper, the next version and the audit stamp of the work in progress. The delegate is the model
+ * on the client of the unit of work in progress.
+ *
+ *     await saveAggregate(this.database.client().invoice, { aggregate: saved, row: InvoiceMapper.toRow(saved), scope, clock });
+ */
+export function saveAggregate<Columns extends { readonly id: string | number }>(
+  delegate: PrismaAggregateDelegate,
+  save: AggregateSave<Columns>,
+): Promise<void> {
+  return saveAggregateRow(save, rowStatementsOn(delegate));
+}

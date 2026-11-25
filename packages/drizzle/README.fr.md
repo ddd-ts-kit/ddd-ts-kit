@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:aba62e64c56706a5 -->
+<!-- translation-of: README.md sha256:76ed1bd8f79a70e5 -->
 
 # @ddd-ts-kit/drizzle
 
@@ -317,6 +317,25 @@ export class DrizzleOrderRepository implements OrderRepository {
 Dans le style explicite, sans le décorateur, la même liaison tient en une ligne de
 `<context>.module.ts` :
 `builder.bind(OrderRepository).toClass(DrizzleOrderRepository, [Database])`.
+
+La sauvegarde ci-dessus est écrite en entier pour montrer chaque instruction. `saveAggregate` fait
+la même chose en un appel : il prend une table qui garde la clé sous `id` et la version sous
+`version`, et une sauvegarde, l'agrégat, les colonnes que son *mapper* a données, le *scope* et
+l'horloge qui tamponnent les colonnes d'audit. `saveTenantAggregate` fait de même pour
+une table que tous les *tenants* partagent : il écrit la ligne dans le *tenant* du travail en
+cours et confine sa mise à jour à ce *tenant*. Un *repository* généré sauvegarde ainsi et ne porte
+rien d'autre de la plomberie.
+
+```ts
+async save(invoice: Invoice): Promise<void> {
+  await saveAggregate(this.database, invoices, {
+    aggregate: invoice,
+    row: InvoiceMapper.toRow(invoice),
+    scope: this.scope,
+    clock: this.clock,
+  });
+}
+```
 
 `optimisticUpdate` donne la version attendue et la version à écrire, lève une
 `ConcurrencyError` (une `DomainError` de code `CONCURRENCY_CONFLICT`) quand l'instruction gardée

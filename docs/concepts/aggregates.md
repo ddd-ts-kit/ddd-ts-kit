@@ -348,8 +348,10 @@ again.
 
 ![Requests A and B both load appointment a-1 at version 3; A's update guarded by version 3 writes one row and moves it to version 4; B's update with the same guard writes no row and raises a ConcurrencyError](../assets/diagrams/aggregates-optimistic-concurrency.svg)
 
-`optimisticUpdate` of the kernel is that guard, around the two statements of the adapter (the
-ORM packages and the generated repositories call it the same way):
+`optimisticUpdate` of the kernel is that guard, around the two statements of the adapter. A
+generated repository does not write it: it saves with `saveAggregate` of its ORM package
+(`saveTenantAggregate` on a table every tenant shares), which is this guard with the insert, the
+update and the audit stamps. Written out, the guard reads:
 
 <!-- checked sample -->
 ```ts

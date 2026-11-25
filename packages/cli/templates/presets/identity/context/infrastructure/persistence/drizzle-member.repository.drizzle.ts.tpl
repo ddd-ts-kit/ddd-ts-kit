@@ -1,6 +1,6 @@
 import { and, count, eq, isNull } from 'drizzle-orm';
-import { insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/drizzle/postgres';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { saveAggregate } from '@ddd-ts-kit/drizzle/postgres';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
@@ -14,9 +14,7 @@ import type { MemberRepository } from '{{alias.context}}/domain/repositories/mem
 import { MemberRole } from '{{alias.context}}/domain/vocabularies/member-role.vocabulary{{alias.ext}}';
 import type { Database } from '{{alias.platform}}/database/database{{alias.ext}}';
 import { members } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
-import { MemberMapper, type MemberColumns } from '{{alias.context}}/infrastructure/persistence/member.mapper{{alias.ext}}';
-
-type VersionedMember = MemberColumns & { readonly version: number };
+import { MemberMapper } from '{{alias.context}}/infrastructure/persistence/member.mapper{{alias.ext}}';
 
 {{#if style.declared}}
 @Repository(MemberRepository)
@@ -55,28 +53,12 @@ export class DrizzleMemberRepository implements MemberRepository {
   }
 
   async save(saved: Member): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...MemberMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : (await this.update(state, expected)).length;
+    await saveAggregate(this.database, members, {
+      aggregate: saved,
+      row: MemberMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: VersionedMember): Promise<number> {
-    const row = { ...state, ...stampCreation(this.scope, this.clock) };
-    const insertion = () => executorOf(this.database).insert(members).values(row);
-
-    return (await insertIgnoringConflict(insertion, members)) ? 1 : 0;
-  }
-
-  private update(state: VersionedMember, expected: number) {
-    const sameVersion = and(eq(members.id, state.id), eq(members.version, expected));
-
-    return executorOf(this.database)
-      .update(members)
-      .set({ ...state, ...stampUpdate(this.scope, this.clock) })
-      .where(sameVersion)
-      .returning({ id: members.id });
   }
 }
 

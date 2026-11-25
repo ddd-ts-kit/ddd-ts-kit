@@ -1,6 +1,6 @@
 import { and, eq, isNull, or } from 'drizzle-orm';
-import { insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/drizzle/postgres';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { saveAggregate } from '@ddd-ts-kit/drizzle/postgres';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
@@ -13,9 +13,7 @@ import type { DelegationRepository } from '{{alias.context}}/domain/repositories
 {{/unless}}
 import type { Database } from '{{alias.platform}}/database/database{{alias.ext}}';
 import { delegations } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
-import { DelegationMapper, type DelegationColumns } from '{{alias.context}}/infrastructure/persistence/delegation.mapper{{alias.ext}}';
-
-type VersionedDelegation = DelegationColumns & { readonly version: number };
+import { DelegationMapper } from '{{alias.context}}/infrastructure/persistence/delegation.mapper{{alias.ext}}';
 
 {{#if style.declared}}
 @Repository(DelegationRepository)
@@ -48,28 +46,12 @@ export class DrizzleDelegationRepository implements DelegationRepository {
   }
 
   async save(saved: Delegation): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...DelegationMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : (await this.update(state, expected)).length;
+    await saveAggregate(this.database, delegations, {
+      aggregate: saved,
+      row: DelegationMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: VersionedDelegation): Promise<number> {
-    const row = { ...state, ...stampCreation(this.scope, this.clock) };
-    const insertion = () => executorOf(this.database).insert(delegations).values(row);
-
-    return (await insertIgnoringConflict(insertion, delegations)) ? 1 : 0;
-  }
-
-  private update(state: VersionedDelegation, expected: number) {
-    const sameVersion = and(eq(delegations.id, state.id), eq(delegations.version, expected));
-
-    return executorOf(this.database)
-      .update(delegations)
-      .set({ ...state, ...stampUpdate(this.scope, this.clock) })
-      .where(sameVersion)
-      .returning({ id: delegations.id });
   }
 }
 

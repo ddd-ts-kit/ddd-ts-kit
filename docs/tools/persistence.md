@@ -252,6 +252,11 @@ The same pieces, under the name each package gives them:
 
 ### Optimistic concurrency, and one contract for the fake and the adapter
 
+The repository above writes its save out, statement by statement. A generated repository holds
+one call instead: `saveAggregate(database, table, { aggregate, row: Mapper.toRow(aggregate), scope,
+clock })` of its ORM package, and `saveTenantAggregate` on a table every tenant shares. Both are
+the guarded insert or update shown here, with the audit stamps.
+
 Two commands may load the same invoice at the same version. The first save matches the
 version and moves it on; the second matches no row, and `optimisticUpdate` throws
 `ConcurrencyError` (code `CONCURRENCY_CONFLICT`), which rolls its transaction back. The four

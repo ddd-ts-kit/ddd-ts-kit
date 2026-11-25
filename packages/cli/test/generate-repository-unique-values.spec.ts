@@ -13,26 +13,28 @@ function repositoryOn(orm: string, file: string, ...flags: string[]): string {
   return read(root, `${PERSISTENCE}/${file}`);
 }
 
-describe('the first save of a generated repository', () => {
-  it('ignores a conflict on the id alone on Drizzle, so that another unique value is refused by the database', () => {
-    const repository = repositoryOn('drizzle', 'drizzle-invoice.repository.ts');
+describe('the save of a generated repository', () => {
+  it.each([
+    ['drizzle', 'drizzle-invoice.repository.ts', 'await saveAggregate(this.database, invoices, {'],
+    ['knex', 'knex-invoice.repository.ts', 'await saveAggregate(this.database, TABLE, {'],
+    ['prisma', 'prisma-invoice.repository.ts', 'await saveAggregate(this.database.client().billingInvoice, {'],
+    ['typeorm', 'type-orm-invoice.repository.ts', 'await saveAggregate(this.database, invoices, {'],
+  ])(
+    'is one call of the save of the ORM package on %s, which tells a taken id from another unique value',
+    (orm, file, call) => {
+      const repository = repositoryOn(orm, file);
 
-    expect(repository).toContain('const insertion = () => this.database.executor().insert(invoices).values(row);');
-    expect(repository).toContain('return (await insertIgnoringConflict(insertion, invoices)) ? 1 : 0;');
-    expect(repository).not.toContain('onConflictDoNothing');
-  });
+      expect(repository).toContain(`${call}\n      aggregate: saved,\n      row: InvoiceMapper.toRow(saved),`);
 
-  it('ignores a conflict on the id alone on Knex', () => {
-    expect(repositoryOn('knex', 'knex-invoice.repository.ts')).toContain("conflict: 'id',");
-  });
-
-  it.each([[[]], [['--tenancy', 'shared-table']]])(
-    'tells a taken id from another unique value on Prisma, whose skipDuplicates names no target (%j)',
-    (flags) => {
-      const repository = repositoryOn('prisma', 'prisma-invoice.repository.ts', ...flags);
-
-      expect(repository).toContain('return rowsCreated(created, {');
-      expect(repository).toContain('skipDuplicates: true');
+      expect(repository).not.toMatch(
+        /optimisticUpdate|insertIgnoringConflict|rowsCreated|stampCreation|private (?:async )?(?:insert|update)/,
+      );
     },
   );
+
+  it('is the save confined to the tenant of the work on a tenant-scoped aggregate of Prisma', () => {
+    const repository = repositoryOn('prisma', 'prisma-invoice.repository.ts', '--tenancy', 'shared-table');
+
+    expect(repository).toContain('await saveTenantAggregate(this.database.client().billingInvoice, {');
+  });
 });

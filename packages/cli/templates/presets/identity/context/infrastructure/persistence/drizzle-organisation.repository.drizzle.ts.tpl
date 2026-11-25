@@ -1,6 +1,6 @@
-import { and, eq } from 'drizzle-orm';
-import { insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/drizzle/postgres';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { eq } from 'drizzle-orm';
+import { saveAggregate } from '@ddd-ts-kit/drizzle/postgres';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
@@ -13,9 +13,7 @@ import type { OrganisationRepository } from '{{alias.context}}/domain/repositori
 {{/unless}}
 import type { Database } from '{{alias.platform}}/database/database{{alias.ext}}';
 import { organisations } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
-import { OrganisationMapper, type OrganisationColumns } from '{{alias.context}}/infrastructure/persistence/organisation.mapper{{alias.ext}}';
-
-type VersionedOrganisation = OrganisationColumns & { readonly version: number };
+import { OrganisationMapper } from '{{alias.context}}/infrastructure/persistence/organisation.mapper{{alias.ext}}';
 
 {{#if style.declared}}
 @Repository(OrganisationRepository)
@@ -34,28 +32,12 @@ export class DrizzleOrganisationRepository implements OrganisationRepository {
   }
 
   async save(saved: Organisation): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...OrganisationMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : (await this.update(state, expected)).length;
+    await saveAggregate(this.database, organisations, {
+      aggregate: saved,
+      row: OrganisationMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: VersionedOrganisation): Promise<number> {
-    const row = { ...state, ...stampCreation(this.scope, this.clock) };
-    const insertion = () => executorOf(this.database).insert(organisations).values(row);
-
-    return (await insertIgnoringConflict(insertion, organisations)) ? 1 : 0;
-  }
-
-  private update(state: VersionedOrganisation, expected: number) {
-    const sameVersion = and(eq(organisations.id, state.id), eq(organisations.version, expected));
-
-    return executorOf(this.database)
-      .update(organisations)
-      .set({ ...state, ...stampUpdate(this.scope, this.clock) })
-      .where(sameVersion)
-      .returning({ id: organisations.id });
   }
 }
 

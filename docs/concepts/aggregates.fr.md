@@ -1,5 +1,5 @@
 [English](aggregates.md) · **Français**
-<!-- translation-of: aggregates.md sha256:5a6fdd3984b0b4fb -->
+<!-- translation-of: aggregates.md sha256:15e523b6e1ba185e -->
 
 # Agrégats
 
@@ -359,8 +359,10 @@ d'unicité (un e-mail) n'en est pas un : il lève `UniqueViolationError`, une `C
 
 ![Les requêtes HTTP A et B chargent toutes deux le rendez-vous a-1 en version 3 ; la mise à jour de A, gardée par la version 3, écrit une ligne et le fait passer en version 4 ; celle de B, avec la même garde, n'écrit aucune ligne et lève une ConcurrencyError](../assets/diagrams/aggregates-optimistic-concurrency.fr.svg)
 
-`optimisticUpdate` du noyau est cette garde, autour des deux instructions de l'adaptateur (les
-*packages* d'ORM et les *repositories* générés l'appellent de la même façon) :
+`optimisticUpdate` du noyau est cette garde, autour des deux instructions de l'adaptateur. Un
+*repository* généré ne l'écrit pas : il sauvegarde avec `saveAggregate` de son *package* d'ORM
+(`saveTenantAggregate` sur une table que tous les *tenants* partagent), qui est cette garde avec
+l'insertion, la mise à jour et les tampons d'audit. Écrite en entier, la garde se lit ainsi :
 
 <!-- checked sample -->
 ```ts

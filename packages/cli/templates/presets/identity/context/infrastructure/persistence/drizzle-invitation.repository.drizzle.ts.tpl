@@ -1,6 +1,6 @@
-import { and, eq } from 'drizzle-orm';
-import { insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/drizzle/postgres';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { eq } from 'drizzle-orm';
+import { saveAggregate } from '@ddd-ts-kit/drizzle/postgres';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
@@ -13,9 +13,7 @@ import type { InvitationRepository } from '{{alias.context}}/domain/repositories
 {{/unless}}
 import type { Database } from '{{alias.platform}}/database/database{{alias.ext}}';
 import { invitations } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
-import { InvitationMapper, type InvitationColumns } from '{{alias.context}}/infrastructure/persistence/invitation.mapper{{alias.ext}}';
-
-type VersionedInvitation = InvitationColumns & { readonly version: number };
+import { InvitationMapper } from '{{alias.context}}/infrastructure/persistence/invitation.mapper{{alias.ext}}';
 
 {{#if style.declared}}
 @Repository(InvitationRepository)
@@ -40,28 +38,12 @@ export class DrizzleInvitationRepository implements InvitationRepository {
   }
 
   async save(saved: Invitation): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...InvitationMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : (await this.update(state, expected)).length;
+    await saveAggregate(this.database, invitations, {
+      aggregate: saved,
+      row: InvitationMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: VersionedInvitation): Promise<number> {
-    const row = { ...state, ...stampCreation(this.scope, this.clock) };
-    const insertion = () => executorOf(this.database).insert(invitations).values(row);
-
-    return (await insertIgnoringConflict(insertion, invitations)) ? 1 : 0;
-  }
-
-  private update(state: VersionedInvitation, expected: number) {
-    const sameVersion = and(eq(invitations.id, state.id), eq(invitations.version, expected));
-
-    return executorOf(this.database)
-      .update(invitations)
-      .set({ ...state, ...stampUpdate(this.scope, this.clock) })
-      .where(sameVersion)
-      .returning({ id: invitations.id });
   }
 }
 
