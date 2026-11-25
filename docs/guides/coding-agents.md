@@ -319,7 +319,7 @@ rule id named here is unknown to the CLI, or when a skill has no row.
 | `clean-code` | `clean/stepdown`, `clean/function-size`, `clean/file-size`, `clean/blank-lines`, `clean/braces`, `clean/one-export-per-file`, `clean/no-escape-hatch`, `clean/no-commented-out-code`, `clean/no-noise-comment`, `clean/no-flag-argument`, `clean/no-hash-private`, `clean/no-magic-number`, `clean/formatted` (Biome in the commit hook and in the pipeline), `language/no-technical-name` | the formatter runs at the commit and in CI, not at the write |
 | `document` | `docs --check` (`npm run docs:check`, the `docs` gate of the pipeline), `declarations/barrel-current`, `tree/context-doc`, `sdk --check` | |
 | `extract-service` | `context/extractable`, `context/published-language-only`, `imports/alias-only`, the per-context entry point `generate service` writes and its boot test | |
-| `deviation` | `governance/recorded-deviation`, `config/suppression-needs-reason`, `config/rule-off-everywhere`, the guard asks the owner before a suppression, a skipped test or a change of the rules | |
+| `deviation` | `governance/recorded-deviation`, `config/suppression-needs-reason`, `config/unused-suppression`, `config/rule-off-everywhere`, the guard asks the owner before a suppression, a skipped test or a change of the rules | |
 | `quality-gate` | `npm run verify`, the `Stop` hook of the guard (it refuses to finish while architecture errors remain in uncommitted changes), the `gate` job of the pipeline | |
 | `commit-discipline` | `check --commit-size` (advice), commitlint in the `commit-msg` hook and the title check of the pipeline | the size is advised, never refused: a choice of the kit, kept |
 

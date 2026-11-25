@@ -1,3 +1,4 @@
+import { AssertionError } from 'node:assert';
 import type { Awaitable } from './awaitable';
 import type { ContractRunner } from './contract-runner';
 
@@ -46,6 +47,16 @@ export abstract class ContractSuite<Subject> {
 
   protected expect(actual: unknown): Expectation {
     return this.runner.expect(actual);
+  }
+
+  /**
+   * A condition of the contract that is no value to compare: `otherwise` says what the adapter
+   * did instead, which is what its author reads when the case fails.
+   */
+  protected holds(condition: boolean, otherwise: string): void {
+    if (!condition) {
+      throw new AssertionError({ message: otherwise, operator: 'holds' });
+    }
   }
 
   protected afterEach(teardown: () => Promise<void>): void {

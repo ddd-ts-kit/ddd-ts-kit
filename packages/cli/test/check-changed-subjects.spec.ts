@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isReportedSince } from '../src/check/commands/is-reported-since';
 import { runCheck } from '../src/check/engine/run-check';
 import { loadProject } from '../src/check/project/load-project';
+import { checkJsonOf } from './check-support';
 import { cli, write } from './helpers';
 import { lines, projectWith } from './rules-support';
 import { git } from './support/git';
@@ -108,5 +109,29 @@ describe('check --changed-since', () => {
     write(root, 'src/other.ts', 'export const other = 1;\n');
 
     expect(files(cli(root, 'check', '--changed-since', 'main', ...rule))).toEqual([]);
+  });
+
+  it('reports a changed file whose name git would quote, tracked or not', () => {
+    const clock = 'export class Opening {\n  readonly at = Date.now();\n}\n';
+    const accented = `${BILLING}/domain/value-objects/café.vo.ts`;
+    const spaced = `${BILLING}/domain/value-objects/opening hours.vo.ts`;
+    const root = projectWith({ [MODULE]: EMPTY_MODULE });
+
+    git(root, 'init', '--quiet', '--initial-branch', 'main');
+    git(root, 'add', '--all');
+    git(root, 'commit', '--quiet', '--message', 'chore: start');
+    write(root, accented, clock);
+    write(root, spaced, clock);
+
+    const since = () =>
+      checkJsonOf(cli(root, 'check', '--changed-since', 'main', '--rule', 'purity/no-system-clock', '--json'))
+        .violations.map(({ file }) => file)
+        .sort();
+
+    expect(since()).toEqual([accented, spaced].sort());
+
+    git(root, 'add', '--all');
+
+    expect(since()).toEqual([accented, spaced].sort());
   });
 });

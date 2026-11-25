@@ -157,6 +157,32 @@ describe('InMemoryEventBus', () => {
     expect(bus.published).toHaveLength(1);
   });
 
+  it('delivers an event as a broker does, as JSON carries it, and keeps its log apart from the handlers', async () => {
+    const bus = new InMemoryEventBus();
+    const received: IntegrationEvent<{ at: unknown; parts: string[] }>[] = [];
+    const payload = { at: new Date('2026-03-01T10:00:00.000Z'), parts: ['published'] };
+
+    bus.subscribe('shop.cart.checked-out', async (delivered) => {
+      const mine = delivered as IntegrationEvent<{ at: unknown; parts: string[] }>;
+
+      received.push(mine);
+      mine.payload.parts.push('changed by a handler');
+    });
+
+    await bus.publish([{ ...event('e1'), payload }]);
+
+    expect(received[0]?.payload.at).toBe('2026-03-01T10:00:00.000Z');
+    expect(payload.parts).toEqual(['published']);
+    expect(bus.published[0]?.payload).toEqual({ at: '2026-03-01T10:00:00.000Z', parts: ['published'] });
+  });
+
+  it('refuses the publication of an event JSON cannot carry', async () => {
+    const bus = new InMemoryEventBus();
+
+    await expect(bus.publish([{ ...event('e1'), payload: { count: 1n } }])).rejects.toBeInstanceOf(TypeError);
+    expect(bus.published).toEqual([]);
+  });
+
   it('runs every handler even when one fails, then reports all failures', async () => {
     const bus = new InMemoryEventBus();
     let ran = false;

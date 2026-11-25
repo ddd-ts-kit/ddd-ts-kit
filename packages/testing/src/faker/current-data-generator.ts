@@ -1,7 +1,11 @@
+import { restartedWithTestData } from '../builders/restart-test-data';
 import { createDataGenerator } from './create-data-generator';
 import type { DataGenerator } from './data-generator';
 
 let current: DataGenerator | undefined;
+
+// Each test draws from the seed again: what it generates does not depend on the tests before it.
+restartedWithTestData(() => current?.restart());
 
 /**
  * The generator every `generated` value is drawn from, so that one seed replays a whole test

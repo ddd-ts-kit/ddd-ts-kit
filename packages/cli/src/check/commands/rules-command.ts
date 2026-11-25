@@ -6,7 +6,6 @@ import { CONFIG_FILE, isOneOf, projectSeverity, readConfig, SEVERITIES } from '.
 import { DEFAULT_SEVERITIES } from '../catalogue/default-severities';
 import { DELEGATED_RULES } from '../catalogue/delegated-rules';
 import { RULES } from '../catalogue/rules';
-import { SUPPRESSION_RULE } from '../catalogue/suppression-rule';
 import { stdoutJson } from '../../json/stdout-json';
 
 interface ListedRule {
@@ -39,7 +38,7 @@ function listedRules(root: string): ListedRule[] {
     return isOneOf(SEVERITIES, severity) ? severity : (DEFAULT_SEVERITIES[id] ?? 'error');
   };
 
-  const own = [...RULES, SUPPRESSION_RULE].map((rule) => ({
+  const own = RULES.map((rule) => ({
     id: rule.id,
     severity: severityOf(rule.id),
     description: rule.description,

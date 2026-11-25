@@ -36,7 +36,11 @@ export class TransactionSuite extends ContractSuite<StoreInUnitOfWork> {
         }),
       );
 
-      this.expect(failure instanceof CommandRefused).toBe(true);
+      this.holds(
+        failure instanceof CommandRefused,
+        `the unit of work did not reject with the failure of its work: got ${String(failure)}`,
+      );
+
       this.expect(await this.subject.store.find('job-1')).toBe(undefined);
       this.expect(await this.claimed()).toEqual([]);
     });
@@ -54,7 +58,11 @@ export class TransactionSuite extends ContractSuite<StoreInUnitOfWork> {
 
       await failureOf(() =>
         this.subject.unitOfWork.run(async () => {
-          this.expect(await this.subject.store.cancel('job-1', NOW)).toBe(true);
+          this.holds(
+            await this.subject.store.cancel('job-1', NOW),
+            'the cancellation of a waiting job answered false inside the unit of work',
+          );
+
           throw new CommandRefused();
         }),
       );

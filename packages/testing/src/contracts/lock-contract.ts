@@ -44,7 +44,10 @@ class LockSuite extends ContractSuite<Lock> {
     this.it('keeps keys apart', async () => {
       await this.subject.acquire('report:2026-03', HELD);
 
-      this.expect((await this.subject.acquire('report:2026-04', HELD)) !== undefined).toBe(true);
+      this.holds(
+        (await this.subject.acquire('report:2026-04', HELD)) !== undefined,
+        'a free key was refused while another key is held',
+      );
     });
 
     this.it('gives the key to exactly one of several who ask at the same time', async () => {
@@ -61,7 +64,10 @@ class LockSuite extends ContractSuite<Lock> {
       await first.release();
       await first.release();
 
-      this.expect((await this.subject.acquire('report:2026-03', HELD)) !== undefined).toBe(true);
+      this.holds(
+        (await this.subject.acquire('report:2026-03', HELD)) !== undefined,
+        'the key is still refused after its holder released it',
+      );
     });
 
     this.it('frees the key by itself when the time to live has passed', async () => {
@@ -70,7 +76,10 @@ class LockSuite extends ContractSuite<Lock> {
 
       await this.options.elapse(400);
 
-      this.expect((await this.subject.acquire('report:2026-03', HELD)) !== undefined).toBe(true);
+      this.holds(
+        (await this.subject.acquire('report:2026-03', HELD)) !== undefined,
+        'the key is still refused after its time to live has passed',
+      );
     });
 
     this.it('ignores the release of a holder whose lock expired and was taken by another', async () => {
@@ -96,7 +105,11 @@ class LockSuite extends ContractSuite<Lock> {
         await handle.release();
       }
 
-      this.expect(tokens.every((token, index) => index === 0 || token > (tokens[index - 1] ?? token))).toBe(true);
+      this.holds(
+        tokens.every((token, index) => index === 0 || token > (tokens[index - 1] ?? token)),
+        `the fencing tokens of three acquisitions in a row do not grow: ${tokens.join(', ')}`,
+      );
+
       this.expect(new Set(tokens).size).toBe(3);
     });
   }
@@ -110,8 +123,12 @@ class LockSuite extends ContractSuite<Lock> {
         this.subject.acquire('report:2026-03', { ...HELD, waitMs: 2_000 }),
       ]);
 
-      this.expect(second !== undefined).toBe(true);
-      this.expect((second?.fencingToken ?? 0) > first.fencingToken).toBe(true);
+      this.holds(second !== undefined, 'the key released within the wait was not given to the one waiting for it');
+
+      this.holds(
+        (second?.fencingToken ?? 0) > first.fencingToken,
+        `the one who waited was given the fencing token ${String(second?.fencingToken)}, which is not above ${String(first.fencingToken)} of the holder before it`,
+      );
     });
 
     this.it('gives up once it has waited that long for a key that stays held', async () => {

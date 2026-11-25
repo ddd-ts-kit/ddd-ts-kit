@@ -21,6 +21,7 @@ npm i -D @ddd-ts-kit/testing
 | `@ddd-ts-kit/testing/vitest` | `decorators()`, the Vite plugin that lets Vitest run standard decorators, and `decoratorCoverage()` | Node only; runs the `tsc` of the project |
 | `@ddd-ts-kit/testing/coverage` | `governedCoverage()`, `governedJestCoverage()`, `unaffectedContexts()`: the coverage the runner measures and its floor, read from `ddd-ts-kit.config.json` | Node only |
 | `@ddd-ts-kit/testing/budget`, `/budget/vitest`, `/budget/jest` | the time budget of each level of specs, read from `ddd-ts-kit.config.json`, and the reporters that hold each spec file to it | Node only; the runner |
+| `@ddd-ts-kit/testing/setup/vitest`, `/setup/jest` | the setup file of the runner: before each test, the sequences start again at 1 and the data generator at its seed | the runner (`vitest`, an optional peer; the `beforeEach` Jest makes global) |
 | `@ddd-ts-kit/testing/mutation` | `governedMutation()`: what Stryker mutates, the ignorer of the kit that leaves the texts of refusals out, the static mutants ignored and the floor, read from `ddd-ts-kit.config.json` | Node only |
 
 The main entry, `/contracts` and `/e2e` follow the
@@ -223,7 +224,11 @@ aLine().with('quantity', 3).build(); // { sku: 'sku-1', quantity: 3 }
 - Plain data (an object literal, a list) is copied at each build, in the defaults and in what
   `with` was given: changing a built value never changes the next one. An instance of a class (a
   `Date`, a value object, an aggregate) is handed as it is.
-- Call `resetSequences()` in `beforeEach`, so a test does not depend on the ones before it.
+- A test does not depend on the ones before it: the runner config `init` writes lists the setup
+  entry of the package, `setupFiles: ['@ddd-ts-kit/testing/setup/vitest']` or
+  `setupFilesAfterEnv: ['@ddd-ts-kit/testing/setup/jest']`, which calls `restartTestData()` before
+  each test: every sequence starts again at 1 and the data generator of `/faker` at its seed.
+  Without the entry, call `resetSequences()` in `beforeEach`, as the sample above does.
 - What a build needs is a property of the builder's props. A step copies the builder without
   running its constructor: a field declared `private` or `readonly` follows the copy, a JavaScript
   `#private` field does not and throws a `TypeError` when the copy reads it, so a builder class
@@ -528,6 +533,16 @@ copy of what is saved (through `snapshots({ toSnapshot, fromSnapshot })` or `{ c
 enforces optimistic concurrency on `version`, raising `ConcurrencyError` (code
 `CONCURRENCY_CONFLICT`). Assert its state with `all()` and `count()`.
 
+The fake of a tenant-scoped aggregate is confined as its adapter is: `super(snapshots({ ... }),
+{ confinedTo: scope })` keeps every read and every write to the tenant of the work in progress in
+`scope`. A tenant finds, lists and counts what it saved only, a save under an id another tenant
+holds is refused with `ConcurrencyError`, an elevation widens reads and no write, and work that
+names no tenant is refused (`NoCurrentTenantError`). It passes `tenantIsolationContract`, and
+`generate repository` writes it so for a tenant-scoped aggregate, with a scope that defaults to
+`oneTenantScope()`, the work of a member of `acme`: a spec about one tenant builds the fake alone,
+a spec about a leak between tenants hands it the `executionScope` of its harness and changes
+tenant with `asTenant`.
+
 ### A fake, not a mock
 
 Instead of a mock, which checks the calls the handler made and nothing of their effect:
@@ -653,7 +668,8 @@ Both are classes on `Builder`, immutable like every builder, and accept a builde
 actor or a session is expected (`aSession().of(anActor().withRole('accountant'))` with the
 actor builder of `@ddd-ts-kit/auth/testing`). `scoped(scope, context, work)` runs a block in a
 context given as a value or as a builder, with any `ExecutionScope`; `asTenant(scope, 'acme',
-work)` runs it as a member of a tenant, and `elevatedOver('all')` builds the context of platform
+work)` runs it as a member of a tenant, `oneTenantScope()` is a scope fixed on the work of a member
+of one tenant (`acme` unless named), and `elevatedOver('all')` builds the context of platform
 staff under an elevation, without the audit entry `acrossTenants` writes.
 
 ## End to end
@@ -876,8 +892,8 @@ repositoryContract(runner, { ...options, name: 'DrizzleOrderRepository', createR
 | Suite | Holds |
 |---|---|
 | `repositoryContract` | save then find, unknown id, update, isolation of the stored copy, optimistic concurrency (any error with code `CONCURRENCY_CONFLICT`), and with `createAggregateTaking` a new aggregate that takes a unique value of another refused with code `CONFLICT`, nothing stored, and with `createAggregateAgain` a new aggregate saved several times at once: one save writes it and the others are refused with code `CONCURRENCY_CONFLICT`, never for its unique value |
-| `tenantIsolationContract` | one repository under a strategy of tenant isolation: what a tenant saved is hidden from another; another tenant saving under the same id leaves it untouched, by an update or (given `recreate(aggregate)`, a new aggregate under the same id) by an insert; platform staff elevated over every tenant write nothing, and read the other tenant's aggregate when `elevatedReads` is true (shared tables, row-level security); a write of work that names no tenant is refused (`NoCurrentTenantError`) and a read is refused or finds nothing. `createRepository(scope)` reads the tenant from the scope it is given, on storage where the tenants `acme` and `globex` exist. To prove row-level security itself, run it against a repository that writes no tenant condition |
-| `eventBusContract` | any `EventBus` provider: routing by type, several subscribers, unsubscribe, exact envelope round trip (`traceparent`, `correlationId`, `tenantId`), handler failure surfaces. Redeliveries are accepted; return `settle()` from `createBus` for providers that deliver asynchronously |
+| `tenantIsolationContract` | one repository under a strategy of tenant isolation: what a tenant saved is hidden from another; another tenant saving under the same id leaves it untouched, by an update or (given `recreate(aggregate)`, a new aggregate under the same id) by an insert; platform staff elevated over every tenant write nothing, and read the other tenant's aggregate when `elevatedReads` is true (shared tables, row-level security); a write of work that names no tenant is refused (`NoCurrentTenantError`) and a read is refused or finds nothing. Without `mutate`, the case of the update under a held id stays pending. `createRepository(scope)` reads the tenant from the scope it is given, on storage where the tenants `acme` and `globex` exist. To prove row-level security itself, run it against a repository that writes no tenant condition |
+| `eventBusContract` | any `EventBus` provider: routing by type, several subscribers, unsubscribe, exact envelope round trip (`traceparent`, `correlationId`, `tenantId`), an event received as JSON carries it and never the object that was published (a `Date` of the payload as its text), handler failure surfaces. Redeliveries are accepted; return `settle()` from `createBus` for providers that deliver asynchronously |
 | `unitOfWorkContract` | any `UnitOfWork`, called through `run` without a command bus: domain events wait for the end and are dispatched before the commit, so handlers see every save and what they write, the outbox included, commits with it; a failure in a save, in the work, in a handler or in the commit (a deferred constraint) leaves nothing behind, and so does a nested `run` that failed although the work caught its failure; run inside the unit of work of another database it opens its own, both phases around its own commit; `after-commit` handlers run once the rows are committed, never otherwise. An adapter not built on `unitOfWorkOver` fails here |
 | `outboxStoreContract` | any outbox store: order, limit, lease, concurrent claims, published, failed, dead, `retryDead`, purge; with `carriesTenant: true`, the tenant of each event kept |
 | `processedEventStoreContract` | any `ProcessedEventStore`: once per consumer and event, also under concurrent deliveries |
@@ -885,7 +901,7 @@ repositoryContract(runner, { ...options, name: 'DrizzleOrderRepository', createR
 | `eventStoreUnitOfWorkContract` | a transactional `EventStore` with the outbox of its database under one `UnitOfWork`: the stream and the outbox records published for its events commit together; nothing left in the outbox for an append rolled back, nor for one refused by a concurrency conflict. `createSubject()` answers `{ unitOfWork, store, outbox }` |
 | `processStoreContract` | any `ProcessStore` of process managers: an instance as saved (JSON state, armed timeouts, end), a version that is not the next one refused with `CONCURRENCY_CONFLICT`, one of two first saves winning, with `unitOfWork` nothing left by a rolled back save, and with `storeInTenant` an instance hidden from another tenant, two tenants each with an instance under the same key, and work that names no tenant refused |
 | `jobStoreContract` | any `JobStore` of background jobs: due jobs earliest first and each to one claim, delayed jobs, idempotency keys scoped by tenant (two tenants never share one), a job already kept under the same id answered as a duplicate and left as it was added, the tenant and the subject `find` shows, the lease and its heartbeats, reports heard only from the attempt that holds the job (progress, checkpoint handed to the next attempt, success, retry, dead and revived, release), cancellation of a waiting and of a running job, purge. With `unitOfWork` (over the same context as the store just created), a job added, cancelled or revived in a unit of work that rolls back is left as it was, and one that commits is added, cancelled or revived. The claims ask for a lease of 30 s |
-| `cacheContract` | any `Cache`: round trip of every shape of value, isolation of entries, deletion, time to live |
+| `cacheContract` | any `Cache`: round trip of every shape of value, a copy of its own (a value changed after it was written or after it was read is not what the cache holds), a value given back as JSON carries it (a `Date` as its text), isolation of entries, deletion, time to live |
 | `cachePurgerContract` | any `CachePurger` with its shared cache (`store`, `holds`): a tag purges what it names and nothing else, a kind reaches each element, the tenants stay apart, purging is idempotent |
 | `lockContract` | any `Lock`: one holder at a time also under concurrent requests, release, expiry, a late release ignored, growing fencing token, `waitMs` |
 | `jobSchedulerContract` | any `JobScheduler`: registration and description, a duplicate name and an unreadable schedule refused, `runNow` (also for a disabled job, an unknown name rejected), nothing by time before `start` or after `stop`, no overlap by default, a failing job answered `failed` with its code while the others go on, the execution context of a run |
@@ -920,6 +936,10 @@ runner is the `ContractRunner` type.
 
 A package that holds a port of its own publishes its contract on the same base, `ContractSuite`:
 a subject created anew before each test, and `it`, `expect`, `afterEach` bound to the runner.
+`holds(condition, otherwise)` asserts what is no value to compare, and fails with the sentence
+that says what the adapter did: the author of an adapter reads `the key is still refused after
+its holder released it`, never `expected false to be true`. The suites of the package are written
+so.
 
 <!-- checked sample -->
 ```ts
@@ -938,6 +958,12 @@ class GeocoderSuite extends ContractSuite<Geocoder> {
   protected tests(): void {
     this.it('answers undefined for an address it does not know', async () => {
       this.expect(await this.subject.locate('nowhere')).toBe(undefined);
+    });
+
+    this.it('locates London north of the equator', async () => {
+      const found = await this.subject.locate('10 Downing Street, London');
+
+      this.holds((found?.latitude ?? 0) > 0, `London was located at the latitude ${String(found?.latitude)}`);
     });
   }
 }

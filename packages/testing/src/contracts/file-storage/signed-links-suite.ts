@@ -10,6 +10,7 @@ import type { SignedRequest } from './signed-request';
 export class SignedLinksSuite extends FileStorageSuite {
   protected tests(): void {
     this.downloads();
+    this.refusesAnExpiredDownload();
     this.uploads();
     this.refuses();
   }
@@ -27,8 +28,16 @@ export class SignedLinksSuite extends FileStorageSuite {
       const response = await this.follow({ url: link.url, method: 'GET' });
 
       this.expect([response.status, response.body]).toEqual([200, PDF]);
-      this.expect(response.headers['content-disposition']?.includes('report.pdf')).toBe(true);
-      this.expect(Math.abs(longer.expiresAt.getTime() - link.expiresAt.getTime() - 300_000) < 5_000).toBe(true);
+
+      this.holds(
+        response.headers['content-disposition']?.includes('report.pdf') === true,
+        `the download does not carry the file name the link was signed with: its content-disposition is ${String(response.headers['content-disposition'])}`,
+      );
+
+      this.holds(
+        Math.abs(longer.expiresAt.getTime() - link.expiresAt.getTime() - 300_000) < 5_000,
+        'a link signed for 600 seconds does not expire 300 seconds after a link signed for 300',
+      );
     });
 
     this.it('serves a link signed without a name as an attachment all the same, never inline', async () => {
@@ -36,16 +45,23 @@ export class SignedLinksSuite extends FileStorageSuite {
       const link = await this.subject.signedDownloadUrl('documents/report.pdf', { expiresInSeconds: 300 });
       const response = await this.follow({ url: link.url, method: 'GET' });
 
-      this.expect(response.headers['content-disposition']?.startsWith('attachment')).toBe(true);
+      this.holds(
+        response.headers['content-disposition']?.startsWith('attachment') === true,
+        `a link signed without a name is not served as an attachment: its content-disposition is ${String(response.headers['content-disposition'])}`,
+      );
     });
+  }
 
+  private refusesAnExpiredDownload(): void {
     this.it('refuses a download link once it has expired', async () => {
       await this.write('documents/report.pdf', PDF);
       const link = await this.subject.signedDownloadUrl('documents/report.pdf', { expiresInSeconds: 1 });
 
       await this.options.elapse(2_100);
 
-      this.expect((await this.follow({ url: link.url, method: 'GET' })).status >= 400).toBe(true);
+      const { status } = await this.follow({ url: link.url, method: 'GET' });
+
+      this.holds(status >= 400, `a download link that has expired was answered ${String(status)}`);
     });
   }
 
@@ -62,7 +78,7 @@ export class SignedLinksSuite extends FileStorageSuite {
 
       const metadata = await this.subject.stat('staging/documents/notes.txt');
 
-      this.expect(response.status < 300).toBe(true);
+      this.holds(response.status < 300, `the upload through its signed link was answered ${String(response.status)}`);
       this.expect([metadata?.size, metadata?.mediaType]).toEqual([TEXT.length, 'text/plain']);
       this.expect(await this.read('staging/documents/notes.txt')).toEqual(TEXT);
     });
@@ -77,7 +93,11 @@ export class SignedLinksSuite extends FileStorageSuite {
         body: TEXT,
       });
 
-      this.expect(response.status >= 400).toBe(true);
+      this.holds(
+        response.status >= 400,
+        `an upload sent with another media type than the one signed was answered ${String(response.status)}`,
+      );
+
       this.expect(await this.subject.stat('staging/documents/notes.txt')).toBe(undefined);
     });
   }
@@ -87,7 +107,9 @@ export class SignedLinksSuite extends FileStorageSuite {
       await this.write('documents/report.pdf', PDF);
       const link = await this.subject.signedDownloadUrl('documents/report.pdf', { expiresInSeconds: 300 });
 
-      this.expect((await this.follow({ url: tampered(link.url), method: 'GET' })).status >= 400).toBe(true);
+      const { status } = await this.follow({ url: tampered(link.url), method: 'GET' });
+
+      this.holds(status >= 400, `a link whose signature was changed was answered ${String(status)}`);
     });
 
     this.it('refuses to sign a link for longer than the maximum, or for no time', async () => {

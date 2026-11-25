@@ -1,7 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { AsyncLocalStorageExecutionScope, NoCurrentTenantError, type Repository } from '@ddd-ts-kit/kernel';
-import { anExecutionContext, asTenant } from '../src';
-import { tenantIsolationContract } from '../src/contracts';
+import {
+  AsyncLocalStorageExecutionScope,
+  ConcurrencyError,
+  NoCurrentTenantError,
+  executionContext,
+  systemActor,
+  type ExecutionScope,
+  type Repository,
+} from '@ddd-ts-kit/kernel';
+import { InMemoryRepository, anExecutionContext, asTenant, oneTenantScope, scoped, snapshots } from '../src';
+import { repositoryContract, tenantIsolationContract } from '../src/contracts';
 import { CollectingRunner } from './support/collecting-runner';
 import { Order, at } from './support/order';
 import { TenantOrders } from './support/tenant-orders';
@@ -29,6 +37,136 @@ tenantIsolationContract<Order>(runner, {
   ...orders,
   name: 'in memory, without the inserts and the reads of an elevation',
   createRepository: (scope) => new TenantOrders(scope),
+});
+
+/** The fake of a tenant-scoped aggregate, as the generator writes it. */
+class FakeOrders extends InMemoryRepository<Order> {
+  constructor(scope: ExecutionScope = oneTenantScope()) {
+    super(snapshots({ toSnapshot: (order) => order.toSnapshot(), fromSnapshot: Order.rehydrate }), {
+      confinedTo: scope,
+    });
+  }
+
+  /** What a port with a removal method gives the application. */
+  delete(id: string): boolean {
+    return this.remove(id);
+  }
+}
+
+tenantIsolationContract<Order>(runner, {
+  ...orders,
+  name: 'InMemoryRepository confined to a scope',
+  recreate: (order: Order) => Order.place(order.id, { id: 'c-2', name: 'Bob' }, [{ sku: 'b', quantity: 2 }], at),
+  elevatedReads: true,
+  createRepository: (scope) => new FakeOrders(scope),
+});
+
+repositoryContract<Order>(runner, {
+  ...orders,
+  name: 'InMemoryRepository confined to one tenant',
+  createRepository: () => new FakeOrders(),
+});
+
+describe('InMemoryRepository confined to a scope', () => {
+  const scope = new AsyncLocalStorageExecutionScope();
+
+  it('answers a tenant what it saved only, through all and count as through findById', async () => {
+    const repository = new FakeOrders(scope);
+    const ofAcme = orders.createAggregate();
+
+    await asTenant(scope, 'acme', () => repository.save(ofAcme));
+    await asTenant(scope, 'globex', () => repository.save(orders.createAggregate()));
+
+    expect(asTenant(scope, 'acme', () => repository.all().map((order) => order.id))).toEqual([ofAcme.id]);
+    expect(asTenant(scope, 'acme', () => repository.count())).toBe(1);
+  });
+
+  it('answers an elevation the tenants it names, and every tenant when it names all', async () => {
+    const repository = new FakeOrders(scope);
+
+    await asTenant(scope, 'acme', () => repository.save(orders.createAggregate()));
+    await asTenant(scope, 'globex', () => repository.save(orders.createAggregate()));
+
+    expect(scoped(scope, anExecutionContext().elevatedOver(['globex']), () => repository.count())).toBe(1);
+    expect(scoped(scope, anExecutionContext().elevatedOver('all'), () => repository.count())).toBe(2);
+  });
+
+  it('refuses the save of a tenant under the id another holds as it refuses a stale one', async () => {
+    const repository = new FakeOrders(scope);
+    const saved = orders.createAggregate();
+
+    await asTenant(scope, 'acme', () => repository.save(saved));
+
+    await expect(asTenant(scope, 'globex', () => repository.save(saved))).rejects.toBeInstanceOf(ConcurrencyError);
+  });
+
+  it('removes for a tenant what it holds, and nothing of another', async () => {
+    const repository = new FakeOrders(scope);
+    const saved = orders.createAggregate();
+
+    await asTenant(scope, 'acme', () => repository.save(saved));
+
+    expect(asTenant(scope, 'globex', () => repository.delete(saved.id))).toBe(false);
+    expect(asTenant(scope, 'acme', () => repository.delete(saved.id))).toBe(true);
+    expect(asTenant(scope, 'acme', () => repository.count())).toBe(0);
+  });
+
+  it('shows nothing to work that names no tenant', () => {
+    const repository = new FakeOrders(scope);
+    const job = executionContext({ correlationId: 'no-tenant', actor: systemActor('job'), origin: 'test' });
+
+    expect(() => scope.run(job, () => repository.all())).toThrow(NoCurrentTenantError);
+  });
+
+  it('forgets every tenant when it is cleared', async () => {
+    const repository = new FakeOrders(scope);
+
+    await asTenant(scope, 'acme', () => repository.save(orders.createAggregate()));
+    repository.clear();
+
+    expect(scoped(scope, anExecutionContext().elevatedOver('all'), () => repository.count())).toBe(0);
+  });
+});
+
+describe('oneTenantScope', () => {
+  it('is the work of a member of acme, or of the tenant it is given', () => {
+    expect(oneTenantScope().require().tenantId).toBe('acme');
+    expect(oneTenantScope('globex').require().actor.tenantId).toBe('globex');
+  });
+
+  it('lets a spec change tenant for a block', async () => {
+    const scope = oneTenantScope();
+    const repository = new FakeOrders(scope);
+    const saved = orders.createAggregate();
+
+    await repository.save(saved);
+
+    expect(await asTenant(scope, 'globex', () => repository.findById(saved.id))).toBeUndefined();
+    expect(await repository.findById(saved.id)).toBeDefined();
+  });
+});
+
+describe('the tenant isolation contract given no mutate', () => {
+  it('leaves the save under a held id pending, and runs the rest', async () => {
+    const collecting = new CollectingRunner();
+    const { mutate: _left, ...unchanging } = orders;
+
+    tenantIsolationContract<Order>(collecting, {
+      ...unchanging,
+      name: 'without mutate',
+      elevatedReads: true,
+      createRepository: (scope) => new FakeOrders(scope),
+    });
+
+    const { failed, passed } = await collecting.run();
+
+    expect(failed).toEqual([]);
+    expect(passed).toHaveLength(3);
+
+    expect(collecting.pending).toEqual([
+      'leaves untouched what a tenant saved when another saves under the same id (give the contract a mutate that records a change of state)',
+    ]);
+  });
 });
 
 /** Row-level security alone: the database shows nothing to work that names no tenant, and refuses its writes. */
