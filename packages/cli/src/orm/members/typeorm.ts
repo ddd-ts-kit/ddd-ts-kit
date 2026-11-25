@@ -7,6 +7,7 @@ import { listedEntities } from '../tables/listed-entities';
 const ENTITY = /^export const (\w+) = new EntitySchema\b/gm;
 
 export const typeorm: OrmMember = {
+  database: { token: 'TypeOrmContext', tokenPackage: '@ddd-ts-kit/typeorm', opensWithPromise: true },
   migrations: renamedAfterTrunk(stampedClasses),
   /** The index imports each entity of a tables file and lists it in `entities`. */
   tables: declaredInTablesFile({

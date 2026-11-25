@@ -4,6 +4,7 @@ import type { OrmMember } from '../orm-member';
 import { declaredInTablesFile } from '../tables/declared-in-tables-file';
 
 export const knex: OrmMember = {
+  database: { token: 'KnexContext', tokenPackage: '@ddd-ts-kit/knex', opensWithPromise: false },
   migrations: renamedAfterTrunk(namedScripts),
   /** A function per context creates its tables, beside the types of its rows: the index lists the functions. */
   tables: declaredInTablesFile({

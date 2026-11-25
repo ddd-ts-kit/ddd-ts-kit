@@ -4,6 +4,7 @@ import type { OrmMember } from '../orm-member';
 import { prismaModels } from '../tables/prisma-models';
 
 export const prisma: OrmMember = {
+  database: { token: 'Database', opensWithPromise: true },
   migrations: renamedAfterTrunk(namedFolders),
   tables: prismaModels,
 };

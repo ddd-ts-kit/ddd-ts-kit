@@ -1,4 +1,4 @@
-import type { Config } from '../config';
+import { BROKER_STACKS, type Config } from '../config';
 import type { RenderContext } from '../templating';
 import { one } from './one';
 import { PROVIDED_BROKERS } from './provided-brokers';
@@ -24,7 +24,7 @@ export function brokerVars(config: Config): RenderContext {
   const address = BROKER_ADDRESS[broker];
 
   return {
-    ...one(broker, ['none', 'rabbitmq', 'kafka', 'nats', 'redis', 'custom']),
+    ...one(broker, BROKER_STACKS),
     external: broker !== 'none',
     provided: PROVIDED_BROKERS.includes(broker),
     name: broker,

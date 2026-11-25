@@ -1,4 +1,30 @@
-import { onKitContainer, QUEUE_ORMS, type Config } from '../config';
+import {
+  AUTHZ_STACKS,
+  DI_STACKS,
+  EVENT_SOURCING_MODES,
+  HTTP_CACHE_STACKS,
+  HTTP_STACKS,
+  LITERAL_FORMS,
+  LOGGERS,
+  onKitContainer,
+  ORM_STACKS,
+  PRIVACY_MODES,
+  QUEUE_ORMS,
+  QUEUE_STORES,
+  REFUSAL_FORMS,
+  ROUTE_FORMS,
+  RPC_STACKS,
+  SCHEMA_FORMS,
+  SEARCH_STACKS,
+  STYLES,
+  TENANCY_STRATEGIES,
+  TEST_STACKS,
+  VALIDATION_STACKS,
+  VALUE_FORMS,
+  VALUE_OBJECT_FORMS,
+  type Config,
+  type Stack,
+} from '../config';
 import { diEntry } from '../generate/di-entry';
 import type { RenderContext } from '../templating';
 import { aliasVars } from './alias-vars';
@@ -10,12 +36,12 @@ import { declaresRoles } from './declares-roles';
 import { endToEndVars } from './end-to-end-vars';
 import { errorVars } from './error-vars';
 import { eventVars } from './event-vars';
+import { ORM_MEMBERS } from '../orm/orm-members';
 import { one } from './one';
 import { persistenceVars } from './persistence-vars';
 import { redisVars } from './redis-vars';
 import { filesVars } from './files-vars';
 import { usesLegacyDecorators } from './uses-legacy-decorators';
-import { WITH_DATABASE } from './with-database';
 
 /** The line width of the formatter of a generated project (`biome.json`, `lineWidth`). */
 const FORMATTED_WIDTH = 120;
@@ -26,20 +52,20 @@ export function stackVars(config: Config): RenderContext {
   const legacy = usesLegacyDecorators(config);
 
   return {
-    style: one(style, ['declared', 'explicit']),
+    style: one(style, STYLES),
     assembly: assemblyVars(config),
     decorators: { legacy, standard: !legacy },
     ...edgeVars(config),
-    validation: one(validation, ['zod', 'class-validator', 'typebox', 'standard-schema', 'none']),
+    validation: one(validation, VALIDATION_STACKS),
     di: {
-      ...one(di, ['tsyringe', 'inversify', 'awilix', 'nest', 'manual']),
+      ...one(di, DI_STACKS),
       container: onKitContainer(config),
       entry: diEntry(config),
     },
     orm: ormVars(orm),
     events: eventVars(config),
     authn: authenticationVars(config),
-    authz: { ...one(authz, ['rbac', 'abac', 'rebac', 'custom']), roles: declaresRoles(config) },
+    authz: { ...one(authz, AUTHZ_STACKS), roles: declaresRoles(config) },
     broker: brokerVars(config),
     cache: cacheVars(config),
     files: filesVars(config),
@@ -50,8 +76,8 @@ export function stackVars(config: Config): RenderContext {
     ...modelWritingVars(config),
     routes: routeVars(config),
     presentation: presentationVars(config),
-    logger: one(logger, ['stdout', 'pino', 'winston']),
-    tests: { ...one(tests, ['vitest', 'jest']), module: tests === 'jest' ? '@jest/globals' : 'vitest' },
+    logger: one(logger, LOGGERS),
+    tests: { ...one(tests, TEST_STACKS), module: tests === 'jest' ? '@jest/globals' : 'vitest' },
     config: platformPaths(config),
     alias: aliasVars(config),
     persistence: persistenceVars(config),
@@ -60,24 +86,24 @@ export function stackVars(config: Config): RenderContext {
   };
 }
 
-/** The tenants the storage confines to, the read models of OpenSearch, the event store and the requests of a data subject, and the hand-wired foundations. */
-/** The ORM of the stack: which one, any at all, and one of the four that reach a database. */
-function ormVars(orm: string): RenderContext {
+/** The ORM of the stack: which one, any at all, and whether it is one that reaches a database. */
+function ormVars(orm: Stack['orm']): RenderContext {
   return {
-    ...one(orm, ['drizzle', 'knex', 'prisma', 'typeorm', 'custom', 'none']),
+    ...one(orm, ORM_STACKS),
     any: orm !== 'none',
-    database: WITH_DATABASE.includes(orm),
+    database: ORM_MEMBERS[orm].database !== undefined,
   };
 }
 
+/** The tenants the storage confines to, the read models of OpenSearch, the event store and the requests of a data subject, and the hand-wired foundations. */
 function platformVars(config: Config): RenderContext {
   const { tenancy, eventSourcing, privacy, search } = config.stack;
 
   return {
-    tenancy: { ...one(tenancy, ['none', 'shared-table']), any: tenancy !== 'none' },
-    search: one(search, ['none', 'opensearch']),
-    eventSourcing: one(eventSourcing, ['on', 'off']),
-    privacy: one(privacy, ['on', 'off']),
+    tenancy: { ...one(tenancy, TENANCY_STRATEGIES), any: tenancy !== 'none' },
+    search: one(search, SEARCH_STACKS),
+    eventSourcing: one(eventSourcing, EVENT_SOURCING_MODES),
+    privacy: one(privacy, PRIVACY_MODES),
     platformJobs: { any: platformJobsOf(config) },
     foundations: { founded: foundedUnion(founded(config)) },
   };
@@ -147,7 +173,7 @@ function queueVars(config: Config): RenderContext {
   const { queue, orm } = config.stack;
 
   return {
-    ...one(queue, ['memory', 'database', 'redis']),
+    ...one(queue, QUEUE_STORES),
     stored: queue !== 'memory',
     processTable: queue !== 'memory' && QUEUE_ORMS.includes(orm),
   };
@@ -158,11 +184,11 @@ function modelWritingVars(config: Config): RenderContext {
   const { refusals, schemas, valueObjects, literals, values } = config.stack;
 
   return {
-    refusals: one(refusals, ['named', 'factories', 'classes']),
-    schemas: one(schemas, ['shared', 'per-route']),
-    valueObjects: one(valueObjects, ['throwing', 'result']),
-    literals: one(literals, ['named', 'free']),
-    values: one(values, ['classes', 'free']),
+    refusals: one(refusals, REFUSAL_FORMS),
+    schemas: one(schemas, SCHEMA_FORMS),
+    valueObjects: one(valueObjects, VALUE_OBJECT_FORMS),
+    literals: one(literals, LITERAL_FORMS),
+    values: one(values, VALUE_FORMS),
   };
 }
 
@@ -176,7 +202,7 @@ function routeVars(config: Config): RenderContext {
   const declaredControllers = http !== 'none' && style === 'declared';
 
   return {
-    ...one(routes, ['controllers', 'functions', 'nest']),
+    ...one(routes, ROUTE_FORMS),
     listed: http !== 'none' && !(style === 'declared' && routes === 'controllers'),
     declaredControllers,
     mountsControllers: declaredControllers || (http !== 'none' && audit === 'on' && routes !== 'functions'),
@@ -215,8 +241,8 @@ function edgeVars(config: Config): RenderContext {
 
   return {
     http: httpVars(config),
-    httpCache: { ...one(httpCache, ['none', 'varnish']), perTenant },
-    rpc: one(rpc, ['none', 'orpc', 'trpc']),
+    httpCache: { ...one(httpCache, HTTP_CACHE_STACKS), perTenant },
+    rpc: one(rpc, RPC_STACKS),
   };
 }
 
@@ -224,7 +250,7 @@ function httpVars(config: Config): RenderContext {
   const { http } = config.stack;
 
   return {
-    ...one(http, ['express', 'fastify', 'hono', 'nest', 'none']),
+    ...one(http, HTTP_STACKS),
     any: http !== 'none',
     plain: http === 'express' || http === 'fastify' || http === 'hono',
   };

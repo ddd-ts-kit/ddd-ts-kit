@@ -1,3 +1,4 @@
+import type { DatabaseAccess } from './database-access';
 import type { MigrationHistory } from './migrations/migration-history';
 import type { TablesDeclaration } from './tables/tables-declaration';
 
@@ -6,6 +7,8 @@ import type { TablesDeclaration } from './tables/tables-declaration';
  * no answer to is absent, and the caller does nothing for it.
  */
 export interface OrmMember {
+  /** The database it opens through a URL, which the generated persistence is written for; absent where the kit opens none. */
+  readonly database?: DatabaseAccess;
   /** The migrations the kit generates for it and keeps in the order of the trunk; absent where it generates none. */
   readonly migrations?: MigrationHistory;
   /** Where the generators declare the tables of a context; absent where the kit writes no storage. */
