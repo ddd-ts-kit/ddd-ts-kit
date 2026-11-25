@@ -774,7 +774,9 @@ may inherit other roles.
 
 A grant is a permission, its id, `<context>:*` or `*`. A grant that could never match, an
 unknown inherited role and a cycle in the hierarchy are refused at construction, and so is a
-system role that no role declares: it would silently do nothing.
+system role that no role declares: it would silently do nothing. So are `tenantOf` and
+`crossTenantRoles`, which are options of `TenantBoundAuthorizer` ([Tenants](#tenants)): given
+here, they would hold nobody to a tenant.
 
 `explain` says which role grants, and through which included role. Why a clerk who also carries
 a role nobody declared may not void an invoice, and why a controller may read one:

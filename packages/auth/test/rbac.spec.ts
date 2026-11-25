@@ -190,3 +190,18 @@ describe('RoleBasedAuthorizer and the system actor', () => {
     expect(decision).toEqual({ allowed: true });
   });
 });
+
+describe('RoleBasedAuthorizer and tenants', () => {
+  it.each(['tenantOf', 'crossTenantRoles'])(
+    'refuses %s, which left its options: it would silently hold nobody to a tenant',
+    (option) => {
+      const options = { roles, [option]: [] };
+
+      expect(() => new RoleBasedAuthorizer(options)).toThrow(
+        new AuthorizationSetupError(
+          `${option} is not an option of RoleBasedAuthorizer: give it to a TenantBoundAuthorizer around it, which holds any model to the tenants of the actor.`,
+        ),
+      );
+    },
+  );
+});

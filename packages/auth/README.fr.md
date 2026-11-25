@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:bf726debd5cb5e6a -->
+<!-- translation-of: README.md sha256:b355848086b1bd25 -->
 
 # @ddd-ts-kit/auth
 
@@ -807,7 +807,9 @@ détiendrait ce que détient le système. Le rôle système peut hériter d'autr
 Un droit accordé est une permission, son identifiant, `<context>:*` ou `*`. Un droit qui ne
 pourrait jamais correspondre, un rôle hérité inconnu et un cycle dans la hiérarchie sont refusés
 à la construction, de même qu'un rôle système qu'aucun rôle ne déclare : il ne ferait rien, sans
-le dire.
+le dire. De même `tenantOf` et `crossTenantRoles`, qui sont des options de
+`TenantBoundAuthorizer` ([Tenants](#tenants)) : données ici, elles ne tiendraient personne à un
+*tenant*.
 
 `explain` dit quel rôle accorde, et à travers quel rôle inclus. Pourquoi un commis qui porte
 aussi un rôle que personne n'a déclaré ne peut pas annuler une facture, et pourquoi un contrôleur

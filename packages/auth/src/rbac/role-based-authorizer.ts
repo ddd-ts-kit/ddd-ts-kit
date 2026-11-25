@@ -29,6 +29,7 @@ export class RoleBasedAuthorizer implements Authorizer {
   private readonly grants: RoleGrants;
 
   constructor(private readonly options: RoleBasedAuthorizerOptions) {
+    assertNoTenancyOption(options);
     this.grants = new RoleGrants(options);
     assertSystemRole(options, this.grants);
   }
@@ -131,6 +132,19 @@ function coveringText({ pattern, through }: CoveringGrant, permission: Permissio
   const covers = pattern === permission.id ? '' : `, which covers ${permission.id}`;
 
   return through === undefined ? `${pattern}${covers}` : `${pattern}${covers}, through ${through}`;
+}
+
+const LEFT_TO_THE_TENANT_BOUND = ['tenantOf', 'crossTenantRoles'];
+
+/** The tenant rule left this authorizer: an option that names it would silently hold nobody to a tenant. */
+function assertNoTenancyOption(options: object): void {
+  const left = LEFT_TO_THE_TENANT_BOUND.find((option) => option in options);
+
+  if (left !== undefined) {
+    throw new AuthorizationSetupError(
+      `${left} is not an option of RoleBasedAuthorizer: give it to a TenantBoundAuthorizer around it, which holds any model to the tenants of the actor.`,
+    );
+  }
 }
 
 /**
