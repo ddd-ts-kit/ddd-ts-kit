@@ -26,6 +26,17 @@ import {
 } from './hook-input.mjs';
 import { removeKitFile } from './kit-files.mjs';
 import {
+  baselineFileRule,
+  generatedFileRule,
+  handWrittenRoleRule,
+  scopeFileRule,
+  scopeLinkRule,
+  storyCodeRule,
+  testWriterScopeRule,
+  workerScopeRule,
+  worktreeCodeRule,
+} from './place-rules.mjs';
+import {
   ANSWER_BYTES,
   decisionOf,
   describe,
@@ -40,6 +51,7 @@ import {
 } from './project.mjs';
 import { commitReminder, designReminder, hasPendingChanges } from './reminders.mjs';
 import { hasWorkerWorktree, STORY_SCOPE, WORKER_SCOPE } from './repository.mjs';
+import { firstRefusal } from './rule-table.mjs';
 import {
   AWK_PROGRAMS,
   CODE_RUNNERS,
@@ -69,14 +81,11 @@ import {
   acceptanceReason,
   crossingNotice,
   isUnwrapping,
-  storyCodeReason,
   unfinishedStoryReason,
-  worktreeCodeReason,
   writtenProjectPaths,
 } from './story-rules.mjs';
 import {
   commandDirectory,
-  linkReason,
   readPin,
   releasePin,
   REPORT_TO_CONDUCTOR,
@@ -84,19 +93,8 @@ import {
   withPinnedMode,
   workerContext,
   workerScope,
-  workerScopeReason,
 } from './worker-scope.mjs';
-import {
-  baselineFileReason,
-  dependencyReason,
-  escapeReason,
-  generatedFileReason,
-  governedFileReason,
-  handWrittenRoleReason,
-  scopeFileReason,
-  scriptsChangeReason,
-  testWriterScopeReason,
-} from './write-rules.mjs';
+import { dependencyReason, escapeReason, governedFileReason, scriptsChangeReason } from './write-rules.mjs';
 
 const FORMAT_TIMEOUT = 5000;
 
@@ -113,6 +111,51 @@ const CLI_WRITE_FILES = 2;
 const SCRIPT_FILE = /\.(?:[cm]?[jt]sx?|vue|svelte|astro)$/;
 
 const UNREADABLE_COMMAND = `The guard could not read this command, and a worker runs none it cannot read: write it as shorter, separate commands. ${REPORT_TO_CONDUCTOR}`;
+
+// What a sub-agent unwrapping a scenario writes is judged by the rules before: a worker's scope does not hold it.
+const notUnwrapping = ({ project, file, input }) => !isUnwrapping(project, file, input);
+
+// The rules on a file written that start no process, in the order they are asked.
+const WRITE_RULES = [
+  baselineFileRule,
+  scopeFileRule,
+  {
+    id: 'acceptance',
+    reason: ({ project, input, file, written, replaced }) =>
+      acceptanceReason(project, input, { file, written, replaced }),
+  },
+  generatedFileRule,
+  { ...workerScopeRule, applies: notUnwrapping },
+  { ...scopeLinkRule, applies: notUnwrapping },
+  { id: 'stray-write', reason: ({ project, input }) => strayWriteReason(project, input) },
+  testWriterScopeRule,
+  worktreeCodeRule,
+  handWrittenRoleRule,
+];
+
+// A file a patch removes is judged as `rm` judges it: the baseline and the scope of a worker hold it.
+const REMOVAL_RULES = [baselineFileRule, workerScopeRule];
+
+// The rules the CLI decides, on a file it may judge before the write.
+const CLI_RULES = [
+  storyCodeRule,
+  {
+    id: 'dependency',
+    reason: ({ project, file, written, replaced, input }) =>
+      dependencyReason(project, { file, written, replaced }, input),
+  },
+];
+
+// The questions a write puts, when no rule refuses it.
+const DEVIATION_RULES = [
+  { id: 'governed-file', reason: ({ project, file }) => governedFileReason(project, file) },
+  { id: 'scripts-change', reason: ({ project, file, input }) => scriptsChangeReason(project, file, input) },
+  {
+    id: 'escape',
+    applies: ({ file }) => SCRIPT_FILE.test(file),
+    reason: ({ written, replaced }) => escapeReason(written, replaced),
+  },
+];
 
 const MODES = {
   session,
@@ -271,39 +314,17 @@ function cliVerdict(writes, input) {
   return verdict;
 }
 
-// A file a patch removes is judged as `rm` judges it: the baseline and the scope of a worker hold it.
-function quickRefusal({ project, file, written, replaced, deleted }, input) {
-  if (deleted) {
-    return baselineFileReason(project, file) ?? workerScopeReason(project, file, input);
-  }
-  return (
-    baselineFileReason(project, file) ??
-    scopeFileReason(project, { place: file }, input) ??
-    acceptanceReason(project, input, { file, written, replaced }) ??
-    generatedFileReason(project, file) ??
-    (isUnwrapping(project, file, input)
-      ? undefined
-      : (workerScopeReason(project, file, input) ?? linkReason(project, file, input))) ??
-    strayWriteReason(project, input) ??
-    testWriterScopeReason(project, file, input) ??
-    worktreeCodeReason(project, file) ??
-    handWrittenRoleReason(project, file)
-  );
+function quickRefusal(written, input) {
+  return firstRefusal(written.deleted ? REMOVAL_RULES : WRITE_RULES, { ...written, input })?.reason;
 }
 
-function cliRefusal({ project, file, written, replaced }, input) {
-  return storyCodeReason(project, file) ?? dependencyReason(project, { file, written, replaced }, input);
+function cliRefusal(written, input) {
+  return firstRefusal(CLI_RULES, { ...written, input })?.reason;
 }
 
-function deviationOf({ project, file, written, replaced, deleted }, input) {
-  if (deleted) {
-    return undefined;
-  }
-  const deviation =
-    governedFileReason(project, file) ??
-    scriptsChangeReason(project, file, input) ??
-    (SCRIPT_FILE.test(file) ? escapeReason(written, replaced) : undefined);
-  return deviation ? { decision: 'ask', reason: deviation } : undefined;
+function deviationOf(written, input) {
+  const deviation = written.deleted ? undefined : firstRefusal(DEVIATION_RULES, { ...written, input });
+  return deviation ? { decision: 'ask', reason: deviation.reason } : undefined;
 }
 
 // A refusal of the patch Codex applies through its shell wins; else the command line is read, and a
@@ -338,7 +359,7 @@ async function shellVerdict(input, command, cwd) {
   if (!commands) {
     return isHeldToAWorktree(project, input) ? { decision, reason: UNREADABLE_COMMAND } : undefined;
   }
-  const preparing = await preparingReason(project, input, { command, commands });
+  const preparing = preparingReason(project, input, { command, commands });
   if (preparing) {
     return { decision, reason: preparing };
   }

@@ -27,7 +27,9 @@ how to start, then the rules every change follows.
    reaches fails it, and a branch no hook input can reach is removed. The guard is
    `plugin/hooks/guard.mjs`, the entry that holds the modes and the order of the rules, and the
    modules beside it, each opening with what it holds; all are loaded with it, but
-   `shell-commands.mjs` and `builder-runs.mjs`, loaded when a call needs them. The table names the file,
+   `shell-commands.mjs` and `builder-runs.mjs`, loaded when a call needs them. A rule is a row
+   `{ id, applies?, reason }` of a table read by `firstRefusal` (`rule-table.mjs`): the order is the
+   table's, in the entry for a write and in `shell-rules.mjs` for a command. The coverage table names the file,
    not the branch: `node pipeline/monorepo/uncovered-branches.mjs coverage/plugin.lcov` names
    each branch the run did not take, from the lcov the run wrote.
 4. **Open a pull request.** Its title is a conventional commit subject; its template asks what
