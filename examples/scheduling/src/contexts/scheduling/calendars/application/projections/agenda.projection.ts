@@ -13,16 +13,6 @@ import { storableStamp } from '@/shared-kernel/storable-stamp';
 import type { Agenda, AgendaEntry } from '@/contexts/scheduling/calendars/application/ports/agenda.port';
 import { AppointmentStatus } from '@/contexts/scheduling/calendars/domain/vocabularies/appointment-status.vocabulary';
 
-/** Where a fact comes in the life of an appointment, for two facts of the same millisecond: an end is always the last word. */
-const RANK: Readonly<Record<string, number>> = {
-  'scheduling.appointment.booked': 0,
-  'scheduling.appointment.confirmed': 1,
-  'scheduling.appointment.rescheduled': 2,
-  'scheduling.appointment.annotated': 3,
-};
-
-const LAST_RANK = 9;
-
 type Standing = Pick<AgendaEntry, 'status'> &
   Partial<Pick<AgendaEntry, 'confirmBefore' | 'cancelledBy' | 'internalNote'>>;
 
@@ -134,9 +124,9 @@ function placeOf(
 
 /**
  * The stamp of a fact of an appointment, as the store can keep it (`storableStamp`). Every fact
- * of an entry comes from the one appointment, so the versions of an entry are one stream: the
- * millisecond of the fact, then its rank.
+ * of an entry comes from the one appointment, which ranks them: the entry follows that order,
+ * whatever the clocks and the order of the deliveries.
  */
 function stampOfFact(event: DomainEvent): EventStamp {
-  return storableStamp(stampOf(event), RANK[event.name] ?? LAST_RANK);
+  return storableStamp(stampOf(event));
 }

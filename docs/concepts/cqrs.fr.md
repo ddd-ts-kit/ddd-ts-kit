@@ -1,5 +1,5 @@
 [English](cqrs.md) · **Français**
-<!-- translation-of: cqrs.md sha256:de6ed9153ffcaa47 -->
+<!-- translation-of: cqrs.md sha256:df0baad8d5845849 -->
 
 # CQRS tel qu'utilisé ici
 
@@ -381,9 +381,14 @@ pouvait pas.
 - **Comptez-le.** `projection_events_total` a le résultat `missing` : un compte qui monte est un
   changement arrivé avant sa création, ou après un retrait.
 
-**Une seule sorte de tampon par clé.** `stampOf(event)` ordonne par l'instant de l'événement,
-puis par son id ; `stampOf(event, version)` ordonne par une version que l'amont compte par clé.
-L'ordre est total dans chaque sorte : le plus récent d'un ensemble d'événements est le même quel
+**Une seule sorte de tampon par clé.** `stampOf(event)` d'un événement d'intégration ordonne par
+l'instant de l'événement, puis par son id ; `stampOf(event, version)` ordonne par une version que
+l'amont compte par clé. `stampOf(event)` d'un événement du domaine porte toujours une version, le
+rang que l'agrégat a donné à l'événement en l'enregistrant : les événements d'un agrégat sont
+appliqués dans son ordre, deux événements d'une même commande et d'un même instant compris. Cette
+version est l'histoire d'un seul agrégat, elle n'ordonne donc qu'une clé que cet agrégat est seul à
+écrire ; une clé qu'écrivent les événements du domaine de plusieurs agrégats est tamponnée
+`{ eventId: eventIdOf(event), occurredAt: event.occurredAt }`. L'ordre est total dans chaque sorte : le plus récent d'un ensemble d'événements est le même quel
 que soit l'ordre de leurs livraisons. Quand un tampon a une version et l'autre non, les instants
 décident, et ce n'est pas un ordre : avec A (version 1, 12:09), B (sans version, 12:05) et C
 (version 2, 12:01), C est plus récent que A, A plus récent que B et B plus récent que C, si bien

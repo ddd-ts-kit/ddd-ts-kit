@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { anExecutionContext } from '@ddd-ts-kit/testing';
-import { Criteria, offsetPage, scoped, FixedExecutionScope } from '@ddd-ts-kit/kernel';
+import { Criteria, offsetPage, ranked, scoped, FixedExecutionScope } from '@ddd-ts-kit/kernel';
 import type { AgendaEntry } from '@/contexts/scheduling/calendars/application/ports/agenda.port';
 import { AgendaProjection } from '@/contexts/scheduling/calendars/application/projections/agenda.projection';
 import { AppointmentBooked } from '@/contexts/scheduling/calendars/domain/events/appointment-booked.event';
@@ -126,22 +126,23 @@ describe('KnexAgenda, listing', () => {
 });
 
 describe('KnexAgenda, written fact after fact', () => {
-  // The stamps of real facts carry milliseconds, which the store reads back to the second: the projection orders them itself.
+  // The stamps of real facts carry milliseconds, which the store reads back to the second: the rank of each fact in its appointment orders them.
   it('follows the facts of an appointment the projection applies, milliseconds apart', async () => {
     const projection = new AgendaProjection(agenda);
     const { booking } = anAppointment().identifiedBy('appointment-1').build();
     const cancellation = Cancellation.create('patient');
 
+    const booked = ranked(new AppointmentBooked('appointment-1', new Date('2026-03-01T08:00:00.123Z'), { booking }), 1);
+
     const writes = [
-      await projection.booked(
-        new AppointmentBooked('appointment-1', new Date('2026-03-01T08:00:00.123Z'), { booking }),
-      ),
+      await projection.booked(booked),
       await projection.cancelled(
-        new AppointmentCancelled('appointment-1', new Date('2026-03-01T08:00:00.456Z'), { booking, cancellation }),
+        ranked(
+          new AppointmentCancelled('appointment-1', new Date('2026-03-01T08:00:00.456Z'), { booking, cancellation }),
+          2,
+        ),
       ),
-      await projection.booked(
-        new AppointmentBooked('appointment-1', new Date('2026-03-01T08:00:00.123Z'), { booking }),
-      ),
+      await projection.booked(booked),
     ];
 
     expect(writes).toEqual(['applied', 'applied', 'stale']);

@@ -250,14 +250,7 @@ export const invoiceLifecycle = defineStateMachine({
   refused: ({ from }, { invoiceId }: InvoiceCheck) => InvoiceClosed.forInvoice(invoiceId, from),
 });
 
-export class InvoiceIssued extends NamedDomainEvent('billing.invoice.issued') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class InvoiceIssued extends NamedDomainEvent('billing.invoice.issued') {}
 
 interface InvoiceState {
   readonly status: InvoiceStatus;

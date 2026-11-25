@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:900a0d2b756b748e -->
+<!-- translation-of: README.md sha256:0d40ebbc33d451ee -->
 
 # @ddd-ts-kit/di
 
@@ -1489,14 +1489,7 @@ enregistrez l'agrégat, et arrêtez-vous là :
 ```ts
 import { AggregateRoot, Clock, Command, Repository, type CommandHandler, NamedDomainEvent } from '@ddd-ts-kit/kernel';
 
-export class InvoiceIssued extends NamedDomainEvent('billing.invoice.issued') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class InvoiceIssued extends NamedDomainEvent('billing.invoice.issued') {}
 
 export class Invoice extends AggregateRoot {
   private constructor(id: string) {

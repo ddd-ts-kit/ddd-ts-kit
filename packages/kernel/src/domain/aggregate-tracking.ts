@@ -1,4 +1,5 @@
 import type { DomainEvent } from './domain-event';
+import { ranked } from './ranked';
 
 // Shared across the copies of the kernel a process loads: an aggregate of a context compiled apart is tracked the same.
 const TRACKING = Symbol.for('@ddd-ts-kit/kernel/aggregate-tracking/v1');
@@ -16,7 +17,7 @@ export class AggregateTracking {
   /** Recorded and not announced yet, oldest first. */
   readonly recorded: DomainEvent[] = [];
 
-  /** How many of the recorded events, from the oldest, the stream of an event-sourced aggregate already holds. */
+  /** How many of the recorded events, from the oldest, a save already wrote. */
   appended = 0;
 
   /**
@@ -42,6 +43,15 @@ export class AggregateTracking {
 
   static follows(value: unknown): value is object {
     return typeof value === 'object' && value !== null && isTracking(Reflect.get(value, TRACKING));
+  }
+
+  /**
+   * Keeps an event the aggregate announces, at its rank: one past the last fact the store or the
+   * aggregate holds. The version follows the ranks at each save, so a rank is given once in the
+   * life of the aggregate.
+   */
+  record(event: DomainEvent): void {
+    this.recorded.push(ranked(event, this.version + this.recorded.length - this.appended + 1));
   }
 }
 

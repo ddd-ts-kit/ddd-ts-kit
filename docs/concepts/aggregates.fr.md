@@ -1,5 +1,5 @@
 [English](aggregates.md) · **Français**
-<!-- translation-of: aggregates.md sha256:874f0b6c7c162f38 -->
+<!-- translation-of: aggregates.md sha256:15e523b6e1ba185e -->
 
 # Agrégats
 
@@ -385,7 +385,8 @@ declare function insertUnlessExists(row: AppointmentRow): Promise<boolean>;
 declare function updateWhereVersion(row: AppointmentRow, expected: number): Promise<number>;
 
 export async function save(appointment: Appointment): Promise<void> {
-  // expected : la version chargée (0 : jamais enregistré) ; next : la version à écrire.
+  // expected : la version chargée (0 : jamais enregistré) ; next : la version à écrire, le rang du
+  // dernier événement que l'agrégat a enregistré (expected + 1 s'il n'en a enregistré aucun).
   await optimisticUpdate(appointment, async ({ expected, next }) => {
     const row = { ...rowOf(appointment), version: next };
 

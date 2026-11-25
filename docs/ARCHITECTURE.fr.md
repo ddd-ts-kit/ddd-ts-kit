@@ -1,5 +1,5 @@
 [English](ARCHITECTURE.md) · **Français**
-<!-- translation-of: ARCHITECTURE.md sha256:95261c06d0fd2986 -->
+<!-- translation-of: ARCHITECTURE.md sha256:c662eefacba05981 -->
 
 # Référence de l'architecture
 
@@ -589,14 +589,7 @@ export class InvoiceAlreadyPaid extends DomainRefusal {
 }
 
 // domain/events/invoice-paid.event.ts : un fait, au passé
-export class InvoicePaid extends NamedDomainEvent('billing.invoice.paid') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class InvoicePaid extends NamedDomainEvent('billing.invoice.paid') {}
 
 // domain/aggregates/invoice.aggregate.ts
 export interface InvoiceState {

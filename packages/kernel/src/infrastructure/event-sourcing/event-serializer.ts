@@ -5,18 +5,15 @@ import type { StoredEventType } from '../../application/event-sourcing/stored-ev
 import type { StoredEventTypes } from '../../application/event-sourcing/stored-event-types';
 import type { StoredEvent } from '../../application/event-sourcing/stored-event';
 import { UnreadableEventError } from '../../application/event-sourcing/unreadable-event-error';
-import type { IdGenerator } from '../../application/ports/id-generator';
 import type { DomainEvent } from '../../domain/domain-event';
-import { UuidGenerator } from '../id/uuid-generator';
+import { eventIdOf } from '../../domain/event-id-of';
+import { ranked } from '../../domain/ranked';
 import { PersonalDataCipher } from './personal-data-cipher';
-import { storedOrigins } from './stored-origins';
 import { aggregateIdOf } from './aggregate-id-of';
 
 export interface EventSerializerOptions {
   /** Seals and opens the personal values; without one, data holding a personal value is refused. */
   readonly cipher?: PersonalDataCipher;
-  /** Gives each stored event its id. Default: a UUID. */
-  readonly ids?: IdGenerator;
 }
 
 /**
@@ -24,11 +21,12 @@ export interface EventSerializerOptions {
  * declared them: the current version of their shape on the way in, and on the way out the
  * upcasters from the version they were stored with, then `decode`. Stored events are never
  * rewritten. Personal values are sealed on the way in and opened on the way out.
+ *
+ * An event is stored under its own identity (`eventIdOf`) and read back at the rank its stream
+ * holds it at: the event a save dispatched and the one a replay reads are stamped alike.
  */
 export class EventSerializer<E extends DomainEvent> {
   private readonly types = new Map<string, StoredEventType<E>>();
-
-  private readonly ids: IdGenerator;
 
   constructor(
     types: StoredEventTypes<E>,
@@ -41,8 +39,6 @@ export class EventSerializer<E extends DomainEvent> {
         this.types.set(name, declared);
       }
     }
-
-    this.ids = options.ids ?? new UuidGenerator();
   }
 
   /** Whether events of this name are declared here: what a subscription skips otherwise. */
@@ -52,12 +48,13 @@ export class EventSerializer<E extends DomainEvent> {
 
   async serialize(event: DomainEvent): Promise<EventToAppend> {
     const declared = this.typeOf(event.name);
+    const data = await this.seal(declared.encode(event));
 
     return {
-      id: this.ids.next(),
+      id: eventIdOf(event),
       type: event.name,
       schemaVersion: declared.version,
-      data: await this.seal(declared.encode(event)),
+      data,
       metadata: { aggregateId: event.aggregateId },
       occurredAt: event.occurredAt,
     };
@@ -75,9 +72,7 @@ export class EventSerializer<E extends DomainEvent> {
       version: stored.version,
     });
 
-    storedOrigins.set(event, stored);
-
-    return event;
+    return ranked(event, stored.version);
   }
 
   /** Seals the personal values of the data, for an event or a snapshot. */

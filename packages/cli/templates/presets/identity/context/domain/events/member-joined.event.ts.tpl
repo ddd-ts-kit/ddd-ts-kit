@@ -4,14 +4,14 @@ import type { MemberRole } from '{{alias.context}}/domain/vocabularies/member-ro
 /** An account became a member of an organisation, in a role. */
 export class MemberJoined extends NamedDomainEvent('{{context.kebab}}.member.joined') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly facts: {
       readonly organisationId: string;
       readonly accountId: string;
       readonly role: MemberRole;
     },
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }

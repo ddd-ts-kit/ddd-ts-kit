@@ -1,5 +1,5 @@
 [English](event-versioning.md) · **Français**
-<!-- translation-of: event-versioning.md sha256:3f3336f044e30539 -->
+<!-- translation-of: event-versioning.md sha256:760fc33bd00a99c2 -->
 
 # Versionner un événement d'intégration
 
@@ -188,11 +188,11 @@ export const appointmentBookedV2 = defineIntegrationEvent({
 // appointments/domain/events/appointment-booked.event.ts
 export class AppointmentBooked extends NamedDomainEvent('appointments.appointment.booked') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly slots: readonly { readonly startsAt: Date; readonly endsAt: Date }[],
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

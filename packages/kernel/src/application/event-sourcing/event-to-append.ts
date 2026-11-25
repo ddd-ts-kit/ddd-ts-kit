@@ -2,7 +2,7 @@ import type { StoredData } from './stored-data';
 
 /** An event as the store is handed it: serialized, not yet placed in its stream. */
 export interface EventToAppend {
-  /** Unique in the store. */
+  /** Unique in the store: the identity of the domain event, `eventIdOf(event)`. */
   readonly id: string;
   /** The name the domain event carries, `<context>.<aggregate>.<fact>`. */
   readonly type: string;

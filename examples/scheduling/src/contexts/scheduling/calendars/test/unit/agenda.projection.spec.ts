@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ranked } from '@ddd-ts-kit/kernel';
 import { RoleBasedAuthorizer } from '@ddd-ts-kit/auth';
 import { authorizationModule } from '@ddd-ts-kit/auth/di';
 import { schedulingPermissions } from '@/contexts/scheduling/scheduling.permissions';
@@ -151,12 +152,12 @@ describe('The agenda, given facts twice or out of order', () => {
     const agenda = new FakeAgenda();
     const projection = new AgendaProjection(agenda);
     const { booking } = planned().build();
-    const booked = new AppointmentBooked('appointment-1', bornAt, { booking });
+    const booked = ranked(new AppointmentBooked('appointment-1', bornAt, { booking }), 1);
 
-    const cancelled = new AppointmentCancelled('appointment-1', at('07:00'), {
-      booking,
-      cancellation: Cancellation.create('patient'),
-    });
+    const cancelled = ranked(
+      new AppointmentCancelled('appointment-1', at('07:00'), { booking, cancellation: Cancellation.create('patient') }),
+      2,
+    );
 
     const writes = [
       await projection.booked(booked),
@@ -173,11 +174,11 @@ describe('The agenda, given facts twice or out of order', () => {
     const agenda = new FakeAgenda();
     const projection = new AgendaProjection(agenda);
     const { booking } = planned().build();
-    const expired = new AppointmentExpired('appointment-1', bornAt, booking);
+    const expired = ranked(new AppointmentExpired('appointment-1', bornAt, booking), 2);
 
     const writes = [
       await projection.expired(expired),
-      await projection.booked(new AppointmentBooked('appointment-1', bornAt, { booking })),
+      await projection.booked(ranked(new AppointmentBooked('appointment-1', bornAt, { booking }), 1)),
     ];
 
     expect(writes).toEqual(['applied', 'stale']);
@@ -191,8 +192,10 @@ describe('The agenda, given facts twice or out of order', () => {
     const note = { internalNote: 'Prefers the morning', booking, confirmBefore: at('08:00') };
 
     const writes = [
-      await projection.annotated(new AppointmentAnnotated('appointment-1', bornAt, note)),
-      await projection.booked(new AppointmentBooked('appointment-1', bornAt, { booking, confirmBefore: at('08:00') })),
+      await projection.annotated(ranked(new AppointmentAnnotated('appointment-1', bornAt, note), 2)),
+      await projection.booked(
+        ranked(new AppointmentBooked('appointment-1', bornAt, { booking, confirmBefore: at('08:00') }), 1),
+      ),
     ];
 
     expect(writes).toEqual(['applied', 'stale']);
@@ -209,13 +212,13 @@ describe('The agenda, given facts twice or out of order', () => {
     const agenda = new FakeAgenda();
     const projection = new AgendaProjection(agenda);
     const { booking } = planned().build();
-    const moved = new AppointmentRescheduled('appointment-1', at('07:00'), { booking, previous: booking });
+    const moved = ranked(new AppointmentRescheduled('appointment-1', at('07:00'), { booking, previous: booking }), 2);
 
     expect(await projection.rescheduled(moved)).toBe('missing');
 
     expect(await agenda.get('appointment-1')).toBeUndefined();
 
-    await projection.booked(new AppointmentBooked('appointment-1', at('06:00'), { booking }));
+    await projection.booked(ranked(new AppointmentBooked('appointment-1', at('06:00'), { booking }), 1));
 
     expect(await projection.rescheduled(moved)).toBe('applied');
     expect(await agenda.get('appointment-1')).toMatchObject({ status: 'booked', changedAt: at('07:00') });

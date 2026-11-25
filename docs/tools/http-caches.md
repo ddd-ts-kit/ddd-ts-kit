@@ -180,14 +180,7 @@ import { DomainEventHandler } from '@ddd-ts-kit/kernel/declarations';
 export class CalendarPagesRoutes {}
 
 // domain: what the aggregate records when its opening hours change
-export class CalendarOpeningHoursSet extends NamedDomainEvent('scheduling.calendar.opening-hours-set') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class CalendarOpeningHoursSet extends NamedDomainEvent('scheduling.calendar.opening-hours-set') {}
 
 // application: asked before the commit (the default phase), purged after it, through the outbox
 @DomainEventHandler(CalendarOpeningHoursSet)

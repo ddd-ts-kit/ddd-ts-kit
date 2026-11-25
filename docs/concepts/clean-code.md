@@ -282,11 +282,11 @@ export class CancellationWindowPassed extends DomainRefusal {
 
 export class AppointmentCancelled extends NamedDomainEvent('appointments.appointment.cancelled') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly reason: CancellationReason,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

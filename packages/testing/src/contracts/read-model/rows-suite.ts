@@ -1,6 +1,7 @@
 import { Criteria, cursorPage, scoped, type EventStamp } from '@ddd-ts-kit/kernel';
 import type { CriteriaContractRow } from '../criteria/criteria-contract-row';
 import { criteriaContractRows } from '../criteria/criteria-contract-rows';
+import { ContractOrder } from './contract-order';
 import { everything } from './everything';
 import { ReadModelStoreSuite } from './read-model-store-suite';
 import { rowOf as row } from './row-of';
@@ -20,6 +21,7 @@ export class RowsSuite extends ReadModelStoreSuite {
     this.changesARowItHolds();
     this.findsNoRowToChange();
     this.appliesByVersion();
+    this.appliesTheFactsOfOneCommand();
     this.ordersEachKindOfStamp();
     this.deletesOutsideTheHistory();
     this.replacesOnTheWholeStamp();
@@ -163,6 +165,37 @@ export class RowsSuite extends ReadModelStoreSuite {
       await this.put(row('a1'), { ...at('evt-1', 1), version: 7 });
 
       this.expect((await this.subject.table.find('a1'))?.stamp).toEqual({ ...at('evt-1', 1), version: 7 });
+    });
+  }
+
+  private appliesTheFactsOfOneCommand(): void {
+    const facts = ContractOrder.placedAndCancelledAt('a1', new Date('2026-10-10T12:00:00.000Z')).facts();
+
+    this.it('applies every event one aggregate recorded at the same instant, whatever their names', async () => {
+      const writes: string[] = [];
+
+      for (const [fact, stamp] of facts) {
+        writes.push(
+          await this.store.upsertIfNewer('a1', stamp, (held) => ({
+            ...row('a1'),
+            title: fact,
+            seats: fact === 'line-added' ? (held?.seats ?? 0) + 1 : (held?.seats ?? 0),
+          })),
+        );
+      }
+
+      this.expect(writes).toEqual(['applied', 'applied', 'applied', 'applied']);
+      this.expect(await this.store.get('a1')).toEqual({ ...row('a1'), title: 'cancelled', seats: 2 });
+    });
+
+    this.it('ends on the last event of the aggregate when its events are delivered late or twice', async () => {
+      const [placed, , lineAdded, cancelled] = facts;
+
+      for (const [fact, stamp] of [cancelled, placed, lineAdded, cancelled].filter((each) => each !== undefined)) {
+        await this.put({ ...row('a1'), title: fact }, stamp);
+      }
+
+      this.expect((await this.store.get('a1'))?.title).toBe('cancelled');
     });
   }
 

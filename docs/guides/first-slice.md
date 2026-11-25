@@ -66,11 +66,11 @@ export class OrderEmpty extends DomainRefusal {
 // domain/events/order-placed.event.ts: a fact, named in the past tense
 export class OrderPlaced extends NamedDomainEvent('ordering.order.placed') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly customerId: string,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

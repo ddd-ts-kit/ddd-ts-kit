@@ -128,21 +128,21 @@ import { NamedDomainEvent,
 // domain/events: facts, in the past tense
 export class AttendanceRecordCreated extends NamedDomainEvent('scheduling.attendance-record.created') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly patientId: string,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
 export class AttendanceRecordNoShowNoted extends NamedDomainEvent('scheduling.attendance-record.no-show-noted') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly appointmentId: string,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
@@ -329,11 +329,11 @@ import { defineStoredEvent, personalData, NamedDomainEvent, type PersonalValue }
 
 export class AttendanceRecordCancellationNoted extends NamedDomainEvent('scheduling.attendance-record.cancellation-noted') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly cancelled: { readonly patientId: string; readonly appointmentId: string; readonly reason: string | undefined },
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
@@ -407,12 +407,12 @@ import { NamedDomainEvent,
 
 export class AttendanceRecordCancellationNoted extends NamedDomainEvent('scheduling.attendance-record.cancellation-noted') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly patientId: string,
     readonly reason: string | undefined, // the words of the patient: personal data
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
@@ -522,8 +522,8 @@ it is applied by a `CatchUpSubscription` under its name, which reads the store a
 checkpoint, applies a batch and moves the checkpoint in one unit of work. A projection added
 later starts at position zero and so is filled from the whole history. `EventStoreProjectionRebuild`
 replays the store into an empty copy of the read model and swaps it in, without stopping the
-subscription. Each row is stamped with the version of its stream (`storedStampOf`), so an event
-applied twice changes nothing.
+subscription. Each row is stamped with the rank of its event in its stream (`stampOf`, the stamp
+the same event carries when its save dispatches it), so an event applied twice changes nothing.
 
 The history read model of the example is such a projection (an excerpt):
 
@@ -534,8 +534,8 @@ export class AttendanceHistoryProjection {
 
   @On(AttendanceRecordNoShowNoted)
   async noShowNoted(event: AttendanceRecordNoShowNoted): Promise<ReadModelWrite> {
-    const stamp = storedStampOf(event) ?? stampOf(event); // the version of the stream: applied twice, changes nothing
-    // ... upserts the entry `${event.aggregateId}#${stamp.version}` if it is newer
+    const stamp = stampOf(event); // its version is the rank in the stream: applied twice, changes nothing
+    // ... upserts the entry `${event.aggregateId}#${rankOf(event)}` if it is newer
   }
 }
 ```
@@ -600,21 +600,21 @@ import { EventSourcedAggregate, type AggregateHistory, type Appliers, NamedDomai
 
 class AttendanceRecordCreated extends NamedDomainEvent('scheduling.attendance-record.created') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly patientId: string,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
 class AttendanceRecordNoShowNoted extends NamedDomainEvent('scheduling.attendance-record.no-show-noted') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly appointmentId: string,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

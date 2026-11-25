@@ -79,14 +79,7 @@ import { AggregateRoot, DomainRefusal, NamedDomainEvent, Repository } from '@ddd
 import { aggregateMapper, insertIgnoringConflict, optimisticUpdate, type KnexContext } from '@ddd-ts-kit/knex';
 
 // domain/events/invoice-paid.event.ts: the domain knows no row, no SQL, no library.
-export class InvoicePaid extends NamedDomainEvent('billing.invoice.paid') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class InvoicePaid extends NamedDomainEvent('billing.invoice.paid') {}
 
 // billing.codes.ts
 export const BillingCodes = { InvoiceAlreadyPaid: 'INVOICE_ALREADY_PAID' } as const;

@@ -1,5 +1,5 @@
 [English](persistence.md) · **Français**
-<!-- translation-of: persistence.md sha256:04435eb45e3bdb39 -->
+<!-- translation-of: persistence.md sha256:41209de06e8192c7 -->
 
 # Persistance : Drizzle, Knex, Prisma, TypeORM, et quelle base de données
 
@@ -87,14 +87,7 @@ import { AggregateRoot, DomainRefusal, NamedDomainEvent, Repository } from '@ddd
 import { aggregateMapper, insertIgnoringConflict, optimisticUpdate, type KnexContext } from '@ddd-ts-kit/knex';
 
 // domain/events/invoice-paid.event.ts : le domaine ne connaît ni ligne, ni SQL, ni bibliothèque.
-export class InvoicePaid extends NamedDomainEvent('billing.invoice.paid') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class InvoicePaid extends NamedDomainEvent('billing.invoice.paid') {}
 
 // billing.codes.ts
 export const BillingCodes = { InvoiceAlreadyPaid: 'INVOICE_ALREADY_PAID' } as const;
