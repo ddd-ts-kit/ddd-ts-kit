@@ -112,8 +112,11 @@ describe('generate e2e for a use case an integration event starts', () => {
     expect(spec).toContain("import { invoiceIssuedV1 } from '@/contexts/billing/published-language';");
     expect(spec).toContain("const event = invoiceIssuedV1.create({ invoiceId: 'invoice-1' }, meta);");
 
+    // The command the handler sends still refuses: `pending(...)` holds the scenario until it is written.
+    expect(spec).toContain("import { pending } from '@ddd-ts-kit/testing/e2e';");
+
     expect(spec).toContain(
-      'await expect(application.publish([event])).resolves.toBeUndefined();\n    await application.settled();',
+      '      await expect(application.publish([event])).resolves.toBeUndefined();\n      await application.settled();\n    }),\n  );',
     );
 
     expect(spec).toContain(
