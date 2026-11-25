@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:aa05c4bd223ba67c -->
+<!-- translation-of: README.md sha256:1367233de38e63a0 -->
 
 # @ddd-ts-kit/openfga
 
@@ -257,11 +257,11 @@ import { DomainEventHandler } from '@ddd-ts-kit/kernel/declarations';
 
 export class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly booking: { readonly calendarId: string; readonly patientId: string },
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

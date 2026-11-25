@@ -1,5 +1,5 @@
 [English](clean-code.md) · **Français**
-<!-- translation-of: clean-code.md sha256:fe7ffff153e95ca8 -->
+<!-- translation-of: clean-code.md sha256:9e770fc915d81442 -->
 
 # Le code propre, tel que le kit l'applique
 
@@ -291,11 +291,11 @@ export class CancellationWindowPassed extends DomainRefusal {
 
 export class AppointmentCancelled extends NamedDomainEvent('appointments.appointment.cancelled') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly reason: CancellationReason,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

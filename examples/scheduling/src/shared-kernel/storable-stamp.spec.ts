@@ -15,6 +15,12 @@ describe('storableStamp', () => {
     expect(later.version).toBeGreaterThan(earlier.version ?? Number.NaN);
   });
 
+  it('keeps the version a stamp already has: the rank its aggregate gave the fact', () => {
+    const stamp = storableStamp({ ...at('2026-03-01T08:00:00.456Z'), version: 3 });
+
+    expect(stamp).toEqual({ eventId: 'event-1', occurredAt: new Date('2026-03-01T08:00:00.000Z'), version: 3 });
+  });
+
   it('orders two facts of the same millisecond by their rank, and never past the next millisecond', () => {
     const first = storableStamp(at('2026-03-01T08:00:00.123Z'), 0);
     const last = storableStamp(at('2026-03-01T08:00:00.123Z'), 42);

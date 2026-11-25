@@ -5,6 +5,7 @@ import {
   appendChanges,
   dispatchingOnSave,
   loadedAt,
+  rankOf,
   recordedEventsOf,
   unitOfWorkOver,
 } from '../src';
@@ -87,6 +88,10 @@ describe('a unit of work that rolls back', () => {
     await expect(failing).rejects.toBe(carrierDown);
     expect(cart.version).toBe(1);
     expect(namesOf(cart)).toEqual(['shop.cart.added-book', 'shop.cart.added-pen', 'shop.cart.emptied']);
+
+    cart.add('ink');
+
+    expect(recordedEventsOf(cart).map(rankOf)).toEqual([2, 3, 4, 5]);
   });
 
   it('gives back what a before-commit handler that failed was handed, and what the handler itself saved', async () => {

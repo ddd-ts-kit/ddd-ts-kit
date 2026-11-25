@@ -1,5 +1,5 @@
 [English](http-caches.md) · **Français**
-<!-- translation-of: http-caches.md sha256:541b440719742198 -->
+<!-- translation-of: http-caches.md sha256:338959dd096ff18c -->
 
 # Caches HTTP : Varnish, Souin, nginx, Fastly, Cloudflare, Bunny
 
@@ -187,14 +187,7 @@ import { DomainEventHandler } from '@ddd-ts-kit/kernel/declarations';
 export class CalendarPagesRoutes {}
 
 // domaine : ce que l'agrégat enregistre quand ses horaires d'ouverture changent
-export class CalendarOpeningHoursSet extends NamedDomainEvent('scheduling.calendar.opening-hours-set') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class CalendarOpeningHoursSet extends NamedDomainEvent('scheduling.calendar.opening-hours-set') {}
 
 // application : demandée avant la validation (la phase par défaut), purgée après, par l'outbox
 @DomainEventHandler(CalendarOpeningHoursSet)

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:b47472d0744e04ea -->
+<!-- translation-of: README.md sha256:a779e3dbc5a865ff -->
 
 # @ddd-ts-kit/kernel
 
@@ -128,11 +128,11 @@ export class OrderLine extends Entity {
 // Un événement du domaine : un fait passé, nommé <contexte>.<agrégat>.<fait>.
 export class OrderPlaced extends NamedDomainEvent('ordering.order.placed') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly lineCount: number,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
@@ -185,8 +185,8 @@ new OrderLine('p-7', Quantity.create(1)).equals(new OrderLine('p-7', Quantity.cr
 |---|---|
 | `Entity<Id>` | `id` et `equals` : deux entités sont égales quand leur classe et leur id le sont |
 | `ValueObject<Props>` | une copie de ses `props` gelée en profondeur (`ValueObjectProps` : primitives, dates, objets-valeurs, listes et enregistrements simples de ceux-ci), `equals` par valeur (les dates par leur instant, les listes et les enregistrements en profondeur, un objet-valeur qu'il tient par son propre `equals`), `toJSON` |
-| `AggregateRoot<Id>` | une entité avec une `version` en lecture seule, le jeton de concurrence optimiste que déplace l'adaptateur de son *repository* (`loadedAt`, `optimisticUpdate`), et `record(event)` pour ses méthodes. La version et les événements enregistrés ne sont pas énumérables : décomposer, comparer ou sérialiser un agrégat ne les voit jamais |
-| `DomainEvent` | une interface : `name`, `occurredAt`, `aggregateId` |
+| `AggregateRoot<Id>` | une entité avec une `version` en lecture seule, le jeton de concurrence optimiste que déplace l'adaptateur de son *repository* (`loadedAt`, `optimisticUpdate`), et `record(event)` pour ses méthodes. Une sauvegarde porte la version au rang du dernier événement que l'agrégat a enregistré, et l'avance de un quand il n'en a enregistré aucun. La version et les événements enregistrés ne sont pas énumérables : décomposer, comparer ou sérialiser un agrégat ne les voit jamais |
+| `DomainEvent` | une interface : `name`, `occurredAt`, `aggregateId`. `NamedDomainEvent('<name>')` est sa classe de base : elle écrit le nom une seule fois et porte les deux autres, l'id de l'agrégat en texte quel que soit son type, si bien qu'un événement sans fait propre s'écrit `class OrderPlaced extends NamedDomainEvent('ordering.order.placed') {}`. L'agrégat qui enregistre un événement lui donne son rang dans son histoire, à partir de 1 (`rankOf(event)`), et son identité découle des deux : `eventIdOf(event)` vaut `<name>:<aggregateId>:<rang>`, la même pour l'événement qu'une sauvegarde distribue et pour celui relu depuis un flux. Un test qui construit un événement à la main dit où il se place : `ranked(event, rang)` |
 
 Plutôt que de changer l'état depuis l'extérieur, où chaque appelant doit se souvenir de la
 règle :
@@ -519,14 +519,7 @@ import { NamedDomainEvent,
   type DomainEvent,
 } from '@ddd-ts-kit/kernel';
 
-class CartOpened extends NamedDomainEvent('shop.cart.opened') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+class CartOpened extends NamedDomainEvent('shop.cart.opened') {}
 
 class Cart extends AggregateRoot {
   static open(id: string, now: Date): Cart {
@@ -2091,7 +2084,7 @@ et une écriture n'a lieu que si son événement est plus récent :
 
 | Règle | |
 |---|---|
-| Tampon | `stampOf(event)` : l'id et l'instant d'un événement d'intégration ; le nom, l'agrégat et l'instant d'un événement du domaine ; plus `stampOf(event, version)` quand l'événement porte une version par clé |
+| Tampon | `stampOf(event)` : l'id et l'instant d'un événement d'intégration, plus `stampOf(event, version)` quand sa charge utile porte une version par clé ; l'identité et l'instant d'un événement du domaine, avec son rang dans son agrégat pour version, si bien que les événements qu'une commande enregistre sont appliqués dans l'ordre de l'agrégat, même au même instant. Une clé qu'écrivent les événements de plusieurs agrégats n'a pas d'histoire unique : tamponnez-la `{ eventId: eventIdOf(event), occurredAt: event.occurredAt }` |
 | Plus récent | une `version` plus grande quand les deux tampons en portent une ; sinon un instant plus tardif ; au même instant, le plus grand id d'événement. Un même événement n'est jamais plus récent que lui-même. L'ordre est total parmi des tampons qui portent tous une version, et parmi des tampons qui n'en portent aucune ; entre un de chaque les instants décident, ce qui n'est pas un ordre, si bien qu'une clé devrait n'en voir qu'une sorte ([une seule sorte de tampon par clé](../../docs/concepts/cqrs.fr.md#quelle-écriture-pour-quel-événement)) |
 | `upsertIfNewer(key, stamp, next)` | pour un événement qui dit toute la ligne, ou peut la créer : écrit `next(current)`, `current` valant `undefined` quand la clé ne tient aucune ligne ; `stale` quand la ligne contient cet événement ou un plus tardif ; `ignored` quand `next` renvoie `undefined`, ce qui est un filtre (l'événement ne concerne pas ce modèle de lecture) et jamais la façon d'attendre une ligne |
 | `updateIfNewer(key, stamp, change)` | pour un événement qui change une partie d'une ligne qu'un autre événement a créée : écrit `change(current)` ; `stale` quand la ligne, ou la trace de sa suppression, contient cet événement ou un plus tardif ; `missing` quand la clé ne tient aucune ligne, la trace d'une suppression plus ancienne que l'événement, ou une ligne d'un autre locataire : rien n'est écrit, le store ne lève jamais pour cela, et la projection décide. Juste seulement quand les événements de la clé sont appliqués dans l'ordre ([quelle écriture pour quel événement](../../docs/concepts/cqrs.fr.md#quelle-écriture-pour-quel-événement)) |
@@ -2220,7 +2213,7 @@ await new EventStoreProjectionRebuild({
 |---|---|
 | `CatchUpSubscription` | Lit le store après le point de reprise de son abonné (`CheckpointStore`), applique un lot et déplace le point de reprise en une unité de travail. Un échec n'applique rien du lot ; deux exécutions d'un même abonné ne le déplacent jamais toutes les deux (`ConcurrencyError`). Une nouvelle projection commence à zéro, si bien qu'elle rattrape tout l'historique |
 | `applyingProjection(projection, serializer)` | (`@ddd-ts-kit/kernel/declarations`) remet à la méthode `@On` qui l'applique chaque événement stocké, relu par le sérialiseur de son agrégat ; passe sur le reste du store |
-| `storedStampOf(event)` | Le tampon d'un événement lu depuis le store : son id, son instant et sa version dans son flux, si bien que les lignes d'un même flux sont ordonnées par le flux, pas par les horloges. `undefined` pour un événement qui ne vient pas d'un store |
+| `stampOf(event)` | Le tampon d'un événement relu depuis le store est celui du même événement distribué par sa sauvegarde : son identité, son instant et, pour version, son rang dans son flux, si bien que les lignes d'un même flux sont ordonnées par le flux, pas par les horloges, et qu'un événement appliqué deux fois ne change rien |
 | `EventStoreProjectionRebuild` | Remplit une copie vide de la table en rejouant le store depuis la position zéro à travers la projection construite sur la copie (`ShadowReadModelStore`) ; puis, en une transaction, retient les écrivains, rejoue ce qui a été ajouté entre-temps et met la copie à la place de la table. L'abonnement continue depuis son point de reprise ; ce qu'il applique à nouveau est périmé face à la copie. Une reconstruction échouée laisse la table telle qu'elle était |
 
 Une projection alimentée par le store n'applique que les événements du domaine de son contexte :
@@ -2300,7 +2293,7 @@ export class AttendanceRecord extends EventSourcedAggregate<AttendanceEvent, Att
 | `appendChanges(aggregate, append)` | Ce qu'appelle un adaptateur de *repository* : les événements enregistrés depuis le chargement et la version que le flux doit encore avoir ; en cas de succès l'agrégat est à la nouvelle version |
 | `EventStore` | Le port : `append(stream, expectedVersion, events)` (une `ConcurrencyError` quand quelqu'un a ajouté d'abord, rien n'en est gardé), `readStream(stream, after?)`, `readAll(after, limit)` dans l'ordre où les ajouts ont été validés, `head()`. `InMemoryEventStore` ici ; PostgreSQL par chaque adaptateur ORM. Tenu à `eventStoreContract` |
 | `defineStoredEvent(Event, spec)` | Comment un événement est stocké : `version` de sa forme, `encode(event): NamedData` (données simples, dates gardées en texte ISO), `decode(data, envelope)` qui lit chaque champ par type (`data.text('x')`, `data.instant('at')`, `data.record('amount')`), et des `upcasters` depuis chaque version antérieure |
-| `EventSerializer<E>` | Chaque événement stocké d'un agrégat (`StoredEventTypes<E>` : une entrée par événement, sinon cela ne compile pas). Un événement stocké n'est jamais réécrit : il passe par un *upcaster* à la lecture. Un événement d'une forme plus récente que ce que connaît la version publiée, ou une version sans *upcaster*, est une `UnreadableEventError` |
+| `EventSerializer<E>` | Chaque événement stocké d'un agrégat (`StoredEventTypes<E>` : une entrée par événement, sinon cela ne compile pas). Un événement stocké n'est jamais réécrit : il passe par un *upcaster* à la lecture. Un événement est stocké sous sa propre identité (`eventIdOf`), qu'aucun générateur ne tire. Un événement d'une forme plus récente que ce que connaît la version publiée, ou une version sans *upcaster*, est une `UnreadableEventError` |
 | `EventSourcedRepository` | Ce à quoi délègue l'adaptateur de *repository* : `findById` rejoue le flux `<category>-<id>` (depuis le dernier *snapshot*), `save` ajoute dans la transaction de l'unité de travail ; les événements partent ensuite avec l'enregistrement comme n'importe quels autres |
 | `SnapshotPolicy` | Par agrégat : `every` tant d'événements, une `version` de la forme (une autre est ignorée, le flux rejoué), `encode`, qui scelle une valeur personnelle avec `personalData` comme dans un événement, et `decode`. `expectSnapshotEquivalence` de `@ddd-ts-kit/testing` prouve qu'un *snapshot* reconstruit l'état que donne un rejeu complet |
 | `personalData(subject, value)` | Marque une valeur personnelle dans `encode`. `PersonalDataCipher` sur un `SubjectKeyStore` la scelle avec la clé de sa personne concernée (AES-256-GCM) ; `SubjectKeyStore.erase(subject)` détruit la clé, et un rejeu lit alors `ERASED_PERSONAL_DATA`. `decode` lit une valeur personnelle avec `data.personalText('x')`, `data.personalInstant('at')` ou `data.personal('email', Email.of)`, qui répondent `undefined` une fois la personne effacée : une valeur qui n'est pas un texte libre ne rend jamais l'agrégat illisible ; `data.isErased('x')` dit si elle l'a été. Le chiffreur ouvre une valeur effacée en `ErasedValue`, `{ $erased: { key } }`, jamais en texte : `data.text` la lit `ERASED_PERSONAL_DATA`, un texte qui se lit `[erased]` n'est pas pris pour elle, et un upcaster voit cette forme |

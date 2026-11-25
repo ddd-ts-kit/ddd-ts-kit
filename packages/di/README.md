@@ -1427,14 +1427,7 @@ save the aggregate, and stop there:
 ```ts
 import { AggregateRoot, Clock, Command, Repository, type CommandHandler, NamedDomainEvent } from '@ddd-ts-kit/kernel';
 
-export class InvoiceIssued extends NamedDomainEvent('billing.invoice.issued') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class InvoiceIssued extends NamedDomainEvent('billing.invoice.issued') {}
 
 export class Invoice extends AggregateRoot {
   private constructor(id: string) {

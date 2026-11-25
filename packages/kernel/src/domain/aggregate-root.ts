@@ -23,6 +23,6 @@ export abstract class AggregateRoot<Id extends string | number = string> extends
   }
 
   protected record(event: DomainEvent): void {
-    AggregateTracking.of(this).recorded.push(event);
+    AggregateTracking.of(this).record(event);
   }
 }

@@ -56,14 +56,7 @@ import { NamedDomainEvent,
 import { CommandHandler, Requires } from '@ddd-ts-kit/kernel/declarations';
 
 // domain/: imports nothing but the kernel
-export class AppointmentBooked extends NamedDomainEvent('appointments.appointment.booked') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class AppointmentBooked extends NamedDomainEvent('appointments.appointment.booked') {}
 
 export const AppointmentsCodes = { SlotTaken: 'SLOT_TAKEN' } as const;
 

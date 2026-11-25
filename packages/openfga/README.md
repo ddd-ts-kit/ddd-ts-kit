@@ -254,11 +254,11 @@ import { DomainEventHandler } from '@ddd-ts-kit/kernel/declarations';
 
 export class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly booking: { readonly calendarId: string; readonly patientId: string },
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

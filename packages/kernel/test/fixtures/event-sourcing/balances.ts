@@ -1,4 +1,4 @@
-import { ReadModelStore, defineCriteria, stampOf, storedStampOf, type ReadModelWrite } from '../../../src';
+import { ReadModelStore, defineCriteria, stampOf, type ReadModelWrite } from '../../../src';
 import { On, Projection } from '../../../src/declarations';
 import { MoneyDeposited, MoneyWithdrawn } from '../../support/bank/account';
 
@@ -15,7 +15,7 @@ export const balanceCriteria = defineCriteria<BalanceRow>({
 
 export abstract class Balances extends ReadModelStore<BalanceRow> {}
 
-/** Fed by the event store: each row is stamped with the version of its stream. */
+/** Fed by the event store: each row is stamped with the rank of the event in its stream. */
 @Projection('bank.balances', { feed: 'event-store' })
 export class BalancesProjection {
   /** How many times the projection applied an event, a stale one included. */
@@ -36,7 +36,7 @@ export class BalancesProjection {
   private moved(event: MoneyDeposited | MoneyWithdrawn, cents: number): Promise<ReadModelWrite> {
     this.applied += 1;
 
-    return this.balances.upsertIfNewer(event.aggregateId, storedStampOf(event) ?? stampOf(event), (row) => ({
+    return this.balances.upsertIfNewer(event.aggregateId, stampOf(event), (row) => ({
       accountId: event.aggregateId,
       cents: (row?.cents ?? 0) + cents,
     }));
