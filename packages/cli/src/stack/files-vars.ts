@@ -1,4 +1,4 @@
-import type { Config } from '../config';
+import { STORAGE_STACKS, type Config } from '../config';
 import type { RenderContext } from '../templating';
 import { one } from './one';
 
@@ -7,7 +7,7 @@ export function filesVars(config: Config): RenderContext {
   const { storage, http } = config.stack;
 
   return {
-    ...one(storage, ['none', 'local', 's3']),
+    ...one(storage, STORAGE_STACKS),
     any: storage !== 'none',
     http: storage !== 'none' && http !== 'none',
   };

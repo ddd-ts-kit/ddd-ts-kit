@@ -14,6 +14,7 @@ import {
   runOrmTool,
   writtenPaths,
 } from '../migration';
+import { namedScripts } from '../orm/migrations/named-scripts';
 import type { Arguments } from './arguments';
 import type { Command } from './command';
 import type { Io } from './io';
@@ -38,7 +39,7 @@ export const knexGenerateCommand: Command = (argv, io) => {
 
   const name = requiredMigrationName(args.text('name'));
 
-  refuseTakenMigrationName(root, 'knex', name);
+  refuseTakenMigrationName(root, namedScripts, name);
   refuseLiveMigrations(root);
 
   return args.json
