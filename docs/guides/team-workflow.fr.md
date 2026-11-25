@@ -1,5 +1,5 @@
 [English](team-workflow.md) · **Français**
-<!-- translation-of: team-workflow.md sha256:fc412c7c9517eb0e -->
+<!-- translation-of: team-workflow.md sha256:213609a2d562deb2 -->
 
 # Travailler en équipe sur un projet DDD
 
@@ -433,7 +433,7 @@ relecteur :
 $ npx ddd-ts-kit explain purity/no-system-clock
 purity/no-system-clock
 
-No new Date() without argument, Date.now() or performance.now() in domain/ or application/: time comes from the Clock port.
+No new Date() without argument, Date.now(), Date() or performance.now() in domain/ or application/: time comes from the Clock port.
 
 Why: Code that reads the clock gives a different answer every time it runs, so its tests are either flaky or need a mocked module. Passing the instant in, from the Clock port, makes every rule about time testable with a fixed date and replayable in production.
 
