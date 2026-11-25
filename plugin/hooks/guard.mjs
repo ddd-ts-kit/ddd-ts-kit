@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 // Fails open by design: a guard that breaks must never block the work it guards.
+// The entry of the guard: the mode a hook asks for and, for each mode, the order in which the rules are
+// asked. What the rules read and decide lies in the modules beside this file, each opening with what
+// it holds, all loaded with it whatever the mode; the reader of the shell (shell-commands.mjs) and the
+// runs of a builder (builder-runs.mjs) alone are loaded when a call needs them.
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';

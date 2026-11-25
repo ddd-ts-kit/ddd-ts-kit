@@ -27,7 +27,7 @@ import { changedPaths, writtenTargets } from './shell-writes.mjs';
 import { contextScopeReason, DECISION_RECORD, REPORT_TO_CONDUCTOR, workerScope } from './worker-scope.mjs';
 import { generatedFileReason } from './write-rules.mjs';
 
-// The merged sides a path is compared with, newest first, and the files of a folder read before a command.
+// The merged sides a path is compared with, newest first.
 const COMPARED_SIDES = 16;
 
 // What `npm run regenerate` rewrites outside every context (the CLI's `isDerived`): the contracts

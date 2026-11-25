@@ -24,7 +24,10 @@ how to start, then the rules every change follows.
    out in [the decision record of the measure](docs/adr/0001-lines-left-out-of-the-coverage-measure.md),
    never moved onto a line that already runs. The hooks of the plugin are held to 100
    percent of their lines, branches and functions (`npm run test:plugin`): a branch no test
-   reaches fails it, and a branch no hook input can reach is removed. The table names the file,
+   reaches fails it, and a branch no hook input can reach is removed. The guard is
+   `plugin/hooks/guard.mjs`, the entry that holds the modes and the order of the rules, and the
+   modules beside it, each opening with what it holds; all are loaded with it, but
+   `shell-commands.mjs` and `builder-runs.mjs`, loaded when a call needs them. The table names the file,
    not the branch: `node pipeline/monorepo/uncovered-branches.mjs coverage/plugin.lcov` names
    each branch the run did not take, from the lcov the run wrote.
 4. **Open a pull request.** Its title is a conventional commit subject; its template asks what
@@ -293,7 +296,7 @@ version folds the files of `changes/` into it, in the order they reached `main`,
 the CLI package ships a copy, which agents read in `node_modules`. The plugin is released with the
 packages, under their version: setting it also writes `version` of
 `plugin/.claude-plugin/plugin.json` and the version the skills describe, in
-`plugin/hooks/guard.mjs`, so that every agent shows one number. The plugin numbered itself apart
+`plugin/hooks/briefing.mjs`, so that every agent shows one number. The plugin numbered itself apart
 until then, ahead of the packages: the first common version is above its version, which `--set`
 holds (it names the first version it accepts), and `--expect` of the release workflow holds the
 plugin to the tag. An urgent fix of the plugin is a patch release of the kit, not a version of

@@ -1,10 +1,12 @@
-// The input and the answer of a hook, for the three hosts in one place: which host calls, the writes
-// of a tool call file by file, the decision in the shape each host reads. Every mode reads it.
+// The input and the answer of a hook, for the three hosts in one place: which host and which agent
+// call, the writes of a tool call file by file, the decision in the shape each host reads. Every mode
+// reads it.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { call } from './call.mjs';
 import { parseJson } from './disk.mjs';
 
+// The agents of the plugin a rule knows by name, as the input of a call names them.
 const WORKER_AGENT = 'context-builder';
 
 // The builder of the plugin, as its hooks of SubagentStart and SubagentStop match it: the one counted.

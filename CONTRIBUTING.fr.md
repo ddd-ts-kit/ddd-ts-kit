@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:e20589b4e0da5a5a -->
+<!-- translation-of: CONTRIBUTING.md sha256:6f73008f4907c706 -->
 
 # Contribuer
 
@@ -26,7 +26,10 @@ une règle. Cette page dit comment commencer, puis les règles que suit chaque c
    de la mesure dans [l'enregistrement de décision de la mesure](docs/adr/0001-lines-left-out-of-the-coverage-measure.fr.md),
    jamais déplacée sur une ligne déjà exécutée. Les *hooks* du plugin sont tenus à 100 % de leurs lignes, branches
    et fonctions (`npm run test:plugin`) : une branche qu'aucun test n'atteint le fait échouer, et
-   une branche qu'aucune entrée de *hook* ne peut atteindre est retirée. Le tableau nomme le fichier,
+   une branche qu'aucune entrée de *hook* ne peut atteindre est retirée. La garde, c'est
+   `plugin/hooks/guard.mjs`, l'entrée qui tient les modes et l'ordre des règles, et les modules à
+   côté, chacun ouvrant sur ce qu'il tient ; tous sont chargés avec elle, sauf `shell-commands.mjs`
+   et `builder-runs.mjs`, chargés quand un appel en a besoin. Le tableau nomme le fichier,
    pas la branche : `node pipeline/monorepo/uncovered-branches.mjs coverage/plugin.lcov` nomme chaque
    branche que le passage n'a pas prise, depuis le lcov qu'il a écrit.
 4. **Ouvrir une pull request.** Son titre est un sujet de commit conventionnel ; son modèle
@@ -312,7 +315,7 @@ fixer la version y fond les fichiers de `changes/`, dans l'ordre où ils ont att
 supprime ; le package de la CLI en livre une copie, que les agents lisent dans `node_modules`. Le
 *plugin* sort avec les packages, sous leur version : la fixer écrit aussi `version` de
 `plugin/.claude-plugin/plugin.json` et la version que décrivent les skills, dans
-`plugin/hooks/guard.mjs`, pour que chaque agent affiche un seul numéro. Le *plugin* se numérotait
+`plugin/hooks/briefing.mjs`, pour que chaque agent affiche un seul numéro. Le *plugin* se numérotait
 à part jusque-là, en avance sur les packages : la première version commune est au-dessus de la
 sienne, ce que `--set` tient (il nomme la première version qu'il accepte), et `--expect` du
 workflow de release tient le *plugin* à l'étiquette. Un correctif urgent du *plugin* est une

@@ -57,6 +57,7 @@ import {
   testWriterScopeReason,
 } from './write-rules.mjs';
 
+// The files of a folder read before a command.
 const FOLDER_FILES = 5000;
 
 // Generators that write outside the context they are given: the config, registries of the platform, the schema.
