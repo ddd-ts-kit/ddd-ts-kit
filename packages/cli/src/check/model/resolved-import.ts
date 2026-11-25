@@ -1,11 +1,7 @@
+import type { ImportRecord } from '../scan/import-record';
 import type { ImportTarget } from './import-target';
 
-export interface ResolvedImport {
-  readonly specifier: string;
-  readonly line: number;
-  /** Local names bound by the statement. */
-  readonly names: readonly string[];
-  /** The names among them that are imported as types only. */
-  readonly typeNames: readonly string[];
+/** An import or export statement as the scanner read it, with what its specifier leads to. */
+export interface ResolvedImport extends ImportRecord {
   readonly target: ImportTarget;
 }

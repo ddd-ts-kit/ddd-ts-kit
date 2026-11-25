@@ -30,11 +30,7 @@ export const affectedCommand: Command = (argv, io) => {
     run: { type: 'string' },
   });
 
-  const format = args.json ? 'json' : (args.text('format') ?? 'text');
-
-  if (!FORMATS.includes(format)) {
-    throw new CliError(`Unknown value "${format}" for --format.`, `Use one of: ${FORMATS.join(', ')}.`);
-  }
+  const format = args.format(FORMATS, 'text');
 
   const root = args.projectRoot;
   const { config } = readConfig(root);

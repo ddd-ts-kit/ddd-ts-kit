@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { changedFiles } from '../check/commands/changed-files';
+import { changedSince } from '../check/commands/changed-since';
 import { citedRemovals } from '../citations/cited-removals';
 import { runCheck } from '../check/engine/run-check';
 import { summarize } from '../check/engine/summarize';
@@ -35,7 +35,7 @@ export function verifySlice({ root, config, context, since, sinceCommit }: Slice
 
   const manager = config.stack.packageManager;
   const regenerate = runScript({ root, manager, script: 'regenerate' });
-  const changed = changedFiles(root, sinceCommit);
+  const changed = changedSince(root, sinceCommit);
   const project = loadProject(root);
   const run = runCheck(project, { rules: [] });
 

@@ -2,7 +2,7 @@ import { trunkExample } from '../commit/trunk-example';
 import { CliError } from '../cli-error';
 import { knownCommit } from '../commit/known-commit';
 import { type Config, readConfig } from '../config';
-import { changedFiles } from '../mutation/changed-files';
+import { changedFiles } from '../commit/changed-files';
 import { formatMutation } from '../mutation/format-mutation';
 import { formatSurvivors } from '../mutation/format-survivors';
 import { MUTATION_REPORT } from '../mutation/mutation-report-file';

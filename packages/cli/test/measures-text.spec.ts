@@ -60,7 +60,7 @@ describe('ddd-ts-kit measures: the text', () => {
     expect(since.code).toBe(2);
     expect(since.stderr).toContain('--since yesterday is not a date.');
     expect(format.code).toBe(2);
-    expect(format.stderr).toContain('--format csv is not an output of measures.');
+    expect(format.stderr).toContain('Unknown value "csv" for --format.');
   });
 });
 

@@ -390,7 +390,8 @@ editor after changing `ddd-ts-kit.config.json`.
 
 Two things work as with the CLI checker: `rules.<id>: "off"` in the config silences the rule
 even when the ESLint config enables it, and `// ddd-ts-kit-disable-next-line <id> -- <reason>`
-silences one line for both tools. A suppression without a reason silences nothing, and
+silences one line for both tools. It names several rules after commas (`<id>, <id> -- <reason>`),
+and directives one above the other all cover the line after the last of them. A suppression without a reason silences nothing, and
 `governance/recorded-deviation` asks that the reason point to a decision record (`ADR-<number>`):
 
 ```ts
