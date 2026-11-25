@@ -243,7 +243,8 @@ describe('init --force keeps what the team wrote where the generators write', ()
     scaffoldEverything(root, DEFAULT_STACK, FULL);
 
     const value = 'builder.bind(InvoiceStatusContract).toValue({ read: () => undefined });';
-    const module = read(root, PLATFORM_MODULE).replace('builder.bind(InvoiceStatusContract).toValue({});', value);
+    const refusing = /builder\.bind\(InvoiceStatusContract\)\.toFactory[^;]*;\n *\}\);/;
+    const module = read(root, PLATFORM_MODULE).replace(refusing, value);
     const settings = "'billing.cancel-stale-invoices': { enabled: environment['STALE'] === 'yes', timeoutMs: 5000 },";
 
     write(root, PLATFORM_MODULE, module);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { CLEAN_RULE_IDS } from '../src/check/catalogue/clean-rule-ids';
 import { ESLINT_ONLY_RULES } from '../src/check/catalogue/eslint-only-rules';
 import { KNOWN_RULE_IDS } from '../src/check/catalogue/known-rule-ids';
+import { STANDALONE_RULE_IDS } from '../src/check/catalogue/standalone-rule-ids';
 import { changeConfig, checkJsonOf, errorFixOf, isRecord } from './check-support';
 import { cli, scaffoldEverything, tempDir, write, type CliResult } from './helpers';
 import { failure } from './reports';
@@ -186,7 +186,7 @@ describe('check --clean-only', () => {
       message: 'longest is 102 lines long: no function is longer than 100 lines.',
     });
 
-    expect(CLEAN_RULE_IDS).toEqual(
+    expect(STANDALONE_RULE_IDS).toEqual(
       expect.arrayContaining([
         'clean/no-hash-private',
         'clean/blank-lines',

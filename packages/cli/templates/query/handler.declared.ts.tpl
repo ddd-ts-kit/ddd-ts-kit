@@ -22,12 +22,16 @@ export class {{name.pascal}}Handler implements QueryHandler<{{name.pascal}}Query
 {{/unless}}
 
   async execute(query: {{name.pascal}}Query): Promise<{{name.pascal}}Result> {
-{{#if access.policy}}
-    // TODO(domain): a policy refines {{access.reference}}: ask it about the element "{{name.words}}" reads once it is read, in place of `query`.
-    await this.access.authorize(query.actor, {{access.reference}}, query);
-
-{{/if}}
     // TODO(domain): narrow what is read to what the asker may see: ask `Access.scope(query.actor, permission, '<type>')` for the scope and hand it to the reader, never filter in memory after loading; a query never changes state.
+{{#unless access.policy}}
     return this.reader.read(query);
+{{/unless}}
+{{#if access.policy}}
+    const answer = await this.reader.read(query);
+
+    await this.access.authorize(query.actor, {{access.reference}}, answer);
+
+    return answer;
+{{/if}}
   }
 }

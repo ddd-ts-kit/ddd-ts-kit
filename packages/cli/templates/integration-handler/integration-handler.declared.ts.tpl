@@ -1,4 +1,4 @@
-import { systemActor, type CommandBus } from '@ddd-ts-kit/kernel';
+import { systemActor, undecided, type CommandBus } from '@ddd-ts-kit/kernel';
 import { IntegrationEventHandler } from '@ddd-ts-kit/kernel/declarations';
 import { {{upstream.definition}}, type {{upstream.eventType}} } from '{{alias.contexts}}/{{upstream.kebab}}/published-language{{alias.index}}';
 
@@ -11,6 +11,7 @@ export class {{name.pascal}}IntegrationHandler {
   constructor(private readonly commands: CommandBus) {}
 
   async handle(event: {{upstream.eventType}}): Promise<void> {
-    // TODO(domain): translate `event.payload` (the language of {{upstream.kebab}}) into a command of {{context.kebab}}, built with `this.actor` (nobody is calling: the handler acts as a system actor the authorization model has to grant), and execute it with `this.commands.execute(...)`; delivery is at least once, so the command has to be safe to repeat.
+    // TODO(domain): translate `event.payload` (the language of {{upstream.kebab}}) into a command of {{context.kebab}}, built with `this.actor` (nobody is calling: the handler acts as a system actor the authorization model has to grant), and execute it with `this.commands.execute(...)`; delivery is at least once, so the command has to be safe to repeat. Until it is written, the delivery of the event fails.
+    throw undecided('what {{context.kebab}} does when {{upstream.kebab}} publishes {{upstream.eventName}}');
   }
 }

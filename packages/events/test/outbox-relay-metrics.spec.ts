@@ -46,6 +46,25 @@ describe('OutboxRelay, given metrics', () => {
     expect(depthOf(metrics)).toEqual({ pending: 0, failed: 0, dead: 1 });
   });
 
+  it('counts as failed the publications that failed, not the records held for order behind them', async () => {
+    const store = new InMemoryOutboxStore();
+    const metrics = new InMemoryMetrics();
+
+    const relay = new OutboxRelay({
+      store,
+      publisher: new FlakyPublisher({ 'evt-1': 1 }),
+      clock: new FixedClock(at),
+      metrics,
+      ordering: 'per-key',
+      keyOf: () => 'one-key',
+    });
+
+    await store.append([event('evt-1'), event('evt-2'), event('evt-3')]);
+    await relay.tick();
+
+    expect(depthOf(metrics)).toEqual({ pending: 3, failed: 1, dead: 0 });
+  });
+
   it('does not ask the store to count without them', async () => {
     const relay = new OutboxRelay({
       store: new StoreWithoutStats(),

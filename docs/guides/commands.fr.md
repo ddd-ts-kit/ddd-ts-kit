@@ -1,5 +1,5 @@
 [English](commands.md) · **Français**
-<!-- translation-of: commands.md sha256:cd64cc82b8879ac1 -->
+<!-- translation-of: commands.md sha256:d01cb0d1d340de71 -->
 
 # Quelle commande, quand
 
@@ -47,7 +47,12 @@ Aucun de ces fichiers ne contient encore de code métier. La plupart contiennent
 `TODO(domain)` là où une décision vous revient ; trois arrivent câblés et n'en contiennent aucun
 (le groupe de routes `orders.routes.ts`, les permissions `ordering.permissions.ts` et
 l'adaptateur `drizzle-order.repository.ts`). Les *specs* générées contiennent des entrées
-`it.todo`. La ligne 6 les liste, une ligne chacun, dans l'ordre des fichiers :
+`it.todo`. Ce qui reste à décider refuse tant que ce n'est pas écrit : le gestionnaire d'une
+commande qui change un agrégat, le lecteur d'une requête, une réaction et un traducteur lèvent
+`undecided(...)` du kernel, auquel une route répond 501 `NOT_IMPLEMENTED`, une politique et une
+garde refusent tout le monde, et le seul test exécuté de leur *spec* le dit jusqu'à ce que le
+premier vrai test le remplace. La ligne 6 liste les marqueurs, une ligne chacun, dans l'ordre des
+fichiers :
 
 ```text
 $ npx ddd-ts-kit todo ordering

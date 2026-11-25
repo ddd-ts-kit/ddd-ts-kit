@@ -7,7 +7,7 @@
 Before 1.0:
 
 - A breaking change ships with a `To move:` line in its file of `changes/` and with no transition, alias or shim for the old form. The kit keeps no second spelling alive.
-- A rule that prevents a defect is an error at once. A new rule takes `error` as its default (nothing in `default-severities.ts` for `ddd-ts-kit check`, `recommended: 'error'` for the ESLint rule), and so does what a rule judges more. There is no warning first and no version in which it becomes an error later. A rule is `warn` only when what it reports may be right and a reader settles it (`privacy/*`, which reads names, or `tree/documented-paths`).
+- A rule that prevents a defect is an error at once. A new rule takes `error` as its default (`severity: 'error'` in its rule file for `ddd-ts-kit check`, `recommended: 'error'` for the ESLint rule), and so does what a rule judges more. There is no warning first and no version in which it becomes an error later. A rule is `warn` only when what it reports may be right and a reader settles it (`privacy/*`, which reads names, or `tree/documented-paths`).
 - A layout or a form an earlier version wrote is reported the same way, as an error, with the command that moves it (`ddd-ts-kit context-layout`, `ddd-ts-kit docs`). The kit reads the old form only so that this command can move it.
 
 Where it is already written: the rule part is in `CONTRIBUTING.md` (the item that opens "Before 1.0, a rule that prevents a problem is an error at once"), and the format of the file of `changes/` with its `To move:` line is in `changes/README.md`. `docs/ARCHITECTURE.md` states the rule ids and says nothing of this policy. The part on breaking changes without transition, alias or shim is stated nowhere else: this record is where it is.

@@ -118,7 +118,7 @@ describe('The page of a context, each generated title under the spec it belongs 
     ]),
     [`${UNIT}/late-cancellation.policy.spec.ts`]: specOf('Who may cancel an invoice', [
       'lets the accountant cancel',
-      'bears on the permission invoice.cancel',
+      'refuses everybody until its rule is written',
     ]),
   });
 
@@ -132,7 +132,7 @@ describe('The page of a context, each generated title under the spec it belongs 
         '    - saves the invoice and answers its identifier',
         '    - is refused to an actor who does not hold the permission invoice.cancel',
         '  - **Who may cancel an invoice**',
-        '    - bears on the permission invoice.cancel',
+        '    - refuses everybody until its rule is written',
         '',
       ].join('\n'),
     );

@@ -23,6 +23,6 @@ export function queryOutputs(scope: Scope, name: Name, variant: QueryVariant): O
       `query/${variant}handler.spec.${onKitContainer(scope.config) ? 'container' : 'buses'}.ts.tpl`,
       `test/unit/${name.kebab}.handler.spec.ts`,
     ],
-    ...(variant === '' ? [] : [['query/search.reader.spec.ts.tpl', `test/integration/${reader}.spec.ts`] as const]),
+    [`query/${variant}reader.spec.ts.tpl`, `test/integration/${reader}.spec.ts`],
   ];
 }

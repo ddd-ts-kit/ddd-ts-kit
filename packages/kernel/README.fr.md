@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:9b12b69938ace200 -->
+<!-- translation-of: README.md sha256:2ae6407737da0319 -->
 
 # @ddd-ts-kit/kernel
 
@@ -39,7 +39,7 @@ avec une bibliothèque.
 | Événements du domaine et unité de travail | `dispatchingOnSave` (l'enveloppe qui fait remettre par un *repository* ce qu'ont enregistré les agrégats qu'on lui confie), `announceDomainEvents`, `unitOfWorkOver` (ce sur quoi repose chaque `UnitOfWork` : file, distribution avant la validation, phase `after-commit`), `UnscopedUnitOfWorkError`, `UnitOfWorkAbortedError`, `unitOfWorkStage` et `UnitOfWorkStage`, `DomainEventPhase`, `DomainEventSubscription`, `SaveAfterCommitError`, `AfterCommitFailure`, `reportAfterCommitFailures`, `InMemoryDomainEventDispatcher` |
 | Machines à états | `defineStateMachine`, `StateMachine`, `TransitionError`, `InvalidStateMachineError`, `mermaidOfStateMachine` (voir « Machines à états ») |
 | Acteur | `Actor`, `AuthorizedCommand`, `AuthorizedQuery`, `ActorContext`, `systemActor` |
-| Interfaces standard | `Session`, `ExecutionContext` et `ExecutionScope`, `Logger`, `Metrics`, `ErrorReporter`, `Cache`, `CacheInvalidation` et `CachePurger` (avec `cacheTag`, `tenantCacheTags`, `CachePurgeRequest`, `PublishedCacheInvalidation`, `PurgingPublisher`, `RepeatedCachePurger` : voir « Purger les caches HTTP »), `Lock`, `RateLimiter`, `Page` et `PageRequest`, `AuditStamp`, `TenantScoped`, `AuditTrail`, `AuditReader` et `AuditEntry` |
+| Interfaces standard | `Session`, `ExecutionContext` et `ExecutionScope`, `Logger`, `Metrics`, `ErrorReporter`, `Cache`, `CacheInvalidation` et `CachePurger` (avec `cacheTag`, `tenantCacheTags`, `CachePurgeRequest`, `PublishedCacheInvalidation`, `PurgingPublisher`, `RepeatedCachePurger` : voir « Purger les caches HTTP »), `Lock`, `RateLimiter`, `Page` et `PageRequest`, `AuditStamp`, `TenantScoped`, `AuditTrail`, `AuditReader` et `AuditEntry`, `safely` (exécute un hook, un logger ou une mesure et abandonne ce qu'il lève : observer ne casse jamais ce qui est observé) |
 | *Jobs* planifiés | `JobScheduler`, `ScheduledJob`, `JobExecution`, `JobSchedule`, `JobOptions`, `JobDefinition`, `JobRun`, `JobDescription`, `parseJobSchedule`, `describeJobSchedule`, `jobPolicy`, `executionContextOfJob` |
 | *Jobs* en arrière-plan | `JobQueue`, `BackgroundJob`, `BackgroundJobExecution`, `BackgroundJobPayloadSchema`, `processTimeoutDuePayload`, `EnqueueOptions`, `QueuedJob`, `QueuedJobStatus`, `backgroundJobPolicy`, `retryDelayMs`, `executionContextOfBackgroundJob`, `whenCommitted` (voir « JobQueue ») |
 | Gestionnaires de processus | `ProcessManager`, `ProcessDecision`, `ProcessRunner`, `ProcessStore`, `InMemoryProcessStore`, `UnreadableProcessStateError` (voir « ProcessRunner et ProcessStore ») |

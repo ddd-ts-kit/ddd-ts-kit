@@ -12,7 +12,7 @@ import { baselineFollowingMoves } from '../baseline/baseline-following-moves';
 import { prunedBaseline } from '../baseline/pruned-baseline';
 import { renamedFiles } from '../baseline/renamed-files';
 import { recordedBaseline } from '../baseline/recorded-baseline';
-import { CLEAN_RULE_IDS } from '../catalogue/clean-rule-ids';
+import { STANDALONE_RULE_IDS } from '../catalogue/standalone-rule-ids';
 import type { CheckResult } from '../engine/check-result';
 import { formatCheck, type CheckFormat } from '../engine/format-check';
 import { runCheck } from '../engine/run-check';
@@ -73,7 +73,7 @@ function checkCleanliness(args: Arguments, rules: readonly string[]): CheckResul
   refuseWhatNeedsAProject(args, rules);
   refuseMissingPaths(args);
 
-  const selected = rules.length > 0 ? rules : CLEAN_RULE_IDS;
+  const selected = rules.length > 0 ? rules : STANDALONE_RULE_IDS;
 
   const project = loadLooseProject(
     args.workingDirectory,
@@ -92,12 +92,12 @@ function refuseWhatNeedsAProject(args: Arguments, rules: readonly string[]): voi
     );
   }
 
-  const needing = rules.filter((id) => !CLEAN_RULE_IDS.includes(id));
+  const needing = rules.filter((id) => !STANDALONE_RULE_IDS.includes(id));
 
   if (needing.length > 0) {
     throw new CliError(
       `--clean-only does not run ${needing.join(', ')}.`,
-      `It holds the rules that judge a file on its own: ${CLEAN_RULE_IDS.join(', ')}.`,
+      `It holds the rules that judge a file on its own: ${STANDALONE_RULE_IDS.join(', ')}.`,
     );
   }
 }

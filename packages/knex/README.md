@@ -874,7 +874,8 @@ every copy, and `auditedPersonalDataRetention` of `@ddd-ts-kit/audit` records ea
   the effects of the handler, and disappears with them if it fails.
 
 The life of one record in the `outbox` table. The relay of `@ddd-ts-kit/events` drives it through
-`claimBatch`, `markPublished` and `markFailed`; `retryDead`, `purgePublished` and `stats` are
+`claimBatch`, `markPublished`, `markFailed` and `postpone` (a record held for order behind an
+earlier one of its key: it waits, untried); `retryDead`, `purgePublished` and `stats` are
 called by an operator or a scheduled job, never by the relay:
 
 ![A record is appended pending by the commit of the command; the relay claims it when due and publishes it, then marks it published, and purgePublished removes it later; a failed publication leaves it pending, retried after an exponential backoff; after the last attempt it is dead until retryDead puts it back pending; stats counts pending, failed and dead records](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/transactional-outbox-record-lifecycle.svg)

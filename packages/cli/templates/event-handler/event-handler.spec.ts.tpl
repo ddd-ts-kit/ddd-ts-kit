@@ -1,4 +1,5 @@
 import { describe, expect, it } from '{{tests.module}}';
+import { NOT_IMPLEMENTED } from '@ddd-ts-kit/kernel';
 {{#unless handler.afterCommit}}
 import { RecordingCommandBus } from '@ddd-ts-kit/kernel/testing';
 {{/unless}}
@@ -9,21 +10,19 @@ const fact = new {{event.pascal}}('{{aggregate.kebab}}-1', new Date('2026-01-01T
 
 describe('When {{event.words}}', () => {
 {{#unless handler.afterCommit}}
-  // TODO(domain): replace this test by the entries below once the policy is written: each named after the policy, of the same shape, the fact given and the command recorded asserted, `expect(commands.executed).toEqual([new ...Command(...)])`.
-  it('handles the fact and sends no command until the policy is written', async () => {
-    const commands = new RecordingCommandBus();
+  // TODO(domain): a generated handler refuses until its policy is written: once it is, replace this test by the entries below, each named after the policy, the fact given and the command recorded asserted, `expect(commands.executed).toEqual([new ...Command(...)])`.
+  it('refuses the fact until the policy that follows it is written', async () => {
+    const handler = new {{handler.pascal}}EventHandler(new RecordingCommandBus());
 
-    await new {{handler.pascal}}EventHandler(commands).handle(fact);
-
-    expect(commands.executed).toEqual([]);
+    await expect(handler.handle(fact)).rejects.toMatchObject({ code: NOT_IMPLEMENTED });
   });
 
   it.todo('carries out the policy that follows the fact');
 {{/unless}}
 {{#if handler.afterCommit}}
-  // TODO(domain): replace this test by the entries below once the effect is written: each named after the effect, the handler given the fake of its port and the fact, what the fake kept asserted.
-  it('handles the fact and has no effect until the effect is written', async () => {
-    await expect(new {{handler.pascal}}EventHandler().handle(fact)).resolves.toBeUndefined();
+  // TODO(domain): a generated handler refuses until its effect is written: once it is, replace this test by the entries below, each named after the effect, the handler given the fake of its port and the fact, what the fake kept asserted.
+  it('refuses the fact until the effect that follows its commit is written', async () => {
+    await expect(new {{handler.pascal}}EventHandler().handle(fact)).rejects.toMatchObject({ code: NOT_IMPLEMENTED });
   });
 
   it.todo('carries out the effect that follows the commit of the fact');

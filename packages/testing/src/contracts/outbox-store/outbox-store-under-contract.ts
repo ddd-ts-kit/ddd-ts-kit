@@ -21,11 +21,13 @@ export interface OutboxStoreUnderContract {
       readonly event: IntegrationEvent;
       readonly status: string;
       readonly attempts: number;
+      readonly nextAttemptAt: Date;
       readonly lastErrorCode?: string;
     }[]
   >;
   markPublished(ids: readonly string[], at: Date): Promise<void>;
   markFailed(id: string, error: { readonly code: string }, nextAttemptAt: Date | null): Promise<void>;
+  postpone(id: string, until: Date): Promise<void>;
   retryDead(ids: readonly string[], now: Date): Promise<number>;
   purgePublished(before: Date): Promise<number>;
   erasePersonalFields(subject: string, events: readonly PersonalEventUnderContract[]): Promise<number>;

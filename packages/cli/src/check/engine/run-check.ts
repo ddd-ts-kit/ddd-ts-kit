@@ -3,6 +3,7 @@ import type { Project } from '../model/project';
 import type { Rule } from '../model/rule';
 import type { Violation } from '../model/violation';
 import { findSuppressions } from '../suppressions/find-suppressions';
+import { perFile } from '../support/per-file';
 import { Silencing } from '../suppressions/silencing';
 import type { CheckResult } from './check-result';
 import { summarize } from './summarize';
@@ -66,10 +67,13 @@ function placed(violation: Violation, project: Project): Violation[] {
   return [violation.severity === project.severity(violation.ruleId) ? { ...violation, severity } : violation];
 }
 
-function violationsOf(rule: Rule, project: Project, oneFileOnly: boolean): Violation[] {
-  if (!oneFileOnly) {
-    return [...rule.run(project), ...(rule.acrossProject?.(project) ?? [])];
+/** The engine owns the walk: a file rule is handed each source in turn, and the tree only where it asks for it. */
+function violationsOf(rule: Rule, project: Project, oneFileOnly: boolean): readonly Violation[] {
+  if (rule.scope === 'project') {
+    return oneFileOnly ? [] : rule.judge(project);
   }
 
-  return rule.scope === 'project' ? [] : rule.run(project);
+  const inEachFile = perFile(project, rule.id, (file) => rule.judge(file, project));
+
+  return oneFileOnly ? inEachFile : [...inEachFile, ...(rule.acrossProject?.(project) ?? [])];
 }

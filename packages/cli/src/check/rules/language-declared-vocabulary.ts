@@ -4,7 +4,7 @@ import { inOutsideRecord } from '../language/in-outside-record';
 import { otherLanguageOf } from '../language/other-language-of';
 import { typedByOtherLanguage } from '../language/typed-by-other-language';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import type { StringRecord } from '../scan/string-record';
 import { inContext } from '../support/in-context';
@@ -17,12 +17,23 @@ const FIRST_ARGUMENT = /(?<![\w$])(?!default\s*\()[\w$]+\s*\(\s*$/;
 /** `{ name: 'note' }`, `tableName: 'invoice'`: the name of a column, a table or a schema in an object. */
 const NAME_PROPERTY = /(?<![\w$])(?:name|tableName|schema)\s*:\s*$/;
 
-export const languageDeclaredVocabulary: Rule = {
+export const languageDeclaredVocabulary: ProjectRule = {
   id: 'language/declared-vocabulary',
   description:
     'Under "stack.literals": "named", a value of a closed vocabulary the project declares (an object `as const` with the union type of its name, a permission set of definePermissions) is read through it, never written again as a string literal outside its declaration, a quoted key included: the vocabulary of a context in that context, the one of the platform in the platform and the route groups of the contexts, a permission id and one of the shared kernel everywhere; tests, published languages, the relationship schema and the storage names of the persistence (a column, a table, a schema) are not judged, nor, outside `domain/`, a word whose type says it belongs to another language (a key of an object typed `Record<T, ..>`, a value of one typed `Record<.., T>`, a literal written `satisfies T`, `T` one type of a published language, of a package or of `infrastructure/anti-corruption/` or `infrastructure/external/`) and the types of an outside record declared there; an object is read when each entry is a key and a string literal.',
+  severity: 'error',
+  doc: {
+    why: 'A status, a kind, a role or a permission is a word of the language whose values are a closed list. Spelled again as a string wherever it is compared, granted or stored, each copy can drift: a typo compiles, a renamed value leaves its old spelling behind, and nothing completes it in the editor. Declared once, as an object `as const` and the union type of its name (a permission set for permissions), it is read by its key, completed by the editor, and a parameter typed with it accepts nothing else. The value stays the same string on the wire and in the database. A quoted key counts, and is written as a computed key, `[AppointmentStatus.NoShow]: ..`. Tests and published languages are not judged: a test sends the values a client sends, and a published language names the values of its contract itself; nor is the relationship schema of the access model, which declares its relations. In the persistence of a context, the name of a column, a table or a schema is a word of the storage that may spell a value by chance: the first argument of a call (`text("note")`) and the value of `name`, `tableName` or `schema` are not judged; a stored value, the argument of `.default(..)` or a value compared in a query, is. A word of another language that spells a value of the context does not belong to the context, and is not judged outside `domain/` when its type says so: a key of a table typed `Record<T, ..>`, a value of one typed `Record<.., T>` or a literal written `"x" satisfies T`, `T` being one type imported from a published language, imported as a type from a package, or imported from or declared in `infrastructure/anti-corruption/` or `infrastructure/external/`, so that the compiler holds its spelling. Where: the vocabulary of a context in that context only (the same word may mean something else next door), one of the platform (the roles) in the platform and in the route groups `*.routes.ts`, a permission id and a vocabulary of the shared kernel everywhere. What is read as a vocabulary: every entry a key and a string literal, comments, either quote and `as const satisfies ..` allowed; a number, a spread or a computed entry leaves the object unread, and so does a union type written otherwise than `(typeof X)[keyof typeof X]`. The rule holds under "stack.literals": "named", which `init` writes; a config that does not say keeps the free literals of 0.5.',
+    bad: `// domain/vocabularies/appointment-status.vocabulary.ts declares AppointmentStatus
+if (appointment.status === 'no-show') {
+  grants.push('billing:invoice.issue');
+}`,
+    good: `if (appointment.status === AppointmentStatus.NoShow) {
+  grants.push(billingPermissions['invoice.issue']);
+}`,
+  },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (project.config.stack.literals !== 'named') {
       return [];
     }

@@ -1,3 +1,4 @@
+import { safely } from '../../application/observation/safely';
 import { afterCommit } from './after-commit';
 import { unitOfWorkScope } from './unit-of-work-scope';
 
@@ -21,15 +22,7 @@ export async function whenCommitted(
     return;
   }
 
-  await afterCommit(() => write().catch((error: unknown) => tell(failed, error)));
-}
-
-function tell(failed: (error: unknown) => void, error: unknown): void {
-  try {
-    failed(error);
-  } catch {
-    return;
-  }
+  await afterCommit(() => write().catch((error: unknown) => safely(() => failed(error))));
 }
 
 function ignored(): void {
