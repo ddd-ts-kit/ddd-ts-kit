@@ -6,7 +6,6 @@ import {
   closeSync,
   constants,
   existsSync,
-  fstatSync,
   globSync,
   lstatSync,
   mkdirSync,
@@ -14,7 +13,6 @@ import {
   openSync,
   readdirSync,
   readFileSync,
-  readlinkSync,
   realpathSync,
   rmSync,
   statSync,
@@ -23,7 +21,40 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import {
+  filesIn,
+  isDirectory,
+  isOwnFolder,
+  isRecord,
+  parseJson,
+  readBounded,
+  readJson,
+  readText,
+  realOf,
+  realPlace,
+} from './disk.mjs';
+import { editsOf, emit, hostOf, patchWrites, readInput, sessionOf, toolInput, writesOf } from './hook-input.mjs';
 import { linkedFolder, removeKitFile, writeKitFile } from './kit-files.mjs';
+import {
+  commonDirOf,
+  gitDirOf,
+  hasWorkerWorktree,
+  repositoryTop,
+  STORY_SCOPE,
+  WORKER_SCOPE,
+  workerWorktrees,
+} from './repository.mjs';
+import {
+  ABSOLUTE_PATH,
+  AGENT_ID,
+  COMMIT_ID,
+  CONTEXT_NAME,
+  GIT_REF,
+  LABEL,
+  named,
+  quoted,
+  STORY_ID,
+} from './said-as-data.mjs';
 
 const CONFIG = 'ddd-ts-kit.config.json';
 // The settings of Claude Code that turn its sandbox on, in a project.
@@ -34,9 +65,7 @@ const CONFIG_BYTES = 256 * 1024;
 // the version of the kit: setting a new version of the packages rewrites it.
 const KIT_VERSION = '0.114.1';
 const PLAN = 'docs/architecture/plan.md';
-const WORKER_SCOPE = '.ddd-ts-kit/worker.json';
-// The worktree of a story one session takes to its pull request; its code waits for the build gate.
-const STORY_SCOPE = '.ddd-ts-kit/story.json';
+
 // The names `find` may find a scope file by: the files and the kit's folder that holds them.
 const SCOPE_NAMES = ['story.json', 'worker.json', '.ddd-ts-kit'];
 // Where the worktrees of a project live, inside it, ignored by git and by every tool.
@@ -64,20 +93,11 @@ const BUILDER_AGENT = `ddd-ts-kit:${WORKER_AGENT}`;
 const GUARD_MODES = ['off', 'advise', 'enforce'];
 // The host caps SessionStart context at 10 000 characters; a session should start far below it.
 const SESSION_CONTEXT_LIMIT = 3000;
-// What the guard says of a text read from the repository, the plan line or a next step: at most this many characters.
-const QUOTED_LIMIT = 300;
-// The grammars of the names read from the repository that the guard repeats: anything else is not repeated.
-const STORY_ID = /^[A-Za-z0-9][A-Za-z0-9-]*$/;
-const CONTEXT_NAME = /^[a-z][a-z0-9-]*$/;
-const GIT_REF = /^(?!-)[\p{L}\p{N}_./-]+$/u;
-const COMMIT_ID = /^[0-9a-f]{7,64}$/;
+
 // The merged sides a path is compared with, newest first, and the files of a folder read before a command.
 const COMPARED_SIDES = 16;
 const FOLDER_FILES = 5000;
-// A space is allowed (a project under "My Projects"); a quote, a backquote, a dollar or a backslash is not.
-const ABSOLUTE_PATH = /^\/[\p{L}\p{N} _@%+=:,./-]*$/u;
-const LABEL = /^[a-z][a-z -]*$/;
-const AGENT_ID = /^[\w-]+$/;
+
 const COMMIT_DEFAULTS = { maxFiles: 20, maxLines: 600 };
 const COUNTED_FILE_BYTES = 1_000_000;
 // The files Biome formats: with `formatOnWrite` in the config, the project's own Biome lays one out as it is written.
@@ -282,40 +302,7 @@ const WORKING_MIGRATION = /(^|\/)migrations\/(.+\/)?\d+[_-]working[_-][\w-]*(\.(
 // The models of one context on Prisma, `prisma/schema/<context>.prisma`: its worker changes a column
 // with the mapper; `prisma/schema/schema.prisma` (the client, the datasource, the platform) is shared.
 const PRISMA_CONTEXT_SCHEMA = /^prisma\/schema\/([a-z][a-z0-9-]*)\.prisma$/;
-// The tools of VS Code that write a file named by `filePath`, by the names its chat gives its hooks.
-const VS_CODE_WRITERS = new Set([
-  'create_file',
-  'replace_string_in_file',
-  'multi_replace_string_in_file',
-  'insert_edit_into_file',
-  'edit_notebook_file',
-]);
-// The tools of VS Code that only read, by the names its chat gives its hooks (copilot-chat 0.72): with no
-// matcher, the write hooks run on them too, and a `path` there names what is read. `memory` reads when it
-// views. A name not listed is read as before, so that a tool that writes, added later, is still judged
-// (docs/adr/0007-the-guard-names-the-readers-of-vs-code.md).
-const VS_CODE_READERS = new Set([
-  'read_file',
-  'view_image',
-  'list_dir',
-  'file_search',
-  'grep_search',
-  'semantic_search',
-  'search_workspace_symbols',
-  'get_errors',
-  'get_changed_files',
-  'read_project_structure',
-  'copilot_getNotebookSummary',
-  'read_notebook_cell_output',
-  'test_search',
-  'fetch_webpage',
-  'github_repo',
-  'github_text_search',
-  'get_vscode_api',
-  'search_subagent',
-  'explore_subagent',
-  'resolve_memory_file_uri',
-]);
+
 const REPORT_TO_CONDUCTOR = 'Do not work around it: finish what you can and report the need to the conductor.';
 const UNREAD_PIN =
   'The record of your scope, which the guard keeps since your first call, cannot be read, and the guard pins no worker twice: every call is held. Change nothing: end with your report, and tell the conductor to launch this worker again.';
@@ -703,11 +690,10 @@ const LAUNCHER_VALUED = [
 ];
 // The folders of the programs of the system: a reader named by its path there is that reader.
 const SYSTEM_PROGRAMS = ['/bin', '/usr/bin', '/sbin', '/usr/sbin'];
-const WINDOWS = process.platform === 'win32';
+
 // The variables of lefthook that leave hooks or their commands out.
 const HOOK_SELECTION = /^LEFTHOOK_(?:EXCLUDE|SKIP)=/;
-// The most of a file of state, a scope file or a plan the guard reads: past it, it is not read.
-const STATE_BYTES = 16 * 1024 * 1024;
+
 // What the guard reads of one file to compare it, and copies to hold it, within the 5 s of its hook.
 const HASHED_FILE_BYTES = 16 * 1024 * 1024;
 // The agents of the plugin that only read: they write their findings in their answer.
@@ -1567,126 +1553,6 @@ function blockStop(errors) {
   });
 }
 
-function readInput() {
-  try {
-    return JSON.parse(readFileSync(0, 'utf8'));
-  } catch {
-    return {};
-  }
-}
-
-// Claude Code, and Copilot or VS Code under the same event names, send `tool_name` and
-// `tool_input`; Codex adds a `turn_id` and edits through `apply_patch`; the hooks of Copilot
-// in its own format send `toolName`, `toolArgs` and `sessionId`.
-function hostOf(input) {
-  if ('toolName' in input || 'sessionId' in input) {
-    return 'copilot';
-  }
-
-  return input.tool_name === 'apply_patch' || 'turn_id' in input ? 'codex' : 'claude';
-}
-
-// A tool that takes a free text, the `apply_patch` of Copilot, has that text as its input: it is
-// read where the patches of the other hosts are.
-function toolInput(input) {
-  if (typeof input.tool_input === 'string') {
-    return { input: input.tool_input };
-  }
-  if (input.tool_input && typeof input.tool_input === 'object') {
-    return input.tool_input;
-  }
-  const args = typeof input.toolArgs === 'string' ? parseJson(input.toolArgs) : input.toolArgs;
-
-  return args && typeof args === 'object' ? args : {};
-}
-
-function parseJson(text) {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return undefined;
-  }
-}
-
-function sessionOf(input) {
-  return input.session_id ?? input.sessionId ?? '';
-}
-
-// What one call of a write tool writes, file by file, with the text it adds and the text it replaces.
-// A reader of VS Code writes none.
-function writesOf(input) {
-  const tool = toolInput(input);
-  if (VS_CODE_READERS.has(input.tool_name) || (input.tool_name === 'memory' && tool.command === 'view')) {
-    return [];
-  }
-  const cwd = input.cwd ?? process.cwd();
-  // Codex documents the patch under `command`; the other fields are read in case it moves.
-  const patch = [tool.command, tool.patch, tool.input].find(
-    (text) => typeof text === 'string' && /^\s*\*\*\* Begin Patch/.test(text),
-  );
-  if (patch) {
-    return patchWrites(patch, cwd);
-  }
-
-  return editsOf(input).map((edit) => ({ file: edit.file, written: writtenText(edit), replaced: replacedText(edit) }));
-}
-
-// What a call of an editor tool edits, as many as the files it names, each with its `file`. VS Code
-// keeps no matcher, so these hooks run on its readers too, and a tool not named a reader may have a
-// `filePath`: that field is read for the tools that write. Its `replacements` name their file one by
-// one: those of one file are that file's `edits`, as those of a MultiEdit are.
-function editsOf(input) {
-  const tool = toolInput(input);
-  const cwd = input.cwd ?? process.cwd();
-  const writer = VS_CODE_WRITERS.has(input.tool_name);
-  if (writer && Array.isArray(tool.replacements)) {
-    return replacementsByFile(tool.replacements, cwd);
-  }
-  const file = tool.file_path ?? tool.path ?? (writer ? tool.filePath : undefined);
-
-  return typeof file === 'string' ? [{ ...tool, file: resolve(cwd, file) }] : [];
-}
-
-function replacementsByFile(replacements, cwd) {
-  const files = new Map();
-  for (const replacement of replacements.filter((named) => typeof named?.filePath === 'string')) {
-    const file = resolve(cwd, replacement.filePath);
-    files.set(file, [...(files.get(file) ?? []), replacement]);
-  }
-
-  return [...files].map(([file, edits]) => ({ file, edits }));
-}
-
-// The patch of Codex: `*** Add File:`, `*** Update File:` (and `*** Move to:`), `*** Delete File:`,
-// each followed by its lines, `+` added and `-` removed. Its paths are relative to the session. A
-// deleted file, and the file a move leaves, are writes that remove it (`deleted`). Its lines end in
-// LF or CRLF and the three file headers may be indented, as the parser of Copilot takes them; an
-// indented `+` line, a lower case header or a wider marker, which that parser refuses, stay unread.
-function patchWrites(patch, cwd) {
-  const writes = [];
-  let current;
-  for (const line of patch.split(/\r?\n/)) {
-    const header = /^\s*\*\*\* (Add|Update|Delete) File: (.+)$/.exec(line);
-    const moved = /^\*\*\* Move to: (.+)$/.exec(line);
-    if (header) {
-      current = { file: resolve(cwd, header[2].trim()), added: [], removed: [], deleted: header[1] === 'Delete' };
-      writes.push(current);
-    } else if (moved && current) {
-      writes.push({ file: current.file, added: [], removed: [], deleted: true });
-      current.file = resolve(cwd, moved[1].trim());
-    } else if (current && /^[+-]/.test(line)) {
-      (line.startsWith('+') ? current.added : current.removed).push(line.slice(1));
-    }
-  }
-
-  return writes.map(({ file, added, removed, deleted }) => ({
-    file,
-    written: added.join('\n'),
-    replaced: removed.join('\n'),
-    ...(deleted ? { deleted } : {}),
-  }));
-}
-
 // Up to a folder another user may write: a config there, the shared temp dir above all, is no project.
 function findProject(from) {
   let directory = resolve(from);
@@ -1786,32 +1652,6 @@ function readConfig(path) {
   return { config: isRecord(config) ? config : {} };
 }
 
-// The content of a regular file, read through one descriptor that never waits (a FIFO opens at
-// once) and never past `limit` bytes: the file measured is the file read. A device, a FIFO, a folder
-// or a file that cannot be opened has no content.
-function readBounded(path, limit, encoding = 'utf8') {
-  let descriptor;
-  let read = {};
-  try {
-    descriptor = openSync(path, constants.O_RDONLY | constants.O_NONBLOCK);
-    const stat = fstatSync(descriptor);
-    if (stat.isFile()) {
-      read = stat.size > limit ? { tooLarge: stat.size } : { content: readFileSync(descriptor, encoding) };
-    }
-  } catch {
-    // Missing, or not readable by this user: no content.
-  } finally {
-    if (descriptor !== undefined) {
-      closeSync(descriptor);
-    }
-  }
-  return read;
-}
-
-function isRecord(value) {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function guardMode(asked) {
   return GUARD_MODES.includes(asked) ? { mode: asked } : { mode: 'enforce', unknownMode: asked };
 }
@@ -1852,11 +1692,6 @@ function commitLimits(configured) {
   const limit = (key) =>
     Number.isInteger(configured?.[key]) && configured[key] > 0 ? configured[key] : COMMIT_DEFAULTS[key];
   return { maxFiles: limit('maxFiles'), maxLines: limit('maxLines') };
-}
-
-function readJson(path) {
-  const { content } = readBounded(path, STATE_BYTES);
-  return content === undefined ? undefined : parseJson(content);
 }
 
 function projectBriefing(project, input) {
@@ -1910,16 +1745,6 @@ function mergeNotice(project) {
   return [
     `Merge in progress: ${quoted(report.branch).slice(1, -1)} <- ${quoted(report.trunk?.ref).slice(1, -1)}, ${left} ${left === 1 ? 'path' : 'paths'} left for you when it stopped: \`npx ddd-ts-kit merge-trunk --continue\` or \`--abort\`.`,
   ];
-}
-
-// The git directory of the checkout holding the root (its own in a linked worktree), read from .git.
-function gitDirOf(root) {
-  const top = repositoryTop(root);
-  if (!top) {
-    return undefined;
-  }
-  const dotGit = join(top, '.git');
-  return isDirectory(dotGit) ? dotGit : resolve(top, /^gitdir:\s*(.+)$/m.exec(readText(dotGit, ''))?.[1] ?? '');
 }
 
 // What the guard could not take of the config as written: a mode it does not know, a file too large.
@@ -1988,18 +1813,6 @@ function planPointer(root) {
   ];
 }
 
-// A text read from the repository (the plan, the files of a story through the CLI) said as data,
-// never as a word of the guard: on one line, without backquote nor double quote, cut, never opening
-// with the prefix of the guard's own decisions, between double quotes.
-function quoted(text) {
-  const flat = String(text)
-    .replace(/[\p{Cf}`"]/gu, '')
-    .replace(/[\s\p{Cc}]+/gu, ' ')
-    .replace(/^(?:\s*ddd-ts-kit\s*:)+/i, '')
-    .trim();
-  return `"${flat.slice(0, QUOTED_LIMIT)}"`;
-}
-
 // The story of the worktree, by an id the CLI would take.
 function storyOf(project) {
   return named(storyScope(project)?.story, STORY_ID);
@@ -2011,11 +1824,6 @@ function storyScope(project) {
     storyScopes.set(project.root, readJson(join(project.root, STORY_SCOPE)));
   }
   return storyScopes.get(project.root);
-}
-
-// A name read from the repository, when it follows its grammar; else nothing, and it is not repeated.
-function named(value, grammar) {
-  return typeof value === 'string' && grammar.test(value) ? value : undefined;
 }
 
 // In the worktree of a story: the story, its phase and its next step, so that a session resumes it.
@@ -2108,65 +1916,6 @@ function resumeLine({ branch, context, worktree, progress }, workers) {
   }
   const where = shared ? ` --worktree ${path.includes(' ') ? `'${path}'` : path}` : '';
   return `Worker to resume: ${shown} (${progress.phase}${agent ? `, agent ${agent}` : ''}): \`npx ddd-ts-kit worker-scope ${context} --resume${where}\`, then send what it prints.`;
-}
-
-function hasWorkerWorktree(root) {
-  return workerWorktrees(root).length > 0;
-}
-
-// Read from git's own files, without running git: the worktrees of the repository listed under
-// its common directory that hold the scope of a worker, each by the root of the project in it.
-function workerWorktrees(root) {
-  const top = repositoryTop(root);
-  const gitDir = gitDirOf(root);
-  if (!top || !gitDir) {
-    return [];
-  }
-  const common = resolve(gitDir, readText(join(gitDir, 'commondir'), '.').trim());
-  const prefix = relative(top, root);
-  return filesIn(join(common, 'worktrees'))
-    .map((entry) => dirname(readText(join(entry, 'gitdir'), '').trim()))
-    .filter((checkout) => checkout !== '.' && existsSync(join(checkout, prefix, WORKER_SCOPE)))
-    .map((checkout) => join(checkout, prefix));
-}
-
-function repositoryTop(from) {
-  let directory = resolve(from);
-  for (;;) {
-    if (!isOwnFolder(directory)) {
-      return undefined;
-    }
-    if (existsSync(join(directory, '.git'))) {
-      return directory;
-    }
-    if (dirname(directory) === directory) {
-      return undefined;
-    }
-    directory = dirname(directory);
-  }
-}
-
-// A folder that only this user or the system writes: owned by this user or by root, and not writable
-// by others. A folder not made yet is no other user's. Windows has no such owner: every folder is.
-function isOwnFolder(directory) {
-  const stat = statSync(directory, { throwIfNoEntry: false });
-  return (
-    WINDOWS || stat === undefined || ((stat.mode & 0o002) === 0 && (stat.uid === 0 || stat.uid === process.getuid()))
-  );
-}
-
-function isDirectory(path) {
-  try {
-    return statSync(path).isDirectory();
-  } catch {
-    return false;
-  }
-}
-
-// The text of a file, or `otherwise` when it cannot be read: missing, a folder, a device, larger than
-// the guard reads, or not readable by this user.
-function readText(path, otherwise) {
-  return readBounded(path, STATE_BYTES).content ?? otherwise;
 }
 
 function contextMap(project) {
@@ -3581,26 +3330,6 @@ function escapeReason(written, replaced) {
     : undefined;
 }
 
-// The fields of Claude Code (`content`, `new_string`, `edits`), of Copilot (`file_text`, `new_str`)
-// and of VS Code (`newString`, `code`).
-function writtenText(tool) {
-  const edits = Array.isArray(tool.edits) ? tool.edits.map((edit) => edit.new_string ?? edit.newString ?? '') : [];
-  return [
-    tool.content ?? '',
-    tool.new_string ?? '',
-    tool.file_text ?? '',
-    tool.new_str ?? '',
-    tool.newString ?? '',
-    tool.code ?? '',
-    ...edits,
-  ].join('\n');
-}
-
-function replacedText(tool) {
-  const edits = Array.isArray(tool.edits) ? tool.edits.map((edit) => edit.old_string ?? edit.oldString ?? '') : [];
-  return [tool.old_string ?? '', tool.old_str ?? '', tool.oldString ?? '', ...edits].join('\n');
-}
-
 function count(text, pattern) {
   return (text.match(pattern) ?? []).length;
 }
@@ -3767,15 +3496,6 @@ function isOwnCheckout(own, place) {
   }
   const checkout = findProject(place);
   return checkout !== undefined && namedContext(checkout) !== undefined;
-}
-
-function realOf(path) {
-  try {
-    return realpathSync(path);
-  } catch {
-    // Not there yet: where it would be is judged as it is spelled.
-    return path;
-  }
 }
 
 function changesRepository(subcommand, tail) {
@@ -4623,29 +4343,6 @@ function linkReason(project, place, input) {
   return stat?.isFile() && stat.nlink > 1
     ? `${path} has another name elsewhere (a hard link): writing it changes that file too. A worker writes only files of its scope that have one name. ${REPORT_TO_CONDUCTOR}`
     : undefined;
-}
-
-// Where a write lands: the real path of the place, its links followed, a link that points nowhere yet
-// followed to where it would create its file.
-function realPlace(place, depth = 0) {
-  try {
-    return realpathSync(place);
-  } catch {
-    // Not there: a link that points nowhere yet, or a file to create under its real folder.
-  }
-  const target = linkTarget(place);
-  if (target !== undefined && depth < 8) {
-    return realPlace(resolve(dirname(place), target), depth + 1);
-  }
-  return join(realPlace(dirname(place), depth), basename(place));
-}
-
-function linkTarget(place) {
-  try {
-    return readlinkSync(place);
-  } catch {
-    return undefined;
-  }
 }
 
 // The code a worker's command runs (inline code, a script, a shell fed on its input, a test or a
@@ -5512,11 +5209,6 @@ function inSessionRepository(directory) {
   return own !== undefined && commonDirOf(directory) === own;
 }
 
-function commonDirOf(directory) {
-  const gitDir = gitDirOf(directory);
-  return gitDir && realOf(resolve(gitDir, readText(join(gitDir, 'commondir'), '.').trim()));
-}
-
 function unreadRepositoryNotice(project) {
   return gitReads(project.root) ? [] : [UNREAD_REPOSITORY];
 }
@@ -5642,16 +5334,4 @@ function pruneGuardState(root) {
   for (const file of files.filter((path) => statSync(path, { throwIfNoEntry: false })?.mtimeMs < before)) {
     removeKitFile(file);
   }
-}
-
-function filesIn(folder) {
-  try {
-    return readdirSync(folder).map((name) => join(folder, name));
-  } catch {
-    return [];
-  }
-}
-
-function emit(output) {
-  process.stdout.write(`${JSON.stringify(output)}\n`);
 }
