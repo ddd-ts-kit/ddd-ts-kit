@@ -3,6 +3,7 @@ import type { KafkaEventBusOptions } from './kafka-event-bus-options';
 import type { ReconnectOptions } from './reconnect-options';
 import type { RetryOptions } from './retry-options';
 import type { Settings } from './settings';
+import { startFromOf } from './start-from';
 import type { TopicOptions } from './topic-options';
 
 export function settingsOf(options: KafkaEventBusOptions): Settings {
@@ -12,7 +13,7 @@ export function settingsOf(options: KafkaEventBusOptions): Settings {
     keyOf: options.keyOf ?? ((event) => event.id),
     publishedTypes: options.publishedTypes ?? [],
     topics: topicsOf(options.topics),
-    startFromEarliest: options.startFrom !== 'latest',
+    startFrom: startFromOf(options.startFrom ?? 'beginning'),
     concurrency: options.concurrency ?? 1,
     publishTimeoutMs: options.publishTimeoutMs ?? 30_000,
     connectTimeoutMs: options.connectTimeoutMs ?? 10_000,

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { RabbitMqEventBus, queueNamesOf } from '../src';
 import { Broker } from './support/broker';
 import { BROKERS } from './support/brokers';
+import { MAX_ATTEMPTS } from './support/environment';
 import { PLACED, TRACEPARENT, anEvent } from './support/events';
 import { recorder } from './support/recorder';
 import { unique } from './support/unique';
@@ -117,13 +118,6 @@ describe.each(BROKERS)('RabbitMqEventBus: consuming, %s', { timeout: 30_000 }, (
   });
 });
 
-/** The broker takes its turns one at a time: a delivery on its way, then a cancel. */
-async function turns(count: number): Promise<void> {
-  for (let turn = 0; turn < count; turn += 1) {
-    await new Promise((resolve) => setImmediate(resolve));
-  }
-}
-
 /** A message is on its way while the cancel of the consumer is: an order the in-memory broker keeps, a real one may not. */
 describe('RabbitMqEventBus: a message on its way when the last handler leaves, in memory', { timeout: 30_000 }, () => {
   let broker: Broker;
@@ -136,11 +130,12 @@ describe('RabbitMqEventBus: a message on its way when the last handler leaves, i
     await broker.dispose();
   });
 
-  it('hands the message back to its queue, for the next consumer', async () => {
+  it('makes the message wait in the retry queue for the next handler, counted as no attempt', async () => {
     const consumer = unique('billing');
-    const bus = broker.bus({ consumer });
-    const { work } = queueNamesOf({ consumer, type: PLACED });
+    const bus = broker.bus({ consumer, retry: { delayMs: 300, maxAttempts: MAX_ATTEMPTS } });
+    const { work, retry } = queueNamesOf({ consumer, type: PLACED });
     const billing = recorder();
+    const attempts: (number | undefined)[] = [];
     const subscription = bus.subscribe(PLACED, billing.handler);
 
     await bus.publish([anEvent('evt-1')]);
@@ -148,9 +143,19 @@ describe('RabbitMqEventBus: a message on its way when the last handler leaves, i
     await bus.publish([anEvent('evt-2')]);
     subscription.unsubscribe();
     // The delivery already on its way reaches the consumer, then the cancel reaches the broker.
-    await turns(2);
+    await eventually(async () => (await broker.readyIn(retry)) === 1);
 
-    expect((await broker.take(work))?.fields.redelivered).toBe(true);
+    expect(await broker.readyIn(work)).toBe(0);
     expect(billing.ids()).toEqual(['evt-1']);
+
+    bus.subscribe(PLACED, async (event, delivery) => {
+      attempts.push(delivery?.attempt);
+      await billing.handler(event);
+    });
+
+    await eventually(() => attempts.length === 1);
+
+    expect(attempts).toEqual([1]);
+    expect(billing.ids()).toEqual(['evt-1', 'evt-2']);
   });
 });

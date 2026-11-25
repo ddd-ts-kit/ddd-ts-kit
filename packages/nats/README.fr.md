@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:3d186d85697ba2d9 -->
+<!-- translation-of: README.md sha256:63b4610e186be294 -->
 
 # @ddd-ts-kit/nats
 
@@ -289,7 +289,13 @@ l'ordre d'un agrégat compte.
    `occurredAt`, ou avec un `tenantId` que `isTenantId` du noyau refuse) est empoisonné (poison) :
    il va directement dans le flux de rejet avec `x-dead-reason: poison` et
    `x-error-code: POISON_MESSAGE`, et aucun gestionnaire ne le voit.
-5. Seuls des codes voyagent : `x-error-code` est le `code` de l'erreur ou le nom de sa classe. Le
+5. Un message qui atteint un consommateur dont tous les gestionnaires se sont désabonnés (il
+   était en route quand le dernier est parti) attend le prochain gestionnaire : le bus le refuse
+   avec le même délai (`nak` avec `retry.delayMs`), jamais sur-le-champ, et il ne va jamais dans
+   le flux de rejet pour cela. Les quatre brokers du kit gardent un tel message pour le prochain
+   gestionnaire ; sur NATS le serveur compte cette livraison, si bien que le prochain gestionnaire
+   lit une tentative de plus.
+6. Seuls des codes voyagent : `x-error-code` est le `code` de l'erreur ou le nom de sa classe. Le
    message d'une erreur n'est jamais journalisé, remonté ni joint, car il peut citer des données
    du *payload*.
 
@@ -316,7 +322,7 @@ une seule copie, parce que la copie a son propre identifiant de message
 Sur une connexion perdue, le client se reconnecte de lui-même et ses consommateurs *pull*
 reprennent : les flux et les consommateurs durables vivent sur le serveur, rien n'est à déclarer
 à nouveau. Tant que le serveur est absent, `publish` rejette aussitôt avec `BROKER_UNAVAILABLE`,
-et une publication en cours rejette après `publishTimeoutMs` (5 s par défaut) avec
+et une publication en cours rejette après `publishTimeoutMs` (30 s par défaut, comme sur RabbitMQ et Kafka) avec
 `PUBLISH_NOT_ACKNOWLEDGED`, si bien que le relais de l'outbox garde les enregistrements et les
 retente. Les messages qui étaient en cours de traitement sont livrés à nouveau après
 `ackWaitMs`. Le bus ouvre lui-même la première connexion, avec un recul exponentiel

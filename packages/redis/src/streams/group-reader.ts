@@ -11,16 +11,10 @@ import { reconnectDelay } from './options/reconnect-delay';
 import type { Settings } from './options/settings';
 import type { ServerLink } from './server-link';
 import { Settlement } from './settlement';
+import { Subscriptions } from './subscriptions';
 import type { ConsumerBinding } from './topology/consumer-binding';
 import { createGroup } from './topology/create-group';
 import { groupOf } from './topology/group-of';
-
-interface StreamSubscription {
-  readonly type: string;
-  readonly handlers: Set<IntegrationEventCallback>;
-}
-
-const NO_HANDLER: ReadonlySet<IntegrationEventCallback> = new Set();
 
 /**
  * One consumer on its dedicated connection: a blocking read must not hold up the connection
@@ -30,7 +24,7 @@ const NO_HANDLER: ReadonlySet<IntegrationEventCallback> = new Set();
  * one at a time.
  */
 export class GroupReader {
-  private readonly subscriptions = new Map<string, StreamSubscription>();
+  private readonly subscriptions: Subscriptions;
 
   private readonly declared = new Set<string>();
 
@@ -53,7 +47,8 @@ export class GroupReader {
     private readonly link: ServerLink,
     private readonly settings: Settings,
   ) {
-    this.settlement = new Settlement(link.client, { ...settings, consumer });
+    this.subscriptions = new Subscriptions(settings.streamOf);
+    this.settlement = new Settlement(link.client, { ...settings, consumer }, this.subscriptions);
   }
 
   /** Entries read by this reader and not settled yet. */
@@ -62,24 +57,20 @@ export class GroupReader {
   }
 
   get idle(): boolean {
-    return this.subscriptions.size === 0;
+    return this.subscriptions.isEmpty;
   }
 
   bindings(): ConsumerBinding[] {
-    return [...this.subscriptions.values()].map(({ type }) => ({ consumer: this.consumer, type }));
+    return this.subscriptions.types().map((type) => ({ consumer: this.consumer, type }));
   }
 
   subscribe(type: string, handler: IntegrationEventCallback): Subscription {
-    const stream = this.settings.streamOf(type);
-    const subscription = this.subscriptions.get(stream) ?? { type, handlers: new Set() };
-
-    subscription.handlers.add(handler);
-    this.subscriptions.set(stream, subscription);
+    this.subscriptions.add(type, handler);
     this.running ??= this.run();
 
     return {
       unsubscribe: () => {
-        this.remove(stream, handler);
+        this.subscriptions.remove(type, handler);
       },
     };
   }
@@ -103,17 +94,6 @@ export class GroupReader {
     await this.running;
   }
 
-  // The group stays, with its position: the consumer keeps accumulating, it only stopped reading.
-  private remove(stream: string, handler: IntegrationEventCallback): void {
-    const subscription = this.subscriptions.get(stream);
-
-    subscription?.handlers.delete(handler);
-
-    if (subscription?.handlers.size === 0) {
-      this.subscriptions.delete(stream);
-    }
-  }
-
   private async run(): Promise<void> {
     const reader = this.link.reader();
 
@@ -132,7 +112,7 @@ export class GroupReader {
   private async turn(reader: Redis): Promise<void> {
     await this.declare(await this.link.ready());
 
-    const streams = [...this.subscriptions.keys()];
+    const streams = this.subscriptions.streams();
 
     if (this.sweepIsDue()) {
       const due = await Promise.all(streams.map((stream) => claimDue(reader, stream, this.redelivery())));
@@ -177,9 +157,7 @@ export class GroupReader {
 
   private async inOrder(deliveries: readonly Delivery[]): Promise<void> {
     for (const delivery of deliveries) {
-      const handlers = this.subscriptions.get(delivery.stream)?.handlers ?? NO_HANDLER;
-
-      await this.settlement.settle(delivery, handlers);
+      await this.settlement.settle(delivery);
       this.unsettled -= 1;
     }
   }

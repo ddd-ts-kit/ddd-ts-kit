@@ -27,7 +27,7 @@ describe('KafkaEventBus: a partition the group takes back, in memory', { timeout
   /** Two members of one group; the first has a lower id than the second. */
   function twoMembers() {
     const consumer = broker.consumer('billing');
-    const options = { consumer, topics: { partitions: 1 }, startFrom: 'earliest' } as const;
+    const options = { consumer, topics: { partitions: 1 }, startFrom: 'beginning' } as const;
 
     return { first: broker.bus(options), second: broker.bus(options) };
   }

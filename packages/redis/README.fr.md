@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:9e02c42e5ab46747 -->
+<!-- translation-of: README.md sha256:d890ff2e58a62971 -->
 
 # @ddd-ts-kit/redis
 
@@ -716,14 +716,14 @@ process.on('SIGTERM', async () => {
 | Option | Défaut | Effet |
 |---|---|---|
 | `connection` | requis | URL, options ioredis ou client. Une connexion ouverte ici prend `FAIL_FAST` et un délai de reconnexion tiré de `reconnect` |
-| `prefix`, `streamOf` | `integration-events` | le flux d'un type est `<prefix>:<type>`, ou ce que répond `streamOf(type)` |
+| `prefix`, `streamOf` | `integration-events` | le flux d'un type est `<prefix>:<type>`, ou ce que répond `streamOf(type)`. Plusieurs types peuvent partager un flux : un gestionnaire ne reçoit que les événements de son type, et une entrée d'un type auquel le consommateur ne s'est jamais abonné est acquittée sans être traitée |
 | `consumer` | aucun | le consommateur pour lequel lit `bus.subscribe` |
 | `instance` | hôte, identifiant de processus, suffixe aléatoire | le nom de ce processus dans ses groupes ; unique par processus |
 | `batchSize` | 10 | entrées lues à la fois par flux (`COUNT`), puis traitées dans l'ordre, une par une |
 | `blockMs` | 1000 | combien de temps une lecture attend (`BLOCK`) : cela borne `close()` et la précision du délai avant une nouvelle tentative |
 | `retry` | 5 tentatives, 5000 ms | les livraisons avant le flux de rejet, et l'attente après un échec |
 | `visibilityTimeoutMs` | 60000 | temps d'inactivité après lequel les entrées en attente d'une autre instance sont reprises ; jamais moins que `retry.delayMs` |
-| `startFrom` | `new` | où commence un groupe que ce bus crée : ce qui est publié à partir de ce moment, ou `beginning` pour tout le flux |
+| `startFrom` | `beginning` | où commence un groupe que ce bus crée : tout le flux, ou `end` pour ce qui est publié à partir de ce moment |
 | `retention` | aucune | `{ maxLength }` ou `{ maxAgeMs }` : élagage appliqué par chaque publication. Voir les limites |
 | `deduplication` | aucune | `{ windowMs }` : la garde côté publication décrite plus bas |
 | `reconnect` | 200 ms, doublé jusqu'à 30 s | délai entre les reconnexions, et entre les tentatives d'un lecteur qui échoue |
@@ -739,7 +739,7 @@ revenu sans ses données les a perdus). Pour `forConsumer('billing')` abonné à
 | Objet | Nom | Propriétés |
 |---|---|---|
 | flux d'événements | `integration-events:ordering.order.placed` | un par type d'événement, partagé par tous les consommateurs ; créé vide par le premier groupe (`MKSTREAM`) ou par la première publication |
-| groupe de consommateurs | `billing`, sur ce flux | un par nom de consommateur ; détient sa position et ses entrées en attente ; créé à `$` (ou à `0` avec `startFrom: 'beginning'`) |
+| groupe de consommateurs | `billing`, sur ce flux | un par nom de consommateur ; détient sa position et ses entrées en attente ; créé à `0` (ou à `$` avec `startFrom: 'end'`) |
 | membre du groupe | le nom `instance` | un par processus ; retiré à `close()` quand il ne laisse rien en attente |
 | flux de rejet | `integration-events:ordering.order.placed:billing:dead` | un par consommateur et par type, créé par la première entrée rejetée ; aucun groupe ne le lit |
 
@@ -786,7 +786,13 @@ compte.
    `type`, `version`, `occurredAt`) est empoisonnée (poison) : elle va directement dans le flux de
    rejet avec `dead-reason: poison` et `error-code: POISON_ENTRY`, et aucun gestionnaire ne la
    voit.
-6. Seuls les codes voyagent : `error-code` est le `code` de l'erreur, ou le nom de sa classe. Le
+6. Une entrée dont le type n'a plus de gestionnaire (ils se sont tous désabonnés pendant que
+   l'entrée était dans le lot, ou pendant qu'un autre type fait encore lire un flux partagé)
+   attend le prochain gestionnaire : elle reste en attente et revient après `retry.delayMs`,
+   jamais sur-le-champ, cette livraison étant retirée de son compteur (`XCLAIM` avec
+   `RETRYCOUNT`), si bien qu'elle ne compte pour aucune tentative et ne va jamais dans le flux de
+   rejet pour cela. Les quatre brokers du kit gardent un tel message pour le prochain gestionnaire.
+7. Seuls les codes voyagent : `error-code` est le `code` de l'erreur, ou le nom de sa classe. Le
    message d'une erreur n'est jamais journalisé, remonté ni joint, parce qu'il peut citer des
    données du contenu de l'événement.
 
@@ -918,7 +924,9 @@ Entretien :
 - **Les positions sont dans le même serveur.** Les groupes, les entrées en attente et les
   compteurs de livraisons sont perdus ou ramenés en arrière avec les données. Un serveur restauré
   depuis un *snapshot* plus ancien livre de nouveau ce qui a été traité depuis (les consommateurs
-  dédupliquent) ; un serveur qui a tout perdu voit ses groupes recréés à la fin de flux vides.
+  dédupliquent) ; un serveur qui a tout perdu voit ses groupes recréés sur des flux vides.
+  Un groupe perdu seul, son flux gardé, est recréé à `startFrom` : au début par défaut, si bien
+  que ce que le flux contient encore est livré de nouveau.
 - **Aucune déduplication côté publication**, comme dit plus haut.
 - **La rétention est bornée par la mémoire.** Un flux vit en mémoire, tout entier. Par défaut, rien
   n'est élagué. `retention: { maxLength }` (`MAXLEN ~`) et `retention: { maxAgeMs }` (`MINID ~`,
@@ -946,9 +954,11 @@ Entretien :
 - **Un lot est une transaction sur un serveur** : toutes ses entrées sont ajoutées, ou la
   publication rejette. Un rejet ne prouve pas que rien n'a été ajouté (la réponse a pu être
   perdue) ; le relais retente et les consommateurs dédupliquent.
-- **Un nouveau groupe commence à la fin du flux** par défaut : ce qui a été publié avant qu'un
-  consommateur s'abonne pour la première fois ne lui est pas livré. `startFrom: 'beginning'` lit
-  ce que le flux contient encore.
+- **Un nouveau groupe commence au début du flux** (`startFrom: 'beginning'`, la valeur par
+  défaut de chaque broker du kit qui a un historique) : un consommateur déployé après les
+  producteurs lit ce que le flux contient encore. Choisissez `startFrom: 'end'` en connaissance
+  de cause : ce qui a été publié avant la création du groupe ne lui est alors pas livré. L'ancien
+  mot `new` est refusé à la construction avec `START_FROM_REFUSED`, qui nomme `end`.
 - **Un abonnement ajouté pendant que le consommateur lit** est lu à partir du tour suivant, jusqu'à
   `blockMs` plus tard. Rien n'est manqué : son groupe existe avant que le bus publie.
 - **Un serveur, ou un primaire avec des répliques.** Une lecture couvre les flux d'un consommateur
@@ -980,7 +990,7 @@ données métier : cela vit dans la base de données.
 | `RedisRateLimiter` | `EVAL` d'un script appelant `ZREMRANGEBYSCORE`, `ZCARD`, `ZADD`, `PEXPIRE`, `ZRANGE` (avec `WITHSCORES`) |
 | `RedisRelaySignal` | `PUBLISH`, `SUBSCRIBE` |
 | `RedisStreamsEventBus`, publication | `MULTI`, `EXEC`, `XADD` (avec `MAXLEN ~` ou `MINID ~` sous `retention`) ; sous `deduplication`, `EVAL` d'un script appelant `GET`, `XADD`, `SET` (avec `PX`) |
-| `RedisStreamsEventBus`, consommation | `XGROUP CREATE` (avec `MKSTREAM`), `XREADGROUP` (avec `GROUP`, `COUNT`, `BLOCK`, plusieurs flux), `XACK`, `XPENDING` (forme étendue, avec `IDLE` et avec un consommateur), `XCLAIM` (avec un temps d'inactivité minimal, et avec `JUSTID`), `XGROUP DELCONSUMER`, `EVAL` d'un script appelant `XADD`, `XACK` |
+| `RedisStreamsEventBus`, consommation | `XGROUP CREATE` (avec `MKSTREAM`), `XREADGROUP` (avec `GROUP`, `COUNT`, `BLOCK`, plusieurs flux), `XACK`, `XPENDING` (forme étendue, avec `IDLE` et avec un consommateur), `XCLAIM` (avec un temps d'inactivité minimal, et avec `JUSTID`, seul ou après `RETRYCOUNT`), `XGROUP DELCONSUMER`, `EVAL` d'un script appelant `XADD`, `XACK` |
 | `RedisStreamsEventBus`, `replayDead` | `XRANGE` (avec `COUNT`), `EVAL` d'un script appelant `XRANGE`, `XADD`, `XDEL` |
 | `redisHealth`, `close` | `PING`, `QUIT` |
 | ioredis lui-même, à la connexion | `HELLO 3` (ioredis 6 ; les réponses sont ramenées à leur forme classique), `INFO`, `CLIENT SETINFO`, et `AUTH`, `SELECT` quand l'URL le demande |

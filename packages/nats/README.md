@@ -280,7 +280,12 @@ aggregate matters.
    `occurredAt`, or with a `tenantId` that `isTenantId` of the kernel refuses) is poison: it
    goes straight to the dead-letter stream with `x-dead-reason: poison` and
    `x-error-code: POISON_MESSAGE`, and no handler sees it.
-5. Only codes travel: `x-error-code` is the `code` of the error or its class name. The message
+5. A message that reaches a consumer whose handlers all unsubscribed (it was on its way when
+   the last one left) waits for the next handler: the bus refuses it with the same delay (`nak`
+   with `retry.delayMs`), never on the spot, and it never goes to the dead-letter stream for it.
+   The four brokers of the kit keep such a message for the next handler; on NATS the server
+   counts that delivery, so the next handler reads one attempt more.
+6. Only codes travel: `x-error-code` is the `code` of the error or its class name. The message
    of an error is never logged, reported or attached, because it may quote payload data.
 
 **Why an explicit copy and not the advisory.** When a message reaches `max_deliver` the
@@ -304,7 +309,7 @@ has a message id of its own (`<durable>.<sequence>`).
 On a lost connection the client reconnects by itself and its pull consumers resume: streams
 and durable consumers live on the server, nothing has to be declared again. While the server
 is away `publish` rejects at once with `BROKER_UNAVAILABLE`, and a publication in flight
-rejects after `publishTimeoutMs` (5 s by default) with `PUBLISH_NOT_ACKNOWLEDGED`, so the
+rejects after `publishTimeoutMs` (30 s by default, as on RabbitMQ and Kafka) with `PUBLISH_NOT_ACKNOWLEDGED`, so the
 outbox relay keeps the records and retries them. Messages that were being handled are
 delivered again after `ackWaitMs`. The bus opens the first connection itself, with an
 exponential backoff (`reconnect`, 200 ms doubling up to 30 s), and a new one if the client

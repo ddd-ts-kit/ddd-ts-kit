@@ -7,11 +7,12 @@ import { within } from '../errors/within';
 import { ignore } from '../ignore';
 import { conceal } from '../secrecy/conceal';
 import type { TopicDescription } from '../topology/topic-description';
+import type { StartFrom } from '../options/start-from';
 import type { Rebalance } from './rebalance';
 
 export interface LinkSettings {
   readonly createTopics: boolean;
-  readonly startFromEarliest: boolean;
+  readonly startFrom: StartFrom;
   readonly publishTimeoutMs: number;
   readonly connectTimeoutMs: number;
   readonly maxHandlingMs: number;
@@ -63,7 +64,7 @@ export class BrokerLink {
     return this.kafka.consumer({
       kafkaJS: {
         groupId,
-        fromBeginning: this.settings.startFromEarliest,
+        fromBeginning: this.settings.startFrom === 'beginning',
         autoCommit: false,
         allowAutoTopicCreation: false,
       },

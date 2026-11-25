@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 // The parity of the families of packages: the members of a family (the four ORM, the brokers,
-// the loggers) offer the same options for each port and run its contract with the same
-// capabilities. Every asymmetry is a decision written in `families.mjs`, with its reason, so
-// that an option or a tested behaviour added to one member alone fails here.
+// the loggers) offer the same options for each port, with the same words and the same default
+// where an option takes a closed list of words or a default written as a literal, and run its
+// contract with the same capabilities. Every asymmetry is a decision written in `families.mjs`,
+// with its reason, so that an option or a tested behaviour added to one member alone, or an
+// option two members name alike and mean differently, fails here.
+//
+// Beside the tables `families.mjs` describes, a port may carry two more, read here:
+// - `wordsApart`: option -> member -> why that member takes other words than the others;
+// - `defaultsApart`: option -> member -> why that member gives the option another default.
+// A member listed there is left out of the comparison, and its line fails once it agrees again.
 //
 //   node pipeline/monorepo/parity.mjs --check
 
@@ -51,6 +58,7 @@ export function problemsOf(families, source) {
         return [
           ...missingInterfaces(at, port, keysOf),
           ...optionProblems(at, port, keysOf),
+          ...meaningProblems(at, port, { family, source }),
           ...contractProblems(at, port, { source, capabilitiesOf }),
         ];
       }),
@@ -61,7 +69,9 @@ export function problemsOf(families, source) {
 /** A reason that says nothing (too short, or a promise for later) is no decision. */
 function reasonProblems(family) {
   return family.ports.flatMap((port) => {
-    const tables = [port.apart, port.capabilitiesApart].flatMap((table) => Object.values(table ?? {}));
+    const tables = [port.apart, port.wordsApart, port.defaultsApart, port.capabilitiesApart].flatMap((table) =>
+      Object.values(table ?? {}),
+    );
     const reasons = [...tables, port.withoutContract ?? {}].flatMap((members) => Object.entries(members));
 
     return reasons
@@ -110,6 +120,99 @@ function optionGaps(at, { key, excused }, keysOf) {
       .filter((member) => !without.includes(member))
       .map((member) => `${at}: ${member} now offers \`${key}\`: remove its exception from families.mjs (apart).`),
   ];
+}
+
+/**
+ * An option several members offer means the same in each: the same words when it takes a closed
+ * list of them, and the same default when the sources write one as a literal
+ * (`options.key ?? literal`). A member that differs says why in `wordsApart` or `defaultsApart`.
+ */
+function meaningProblems(at, port, { family, source }) {
+  const members = family.members.filter((member) => typeof port.options[member] === 'string');
+  const interfacesIn = new Map(members.map((member) => [member, interfacesOf(source.sources(member))]));
+  const keysOf = (member) => keysOfInterface(port.options[member], interfacesIn.get(member)) ?? [];
+  const compared = [...new Set(members.flatMap(keysOf))].filter((key) => !(port.place ?? []).includes(key));
+
+  const readings = [
+    {
+      what: 'takes',
+      table: 'wordsApart',
+      read: (member, key) => wordsOf(port.options[member], key, interfacesIn.get(member)),
+    },
+    { what: 'defaults to', table: 'defaultsApart', read: (member, key) => defaultOf(key, source.sources(member)) },
+  ];
+
+  return compared.flatMap((key) =>
+    readings.flatMap(({ what, table, read }) => {
+      const readingOf = new Map(members.map((member) => [member, read(member, key)]));
+
+      return differences(at, { key, what, table, excused: port[table]?.[key] ?? {} }, readingOf);
+    }),
+  );
+}
+
+/** The readings of an option that differ between members without a reason, and the reasons that no longer hold. */
+function differences(at, { key, what, table, excused }, readingOf) {
+  const held = [...readingOf].filter(([member, reading]) => reading !== undefined && excused[member] === undefined);
+  const readings = [...new Set(held.map(([, reading]) => reading))];
+  const membersOf = (reading) => held.filter(([, other]) => other === reading).map(([member]) => member);
+  const told = readings.map((reading) => `${what} ${reading} on ${membersOf(reading).join(', ')}`);
+
+  return [
+    ...(readings.length > 1
+      ? [
+          `${at}: \`${key}\` ${told.join(' and ')}. Give it one meaning, or say in families.mjs (${table}) why a member differs.`,
+        ]
+      : []),
+    ...Object.keys(excused)
+      .filter((member) => readings.length === 1 && readingOf.get(member) === readings[0])
+      .map(
+        (member) =>
+          `${at}: \`${key}\` ${what} ${readings[0]} on ${member} as on the others: remove its exception from families.mjs (${table}).`,
+      ),
+  ];
+}
+
+/** The words an option takes, when its type in the options interface is a union of string literals. */
+function wordsOf(name, key, interfaces) {
+  const type = typeOfKey(name, key, interfaces);
+
+  return type !== undefined && /^'[^']*'(?:\s*\|\s*'[^']*')*$/.test(type) ? quotedWords(type) : undefined;
+}
+
+/** The type an interface declares for a key, or the one it inherits through `extends`, `Pick` or `Omit`. */
+function typeOfKey(name, key, interfaces) {
+  const declared = interfaces.get(name);
+
+  if (declared === undefined) {
+    return undefined;
+  }
+
+  return (
+    declared.types.get(key) ??
+    splitTopLevel(declared.extends)
+      .map((clause) =>
+        typeOfKey(/^(?:Pick|Omit)<\s*(\w+)/.exec(clause)?.[1] ?? clause.replace(/<.*$/, ''), key, interfaces),
+      )
+      .find((type) => type !== undefined)
+  );
+}
+
+function quotedWords(type) {
+  return [...type.matchAll(/'[^']*'/g)]
+    .map((match) => match[0])
+    .sort()
+    .join(' | ');
+}
+
+/** The default the sources of a package give an option, when they write exactly one, as a literal. */
+function defaultOf(key, files) {
+  const written = new RegExp(`\\boptions\\.${key} \\?\\? ('[^']*'|\\d[\\d_]*|true|false)(?![\\w.(])`, 'g');
+  const defaults = new Set(
+    files.flatMap(({ text }) => [...text.matchAll(written)].map((match) => match[1].replaceAll('_', ''))),
+  );
+
+  return defaults.size === 1 ? [...defaults][0] : undefined;
 }
 
 /** Each member runs the contract of the port, with every capability another member gives it, or says why not. */
@@ -196,7 +299,7 @@ function optionKeys(member, port, source) {
   return keysOfInterface(name, interfacesOf(source.sources(member)));
 }
 
-/** The interfaces of a package by name: their `extends` clause and the keys of their top level. */
+/** The interfaces of a package by name: their `extends` clause, the keys of their top level and the type of each. */
 function interfacesOf(files) {
   const found = new Map();
 
@@ -206,8 +309,11 @@ function interfacesOf(files) {
       /export interface (\w+)(?:<[^>{]*>)?(?:\s+extends\s+([^{]+))?\s*\{(?:\}|([\s\S]*?)\n\})/g,
     )) {
       const keys = [...(match[3] ?? '').matchAll(/^ {2}(?:readonly )?(\w+)\??[:(]/gm)].map((key) => key[1]);
+      const types = new Map(
+        [...(match[3] ?? '').matchAll(/^ {2}(?:readonly )?(\w+)\??: (.+);$/gm)].map((key) => [key[1], key[2]]),
+      );
 
-      found.set(match[1], { extends: match[2]?.trim() ?? '', keys });
+      found.set(match[1], { extends: match[2]?.trim() ?? '', keys, types });
     }
   }
 

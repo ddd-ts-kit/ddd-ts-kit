@@ -7,6 +7,7 @@ export type { RedisStreamsEventBusOptions } from './streams/options/redis-stream
 export type { RedisStreamsFailure } from './streams/options/redis-streams-failure';
 export type { RetentionOptions } from './streams/options/retention-options';
 export type { RetryOptions } from './streams/options/retry-options';
+export type { StartFrom } from './streams/options/start-from';
 export { streamNamesOf } from './streams/topology/stream-names-of';
 export type { ConsumerBinding } from './streams/topology/consumer-binding';
 export type { GroupDescription } from './streams/topology/group-description';
@@ -32,3 +33,4 @@ export { BrokerUnavailableError } from './streams/errors/broker-unavailable-erro
 export { ConsumerNameRequiredError } from './streams/errors/consumer-name-required-error';
 export { EventBusClosedError } from './streams/errors/event-bus-closed-error';
 export { PublishNotConfirmedError } from './streams/errors/publish-not-confirmed-error';
+export { StartFromRefusedError } from './streams/errors/start-from-refused-error';
