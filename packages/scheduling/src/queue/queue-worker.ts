@@ -120,6 +120,7 @@ export class QueueWorker {
       concurrency: this.concurrencyOf(name),
       active: new Set<Promise<BackgroundJobRun>>(),
       filling: undefined,
+      wokenWhileFilling: false,
       cancelSleep: undefined,
       measuredAt: Number.NEGATIVE_INFINITY,
     });
@@ -135,14 +136,39 @@ export class QueueWorker {
     return concurrency[queue] ?? concurrency['default'] ?? 1;
   }
 
-  /** Claims while there is room and work; an idle queue sleeps, a full one waits for an attempt to end. */
+  /**
+   * Claims while there is room and work; an idle queue sleeps, a full one waits for an attempt to end.
+   * A wake-up that comes while the queue fills is kept: the queue fills once more after.
+   */
   private async pump(queue: QueueState): Promise<void> {
-    if (queue.filling !== undefined || !this.running) {
+    if (!this.running) {
       return;
     }
 
-    queue.filling = this.fillOrSleep(queue);
+    if (queue.filling !== undefined) {
+      queue.wokenWhileFilling = true;
+
+      return;
+    }
+
+    queue.filling = this.fillWhileWoken(queue);
     await queue.filling;
+  }
+
+  private async fillWhileWoken(queue: QueueState): Promise<void> {
+    try {
+      do {
+        queue.wokenWhileFilling = false;
+        await this.fillOrSleep(queue);
+      } while (this.wokenWhileFilling(queue));
+    } finally {
+      queue.filling = undefined;
+    }
+  }
+
+  /** Read anew after an await: an attempt may have ended, or `stop()` been called, while the queue filled. */
+  private wokenWhileFilling(queue: QueueState): boolean {
+    return queue.wokenWhileFilling && this.running;
   }
 
   /** Never rejects: a fault of the store is recorded, and the queue asks again after a poll. */
@@ -153,8 +179,6 @@ export class QueueWorker {
     } catch (error) {
       this.recorder.fault(queue.name, error);
       this.sleep(queue);
-    } finally {
-      queue.filling = undefined;
     }
   }
 

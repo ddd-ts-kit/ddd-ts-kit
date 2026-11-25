@@ -8,6 +8,8 @@ export interface QueueState {
   readonly active: Set<Promise<BackgroundJobRun>>;
   /** The claim in progress and the launch of what it claimed, which `stop` waits for. */
   filling: Promise<void> | undefined;
+  /** An attempt ended, or the sleep did, while the queue was filling: it fills once more. */
+  wokenWhileFilling: boolean;
   cancelSleep: (() => void) | undefined;
   /** When its depth was last set as gauges, in milliseconds since the epoch. */
   measuredAt: number;
