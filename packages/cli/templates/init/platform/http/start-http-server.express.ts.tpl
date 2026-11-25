@@ -53,9 +53,11 @@ export async function startHttpServer(served: Served, config: AppConfig): Promis
   mountExpress(app, served.fileRoutes, served.boundary);
 {{/if}}
 
-  // The bytes of a JSON body are kept for a controller that declares `rawBody` (a signed webhook).
+  // The bytes of a JSON body are kept for a controller that declares `rawBody` (a signed webhook). Any JSON
+  // value is read, an object or not (`strict: false`): the schema of the route decides, as on every framework.
   app.use(
     express.json({
+      strict: false,
       verify: (request, _response, bytes) => {
         Object.assign(request, { rawBody: bytes });
       },

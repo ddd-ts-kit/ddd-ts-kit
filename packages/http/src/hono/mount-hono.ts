@@ -7,6 +7,7 @@ import type { RawRequest } from '../pipeline/raw-request';
 import type { RouteResponse } from '../pipeline/route-response';
 import { assertServed } from '../representation/assert-served';
 import { assertUniqueRoutes } from '../route/assert-unique-routes';
+import { readsItsStream } from '../route/reads-its-stream';
 import type { Route } from '../route/route';
 import { edgeProblem } from './edge-problem';
 import type { HonoMountOptions } from './hono-mount-options';
@@ -40,7 +41,7 @@ function handlerOf(route: Route, options: HonoMountOptions): HonoHandler {
   const { bodyLimit = ONE_MEBIBYTE, ...execute } = options;
 
   return async (context) => {
-    const request = streamed(route) ? streamRequest(context) : await bodyRequest(context, route, bodyLimit);
+    const request = readsItsStream(route) ? streamRequest(context) : await bodyRequest(context, route, bodyLimit);
 
     if (request instanceof Response) {
       return request;
@@ -48,10 +49,6 @@ function handlerOf(route: Route, options: HonoMountOptions): HonoHandler {
 
     return responseOf(await executeRoute(route, request, execute));
   };
-}
-
-function streamed(route: Route): boolean {
-  return route.upload !== undefined || route.rawBody === true;
 }
 
 function streamRequest(context: Context): RawRequest {

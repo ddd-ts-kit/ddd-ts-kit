@@ -4,6 +4,7 @@ import { executeRoute } from '../pipeline/execute-route';
 import { wholeOf } from '../pipeline/whole-of';
 import { assertServed } from '../representation/assert-served';
 import { assertUniqueRoutes } from '../route/assert-unique-routes';
+import { readsItsStream } from '../route/reads-its-stream';
 import type { Route } from '../route/route';
 import type { FastifyMountOptions } from './fastify-mount-options';
 
@@ -44,10 +45,6 @@ export function mountFastify(
       register(unparsed, streamed, options);
     });
   }
-}
-
-function readsItsStream(route: Route): boolean {
-  return route.upload !== undefined || route.rawBody === true;
 }
 
 /**

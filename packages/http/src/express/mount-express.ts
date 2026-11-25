@@ -8,39 +8,56 @@ import { wholeOf } from '../pipeline/whole-of';
 import { assertServed } from '../representation/assert-served';
 import { assertUniqueRoutes } from '../route/assert-unique-routes';
 import type { HttpMethod } from '../route/http-method';
+import { readsItsStream } from '../route/reads-its-stream';
 import type { Route } from '../route/route';
+import type { ExpressMountOptions } from './express-mount-options';
 
-export type ExpressMountOptions = ExecuteOptions;
+/** What Fastify reads at most by default: the same bound on every adapter that sets its own. */
+const ONE_MEBIBYTE = 1_048_576;
+/** JSON as the pipeline knows it: `application/json` and every `+json` suffix. */
+const JSON_MEDIA_TYPES = ['application/json', 'application/*+json'];
 
 type ExpressHandler = (request: Request, response: Response) => Promise<void>;
 
 type Registrar = Record<HttpMethod, (path: string, ...handlers: RequestHandler[]) => void>;
 
 /**
- * Registers the routes on an Express 5 application or router. A JSON body parser
- * (`express.json()`) must be installed before, otherwise bodies reach validation as `undefined`.
- * An upload and a raw body are read from the request stream, which that parser leaves alone
- * unless the request is JSON, whose bytes a raw body then takes from `request.rawBody`
- * (`express.json({ verify: (request, _, bytes) => { request.rawBody = bytes; } })`); a route that consumes another media type (`consumes`) gets a text
- * parser of its own for it. A file and a list read as it comes are piped to the response,
- * at the pace the client reads them.
+ * Registers the routes on an Express 5 application or router. The adapter reads the body of each
+ * route itself, up to `bodyLimit` (1 MiB by default): JSON whatever its value, an object or not,
+ * for the schema of the route to decide as on the other frameworks, and a media type the route
+ * consumes (`consumes`) as text, for its representation. A body a parser of the application read
+ * first (`express.json()`, which refuses a JSON value that is no object or array unless given
+ * `strict: false`) is taken as that parser read it. An upload and a raw body are read from the
+ * request stream, which no parser of the adapter touches; behind a JSON parser of the
+ * application, a raw body takes the bytes that parser kept in `request.rawBody`
+ * (`express.json({ verify: (request, _, bytes) => { request.rawBody = bytes; } })`). A file and a
+ * list read as it comes are piped to the response, at the pace the client reads them.
  */
 export function mountExpress(target: IRouter, routes: readonly Route[], options: ExpressMountOptions = {}): void {
   assertUniqueRoutes(routes);
   assertServed(routes, options.representations);
   assertCachedRoutes(routes, options);
 
+  const { bodyLimit = ONE_MEBIBYTE, ...execute } = options;
   const register = registrarOf(target);
 
   for (const route of routes) {
-    register[route.method](route.path, ...bodyParsers(route), handlerOf(route, options));
+    register[route.method](route.path, ...bodyParsers(route, bodyLimit), handlerOf(route, execute));
   }
 }
 
-function bodyParsers(route: Route): RequestHandler[] {
+/** None for a route that reads its own stream; else JSON, and what the route consumes as text. A request already read is left as it is. */
+function bodyParsers(route: Route, limit: number): RequestHandler[] {
+  if (readsItsStream(route)) {
+    return [];
+  }
+
   const consumed = route.consumes ?? [];
 
-  return consumed.length === 0 ? [] : [express.text({ type: [...consumed] })];
+  return [
+    express.json({ strict: false, limit, type: JSON_MEDIA_TYPES }),
+    ...(consumed.length === 0 ? [] : [express.text({ type: [...consumed], limit })]),
+  ];
 }
 
 function registrarOf(target: IRouter): Registrar {
@@ -55,7 +72,7 @@ function registrarOf(target: IRouter): Registrar {
   };
 }
 
-function handlerOf(route: Route, options: ExpressMountOptions): ExpressHandler {
+function handlerOf(route: Route, options: ExecuteOptions): ExpressHandler {
   return async (request, response) => {
     const { params, query, headers } = request;
     // A parser reads an empty body as `{}`: a request that declares no bytes has no body, as on the other frameworks.
