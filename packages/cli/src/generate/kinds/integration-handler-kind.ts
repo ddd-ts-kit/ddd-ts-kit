@@ -26,12 +26,11 @@ import { ownEntry } from '../../config/values/own-entry';
 export const integrationHandlerKind: Kind = {
   name: 'integration-handler',
   aliases: ['consumer'],
-  usage:
-    'integration-handler <context> <upstreamContext> <eventType>[@v<n>] [--version <n>] [--name <Name>] [--term "<Term>=<meaning>"]...',
-  options: { version: { type: 'string', value: '<n>' }, name: { type: 'string', value: '<Name>' }, term: TERM },
   summary:
     'An idempotent handler of an integration event of a declared upstream, its spec and its subscription under a consumer name. After `generate integration-event <upstreamContext> <Aggregate> <Fact>` of its eventType.',
   positionals: ['context', 'upstreamContext', 'eventType'],
+  options: { version: { type: 'string', value: '<n>' }, name: { type: 'string', value: '<Name>' }, term: TERM },
+  shown: { eventType: '<eventType>[@v<n>]' },
   writesShared: false,
   writesInModules: true,
   run: (request) => {

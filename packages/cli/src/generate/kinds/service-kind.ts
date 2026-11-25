@@ -21,11 +21,10 @@ const HOSTING_PROOF = 'test/architecture/hosting.spec.ts';
 export const serviceKind: Kind = {
   name: 'service',
   aliases: [],
-  usage: 'service <context>',
-  options: {},
   summary:
     'The context run alone, with its scheduled jobs: its entry point under apps/, a start script, a compose service, `deployable` in the config, and its departure from the whole application (consumers, processes and jobs run once).',
   positionals: ['context'],
+  options: {},
   writesShared: true,
   writesInModules: false,
   run: (request) => {

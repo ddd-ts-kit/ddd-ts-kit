@@ -110,17 +110,24 @@ export interface KindRequest {
 export interface Kind {
   readonly name: string;
   readonly aliases: readonly string[];
-  readonly usage: string;
-  /**
-   * Its own flags, declared as a command declares its options: `--module` aside, which
-   * `writesInModules` says, and the flags every kind takes.
-   */
-  readonly options: OptionSpecs;
   readonly summary: string;
   /** Positional arguments after the kind, by name; all are required. */
   readonly positionals: readonly string[];
   /** Positional arguments that may follow the required ones, by name: `[Name]` of a world. */
   readonly optionalPositionals?: readonly string[];
+  /** How the usage writes a positional argument it does not write `<name>`, or `[name]` when optional: `"<title>"`. */
+  readonly shown?: Readonly<Record<string, string>>;
+  /**
+   * Its own flags, declared as a command declares its options, from which its usage is written:
+   * `--module` aside, which `writesInModules` says, and the flags every kind takes.
+   */
+  readonly options: OptionSpecs;
+  /**
+   * Its flags as the usage writes them, by hand, when the declarations do not say it: forms that
+   * exclude each other, a flag it requires, one that goes with another only. Left out, each flag is
+   * written between brackets, in the order it declares them.
+   */
+  readonly shownOptions?: string;
   /** True when the kind may write outside the context it is given (config, composition root, registries of the platform, documentation): `SHARED_WRITES` says what and when. */
   readonly writesShared: boolean;
   /**

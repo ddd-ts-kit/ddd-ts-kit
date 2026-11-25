@@ -1,9 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { COMMON_FLAGS, GENERATE_OPTIONS } from '../src/generate/generate-options';
+import { COMMON_FLAGS } from '../src/generate/generate-options';
 import { KINDS } from '../src/generate/kinds';
-import { usageOf } from '../src/generate/usage-of';
 import { REPO_ROOT } from './helpers';
 
 const SOURCES = path.join(REPO_ROOT, 'packages/cli/src');
@@ -97,13 +96,13 @@ function sourceOf(kind: string): string {
   return file;
 }
 
-/** The flags the sources of a kind read that neither its usage, the common flags nor a decision above account for. */
+/** The flags the sources of a kind read that neither its declarations, the common flags nor a decision above account for. */
 function unshown(kind: (typeof KINDS)[number]): string[] {
-  // `--module` is in the usage of the kinds that write into a module; the others refuse it, saying why.
+  // `--module` is taken by the kinds that write into a module; the others refuse it, saying why.
   const shown = new Set([
     ...COMMON_FLAGS,
     'module',
-    ...[...usageOf(kind).matchAll(/--([a-z-]+)/g)].map((match) => match[1]),
+    ...Object.keys(kind.options),
     ...(READ_WITH_FLAGS_OF_ITS_OWN[kind.name]?.flags ?? []),
   ]);
 
@@ -114,24 +113,23 @@ function unshown(kind: (typeof KINDS)[number]): string[] {
 }
 
 describe('the usage of each kind of generate', () => {
-  it.each(KINDS.map((kind) => [kind.name, kind] as const))(
-    'shows the flags %s declares, each read as generate reads it',
+  it.each(KINDS.flatMap((kind) => (kind.shownOptions === undefined ? [] : [[kind.name, kind] as const])))(
+    'writes by hand the flags %s declares, and those alone',
     (_name, kind) => {
-      const shown = [...new Set([...usageOf(kind).matchAll(/--([a-z-]+)/g)].map((match) => match[1] ?? ''))];
+      const written = [...new Set([...(kind.shownOptions ?? '').matchAll(/--([a-z-]+)/g)].map((match) => match[1]))];
 
-      const read = (flag: string) =>
-        kind.textFlags?.includes(flag) === true
-          ? 'string'
-          : Object.entries(GENERATE_OPTIONS).find(([name]) => name === flag)?.[1].type;
+      expect(written).toEqual(Object.keys(kind.options));
 
-      const declared = Object.entries(kind.options).map(([flag, option]) => [flag, option.type]);
+      for (const [flag, option] of Object.entries(kind.options)) {
+        const value = option.type === 'string' ? ` ${option.value ?? `<${flag}>`}` : '';
 
-      expect(declared).toEqual(shown.filter((flag) => flag !== 'module').map((flag) => [flag, read(flag)]));
+        expect(kind.shownOptions).toContain(`--${flag}${value}`);
+      }
     },
   );
 
   it.each(KINDS.map((kind) => [kind.name, kind] as const))(
-    'shows every flag the sources of %s read, the flags every kind takes aside',
+    'declares every flag the sources of %s read, the flags every kind takes aside',
     (_name, kind) => {
       expect(unshown(kind)).toEqual([]);
     },

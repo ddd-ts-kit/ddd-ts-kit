@@ -17,11 +17,10 @@ import { writeEventSourcedAggregate } from './write-event-sourced-aggregate';
 export const aggregateKind: Kind = {
   name: 'aggregate',
   aliases: [],
-  usage: 'aggregate <context> <Name> [--birth "<Fact>"] [--event-sourced] [--term "<Term>=<meaning>"]...',
-  options: { birth: { type: 'string', value: '"<Fact>"' }, 'event-sourced': { type: 'boolean' }, term: TERM },
   summary:
     'An aggregate root with create and rehydrate factories, its test data builder and its spec; --birth names the fact it is born with, in business words ("Invoice Issued"), and writes that domain event, recorded by create at the instant it is given; with --event-sourced, its state is the replay of its events, born with that event (Created without --birth), and the codec of its stored events. Both --birth and --event-sourced apply when the aggregate is created: on one that exists, it is kept and a note says so.',
   positionals: ['context', 'Name'],
+  options: { birth: { type: 'string', value: '"<Fact>"' }, 'event-sourced': { type: 'boolean' }, term: TERM },
   writesShared: false,
   writesInModules: true,
   run: (request) => {

@@ -22,11 +22,11 @@ const ROLE_SUFFIX = /(?<=[a-z0-9])[-_]?background[-_]?job$/i;
 export const backgroundJobKind: Kind = {
   name: 'background-job',
   aliases: [],
-  usage: 'background-job <context> <Name> --command <UseCaseName> [--term "<Term>=<meaning>"]...',
-  options: { command: { type: 'string', value: '<UseCaseName>' }, term: TERM },
   summary:
     'A job a use case enqueues, run later by a worker as the actor that enqueued it, with retries and a lease: the class named by its static jobName, its spec through a queue in memory and its registration. After `generate command <context> <UseCaseName>` of its --command.',
   positionals: ['context', 'Name'],
+  options: { command: { type: 'string', value: '<UseCaseName>' }, term: TERM },
+  shownOptions: '--command <UseCaseName> [--term "<Term>=<meaning>"]...',
   writesShared: false,
   writesInModules: true,
   textFlags: ['command'],

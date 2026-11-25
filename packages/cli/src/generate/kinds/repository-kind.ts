@@ -7,8 +7,9 @@ import { declarePersonalData } from './personal-data/declare-personal-data';
 export const repositoryKind: Kind = {
   name: 'repository',
   aliases: [],
-  usage:
-    'repository <context> <Aggregate> [--tenant-scoped] [--personal <column>,<column>... [--subject <column>] [--erasure pseudonymise|row] [--retention <column>:<n><d|m|y>]]',
+  summary:
+    "A repository port (an abstract class of the domain), its in-memory fake, the adapter of the project's ORM with its mapper, the contract suite both pass, and its registration; on an event-sourced aggregate, the adapter over EventSourcedRepository with the codec of its stored events, no table; with --personal, the declaration of the personal columns of its table, and the erasure and the export of the context that read it, and with --retention how long the rows keep it before the nightly purge erases them. After `generate aggregate <context> <Aggregate>`.",
+  positionals: ['context', 'Aggregate'],
   options: {
     'tenant-scoped': { type: 'boolean' },
     personal: { type: 'string', value: '<column>,<column>...' },
@@ -16,9 +17,8 @@ export const repositoryKind: Kind = {
     erasure: { type: 'string', value: 'pseudonymise|row' },
     retention: { type: 'string', value: '<column>:<n><d|m|y>' },
   },
-  summary:
-    "A repository port (an abstract class of the domain), its in-memory fake, the adapter of the project's ORM with its mapper, the contract suite both pass, and its registration; on an event-sourced aggregate, the adapter over EventSourcedRepository with the codec of its stored events, no table; with --personal, the declaration of the personal columns of its table, and the erasure and the export of the context that read it, and with --retention how long the rows keep it before the nightly purge erases them. After `generate aggregate <context> <Aggregate>`.",
-  positionals: ['context', 'Aggregate'],
+  shownOptions:
+    '[--tenant-scoped] [--personal <column>,<column>... [--subject <column>] [--erasure pseudonymise|row] [--retention <column>:<n><d|m|y>]]',
   writesShared: true,
   writesInModules: true,
   run: (request) => {

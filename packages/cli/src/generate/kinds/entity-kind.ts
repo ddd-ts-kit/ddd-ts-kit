@@ -10,10 +10,9 @@ import { vars } from '../vars';
 export const entityKind: Kind = {
   name: 'entity',
   aliases: [],
-  usage: 'entity <context> <Name> [--term "<Term>=<meaning>"]...',
-  options: { term: TERM },
   summary: 'An entity living inside an aggregate, and its spec.',
   positionals: ['context', 'Name'],
+  options: { term: TERM },
   writesShared: false,
   writesInModules: true,
   run: (request) => {

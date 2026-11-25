@@ -2,7 +2,6 @@ import { CliError } from '../cli-error';
 import { heldToGlossary } from './held-to-glossary';
 import type { Kind } from './kind';
 import { KINDS } from './kinds';
-import { flagsOf } from './flags-of';
 import { usageOf } from './usage-of';
 
 /** The kinds that take `--term`, as the refusal of the flag names them. */
@@ -16,14 +15,14 @@ const REASONS: Readonly<Record<string, string>> = {
 };
 
 /**
- * Refuses a flag the usage of the kind does not show: `generate` parses the flags of every kind
- * at once, and a kind reads only its own, so that flag would otherwise be ignored without a word.
- * A flag no kind takes is refused earlier, by the parser of the arguments; `common` are the flags
- * every kind takes, and `--module` is in the usage of the kinds that take it.
+ * Refuses a flag the kind does not declare: `generate` parses the flags of every kind at once, and
+ * a kind reads only its own, so that flag would otherwise be ignored without a word. A flag no kind
+ * takes is refused earlier, by the parser of the arguments; `common` are the flags every kind
+ * takes, and `--module` is taken by the kinds that write into a module.
  */
 export function refuseUndeclaredFlags(kind: Kind, passed: readonly string[], common: readonly string[]): void {
   const usage = usageOf(kind);
-  const taken = new Set([...common, ...flagsOf(kind)]);
+  const taken = new Set([...common, ...Object.keys(kind.options), ...(kind.writesInModules ? ['module'] : [])]);
   const refused = passed.filter((flag) => !taken.has(flag));
   const [first] = refused;
 

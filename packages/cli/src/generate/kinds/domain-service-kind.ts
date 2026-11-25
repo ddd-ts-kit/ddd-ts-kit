@@ -10,10 +10,9 @@ import { vars } from '../vars';
 export const domainServiceKind: Kind = {
   name: 'domain-service',
   aliases: [],
-  usage: 'domain-service <context> <Name> [--term "<Term>=<meaning>"]...',
-  options: { term: TERM },
   summary: 'A stateless domain service, and its spec.',
   positionals: ['context', 'Name'],
+  options: { term: TERM },
   writesShared: false,
   writesInModules: true,
   run: (request) => {

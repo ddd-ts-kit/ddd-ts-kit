@@ -10,10 +10,9 @@ import { vars } from '../vars';
 export const portKind: Kind = {
   name: 'port',
   aliases: [],
-  usage: 'port <context> <Name>',
-  options: {},
   summary: 'A port of the application layer, an abstract class that is also its injection token, and its fake.',
   positionals: ['context', 'Name'],
+  options: {},
   writesShared: false,
   writesInModules: true,
   run: (request) => {

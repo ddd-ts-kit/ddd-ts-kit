@@ -17,8 +17,9 @@ import { queryOutputs, type QueryVariant } from './query-outputs';
 export const queryKind: Kind = {
   name: 'query',
   aliases: [],
-  usage:
-    'query <context> <UseCaseName> (--permission <aggregate>.<action> [--grant <role>] | --public) [--search] [--term "<Term>=<meaning>"]...',
+  summary:
+    'A query, its result, its handler, its read port with an in-memory adapter and a fake, its spec and its registration on the query bus; with --search, one page of a search filtered by the access scope of the actor; a name that starts with List is refused, a read that takes criteria is a Search<Things>.',
+  positionals: ['context', 'UseCaseName'],
   options: {
     permission: { type: 'string', value: '<aggregate>.<action>' },
     grant: { type: 'string', value: '<role>' },
@@ -26,9 +27,8 @@ export const queryKind: Kind = {
     search: { type: 'boolean' },
     term: TERM,
   },
-  summary:
-    'A query, its result, its handler, its read port with an in-memory adapter and a fake, its spec and its registration on the query bus; with --search, one page of a search filtered by the access scope of the actor; a name that starts with List is refused, a read that takes criteria is a Search<Things>.',
-  positionals: ['context', 'UseCaseName'],
+  shownOptions:
+    '(--permission <aggregate>.<action> [--grant <role>] | --public) [--search] [--term "<Term>=<meaning>"]...',
   writesShared: true,
   writesInModules: true,
   run: (request) => {

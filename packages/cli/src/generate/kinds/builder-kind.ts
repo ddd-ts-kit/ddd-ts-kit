@@ -20,11 +20,10 @@ const GENERATED_PARAMETERS = 2;
 export const builderKind: Kind = {
   name: 'builder',
   aliases: [],
-  usage: 'builder <context> <Aggregate>',
-  options: {},
   summary:
     'The test data builder of an existing aggregate, in test/builders/; the instant of its birth is an ingredient named after the fact its create records (issuedAt), and the builder of an event-sourced aggregate replays its birth event. After `generate aggregate <context> <Aggregate>`.',
   positionals: ['context', 'Aggregate'],
+  options: {},
   writesShared: false,
   writesInModules: true,
   run: (request) => {

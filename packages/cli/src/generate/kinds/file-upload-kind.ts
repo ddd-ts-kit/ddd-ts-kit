@@ -22,8 +22,9 @@ import { planController } from './route/plan-controller';
 export const fileUploadKind: Kind = {
   name: 'file-upload',
   aliases: [],
-  usage:
-    'file-upload <context> <UseCaseName> --path <path> (--permission <aggregate>.<action> [--grant <role>] | --public) [--method <POST|PUT>] [--group <Name>] [--text <utf-8|single-byte>] [--term "<Term>=<meaning>"]...',
+  summary:
+    'An upload: a controller that declares the file it receives (`@Upload()` of a Nest controller; size and media types in the contract, checked as it streams; with `--text` a text file such as a CSV, `single-byte` when it may be in Windows-1252 as well as UTF-8), the command that carries it as a FileUpload (staged by the command bus before the transaction), the handler that records it and promotes it with the commit, and their specs. Needs "stack.storage".',
+  positionals: ['context', 'UseCaseName'],
   options: {
     path: { type: 'string' },
     permission: { type: 'string', value: '<aggregate>.<action>' },
@@ -34,9 +35,8 @@ export const fileUploadKind: Kind = {
     text: { type: 'string', value: '<utf-8|single-byte>' },
     term: TERM,
   },
-  summary:
-    'An upload: a controller that declares the file it receives (`@Upload()` of a Nest controller; size and media types in the contract, checked as it streams; with `--text` a text file such as a CSV, `single-byte` when it may be in Windows-1252 as well as UTF-8), the command that carries it as a FileUpload (staged by the command bus before the transaction), the handler that records it and promotes it with the commit, and their specs. Needs "stack.storage".',
-  positionals: ['context', 'UseCaseName'],
+  shownOptions:
+    '--path <path> (--permission <aggregate>.<action> [--grant <role>] | --public) [--method <POST|PUT>] [--group <Name>] [--text <utf-8|single-byte>] [--term "<Term>=<meaning>"]...',
   writesShared: true,
   writesInModules: true,
   run: (request) => {

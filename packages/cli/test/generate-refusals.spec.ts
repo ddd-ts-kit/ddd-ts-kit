@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { COMMON_FLAGS } from '../src/generate/generate-options';
 import { KINDS } from '../src/generate/kinds';
+import { usageOf } from '../src/generate/usage-of';
 import { cli, exists, read, write } from './helpers';
 import { failure, report } from './reports';
 import { explicitProject } from './support/explicit-project';
@@ -133,7 +134,7 @@ describe('generate, plans and refusals', () => {
     const help = cli(root, '--help').stdout;
 
     for (const kind of KINDS) {
-      expect(help).toContain(kind.usage);
+      expect(help).toContain(usageOf(kind));
     }
 
     expect(KINDS.map((kind) => kind.name)).toEqual(expect.arrayContaining(['builder', 'e2e']));

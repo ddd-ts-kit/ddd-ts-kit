@@ -23,16 +23,14 @@ import { readModelStore, type ReadModelStore } from './read-model/read-model-sto
 export const readModelKind: Kind = {
   name: 'read-model',
   aliases: [],
-  usage:
-    'read-model <context> <Name> [--field <name>:<string|number|boolean|instant|decimal>[:nullable]]... [--tenant-scoped] [--term "<Term>=<meaning>"]...',
+  summary:
+    "The read model a projection keeps: its port (an abstract class of the application layer over ReadModelStore, with the type of its row and the criteria its readers may ask), its table in the schema of the context with the columns of each --field, the store adapter of the project's ORM (in memory without one) bound to the port, its fake, and the contract suite both pass. The projection that writes it comes from `generate projection <context> <Name> <eventType>`.",
+  positionals: ['context', 'Name'],
   options: {
     field: { type: 'string', multiple: true, value: '<name>:<string|number|boolean|instant|decimal>[:nullable]' },
     'tenant-scoped': { type: 'boolean' },
     term: TERM,
   },
-  summary:
-    "The read model a projection keeps: its port (an abstract class of the application layer over ReadModelStore, with the type of its row and the criteria its readers may ask), its table in the schema of the context with the columns of each --field, the store adapter of the project's ORM (in memory without one) bound to the port, its fake, and the contract suite both pass. The projection that writes it comes from `generate projection <context> <Name> <eventType>`.",
-  positionals: ['context', 'Name'],
   writesShared: true,
   writesInModules: true,
   run: (request) => {

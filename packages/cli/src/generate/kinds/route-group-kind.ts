@@ -17,16 +17,16 @@ const PREFIX = /^(\/(:[A-Za-z_][A-Za-z0-9_]*|[A-Za-z0-9._~-]+))*$/;
 export const routeGroupKind: Kind = {
   name: 'route-group',
   aliases: ['group'],
-  usage: 'route-group <context> <Name> [--prefix <path>] [--group <ParentName>] [--public | --role <role>]',
+  summary:
+    'A route group: an empty class carrying @RouteGroup with its path prefix, its tag and its guards (Authenticated unless --public or --role says otherwise); with --group <ParentName>, it refines that group and inherits from it, after `generate route-group <context> <Name>` of the parent.',
+  positionals: ['context', 'Name'],
   options: {
     prefix: { type: 'string', value: '<path>' },
     group: { type: 'string', value: '<ParentName>' },
     public: { type: 'boolean' },
     role: { type: 'string' },
   },
-  summary:
-    'A route group: an empty class carrying @RouteGroup with its path prefix, its tag and its guards (Authenticated unless --public or --role says otherwise); with --group <ParentName>, it refines that group and inherits from it, after `generate route-group <context> <Name>` of the parent.',
-  positionals: ['context', 'Name'],
+  shownOptions: '[--prefix <path>] [--group <ParentName>] [--public | --role <role>]',
   writesShared: true,
   writesInModules: false,
   run: (request) => {

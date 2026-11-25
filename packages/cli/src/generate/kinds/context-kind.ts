@@ -10,8 +10,9 @@ import { generateContext } from './generate-context';
 export const contextKind: Kind = {
   name: 'context',
   aliases: [],
-  usage:
-    'context <name> --classification <core|supporting|generic> [--reason "<why it is of that classification>"] [--purpose "<two sentences>"] [--term "<Term>=<meaning>[|<not to be confused with>]"]... [--upstream <ctx>[:relationship]]... [--preset identity]',
+  summary:
+    'A bounded context: CONTEXT.md with its glossary, published language, config entry, and what assembles it (its declarations, or its module file); with --preset, written whole from a preset of the kit.',
+  positionals: ['name'],
   options: {
     classification: { type: 'string', value: '<core|supporting|generic>' },
     reason: { type: 'string', value: '"<why it is of that classification>"' },
@@ -20,9 +21,8 @@ export const contextKind: Kind = {
     upstream: { type: 'string', multiple: true, value: '<ctx>[:relationship]' },
     preset: { type: 'string', value: 'identity' },
   },
-  summary:
-    'A bounded context: CONTEXT.md with its glossary, published language, config entry, and what assembles it (its declarations, or its module file); with --preset, written whole from a preset of the kit.',
-  positionals: ['name'],
+  shownOptions:
+    '--classification <core|supporting|generic> [--reason "<why it is of that classification>"] [--purpose "<two sentences>"] [--term "<Term>=<meaning>[|<not to be confused with>]"]... [--upstream <ctx>[:relationship]]... [--preset identity]',
   writesShared: true,
   writesInModules: false,
   run: ({ ws, config, args, flags }) => {

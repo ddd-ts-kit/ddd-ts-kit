@@ -22,11 +22,11 @@ import { declaredModules } from '../../model-modules';
 export const e2eKind: Kind = {
   name: 'e2e',
   aliases: [],
-  usage: 'e2e <context> <UseCaseName> [--event <eventType> | --job <JobName>]',
-  options: { event: { type: 'string', value: '<eventType>' }, job: { type: 'string', value: '<JobName>' } },
   summary:
     'An end-to-end spec on the whole application, in test/e2e/ at the project root: driving the route of a use case, or, for a use case no route reaches, publishing the integration event its handler receives (--event names it when several do) or running the job that sends its command, the scheduled one at once and the background one with what is due on its queue (--job names one job, also for a use case a route reaches, and writes test/e2e/<use-case>-<job>.e2e.spec.ts). After `generate route <context> <UseCaseName>`, or the `generate integration-handler`, `generate job` or `generate background-job` that starts its use case.',
   positionals: ['context', 'UseCaseName'],
+  options: { event: { type: 'string', value: '<eventType>' }, job: { type: 'string', value: '<JobName>' } },
+  shownOptions: '[--event <eventType> | --job <JobName>]',
   writesShared: false,
   writesInModules: false,
   run: (request) => {

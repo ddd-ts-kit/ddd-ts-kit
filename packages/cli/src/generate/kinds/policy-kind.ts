@@ -19,11 +19,11 @@ import { platformPath } from '../platform-path';
 export const policyKind: Kind = {
   name: 'policy',
   aliases: [],
-  usage: 'policy <context> <Name> --permission <aggregate>.<action> [--term "<Term>=<meaning>"]...',
-  options: { permission: { type: 'string', value: '<aggregate>.<action>' }, term: TERM },
   summary:
     'A rule about one element (only the author, not after closing), its spec and its registration with the policies Access asks.',
   positionals: ['context', 'Name'],
+  options: { permission: { type: 'string', value: '<aggregate>.<action>' }, term: TERM },
+  shownOptions: '--permission <aggregate>.<action> [--term "<Term>=<meaning>"]...',
   writesShared: true,
   writesInModules: true,
   run: (request) => {

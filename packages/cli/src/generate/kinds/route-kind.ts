@@ -19,13 +19,12 @@ import { writeController } from './route/write-controller';
 import { writeNestController } from './route/write-nest-controller';
 import { SEARCH_LINE_LIBRARIES } from './route/search-line-libraries';
 
-const USAGE =
-  '<context> <UseCaseName> --method <GET|POST|PUT|PATCH|DELETE> --path <path> [--command|--query] [--group <Name>] [--mapper] [--serializer] [--cache public|private|no-store]';
-
 export const routeKind: Kind = {
   name: 'route',
   aliases: [],
-  usage: `route ${USAGE}`,
+  summary:
+    'An HTTP route calling an existing use case through its bus, with its spec: under "stack.routes": "controllers", a controller class in its folder, behind the guards of its route group; under "functions", a defineRoute function and its registration; under "nest", a Nest controller whose method takes and answers what its signature names, listed in the generated <context>.controllers.ts. After `generate command <context> <UseCaseName>` or `generate query <context> <UseCaseName>`; with --group, after `generate route-group <context> <Name>`.',
+  positionals: ['context', 'UseCaseName'],
   options: {
     method: { type: 'string', value: '<GET|POST|PUT|PATCH|DELETE>' },
     path: { type: 'string' },
@@ -36,9 +35,8 @@ export const routeKind: Kind = {
     serializer: { type: 'boolean' },
     cache: { type: 'string', value: 'public|private|no-store' },
   },
-  summary:
-    'An HTTP route calling an existing use case through its bus, with its spec: under "stack.routes": "controllers", a controller class in its folder, behind the guards of its route group; under "functions", a defineRoute function and its registration; under "nest", a Nest controller whose method takes and answers what its signature names, listed in the generated <context>.controllers.ts. After `generate command <context> <UseCaseName>` or `generate query <context> <UseCaseName>`; with --group, after `generate route-group <context> <Name>`.',
-  positionals: ['context', 'UseCaseName'],
+  shownOptions:
+    '--method <GET|POST|PUT|PATCH|DELETE> --path <path> [--command|--query] [--group <Name>] [--mapper] [--serializer] [--cache public|private|no-store]',
   writesShared: false,
   writesInModules: true,
   run: (request) => {
@@ -112,7 +110,6 @@ function routeOutputs(scope: Scope, { name, endpoint, useCase }: RouteParts): Ou
 export const controllerKind: Kind = {
   ...routeKind,
   name: 'controller',
-  usage: `controller ${USAGE}`,
   summary:
     'A controller class calling an existing use case through its bus, whatever "stack.routes" says: its folder, its schemas, its spec, and its route group when it is new. After `generate command <context> <UseCaseName>` or `generate query <context> <UseCaseName>`; with --group, after `generate route-group <context> <Name>`.',
   run: (request) => routeKind.run({ ...request, asController: true }),

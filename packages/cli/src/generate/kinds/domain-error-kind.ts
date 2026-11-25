@@ -13,11 +13,11 @@ import { vars } from '../vars';
 export const domainErrorKind: Kind = {
   name: 'domain-error',
   aliases: [],
-  usage: 'domain-error <context|shared-kernel> <Name> [--code CODE] [--term "<Term>=<meaning>"]...',
-  options: { code: { type: 'string', value: 'CODE' }, term: TERM },
   summary:
     'One class per error, built with `new`, and its spec: the form of a project whose "stack.refusals" is "classes", or says nothing. With shared-kernel, at the root of the shared kernel.',
   positionals: ['context', 'Name'],
+  options: { code: { type: 'string', value: 'CODE' }, term: TERM },
+  shown: { context: '<context|shared-kernel>' },
   writesShared: true,
   writesInModules: true,
   run: (request) => {

@@ -25,8 +25,9 @@ import { worldArrangement } from './world/world-arrangement';
 export const jobKind: Kind = {
   name: 'job',
   aliases: [],
-  usage:
-    'job <context> <Name> (--every <duration> | --cron "<expression>" [--time-zone <zone>]) --command <UseCaseName> [--global] [--term "<Term>=<meaning>"]...',
+  summary:
+    'A job run by time (once per tenant under tenancy, or `--global`) that sends one command as its own system actor, its spec, its registration, its switch in the job settings of the platform and, where the authorization model makes it one line, the grant of that actor. After `generate command <context> <UseCaseName>` of its --command.',
+  positionals: ['context', 'Name'],
   options: {
     every: { type: 'string', value: '<duration>' },
     cron: { type: 'string', value: '"<expression>"' },
@@ -35,9 +36,8 @@ export const jobKind: Kind = {
     global: { type: 'boolean' },
     term: TERM,
   },
-  summary:
-    'A job run by time (once per tenant under tenancy, or `--global`) that sends one command as its own system actor, its spec, its registration, its switch in the job settings of the platform and, where the authorization model makes it one line, the grant of that actor. After `generate command <context> <UseCaseName>` of its --command.',
-  positionals: ['context', 'Name'],
+  shownOptions:
+    '(--every <duration> | --cron "<expression>" [--time-zone <zone>]) --command <UseCaseName> [--global] [--term "<Term>=<meaning>"]...',
   writesShared: true,
   writesInModules: true,
   textFlags: ['command'],

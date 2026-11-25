@@ -6,15 +6,15 @@ import { writeAdr } from './write-adr';
 export const adrKind: Kind = {
   name: 'adr',
   aliases: [],
-  usage: 'adr "<title>" [--number <n>] [--deviation <what>] [--reason "<why>"]',
+  summary:
+    'A decision record in docs/adr/, numbered after the highest or by --number; with --deviation, the entry of the config that points to it.',
+  positionals: ['title'],
   options: {
     number: { type: 'string', value: '<n>' },
     deviation: { type: 'string', value: '<what>' },
     reason: { type: 'string', value: '"<why>"' },
   },
-  summary:
-    'A decision record in docs/adr/, numbered after the highest or by --number; with --deviation, the entry of the config that points to it.',
-  positionals: ['title'],
+  shown: { title: '"<title>"' },
   writesShared: true,
   writesInModules: false,
   run: ({ ws, args, flags }) => {

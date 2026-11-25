@@ -15,11 +15,10 @@ const FAST_CHECK = 'fast-check';
 export const propertyKind: Kind = {
   name: 'property',
   aliases: [],
-  usage: 'property <context> <ValueObject>',
-  options: {},
   summary:
     'The laws of a value object checked on generated values (fast-check): a spec beside its own, with fast-check added to the development dependencies when it is missing. After `generate value-object <context> <ValueObject>`.',
   positionals: ['context', 'ValueObject'],
+  options: {},
   writesShared: true,
   writesInModules: true,
   run: (request) => {

@@ -21,10 +21,9 @@ import { publishInIndex } from './publish-in-index';
 export const integrationEventKind: Kind = {
   name: 'integration-event',
   aliases: [],
-  usage: 'integration-event <context> <Aggregate> <Fact> [--version <n>] [--term "<Term>=<meaning>"]...',
-  options: { version: { type: 'string', value: '<n>' }, term: TERM },
   summary: 'A versioned declaration in the published language, its publisher, its spec and its registration.',
   positionals: ['context', 'Aggregate', 'Fact'],
+  options: { version: { type: 'string', value: '<n>' }, term: TERM },
   writesShared: true,
   writesInModules: true,
   run: (request) => {

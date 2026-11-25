@@ -14,11 +14,10 @@ import { worldArrangement } from './world/world-arrangement';
 export const processKind: Kind = {
   name: 'process',
   aliases: ['process-manager'],
-  usage: 'process <context> <Name> [--term "<Term>=<meaning>"]...',
-  options: { term: TERM },
   summary:
     'A process manager: its state kept with optimistic concurrency, a first step that arms a deadline, a step that ends it in time, the step of the deadline, the background job that delivers its timeouts and the specs of both, given/when/then on the decisions.',
   positionals: ['context', 'Name'],
+  options: { term: TERM },
   writesShared: false,
   writesInModules: true,
   run: (request) => {
