@@ -1,5 +1,5 @@
-import { optimisticUpdate, rowsCreated } from '@ddd-ts-kit/prisma';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { saveAggregate } from '@ddd-ts-kit/prisma';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
@@ -11,9 +11,7 @@ import { DelegationRepository } from '{{alias.context}}/domain/repositories/dele
 import type { DelegationRepository } from '{{alias.context}}/domain/repositories/delegation.repository{{alias.ext}}';
 {{/unless}}
 import type { Database } from '{{alias.platform}}/database/database{{alias.ext}}';
-import { DelegationMapper, type DelegationColumns } from '{{alias.context}}/infrastructure/persistence/delegation.mapper{{alias.ext}}';
-
-type VersionedDelegation = DelegationColumns & { readonly version: number };
+import { DelegationMapper } from '{{alias.context}}/infrastructure/persistence/delegation.mapper{{alias.ext}}';
 
 {{#if style.declared}}
 @Repository(DelegationRepository)
@@ -50,27 +48,11 @@ export class PrismaDelegationRepository implements DelegationRepository {
   }
 
   async save(saved: Delegation): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...DelegationMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : (await this.update(state, expected)).count;
-    });
-  }
-
-  private async insert(state: VersionedDelegation): Promise<number> {
-    const row = { ...state, ...stampCreation(this.scope, this.clock) };
-    const created = await delegationsOf(this.database).createMany({ data: [row], skipDuplicates: true });
-
-    return rowsCreated(created, {
-      id: state.id,
-      holders: () => delegationsOf(this.database).count({ where: { id: state.id } }),
-    });
-  }
-
-  private update(state: VersionedDelegation, expected: number): Promise<{ count: number }> {
-    return delegationsOf(this.database).updateMany({
-      where: { id: state.id, version: expected },
-      data: { ...state, ...stampUpdate(this.scope, this.clock) },
+    await saveAggregate(delegationsOf(this.database), {
+      aggregate: saved,
+      row: DelegationMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
   }
 }

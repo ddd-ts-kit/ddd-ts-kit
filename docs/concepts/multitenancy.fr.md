@@ -1,5 +1,5 @@
 [English](multitenancy.md) · **Français**
-<!-- translation-of: multitenancy.md sha256:cdfe3069ee5c52a4 -->
+<!-- translation-of: multitenancy.md sha256:07aabf06a3036ebc -->
 
 # Multitenance
 
@@ -213,6 +213,11 @@ export class KnexAppointmentRepository {
   }
 }
 ```
+
+La sauvegarde est écrite ici en entier pour montrer où va le *tenant*. Un *repository* généré
+appelle `saveTenantAggregate` de son *package* d'ORM, qui écrit la ligne dans le *tenant* du travail
+et y confine sa mise à jour ; `tenancy/scoped-statement` refuse `saveAggregate` sur des données de
+*tenant*.
 
 Un projet d'un seul client qui devient multitenant garde ses données : sur Knex, une migration
 appelle `addTenantColumn(knex, { schema, table, tenantOfExistingRows })` pour chaque table de

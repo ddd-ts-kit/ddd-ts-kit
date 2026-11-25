@@ -42,6 +42,7 @@ export * from './tenancy/cleared-tenant-condition-error';
 export * from './tenancy/ungrouped-or-error';
 export * from './tenancy/where-tenant';
 export * from './tenancy/tenant-table-target';
+export * from './tenancy/table-in';
 export * from './tenancy/tenant-table';
 export * from './tenancy/own-tenant-table';
 export * from './tenancy/derived-table';

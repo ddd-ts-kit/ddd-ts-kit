@@ -1,21 +1,25 @@
 import type { Knex } from 'knex';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
-import { type KnexContext, auditRow, insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/knex';
+import { type KnexContext, saveAggregate } from '@ddd-ts-kit/knex';
 import type { Organisation } from '{{alias.context}}/domain/aggregates/organisation.aggregate{{alias.ext}}';
 {{#if style.declared}}
 import { OrganisationRepository } from '{{alias.context}}/domain/repositories/organisation.repository{{alias.ext}}';
 {{/if}}
 {{#unless style.declared}}
-import type { OrganisationRepository } from '{{alias.context}}/domain/repositories/organisation.repository{{alias.ext}}';
+import type {
+  OrganisationRepository,
+} from '{{alias.context}}/domain/repositories/organisation.repository{{alias.ext}}';
 {{/unless}}
 import { {{context.constant}}_SCHEMA } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
 import { OrganisationMapper } from '{{alias.context}}/infrastructure/persistence/organisation.mapper{{alias.ext}}';
-import type { OrganisationColumns, OrganisationRow } from '{{alias.context}}/infrastructure/persistence/organisation-row.schema{{alias.ext}}';
+import type {
+  OrganisationRow,
+} from '{{alias.context}}/infrastructure/persistence/organisation-row.schema{{alias.ext}}';
 
-type VersionedOrganisation = OrganisationColumns & { readonly version: number };
+const TABLE = { schema: {{context.constant}}_SCHEMA, table: 'organisations' };
 
 {{#if style.declared}}
 @Repository(OrganisationRepository)
@@ -34,28 +38,12 @@ export class KnexOrganisationRepository implements OrganisationRepository {
   }
 
   async save(saved: Organisation): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...OrganisationMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : this.update(state, expected);
+    await saveAggregate(this.database, TABLE, {
+      aggregate: saved,
+      row: OrganisationMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: VersionedOrganisation): Promise<number> {
-    const row = { ...state, ...auditRow(stampCreation(this.scope, this.clock)) };
-
-    const inserted = await insertIgnoringConflict(this.database.executor(), tableOf(this.database), {
-      row,
-      conflict: 'id',
-    });
-
-    return inserted ? 1 : 0;
-  }
-
-  private async update(state: VersionedOrganisation, expected: number): Promise<number> {
-    return tableOf(this.database)
-      .where({ id: state.id, version: expected })
-      .update({ ...state, ...auditRow(stampUpdate(this.scope, this.clock)) });
   }
 }
 

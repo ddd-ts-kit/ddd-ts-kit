@@ -59,7 +59,7 @@ describe('a context wired by hand', () => {
     );
 
     expect(read(root, `${persistence}/knex-invoice.repository.ts`)).toContain(
-      '\nfunction tableOf(database: KnexContext): Knex.QueryBuilder<InvoiceRow, InvoiceRow[]> {',
+      "\nconst TABLE = { schema: BILLING_SCHEMA, table: 'invoices' };\n",
     );
 
     expect(read(root, `${persistence}/invoice-row.schema.ts`)).toContain(

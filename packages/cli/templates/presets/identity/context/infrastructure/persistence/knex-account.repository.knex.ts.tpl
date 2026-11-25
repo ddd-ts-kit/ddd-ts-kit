@@ -1,9 +1,9 @@
 import type { Knex } from 'knex';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
-import { type KnexContext, auditRow, insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/knex';
+import { type KnexContext, saveAggregate } from '@ddd-ts-kit/knex';
 import type { Account } from '{{alias.context}}/domain/aggregates/account.aggregate{{alias.ext}}';
 {{#if style.declared}}
 import { AccountRepository } from '{{alias.context}}/domain/repositories/account.repository{{alias.ext}}';
@@ -13,9 +13,9 @@ import type { AccountRepository } from '{{alias.context}}/domain/repositories/ac
 {{/unless}}
 import { {{context.constant}}_SCHEMA } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
 import { AccountMapper } from '{{alias.context}}/infrastructure/persistence/account.mapper{{alias.ext}}';
-import type { AccountColumns, AccountRow } from '{{alias.context}}/infrastructure/persistence/account-row.schema{{alias.ext}}';
+import type { AccountRow } from '{{alias.context}}/infrastructure/persistence/account-row.schema{{alias.ext}}';
 
-type VersionedAccount = AccountColumns & { readonly version: number };
+const TABLE = { schema: {{context.constant}}_SCHEMA, table: 'accounts' };
 
 {{#if style.declared}}
 @Repository(AccountRepository)
@@ -34,28 +34,12 @@ export class KnexAccountRepository implements AccountRepository {
   }
 
   async save(saved: Account): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...AccountMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : this.update(state, expected);
+    await saveAggregate(this.database, TABLE, {
+      aggregate: saved,
+      row: AccountMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: VersionedAccount): Promise<number> {
-    const row = { ...state, ...auditRow(stampCreation(this.scope, this.clock)) };
-
-    const inserted = await insertIgnoringConflict(this.database.executor(), tableOf(this.database), {
-      row,
-      conflict: 'id',
-    });
-
-    return inserted ? 1 : 0;
-  }
-
-  private async update(state: VersionedAccount, expected: number): Promise<number> {
-    return tableOf(this.database)
-      .where({ id: state.id, version: expected })
-      .update({ ...state, ...auditRow(stampUpdate(this.scope, this.clock)) });
   }
 }
 

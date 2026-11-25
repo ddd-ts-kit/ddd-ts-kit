@@ -66,10 +66,10 @@ describe('init --tenancy', () => {
     );
 
     expect(knexAdapter).toContain('tenantTable<InvoiceRow>(this.database, this.scope, TABLE)');
-    expect(knexAdapter).toContain('ownTenantTable<InvoiceRow>(this.database, this.scope, TABLE)');
+    expect(knexAdapter).toContain('await saveTenantAggregate(this.database, TABLE, {');
     expect(knexAdapter).not.toContain('executor()<');
     expect(drizzleAdapter).toContain('tenantCondition(invoices.tenantId, this.scope)');
-    expect(drizzleAdapter).toContain('ownTenantCondition(invoices.tenantId, this.scope)');
+    expect(drizzleAdapter).toContain('await saveTenantAggregate(this.database, invoices, {');
   });
 });
 
@@ -171,11 +171,7 @@ describe('init --tenancy on Prisma and TypeORM', () => {
     const schema = read(typeorm, 'src/contexts/billing/infrastructure/persistence/billing.schema.ts');
 
     expect(prismaAdapter).toContain('.findFirst({\n      where: { id, ...tenantWhere(this.scope) },\n    });');
-    expect(prismaAdapter).toContain('where: { id: state.id, version: expected, ...ownTenantWhere(this.scope) },');
-
-    expect(prismaAdapter).toContain(
-      'const row = { ...state, ...tenantScopeOf(this.scope), ...stampCreation(this.scope, this.clock) };',
-    );
+    expect(prismaAdapter).toContain('await saveTenantAggregate(this.database.client().billingInvoice, {');
 
     expect(prismaAdapter).not.toContain('.findUnique(');
     expect(model).toContain('  tenantId     String   @map("tenant_id")\n');
@@ -187,13 +183,7 @@ describe('init --tenancy on Prisma and TypeORM', () => {
 
     expect(typeormAdapter).toContain('findOneBy(invoices, { id, ...tenantWhere(this.scope) })');
 
-    expect(typeormAdapter).toContain(
-      'const guarded = { id: state.id, version: expected, ...ownTenantWhere(this.scope) };',
-    );
-
-    expect(typeormAdapter).toContain(
-      'const row = { ...state, ...tenantScopeOf(this.scope), ...stampCreation(this.scope, this.clock) };',
-    );
+    expect(typeormAdapter).toContain('await saveTenantAggregate(this.database, invoices, {');
 
     expect(schema).toContain("import { auditColumns, schemaNameOf, tenantColumn } from '@ddd-ts-kit/typeorm';");
     expect(schema).toContain('    ...tenantColumn(),\n    ...auditColumns(),');

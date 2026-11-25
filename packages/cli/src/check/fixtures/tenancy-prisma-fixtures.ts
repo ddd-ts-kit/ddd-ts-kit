@@ -35,6 +35,10 @@ export class PrismaInvoiceRepository {
 
     return this.database.client().invoice.updateMany({ where: mine, data: state });
   }
+
+  save(saved: Invoice) {
+    return saveTenantAggregate(this.database.client().invoice, { aggregate: saved, row: toRow(saved), scope: this.scope, clock: this.clock });
+  }
 }
 `;
 
@@ -83,6 +87,11 @@ export const TENANCY_PRISMA_FIXTURES: readonly Fixture[] = [
     'prisma',
     'a count with no tenant condition',
     "return this.database.client().invoice.count({ where: { status: 'issued' } });",
+  ),
+  tenancyBypass(
+    'prisma',
+    'an aggregate saved with no tenant',
+    'return saveAggregate(this.database.client().invoice, { aggregate: saved, row, scope: this.scope, clock: this.clock });',
   ),
   tenancyBypass('prisma', 'raw SQL', 'return this.database.client().$queryRaw`select * from billing.invoices`;'),
   tenancyBypass(

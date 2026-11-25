@@ -1,26 +1,13 @@
-import { type Clock, type ExecutionScope, stampCreation, stampUpdate, tenantScopeOf } from '@ddd-ts-kit/kernel';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
-import {
-  KnexContext,
-  auditRow,
-  insertIgnoringConflict,
-  optimisticUpdate,
-  ownTenantTable,
-  tenantRow,
-  tenantTable,
-} from '@ddd-ts-kit/knex';
+import { KnexContext, saveTenantAggregate, tenantTable } from '@ddd-ts-kit/knex';
 import type { Calendar } from '@/contexts/scheduling/calendars/domain/aggregates/calendar.aggregate';
 import { CalendarRepository } from '@/contexts/scheduling/calendars/domain/repositories/calendar.repository';
 import { SCHEDULING_SCHEMA } from '@/contexts/scheduling/shared/infrastructure/persistence/scheduling.schema';
 import { CalendarMapper } from '@/contexts/scheduling/calendars/infrastructure/persistence/calendar.mapper';
-import type {
-  CalendarColumns,
-  CalendarRow,
-} from '@/contexts/scheduling/calendars/infrastructure/persistence/calendar-row.schema';
+import type { CalendarRow } from '@/contexts/scheduling/calendars/infrastructure/persistence/calendar-row.schema';
 
-type VersionedCalendar = CalendarColumns & { readonly version: number };
-
-/** Tenant data: every statement reaches it through `tenantTable` or `ownTenantTable`, confined to the tenant of the work. */
+/** Tenant data: every statement reaches it through `tenantTable` or `saveTenantAggregate`, confined to the tenant of the work. */
 const TABLE = { schema: SCHEDULING_SCHEMA, table: 'calendars' };
 
 @Repository(CalendarRepository)
@@ -38,32 +25,11 @@ export class KnexCalendarRepository implements CalendarRepository {
   }
 
   async save(saved: Calendar): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...CalendarMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : this.update(state, expected);
+    await saveTenantAggregate(this.database, TABLE, {
+      aggregate: saved,
+      row: CalendarMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: VersionedCalendar): Promise<number> {
-    const row = {
-      ...state,
-      ...tenantRow(tenantScopeOf(this.scope)),
-      ...auditRow(stampCreation(this.scope, this.clock)),
-    };
-
-    return (await insertIgnoringConflict(
-      this.database.executor(),
-      ownTenantTable<CalendarRow>(this.database, this.scope, TABLE),
-      { row, conflict: 'id' },
-    ))
-      ? 1
-      : 0;
-  }
-
-  private async update(state: VersionedCalendar, expected: number): Promise<number> {
-    return ownTenantTable<CalendarRow>(this.database, this.scope, TABLE)
-      .where({ id: state.id, version: expected })
-      .update({ ...state, ...auditRow(stampUpdate(this.scope, this.clock)) });
   }
 }

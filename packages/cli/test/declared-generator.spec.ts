@@ -100,7 +100,8 @@ describe('a context generated in the declared style, towards the outside', () =>
     );
 
     expect(repository).toContain("import type { Database } from '@/platform/database/database';");
-    expect(repository).toContain('  private async insert(state: VersionedInvoice): Promise<number> {');
+    expect(repository).toContain('    await saveAggregate(this.database, invoices, {');
+    expect(repository).not.toContain('optimisticUpdate');
 
     expect(
       read(root, `${BILLING}/infrastructure/persistence/in-memory-search-invoices-reader.repository.ts`),
