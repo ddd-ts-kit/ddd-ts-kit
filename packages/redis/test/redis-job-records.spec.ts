@@ -41,6 +41,14 @@ describe('a record of the Redis job store', () => {
     });
   });
 
+  it('is not handed to a worker before a claim counted it: no lease is of a claim that never was', () => {
+    const { claims: _claims, ...neverClaimed } = record;
+
+    expect(() => claimedJobOfRecord(parseJobRecord(JSON.stringify(neverClaimed)))).toThrow(
+      new RangeError('The lease of job job-1 is of a claim counted from 1, not of 0.'),
+    );
+  });
+
   it('shows its status, progress and last failure, never its payload', () => {
     expect(queuedJobOfRecord(parseJobRecord(JSON.stringify(record)))).toEqual({
       id: 'job-1',
