@@ -91,7 +91,8 @@
     "@ddd-ts-kit/aspects": "0.114.1",
     "@ddd-ts-kit/events": "0.114.1",
     "@faker-js/faker": "^10.6.0",
-    "@ddd-ts-kit/scheduling": "0.114.1"
+    "@ddd-ts-kit/scheduling": "0.114.1",
+    "vitest": "^5.0.5"
   },
   "peerDependencies": {
     "@faker-js/faker": ">=9.0.0",
