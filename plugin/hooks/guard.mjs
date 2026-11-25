@@ -5,17 +5,9 @@ import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { call } from './call.mjs';
-import { isRecord, readBounded, readJson, readText } from './disk.mjs';
-import { git, gitRun, unreadRepositoryNotice } from './git.mjs';
-import {
-  alreadyRemembered,
-  forget,
-  markerOf,
-  pruneGuardState,
-  reminderMarker,
-  sharedStateFile,
-  stateFile,
-} from './guard-state.mjs';
+import { isRecord, readJson, readText } from './disk.mjs';
+import { git, unreadRepositoryNotice } from './git.mjs';
+import { alreadyRemembered, markerOf, pruneGuardState, sharedStateFile, stateFile } from './guard-state.mjs';
 import { branchOutsideReason, heldChangeReason, pendingChangeReason, settleNote } from './held-changes.mjs';
 import { decide, emit, hostOf, patchWrites, readInput, sessionOf, toolInput, writesOf } from './hook-input.mjs';
 import { removeKitFile } from './kit-files.mjs';
@@ -31,11 +23,11 @@ import {
   GUARD_MODES,
   insideContexts,
   installedBin,
-  outsideItsModule,
   projectPath,
   runCli,
   TIME_SCALE,
 } from './project.mjs';
+import { commitReminder, designReminder, hasPendingChanges } from './reminders.mjs';
 import { gitDirOf, hasWorkerWorktree, STORY_SCOPE, WORKER_SCOPE } from './repository.mjs';
 import { ABSOLUTE_PATH, AGENT_ID, CONTEXT_NAME, GIT_REF, LABEL, named, quoted, STORY_ID } from './said-as-data.mjs';
 import {
@@ -94,11 +86,9 @@ import {
   baselineFileReason,
   dependencyReason,
   escapeReason,
-  GENERATED_DOCUMENT,
   generatedFileReason,
   governedFileReason,
   handWrittenRoleReason,
-  isBarrel,
   scopeFileReason,
   scriptsChangeReason,
   testWriterScopeReason,
@@ -118,8 +108,6 @@ const BUILDER_AGENT = `ddd-ts-kit:${WORKER_AGENT}`;
 // The host caps SessionStart context at 10 000 characters; a session should start far below it.
 const SESSION_CONTEXT_LIMIT = 3000;
 
-const COUNTED_FILE_BYTES = 1_000_000;
-
 const FORMAT_TIMEOUT = 5000;
 
 // What a session start gives the CLI in all, of the 15 s of its hook: past it, the calls left are skipped.
@@ -134,10 +122,6 @@ const BRIEFING_CUT =
 const POST_WRITE_FILES = 5;
 // The written files one call of pre-write has the CLI judge before they land, of the 5 s of its hook.
 const CLI_WRITE_FILES = 2;
-
-const LOCKFILES = ['package-lock.json', 'npm-shrinkwrap.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lock', 'bun.lockb'];
-// Rewritten by a command: counted in no commit size, merged by regenerating.
-const DERIVED_FILES = [...LOCKFILES, '.dependency-cruiser.cjs', 'docs/context-map.md'];
 
 // The files a compiler, a linter or a test runner reads a suppression from: in Markdown or YAML the
 // same words are prose, a constitution or a decision record that names the rule they break.
@@ -642,33 +626,6 @@ function unfinishedCheck() {
     : `architecture check timed out after ${seconds} s: run \`npx ddd-ts-kit check\``;
 }
 
-// In the worktree of a story, a done row whose design review cites a name the code does not have,
-// with no compromise listed in the report: said once per session for the same names, never blocking.
-function designReminder(project, input) {
-  const story = storyOf(project);
-  if (story === undefined || !project.cli || fixOf(project) !== undefined) {
-    return undefined;
-  }
-  const design = runCli(project, ['story-check', story, '--json'], 20000)?.design ?? [];
-  if (design.length === 0) {
-    return undefined;
-  }
-  const key = createHash('sha256')
-    .update(
-      `${project.root}\n${sessionOf(input)}\n${design.map(({ document, line, cited }) => `${document}:${line}:${cited}`).join('\n')}`,
-    )
-    .digest('hex')
-    .slice(0, 24);
-  if (alreadyRemembered(markerOf(project, 'design', key))) {
-    return undefined;
-  }
-  const named = design
-    .slice(0, 5)
-    .map(({ cited, row, document, line }) => `\`${cited}\` (#${row}, ${document}:${line})`)
-    .join(', ');
-  return `ddd-ts-kit: a row departed from its design: update its review section or list the compromise. ${design.length} name(s) of the design of story ${story} are not in the code: ${named}. \`npx ddd-ts-kit story-check ${story}\` lists them, and \`### Compromises\` of \`## Report\` in docs/architecture/stories/${story}.md records what was built otherwise.`;
-}
-
 function remainingErrors(project) {
   if (!project.cli || project.mode !== 'enforce' || !hasPendingChanges(project)) {
     return [];
@@ -934,93 +891,4 @@ function contextLine(context) {
 
 function isChecked(file) {
   return /\.(ts|mts|cts)$/.test(file) || file.endsWith('CONTEXT.md');
-}
-
-function hasPendingChanges(project) {
-  const status = gitRun(project, ['status', '--porcelain']);
-  return status.status !== 0 || status.stdout.trim().length > 0;
-}
-
-// Said once per session while the tree stays above the limits; a session start says it again.
-function commitReminder(project, input, { repeat }) {
-  const changes = (uncommittedChanges(project) ?? []).filter((change) => !isDerived(project, change.path));
-  const lines = changes.reduce((sum, change) => sum + change.lines, 0);
-  const marker = reminderMarker(project, input);
-  if (changes.length <= project.commit.maxFiles && lines <= project.commit.maxLines) {
-    return forget(marker);
-  }
-  if (alreadyRemembered(marker) && !repeat) {
-    return undefined;
-  }
-
-  return `ddd-ts-kit: ${changes.length} changed files and ${lines} changed lines are uncommitted (advised at most ${project.commit.maxFiles} files and ${project.commit.maxLines} lines a commit, generated files not counted). Commit each finished slice on its own, with the files its generator wrote: ${describeSlices(project, changes)}. See the skill ddd-ts-kit:commit-discipline.`;
-}
-
-function uncommittedChanges(project) {
-  const untracked = git(project, ['ls-files', '--others', '--exclude-standard', '-z']);
-  if (untracked === undefined) {
-    return undefined;
-  }
-  const tracked = (git(project, ['diff', '--numstat', '--no-renames', '--relative', '-z', 'HEAD']) ?? '')
-    .split('\0')
-    .filter(Boolean)
-    .map(numstatChange);
-  const fresh = untracked
-    .split('\0')
-    .filter(Boolean)
-    .map((path) => ({ path, lines: lineCount(join(project.root, path)) }));
-
-  return [...tracked, ...fresh];
-}
-
-function numstatChange(entry) {
-  const [added, deleted, ...path] = entry.split('\t');
-  return { path: path.join('\t'), lines: (Number(added) || 0) + (Number(deleted) || 0) };
-}
-
-// Read within its bound: a file larger, or that cannot be opened (a broken link, a device), counts no line.
-function lineCount(file) {
-  const { content } = readBounded(file, COUNTED_FILE_BYTES);
-  return content === undefined
-    ? 0
-    : content.split('\n').filter((line, index, all) => index < all.length - 1 || line !== '').length;
-}
-
-function isDerived(project, path) {
-  return (
-    DERIVED_FILES.includes(path) || GENERATED_DOCUMENT.test(path) || isBarrel(project, path) || path === WORKER_SCOPE
-  );
-}
-
-function describeSlices(project, changes) {
-  const sizes = new Map();
-  for (const { path } of changes) {
-    sizes.set(sliceOf(project, path), (sizes.get(sliceOf(project, path)) ?? 0) + 1);
-  }
-  const slices = [...sizes]
-    .sort(([, left], [, right]) => right - left)
-    .map(([slice, files]) => `${slice} (${files} files)`);
-
-  return slices.length > 8 ? `${slices.slice(0, 8).join(', ')} and ${slices.length - 8} more` : slices.join(', ');
-}
-
-// A slice is a use case of a context: its folder, its route and their specs travel together.
-function sliceOf(project, path) {
-  const inside = insideContexts(project, path);
-  if (!inside) {
-    return path.startsWith(`${project.platformDir}/`)
-      ? 'platform'
-      : path.includes('/')
-        ? path.split('/')[0]
-        : 'project root';
-  }
-  const [context, ...parts] = inside;
-  // A module of the model holds its layers: a use case sits below it.
-  const [layer, kind, useCase] = outsideItsModule(project, context, parts);
-  if (layer === 'application' && (kind === 'commands' || kind === 'queries') && useCase) {
-    return `${context}: ${useCase}`;
-  }
-  const named = /\/([^/.]+)\.(?:route|handler\.spec|route\.spec)\.ts$/.exec(path)?.[1];
-
-  return named ? `${context}: ${named}` : `${context}: ${kind === undefined ? 'context files' : layer}`;
 }
