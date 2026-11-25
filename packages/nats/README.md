@@ -280,7 +280,12 @@ aggregate matters.
    `occurredAt`, or with a `tenantId` that `isTenantId` of the kernel refuses) is poison: it
    goes straight to the dead-letter stream with `x-dead-reason: poison` and
    `x-error-code: POISON_MESSAGE`, and no handler sees it.
-5. Only codes travel: `x-error-code` is the `code` of the error or its class name. The message
+5. A message that reaches a consumer whose handlers all unsubscribed (it was on its way when
+   the last one left) waits for the next handler: the bus refuses it with the same delay (`nak`
+   with `retry.delayMs`), never on the spot, and it never goes to the dead-letter stream for it.
+   The four brokers of the kit keep such a message for the next handler; on NATS the server
+   counts that delivery, so the next handler reads one attempt more.
+6. Only codes travel: `x-error-code` is the `code` of the error or its class name. The message
    of an error is never logged, reported or attached, because it may quote payload data.
 
 **Why an explicit copy and not the advisory.** When a message reaches `max_deliver` the

@@ -254,7 +254,12 @@ one consumer share its queue: each event goes to one of them.
    `occurredAt`, or with a `tenantId` that `isTenantId` of the kernel refuses) is poison: it
    goes straight to the dead queue with `x-dead-reason: poison` and
    `x-error-code: POISON_MESSAGE`, and no handler sees it.
-5. Only codes travel: `x-error-code` is the `code` of the error or its class name. The message
+5. A message that reaches a consumer whose handlers all unsubscribed (it was on its way when
+   the last one left) waits for the next handler: the bus sends it to the retry queue with its
+   `x-attempt` unchanged, so it comes back after `retry.delayMs`, never on the spot, counts as no
+   attempt and never goes to the dead queue for it. The four brokers of the kit keep such a
+   message for the next handler.
+6. Only codes travel: `x-error-code` is the `code` of the error or its class name. The message
    of an error is never logged, reported or attached, because it may quote payload data.
 
 Delivery is at least once and unordered. The copy-then-acknowledge order means a crash in

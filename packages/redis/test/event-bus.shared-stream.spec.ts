@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { streamNamesOf } from '../src/event-bus';
 import { anEvent, recorder, unique } from './support/events';
 import { SERVERS, serverOf } from './support/servers';
-import { Server } from './support/streams';
+import { MAX_ATTEMPTS, RETRY_DELAY_MS, Server } from './support/streams';
+import { eventually, pause } from './support/waiting';
 
 const PLACED = 'ordering.order.placed';
 const CANCELLED = 'ordering.order.cancelled';
@@ -53,6 +55,29 @@ describe.each(SERVERS)(
 
       expect(placed.ids()).toEqual(['evt-2']);
       expect(await server.pending(stream, consumer)).toBe(0);
+    });
+
+    it('keeps an event of a type whose handlers all left for the next handler, counted as no attempt', async () => {
+      const consumer = unique('billing');
+      const bus = sharing(consumer);
+      const attempts: (number | undefined)[] = [];
+
+      bus.subscribe(CANCELLED, async () => undefined);
+      bus.subscribe(PLACED, async () => undefined).unsubscribe();
+      await bus.publish([anEvent('evt-1', PLACED)]);
+      // Longer than every retry of a failing handler would take.
+      await pause(RETRY_DELAY_MS * MAX_ATTEMPTS * 4);
+
+      expect(await server.length(streamNamesOf({ consumer, type: PLACED }, () => stream).dead)).toBe(0);
+      expect(await server.pending(stream, consumer)).toBe(1);
+
+      bus.subscribe(PLACED, async (_event, delivery) => {
+        attempts.push(delivery?.attempt);
+      });
+
+      await eventually(() => attempts.length === 1);
+
+      expect(attempts).toEqual([1]);
     });
 
     it('describes every type it reads on the stream', () => {

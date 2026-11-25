@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:80626f5ce9b8665b -->
+<!-- translation-of: README.md sha256:a9a2df30b6683d8d -->
 
 # @ddd-ts-kit/kafka
 
@@ -343,7 +343,13 @@ les enregistrements d'une partition ne sont jamais traités en parallèle.
 4. Un enregistrement dont la valeur n'est pas une enveloppe (illisible, ou sans `id`, `type`,
    `version`, `occurredAt`) est empoisonné : il part directement dans le *topic* de rejet avec
    `x-dead-reason: poison` et `x-error-code: POISON_MESSAGE`, et aucun gestionnaire ne le voit.
-5. Seuls des codes circulent : `x-error-code` est le `code` de l'erreur ou le nom de sa classe.
+5. Un enregistrement dont le type n'a plus de gestionnaire (ils se sont tous désabonnés) attend
+   le prochain gestionnaire : sa partition est mise en pause jusqu'à ce qu'un gestionnaire
+   s'abonne ou que le bus se ferme, il ne compte pour aucune tentative et ne part jamais dans le
+   *topic* de rejet pour cela. Les quatre brokers du kit gardent un tel message pour le prochain
+   gestionnaire. Un enregistrement d'un type auquel le consommateur ne s'est jamais abonné, sur
+   un *topic* que plusieurs types partagent, est validé sans être traité.
+6. Seuls des codes circulent : `x-error-code` est le `code` de l'erreur ou le nom de sa classe.
    Le message d'une erreur n'est jamais journalisé, signalé ni joint, parce qu'il peut citer des
    données de la charge utile. Le client journalise les messages et les piles de ce qu'il
    attrape : le bus coupe son *logger*.

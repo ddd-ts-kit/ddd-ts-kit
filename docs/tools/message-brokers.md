@@ -253,6 +253,11 @@ When a handler keeps failing, all four do the same thing:
 
 ![After a failed attempt the provider delivers the event again after a fixed delay, up to maxAttempts deliveries; then the event goes to the dead destination of the provider (dead queue, dead-letter topic, dead-letter stream or dead stream), is reported once when DeadLetterReports is wired, and replayDead delivers it again once the cause is fixed](../assets/diagrams/message-brokers-retry-and-dead-letter.svg)
 
+A message whose handlers all unsubscribed is kept for the next handler on all four: it is never
+acknowledged, never sent to the dead destination and never delivered again on the spot (it
+waits the retry delay; on Kafka its partition waits for the handler). It counts as no attempt,
+except on NATS, where the server counts each delivery.
+
 **What the kit does not provide at all**: SQS/SNS, Google Pub/Sub, Azure Service Bus, Pulsar,
 Redpanda (may work as a Kafka-protocol broker; never run), change data capture (described as
 a relay strategy, not shipped), exponential backoff on the consuming side (one fixed delay

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:e40f8b2123bd4981 -->
+<!-- translation-of: README.md sha256:04bba12c97117cb8 -->
 
 # @ddd-ts-kit/redis
 
@@ -786,7 +786,13 @@ compte.
    `type`, `version`, `occurredAt`) est empoisonnée (poison) : elle va directement dans le flux de
    rejet avec `dead-reason: poison` et `error-code: POISON_ENTRY`, et aucun gestionnaire ne la
    voit.
-6. Seuls les codes voyagent : `error-code` est le `code` de l'erreur, ou le nom de sa classe. Le
+6. Une entrée dont le type n'a plus de gestionnaire (ils se sont tous désabonnés pendant que
+   l'entrée était dans le lot, ou pendant qu'un autre type fait encore lire un flux partagé)
+   attend le prochain gestionnaire : elle reste en attente et revient après `retry.delayMs`,
+   jamais sur-le-champ, cette livraison étant retirée de son compteur (`XCLAIM` avec
+   `RETRYCOUNT`), si bien qu'elle ne compte pour aucune tentative et ne va jamais dans le flux de
+   rejet pour cela. Les quatre brokers du kit gardent un tel message pour le prochain gestionnaire.
+7. Seuls les codes voyagent : `error-code` est le `code` de l'erreur, ou le nom de sa classe. Le
    message d'une erreur n'est jamais journalisé, remonté ni joint, parce qu'il peut citer des
    données du contenu de l'événement.
 

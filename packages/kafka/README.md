@@ -332,7 +332,12 @@ of one partition are never handled concurrently.
 4. A record whose value is not an envelope (unparseable, or without `id`, `type`, `version`,
    `occurredAt`) is poison: it goes straight to the dead-letter topic with
    `x-dead-reason: poison` and `x-error-code: POISON_MESSAGE`, and no handler sees it.
-5. Only codes travel: `x-error-code` is the `code` of the error or its class name. The message
+5. A record whose type has no handler left (they all unsubscribed) waits for the next handler:
+   its partition is paused until one subscribes or the bus closes, it counts as no attempt and
+   never goes to the dead-letter topic for it. The four brokers of the kit keep such a message
+   for the next handler. A record of a type the consumer never subscribed to, on a topic several
+   types share, is committed unhandled.
+6. Only codes travel: `x-error-code` is the `code` of the error or its class name. The message
    of an error is never logged, reported or attached, because it may quote payload data. The
    client logs messages and stacks of what it catches: the bus turns its logger off.
 

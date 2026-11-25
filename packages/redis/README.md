@@ -762,7 +762,12 @@ version in the payload when it matters.
 5. An entry that does not hold an envelope (no `envelope` field, unparseable, or without `id`,
    `type`, `version`, `occurredAt`) is poison: it goes straight to the dead stream with
    `dead-reason: poison` and `error-code: POISON_ENTRY`, and no handler sees it.
-6. Only codes travel: `error-code` is the `code` of the error or its class name. The message
+6. An entry whose type has no handler left (they all unsubscribed while the entry was in the
+   batch, or while another type keeps a shared stream read) waits for the next handler: it stays
+   pending and comes back after `retry.delayMs`, never on the spot, with that delivery taken off
+   its counter (`XCLAIM` with `RETRYCOUNT`), so it counts as no attempt and never goes to the dead
+   stream for it. The four brokers of the kit keep such a message for the next handler.
+7. Only codes travel: `error-code` is the `code` of the error or its class name. The message
    of an error is never logged, reported or attached, because it may quote payload data.
 
 Delivery is at least once. An acknowledgement lost to a disconnection, a claim racing a slow

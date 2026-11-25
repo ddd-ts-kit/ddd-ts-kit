@@ -45,7 +45,8 @@ export const ATTEMPTS_EXHAUSTED = 'ATTEMPTS_EXHAUSTED';
 /**
  * What becomes of a delivered entry: acknowledged once every handler resolved; left pending
  * after a failure, to be claimed again after the delay; copied to the dead stream when its
- * attempts are spent or when it does not hold an envelope.
+ * attempts are spent or when it does not hold an envelope; kept for the next handler, counted
+ * as no attempt, when every handler of its type left.
  */
 export class Settlement {
   constructor(
@@ -85,7 +86,9 @@ export class Settlement {
       await this.acknowledge(delivery);
     } else if (delivery.attempt > this.settings.retry.maxAttempts) {
       await this.fail(delivery, event, ATTEMPTS_EXHAUSTED);
-    } else if (handlers.size > 0) {
+    } else if (handlers.size === 0) {
+      await this.leave(delivery);
+    } else {
       await this.handle(delivery, event, handlers);
     }
   }
@@ -177,6 +180,17 @@ export class Settlement {
       entry,
       annotations,
     });
+  }
+
+  /**
+   * Every handler of the type left: the entry waits for the next one. It stays pending and
+   * comes back after the retry delay, as after a failure, with this delivery taken off its
+   * counter (`RETRYCOUNT`): finding nobody is no attempt, and never sends an entry to the dead stream.
+   */
+  private async leave({ stream, entry, attempt }: Delivery): Promise<void> {
+    const { consumer, instance } = this.settings;
+
+    await this.client.xclaim(stream, consumer, instance, 0, entry.id, 'RETRYCOUNT', attempt - 1, 'JUSTID');
   }
 
   /**

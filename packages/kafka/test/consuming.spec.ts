@@ -116,9 +116,10 @@ describe.each(BROKERS)('KafkaEventBus: consuming, %s', { timeout: 60_000 }, (_na
     expect(cancelled.ids()).toEqual(['evt-2']);
   });
 
-  it('keeps the record of a type whose handlers all unsubscribed, for the next handler', async () => {
+  it('keeps the record of a type whose handlers all unsubscribed for the next handler, counted as no attempt', async () => {
     const bus = broker.bus({ consumer: broker.consumer('billing') });
     const [first, second] = [recorder(), recorder()];
+    const attempts: (number | undefined)[] = [];
     const subscription = bus.subscribe(PLACED, first.handler);
 
     await bus.publish([anEvent('evt-1')]);
@@ -126,10 +127,16 @@ describe.each(BROKERS)('KafkaEventBus: consuming, %s', { timeout: 60_000 }, (_na
     subscription.unsubscribe();
     await bus.publish([anEvent('evt-2')]);
     await pause(300);
-    bus.subscribe(PLACED, second.handler);
+
+    bus.subscribe(PLACED, async (event, delivery) => {
+      attempts.push(delivery?.attempt);
+      await second.handler(event);
+    });
+
     await broker.settled(bus);
 
     expect(first.ids()).toEqual(['evt-1']);
     expect(second.ids()).toEqual(['evt-2']);
+    expect(attempts).toEqual([1]);
   });
 });

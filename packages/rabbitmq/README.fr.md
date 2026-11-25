@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:f55e817f7c782777 -->
+<!-- translation-of: README.md sha256:54dcd6ca5a214152 -->
 
 # @ddd-ts-kit/rabbitmq
 
@@ -261,7 +261,13 @@ Deux instances d'un même consommateur partagent sa file : chaque événement va
    `occurredAt`, ou avec un `tenantId` que `isTenantId` du noyau refuse) est empoisonné (poison) :
    il va directement dans la file de rejet avec `x-dead-reason: poison` et
    `x-error-code: POISON_MESSAGE`, et aucun gestionnaire ne le voit.
-5. Seuls des codes voyagent : `x-error-code` est le `code` de l'erreur ou le nom de sa classe. Le
+5. Un message qui atteint un consommateur dont tous les gestionnaires se sont désabonnés (il
+   était en route quand le dernier est parti) attend le prochain gestionnaire : le bus l'envoie
+   dans la file de nouvelles tentatives avec son `x-attempt` inchangé, si bien qu'il revient après
+   `retry.delayMs`, jamais sur-le-champ, ne compte pour aucune tentative et ne va jamais dans la
+   file de rejet pour cela. Les quatre brokers du kit gardent un tel message pour le prochain
+   gestionnaire.
+6. Seuls des codes voyagent : `x-error-code` est le `code` de l'erreur ou le nom de sa classe. Le
    message d'une erreur n'est jamais journalisé, remonté ni joint, car il peut citer des données
    du *payload*.
 

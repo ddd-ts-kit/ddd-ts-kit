@@ -1,5 +1,5 @@
 [English](message-brokers.md) · **Français**
-<!-- translation-of: message-brokers.md sha256:0c5336e1954ca270 -->
+<!-- translation-of: message-brokers.md sha256:6132d8117f26a046 -->
 
 # Brokers de messages : en processus, RabbitMQ, Kafka, NATS JetStream, Redis Streams
 
@@ -264,6 +264,12 @@ export const bus = providers[broker]();
 Quand un gestionnaire échoue sans cesse, les quatre font la même chose :
 
 ![Après une tentative en échec, le provider livre à nouveau l'événement après un délai fixe, jusqu'à maxAttempts livraisons ; puis l'événement part dans la destination de rejet du provider (file de rejet, topic de rejet ou stream de rejet), il est signalé une fois si DeadLetterReports est câblé, et replayDead le livre à nouveau une fois la cause corrigée](../assets/diagrams/message-brokers-retry-and-dead-letter.fr.svg)
+
+Un message dont tous les gestionnaires se sont désabonnés est gardé pour le prochain gestionnaire
+par les quatre : il n'est jamais acquitté, jamais envoyé vers la destination de rejet et jamais
+livré de nouveau sur-le-champ (il attend le délai de nouvelle tentative ; sur Kafka sa partition
+attend le gestionnaire). Il ne compte pour aucune tentative, sauf sur NATS, où le serveur compte
+chaque livraison.
 
 **Ce que le kit ne fournit pas du tout** : SQS/SNS, Google Pub/Sub, Azure Service Bus, Pulsar,
 Redpanda (peut fonctionner comme *broker* au protocole Kafka ; jamais exécuté), la capture des

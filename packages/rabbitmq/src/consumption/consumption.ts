@@ -53,7 +53,8 @@ interface Delivery {
 /**
  * The consuming side: one durable queue per consumer and event type, manual acknowledgement
  * once every handler resolved, and for a failure a wait in the retry queue, then the dead
- * queue when the attempts are spent. A message is never requeued at once: no hot loop.
+ * queue when the attempts are spent. A message whose handlers all left waits there too, for
+ * the next one, counted as no attempt. A message is never requeued at once: no hot loop.
  */
 export class Consumption {
   private readonly subscriptions = new Map<string, QueueSubscription>();
@@ -186,7 +187,7 @@ export class Consumption {
     subscription.consumerTag = consumerTag;
 
     // The subscription left while its consumer was being registered: the consumer leaves too,
-    // or every message of the queue would reach a consumer without handler and come back at once.
+    // or every message of the queue would reach a consumer without handler and wait a retry delay.
     if (this.subscriptions.get(subscription.queues.work) !== subscription) {
       void channel.cancel(consumerTag).catch(ignore);
     }
@@ -203,9 +204,7 @@ export class Consumption {
     }
 
     if (subscription.handlers.size === 0) {
-      quietly(() => {
-        channel.nack(message, false, true);
-      });
+      await this.leave(delivery);
 
       return;
     }
@@ -223,6 +222,16 @@ export class Consumption {
     }
 
     await this.retryOrBury(delivery, event, code);
+  }
+
+  /**
+   * Every handler left while the message was on its way: it waits for the next one in the retry
+   * queue, with the attempt number it came with. Finding nobody is no attempt.
+   */
+  private async leave(delivery: Delivery): Promise<void> {
+    const { retry } = delivery.subscription.queues;
+
+    await this.move(delivery, retry, { [ATTEMPT_HEADER]: attemptOf(delivery.message) });
   }
 
   private deliveryOf({ subscription, message }: Delivery): EventDelivery {
