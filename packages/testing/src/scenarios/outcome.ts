@@ -2,7 +2,11 @@ import type { ExpectedFacts } from '../refusals/expected-facts';
 import type { ErrorClass } from './error-class';
 import type { EventMatcher } from './event-matcher';
 
-/** The assertions available once `when` ran. Each returns the outcome, so they chain. */
+/**
+ * The assertions available once `when` ran. Each returns the outcome, so they chain. An action
+ * that threw fails every one of them but `thenError`; after it, the others read what the action
+ * left behind: `thenError('ORDER_ALREADY_PAID').thenNoEvent()` is a refusal that recorded nothing.
+ */
 export interface Outcome<A> {
   /** Exactly these events, in this order. */
   thenEvents(expected: readonly EventMatcher[]): this;
