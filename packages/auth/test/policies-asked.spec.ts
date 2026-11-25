@@ -6,6 +6,7 @@ import {
   err,
   ok,
   unitOfWorkMiddleware,
+  unitOfWorkOver,
   type Result,
 } from '@ddd-ts-kit/kernel';
 import {
@@ -45,7 +46,7 @@ function ledger() {
   const committed: string[] = [];
   const rolledBack: string[] = [];
 
-  const run = async <T>(work: () => Promise<T>): Promise<T> => {
+  const unitOfWork = unitOfWorkOver(async (work) => {
     try {
       const result = await work();
 
@@ -56,9 +57,9 @@ function ledger() {
       rolledBack.push('work');
       throw error;
     }
-  };
+  });
 
-  return { committed, rolledBack, run };
+  return { committed, rolledBack, run: <T>(work: () => Promise<T>) => unitOfWork.run(work) };
 }
 
 type VoidHandler = (command: VoidInvoice, access: PolicyAccess) => Promise<void>;
@@ -69,7 +70,7 @@ function application(voids: VoidHandler, answering?: () => Promise<unknown>) {
 
   const commands = new InMemoryCommandBus()
     .use(authorizationMiddleware({ authorizer: new AllowAll(), map }))
-    .use(unitOfWorkMiddleware({ run: unitOfWork.run }))
+    .use(unitOfWorkMiddleware(unitOfWork))
     .aroundHandler(policiesAskedMiddleware({ map, refined: [onlyIssuerVoids.permission] }))
     .register(IssueInvoice, { execute: async (command) => `invoice for ${command.customerId}` })
     .register(VoidInvoice, { execute: (command) => voids(command, access) });

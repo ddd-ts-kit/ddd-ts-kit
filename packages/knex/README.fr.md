@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:c6d56ebe67625a45 -->
+<!-- translation-of: README.md sha256:b87bc72d4773944b -->
 
 # @ddd-ts-kit/knex
 
@@ -236,14 +236,15 @@ gestionnaire qui échoue ensuite est annulé avec l'écriture métier : c'est to
 de l'outbox. `createKnexUnitOfWork(db, { isolationLevel: 'repeatable read' })` transmet la
 configuration de transaction de knex.
 
-`run` repose sur `withinUnitOfWork` du noyau. Les événements du domaine des agrégats sauvegardés
+`run` repose sur `unitOfWorkOver` du noyau. Les événements du domaine des agrégats sauvegardés
 à l'intérieur attendent que `work` ait rendu la main, puis sont distribués dans la transaction,
 avant la validation (commit) : leurs gestionnaires voient chaque sauvegarde, et ce qu'ils
 écrivent est validé ou annulé avec elle. Si `work`, un gestionnaire ou la validation échoue, il
 ne reste rien : aucune ligne, aucun enregistrement d'outbox, aucun gestionnaire exécuté après la
 validation. Les gestionnaires déclarés `after-commit` s'exécutent une fois la transaction
 validée. Un `run` imbriqué rejoint l'unité de travail en cours : une seule distribution, à la fin
-du plus externe. Un `run` appelé directement (un consommateur, un script) a le même déroulement
+du plus externe. Appelé dans l'unité de travail d'une autre base de données, `run` ouvre la sienne : ses
+événements sont distribués avant sa propre validation. Un `run` appelé directement (un consommateur, un script) a le même déroulement
 qu'une commande. `unitOfWorkContract` de `@ddd-ts-kit/testing/contracts` le prouve, avec une
 contrainte différée pour la validation qui échoue ; sur un vrai PostgreSQL
 (`DDD_TS_KIT_TEST_DATABASE_URL`), il prouve aussi que les lignes d'un gestionnaire

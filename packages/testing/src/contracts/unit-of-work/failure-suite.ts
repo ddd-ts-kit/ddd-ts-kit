@@ -1,3 +1,4 @@
+import { InMemoryUnitOfWork } from '@ddd-ts-kit/kernel';
 import { ContractSuite } from '../contract-suite';
 import { failureOf } from '../failure-of';
 import { Parcel } from './parcel';
@@ -19,6 +20,7 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
     this.refusedSave();
     this.failingWork();
     this.failingHandler();
+    this.failingHandlerInsideAnotherDatabase();
     this.failingCommit();
     this.relaysWhatCommitted();
   }
@@ -121,6 +123,25 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
 
         this.expect(failure instanceof CarrierDown).toBe(true);
         await this.expectNothingLeft(bench, ['saved p1', 'saved p2', 'published p1', 'published p2']);
+      },
+    );
+  }
+
+  private failingHandlerInsideAnotherDatabase(): void {
+    this.it(
+      'rolls back with its before-commit handler that fails, opened inside the unit of work of another database',
+      async () => {
+        const bench = this.everyEffect();
+        const billing = new InMemoryUnitOfWork();
+
+        bench.on('before-commit', async () => {
+          throw new CarrierDown();
+        });
+
+        const failure = await failureOf(() => billing.run(() => bench.run(() => bench.register('p1'))));
+
+        this.expect(failure instanceof CarrierDown).toBe(true);
+        await this.expectNothingLeft(bench, ['saved p1', 'published p1']);
       },
     );
   }

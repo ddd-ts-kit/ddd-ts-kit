@@ -717,11 +717,13 @@ integration event is published only after it.
   repository (`save`, `saveAll`, `remove(aggregate)`) is refused before the write with
   `SaveAfterCommitError`: the unit of work is over, nothing would dispatch its events nor roll
   it back. It sends a command through the `CommandBus`, which opens a unit of work of its own.
-- **One scope per unit of work.** Every `UnitOfWork.run` is built on `withinUnitOfWork` of the
+- **One scope per unit of work.** Every `UnitOfWork` is built on `unitOfWorkOver` of the
   kernel, so a `run` called directly (a consumer, a script) has the timing of a command. A
   nested `run`, or a command sent from inside a unit of work, joins the one in progress: one
-  dispatch, at the end of the outermost. Two concurrent commands never share a scope. A
-  project's own `UnitOfWork` builds `run` on `withinUnitOfWork` and passes `unitOfWorkContract`.
+  dispatch, at the end of the outermost. Two concurrent commands never share a scope, nor do
+  two databases: a unit of work run inside the one of another database dispatches its events
+  before its own commit. A project's own `UnitOfWork` is built on `unitOfWorkOver` and passes
+  `unitOfWorkContract`; the command bus refuses one that opens no scope.
 - **Outside any unit of work** (a domain test, a repository used alone, a script) the save
   dispatches before it resolves, `before-commit` handlers then `after-commit` ones, and nothing
   is atomic.

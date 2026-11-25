@@ -254,12 +254,14 @@ default: not more, since a caller gives up near 30 seconds, and a connection hel
 nobody reads sheds no load. Knex, Drizzle and TypeORM bound no transaction
 in time: they need no such setting.
 
-`run` is built on `withinUnitOfWork` of the kernel. The domain events of the aggregates saved
+`run` is built on `unitOfWorkOver` of the kernel. The domain events of the aggregates saved
 inside it wait until `work` has returned, then are dispatched inside the transaction, before
 the commit: their handlers see every save, and what they write commits or rolls back with it.
 If `work`, a handler or the commit fails, nothing is left: no row, no outbox record, no handler
 run after the commit. Handlers declared `after-commit` run once the transaction has committed.
 A nested `run` joins the unit of work in progress: one dispatch, at the end of the outermost.
+Called inside the unit of work of another database, `run` opens its own: its events are
+dispatched before its own commit.
 A `run` called directly (a consumer, a script) has the same timing as a command.
 `unitOfWorkContract` of `@ddd-ts-kit/testing/contracts` proves it, with a deferred constraint
 for the commit that fails; on a real PostgreSQL (`DDD_TS_KIT_TEST_DATABASE_URL`) it also proves

@@ -7,13 +7,13 @@ import { TransactionalMemory } from './support/transactional-memory';
 const runner = { describe, it, expect, beforeEach, afterEach };
 
 unitOfWorkContract(runner, {
-  name: 'a unit of work built on withinUnitOfWork',
+  name: 'a unit of work built on unitOfWorkOver',
   createUnitOfWork: () => new TransactionalMemory(),
 });
 
 // A database of one connection: nothing outside the unit of work to look from.
 unitOfWorkContract(runner, {
-  name: 'a unit of work built on withinUnitOfWork, over a database of one connection',
+  name: 'a unit of work built on unitOfWorkOver, over a database of one connection',
   createUnitOfWork: () => {
     const memory = new TransactionalMemory();
 
@@ -27,7 +27,7 @@ unitOfWorkContract(runner, {
   },
 });
 
-describe('the unit of work contract and an adapter that forgot withinUnitOfWork', () => {
+describe('the unit of work contract and an adapter that forgot unitOfWorkOver', () => {
   it('fails it wherever the events would have left before the end or the handlers run before the commit', async () => {
     const collecting = new CollectingRunner();
 
@@ -42,16 +42,19 @@ describe('the unit of work contract and an adapter that forgot withinUnitOfWork'
       'dispatches nothing before the work returned: every handler sees every save',
       'dispatches what a handler saved after the events already waiting, once, in the same transaction',
       'joins the unit of work in progress on a nested run: one dispatch, at the end of the outermost',
+      'opens a unit of work of its own inside the one of another database: both phases around its own commit',
+      'dispatches once the command handler returned, and queues behind them what a command sent by a handler saved',
       'runs no handler of the earlier saves when a later save is refused: nothing stored, nothing in the outbox',
       'runs no handler when the work fails after a save: nothing stored, nothing in the outbox',
       'drops the events of a rolled back unit of work: the retry dispatches what it records, once',
       'fails the unit of work when a before-commit handler fails: state and outbox rolled back, no after-commit handler',
+      'rolls back with its before-commit handler that fails, opened inside the unit of work of another database',
       'rolls back what the before-commit handlers wrote when the commit itself fails, and runs no after-commit handler',
       'runs the after-commit handlers once the rows are committed, visible from outside the transaction',
       'reports the after-commit handler that fails, runs the others and answers the caller',
       'refuses the save of an after-commit handler before it writes, and runs the unit of work it opens apart',
     ]);
 
-    expect(passed).toHaveLength(6);
+    expect(passed).toHaveLength(5);
   });
 });

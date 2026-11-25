@@ -18,7 +18,7 @@ export interface QueuedDomainEvent {
 }
 
 /**
- * What one unit of work has to dispatch. `unit-of-work` is opened by `withinUnitOfWork`; `save`
+ * What one unit of work has to dispatch. `unit-of-work` is opened by a unit of work (`unitOfWorkOver`); `save`
  * is the scope of a save made outside of any, which dispatches as soon as it resolved.
  */
 export interface UnitOfWorkScope {

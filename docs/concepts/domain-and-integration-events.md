@@ -526,23 +526,26 @@ reused.
 
 ### Where the queue lives
 
-The queue belongs to a scope opened by `withinUnitOfWork(work, transaction)` of the kernel, in
-an `AsyncLocalStorage`. Every `UnitOfWork.run` of the kit is built on it (`InMemoryUnitOfWork`,
-drizzle, knex, prisma, typeorm), so a `run` called directly by a consumer or a script has the
-timing of a command. `unitOfWorkMiddleware` calls it too: a command is covered even with a
-project's own `UnitOfWork` that does not.
+The queue belongs to a scope opened by the unit of work `unitOfWorkOver(transaction)` of the
+kernel answers, in an `AsyncLocalStorage`. Every `UnitOfWork` of the kit is built on it
+(`InMemoryUnitOfWork`, drizzle, knex, prisma, typeorm), so a `run` called directly by a consumer
+or a script has the timing of a command. `unitOfWorkMiddleware` only calls `run`: a project's
+own `UnitOfWork` that opens no scope is refused before the handler (`UnscopedUnitOfWorkError`).
 
 - A nested `run`, or a command sent from inside a unit of work by a handler, joins the scope in
   progress: one dispatch, at the end of the outermost, and the `after-commit` phase after the
   outermost commit.
 - Two concurrent commands never share a scope.
-- A project that writes its own `UnitOfWork` builds `run` on it, and runs `unitOfWorkContract`
+- Two databases never share one either: a unit of work run inside the one of another database
+  opens its own transaction, dispatches its events before its own commit and runs its
+  `after-commit` handlers after it.
+- A project that writes its own `UnitOfWork` builds it on `unitOfWorkOver`, and runs `unitOfWorkContract`
   of `@ddd-ts-kit/testing/contracts`, which fails an adapter that forgot:
 
 <!-- checked sample -->
 ```ts
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { withinUnitOfWork, type UnitOfWork } from '@ddd-ts-kit/kernel';
+import { unitOfWorkOver, type UnitOfWork } from '@ddd-ts-kit/kernel';
 
 /** The driver of the project: begins, calls, commits when the work resolved, rolls back when it rejected. */
 interface Ledger {
@@ -556,22 +559,21 @@ interface LedgerTransaction {
 export class LedgerUnitOfWork implements UnitOfWork {
   private readonly current = new AsyncLocalStorage<LedgerTransaction>();
 
+  // Called to open a transaction only: a nested run joins the one in progress.
+  private readonly unitOfWork = unitOfWorkOver((work) =>
+    this.ledger.transaction((transaction) => this.current.run(transaction, work)),
+  );
+
   constructor(private readonly ledger: Ledger) {}
 
   run<T>(work: () => Promise<T>): Promise<T> {
-    return withinUnitOfWork(work, (scoped) => {
-      if (this.current.getStore() !== undefined) {
-        return scoped(); // a nested run joins the transaction in progress
-      }
-
-      return this.ledger.transaction((transaction) => this.current.run(transaction, scoped));
-    });
+    return this.unitOfWork.run(work);
   }
 }
 ```
 
 `transaction` begins, calls what it is given, commits when it resolved and rolls back when it
-rejected. `withinUnitOfWork` does the rest.
+rejected. `unitOfWorkOver` does the rest.
 
 The contract is run by the four ORM packages on PGlite, in process. The knex, prisma and
 typeorm packages also run it on a real PostgreSQL when `DDD_TS_KIT_TEST_DATABASE_URL` is set,
@@ -594,7 +596,7 @@ transaction. What to check when upgrading:
 |---|---|
 | a handler that relied on running between two saves of one command | it now runs after both: read the state it needs from what is saved, or split the command |
 | a handler with an effect outside the database (a gateway, a cache, a remote call) | declare it `phase: 'after-commit'`, or move the work behind an integration event when it must not be lost; `domain-events/transactional-before-commit` reports it |
-| its own `UnitOfWork` | build `run` on `withinUnitOfWork` and run `unitOfWorkContract` |
+| its own `UnitOfWork` | build it on `unitOfWorkOver` and run `unitOfWorkContract` |
 | its own `DomainEventDispatcher` | `dispatch(events, phase?)` and `on(name, handler, { phase }?)`: honour the phase, and never reject in the `after-commit` phase |
 | a domain event handler that sends a command | sent before the commit, the command joins the unit of work in progress: its events are dispatched with the others, not before it returns. Sent after the commit, it opens a unit of work of its own |
 | a call to `apartFromDomainEventFlow` | removed from `@ddd-ts-kit/kernel`, without replacement: see the row above |
