@@ -174,3 +174,39 @@ describe('generate projection, on an event the formatter folded', () => {
     expect(generated.created).toEqual([PROJECTION, SPEC]);
   });
 });
+
+describe('generate projection of a read model that exists', () => {
+  it('hands the projection its read model: the port in the constructor, the fake in the spec, and a note that names it', () => {
+    const terms = ['--term', 'Due=An invoice waiting for its payment'];
+    const kept = `${SHIPPING}/application/projections/due-invoices.projection.ts`;
+
+    expect(
+      cli(root, 'generate', 'read-model', 'shipping', 'DueInvoices', '--field', 'total:decimal', ...terms).code,
+    ).toBe(0);
+
+    const generated = report(
+      cli(root, 'generate', 'projection', 'shipping', 'DueInvoices', 'billing.invoice.issued', '--json'),
+    );
+
+    expect(read(root, kept)).toContain(
+      "import type { DueInvoices } from '@/contexts/shipping/application/ports/due-invoices.port';",
+    );
+
+    expect(read(root, kept)).toContain('  constructor(private readonly dueInvoices: DueInvoices) {}');
+    expect(read(root, kept)).toContain('): Promise<ReadModelWrite> {');
+    expect(read(root, kept)).toContain('`return this.dueInvoices.upsertIfNewer(<id>, stampOf(event),');
+    expect(read(root, kept)).not.toContain('generate read-model');
+
+    expect(read(root, `${SHIPPING}/test/unit/due-invoices.projection.spec.ts`)).toContain(
+      'const projection = new DueInvoicesProjection(new FakeDueInvoices());',
+    );
+
+    expect(read(root, `${SHIPPING}/application/application.declarations.ts`)).toContain(
+      'injected(DueInvoicesProjection, [DueInvoices]);',
+    );
+
+    expect(generated.notes).toEqual([
+      'DueInvoicesProjection keeps the read model DueInvoices (application/ports/due-invoices.port.ts): the line each event writes is left to decide.',
+    ]);
+  });
+});
