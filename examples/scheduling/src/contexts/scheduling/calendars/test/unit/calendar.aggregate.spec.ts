@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { given } from '@ddd-ts-kit/testing';
+import { given, recordedBy } from '@ddd-ts-kit/testing';
 import { Calendar } from '@/contexts/scheduling/calendars/domain/aggregates/calendar.aggregate';
 import { AppointmentType } from '@/contexts/scheduling/calendars/domain/value-objects/appointment-type.vo';
 import { Exception } from '@/contexts/scheduling/calendars/domain/value-objects/exception.vo';
@@ -30,7 +30,7 @@ describe('Calendar', () => {
     const loaded = Calendar.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 
   it('records the fact of its birth, with its practice, its practitioner and its time zone', () => {
@@ -40,7 +40,7 @@ describe('Calendar', () => {
       now,
     );
 
-    expect(born.pullEvents()).toEqual([
+    expect(recordedBy(born)).toEqual([
       {
         name: 'scheduling.calendar.created',
         aggregateId: 'calendar-1',

@@ -1,4 +1,4 @@
-import type { AuditStamp } from '@ddd-ts-kit/kernel';
+import { aggregateMapper, type AuditStamp } from '@ddd-ts-kit/kernel';
 import { Account } from '{{alias.context}}/domain/aggregates/account.aggregate{{alias.ext}}';
 import { DisplayName } from '{{alias.context}}/domain/value-objects/display-name.vo{{alias.ext}}';
 import { EmailAddress } from '{{alias.context}}/domain/value-objects/email-address.vo{{alias.ext}}';
@@ -8,19 +8,15 @@ type AccountRow = typeof accounts.$inferSelect;
 
 export type AccountColumns = Omit<AccountRow, 'version' | keyof AuditStamp>;
 
-export const AccountMapper = {
+export const AccountMapper = aggregateMapper({
   toDomain(row: AccountRow): Account {
-    const loaded = Account.rehydrate(row.id, {
+    return Account.rehydrate(row.id, {
       email: EmailAddress.create(row.email),
       displayName: DisplayName.create(row.displayName),
       status: row.status,
       provisionedAt: row.provisionedAt,
       deactivatedAt: row.deactivatedAt ?? undefined,
     });
-
-    loaded.version = row.version;
-
-    return loaded;
   },
 
   toRow(saved: Account): AccountColumns {
@@ -35,4 +31,4 @@ export const AccountMapper = {
       deactivatedAt: state.deactivatedAt ?? null,
     };
   },
-};
+});

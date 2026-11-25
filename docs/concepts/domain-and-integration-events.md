@@ -128,14 +128,14 @@ The full declaration is in [Designing the payload](#designing-the-payload).
    the recorded events. Once the command handler has returned, they are dispatched to the
    handlers of the same context, inside the transaction of the command, before its commit. The
    command handler writes `await this.appointments.save(appointment)` and nothing else: no
-   `pullEvents()`, no dispatcher (`domain-events/dispatched-on-save`,
+   `takeRecordedEvents()`, no dispatcher (`domain-events/dispatched-on-save`,
    [ARCHITECTURE.md](../ARCHITECTURE.md) section 4, "Domain events").
 
    Instead of handing the events over by hand:
 
    ```ts
    await this.appointments.save(appointment);
-   await this.dispatcher.dispatch(appointment.pullEvents()); // refused: domain-events/dispatched-on-save
+   await this.dispatcher.dispatch(takeRecordedEvents(appointment)); // refused: domain-events/dispatched-on-save
    ```
 
    write the save alone:
@@ -513,16 +513,16 @@ would hold the outbox row is over.
 
 | What fails | Result |
 |---|---|
-| a save | it pulls nothing: its events stay on the aggregate and reach no handler; the unit of work rolls back, the events of the earlier saves are dropped |
+| a save | it pulls nothing: its events stay on the aggregate and reach no handler; the unit of work rolls back, the events of the earlier saves reach no handler and go back to their aggregates |
 | the command handler, after a save | the queued events are dropped: no handler of either phase runs |
 | a `before-commit` handler | the command fails with what it threw; rollback; the events still waiting are dropped; no `after-commit` handler runs |
 | the commit | rollback; no `after-commit` handler runs, no outbox row exists |
 | an `after-commit` handler | nothing is undone: the state is committed and the command succeeds |
 
-Events pulled by a save of a unit of work that rolled back are dropped and never put back on
-the aggregate instance. A retry runs the command again on reloaded aggregates, which record
-their events again; they are dispatched once. An aggregate instance of a failed command is not
-reused.
+A unit of work that rolled back puts the aggregates it saved back as it found them: at the
+version they were loaded at, with the events its saves had taken. A retry may run the command
+again on reloaded aggregates or save the same instances; either way their events are dispatched
+once. A unit of work that undoes nothing, as `InMemoryUnitOfWork`, leaves them as their saves did.
 
 ### Where the queue lives
 

@@ -12,7 +12,7 @@ Domain events leave with the save. After a repository method that was handed an 
 
 ## Reported
 
-- a call to `.pullEvents()` in any production file under `application/` or `infrastructure/` of a context
+- a call to `.takeRecordedEvents()` in any production file under `application/` or `infrastructure/` of a context
 - in `application/commands/`, `application/queries/` and a repository adapter (`infrastructure/persistence/**/*.repository.ts`): `DomainEventDispatcher` imported (from any module, type-only imports included), named in a dependency list, or typing a constructor parameter
 
 Incorrect:
@@ -33,7 +33,7 @@ export class IssueInvoiceHandler {
     const invoice = Invoice.issue(command.customerId, this.clock.now());
 
     await this.invoices.save(invoice);
-    await this.dispatcher.dispatch(invoice.pullEvents());
+    await this.dispatcher.dispatch(takeRecordedEvents(invoice));
 
     return invoice.id;
   }
@@ -65,9 +65,9 @@ export class IssueInvoiceHandler {
 
 ## Details
 
-`pullEvents` is read as a method call on anything (`invoice.pullEvents()`, `this.invoice?.pullEvents()`, `invoice['pullEvents']()`): a declaration of that name and a bare identifier are not calls. A dependency list is the last argument of a declaration decorator of `@ddd-ts-kit/kernel/declarations` (`@CommandHandler(M, [..])`, `@QueryHandler`, `@Repository`) and the second argument of `.toClass(C, [..])` and `.handledBy(H, [..])`.
+`takeRecordedEvents` is read as a call of the function of the kernel (`takeRecordedEvents(invoice)`, `takeRecordedEvents(this.invoice)`): a declaration of that name, a bare identifier and a method of that name on another object are not that call. A dependency list is the last argument of a declaration decorator of `@ddd-ts-kit/kernel/declarations` (`@CommandHandler(M, [..])`, `@QueryHandler`, `@Repository`) and the second argument of `.toClass(C, [..])` and `.handledBy(H, [..])`.
 
-Not judged: `domain/` (the aggregate records and hands over its own events), the specs and everything under `test/` of a context, `<context>.module.ts` (the explicit module may still register event handlers on the dispatcher), the platform, `main.ts`, `apps/` and every file outside a context. `application/event-handlers/` and `application/integration/` are held to the `pullEvents()` part only.
+Not judged: `domain/` (the aggregate records and hands over its own events), the specs and everything under `test/` of a context, `<context>.module.ts` (the explicit module may still register event handlers on the dispatcher), the platform, `main.ts`, `apps/` and every file outside a context. `application/event-handlers/` and `application/integration/` are held to the `takeRecordedEvents()` part only.
 
 ## Options
 
@@ -82,4 +82,4 @@ None.
 
 ## With the CLI checker
 
-`ddd-ts-kit check` reports the same id from the text of the files: one finding per line that calls `.pullEvents(`, per import that binds `DomainEventDispatcher`, per dependency list and per constructor that names it. This rule is the authority.
+`ddd-ts-kit check` reports the same id from the text of the files: one finding per line that calls `.takeRecordedEvents(`, per import that binds `DomainEventDispatcher`, per dependency list and per constructor that names it. This rule is the authority.

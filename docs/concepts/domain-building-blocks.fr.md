@@ -1,5 +1,5 @@
 [English](domain-building-blocks.md) · **Français**
-<!-- translation-of: domain-building-blocks.md sha256:4d2290e9600a6cca -->
+<!-- translation-of: domain-building-blocks.md sha256:82b820812ffd541d -->
 
 # Événements du domaine, services du domaine, repositories et fabriques
 
@@ -120,7 +120,7 @@ La vie d'un événement du domaine :
   ([ARCHITECTURE.md](../ARCHITECTURE.fr.md), section 4, « Événements du domaine »). Chaque
   gestionnaire voit chaque sauvegarde de la commande. Les gestionnaires et l'outbox sont
   validés ou annulés avec le changement d'état. Un gestionnaire de commande ne fait
-  que sauvegarder : il n'appelle jamais `pullEvents()` et ne reçoit aucun distributeur
+  que sauvegarder : il n'appelle jamais `takeRecordedEvents()` et ne reçoit aucun distributeur
   (`domain-events/dispatched-on-save`).
 - Un gestionnaire s'exécute **avant la validation** par défaut, et ne peut avoir que des effets
   que la transaction couvre. Celui dont l'effet est hors de la base de données se déclare
@@ -384,7 +384,7 @@ appointment.cancel(command.reason, this.clock.now());
 appointment.cancel(command.reason, this.clock.now());
 ```
 
-Le gestionnaire n'appelle jamais `pullEvents()` et ne publie jamais : la sauvegarde remet les
+Le gestionnaire n'appelle jamais `takeRecordedEvents()` et ne publie jamais : la sauvegarde remet les
 événements enregistrés, et l'unité de travail les distribue.
 
 ## Fabriques

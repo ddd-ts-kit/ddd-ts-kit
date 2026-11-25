@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:54da1e50610eefa7 -->
+<!-- translation-of: README.md sha256:9afe8828efea6027 -->
 
 # @ddd-ts-kit/knex
 
@@ -278,7 +278,7 @@ export abstract class InvoiceRepository extends Repository<Invoice> {}
 import type { Knex } from 'knex';
 import { AggregateRoot } from '@ddd-ts-kit/kernel';
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
-import { insertIgnoringConflict, KnexContext, optimisticUpdate, schemaNameOf } from '@ddd-ts-kit/knex';
+import { insertIgnoringConflict, KnexContext, loadedAt, optimisticUpdate, schemaNameOf } from '@ddd-ts-kit/knex';
 
 const BILLING = schemaNameOf('billing-core'); // billing_core
 
@@ -313,10 +313,7 @@ export class KnexInvoiceRepository implements InvoiceRepository {
       return undefined;
     }
 
-    const invoice = Invoice.rehydrate(row);
-    invoice.version = row.version;
-
-    return invoice;
+    return loadedAt(Invoice.rehydrate(row), row.version);
   }
 
   async save(invoice: Invoice): Promise<void> {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from '{{tests.module}}';
-import { given } from '@ddd-ts-kit/testing';
+import { given, recordedBy } from '@ddd-ts-kit/testing';
 import { Account } from '{{alias.context}}/domain/aggregates/account.aggregate{{alias.ext}}';
 import { DisplayName } from '{{alias.context}}/domain/value-objects/display-name.vo{{alias.ext}}';
 import { EmailAddress } from '{{alias.context}}/domain/value-objects/email-address.vo{{alias.ext}}';
@@ -16,7 +16,7 @@ describe('Account', () => {
     expect(account.id).toBe('subject-ada');
     expect(account.isActive).toBe(true);
 
-    expect(account.pullEvents()).toEqual([
+    expect(recordedBy(account)).toEqual([
       {
         name: '{{context.kebab}}.account.provisioned',
         aggregateId: 'subject-ada',
@@ -31,7 +31,7 @@ describe('Account', () => {
     const loaded = Account.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 });
 

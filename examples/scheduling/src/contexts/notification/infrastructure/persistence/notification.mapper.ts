@@ -1,3 +1,4 @@
+import { aggregateMapper } from '@ddd-ts-kit/kernel';
 import { Notification } from '@/contexts/notification/domain/aggregates/notification.aggregate';
 import { NotificationKind } from '@/contexts/notification/domain/value-objects/notification-kind.vo';
 import type {
@@ -5,9 +6,9 @@ import type {
   NotificationRow,
 } from '@/contexts/notification/infrastructure/persistence/notification-row.schema';
 
-export const NotificationMapper = {
+export const NotificationMapper = aggregateMapper({
   toDomain(row: NotificationRow): Notification {
-    const loaded = Notification.rehydrate(row.id, {
+    return Notification.rehydrate(row.id, {
       registeredAt: row.registered_at,
       recipientId: row.recipient_id,
       kind: NotificationKind.create(row.kind),
@@ -15,10 +16,6 @@ export const NotificationMapper = {
       startsAt: row.starts_at,
       cause: row.cause,
     });
-
-    loaded.version = row.version;
-
-    return loaded;
   },
 
   toRow(saved: Notification): NotificationColumns {
@@ -34,4 +31,4 @@ export const NotificationMapper = {
       cause: state.cause,
     };
   },
-};
+});

@@ -299,7 +299,7 @@ export abstract class InvoiceRepository extends Repository<Invoice> {}
 // contexts/billing-core/infrastructure/persistence/prisma-invoice.repository.ts
 import type { AggregateRoot } from '@ddd-ts-kit/kernel';
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
-import { optimisticUpdate, PrismaContext, rowsCreated } from '@ddd-ts-kit/prisma';
+import { loadedAt, optimisticUpdate, PrismaContext, rowsCreated } from '@ddd-ts-kit/prisma';
 
 @Repository(InvoiceRepository)
 export class PrismaInvoiceRepository implements InvoiceRepository {
@@ -313,10 +313,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       return undefined;
     }
 
-    const invoice = InvoiceMapper.toDomain(row);
-    invoice.version = row.version;
-
-    return invoice;
+    return loadedAt(InvoiceMapper.toDomain(row), row.version);
   }
 
   async save(invoice: Invoice): Promise<void> {

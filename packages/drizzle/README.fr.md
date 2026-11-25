@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:bbaa42cc6f816be6 -->
+<!-- translation-of: README.md sha256:aba62e64c56706a5 -->
 
 # @ddd-ts-kit/drizzle
 
@@ -245,7 +245,7 @@ import { and, eq } from 'drizzle-orm';
 import { integer, text, type PgQueryResultHKT } from 'drizzle-orm/pg-core';
 import { AggregateRoot } from '@ddd-ts-kit/kernel';
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
-import { contextSchema, DrizzleContext, insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/drizzle/postgres';
+import { aggregateMapper, contextSchema, DrizzleContext, insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/drizzle/postgres';
 
 // L'agrégat et son port de l'exemple précédent, réduits à leur forme.
 type OrderStatus = 'open' | 'placed';
@@ -271,19 +271,15 @@ const orders = contextSchema('order-management').table('orders', {
 type OrderRow = typeof orders.$inferSelect;
 
 // order.mapper.ts : la ligne ne quitte jamais l'infrastructure
-const OrderMapper = {
+const OrderMapper = aggregateMapper({
   toDomain(row: OrderRow): Order {
-    const order = Order.rehydrate(row.id, row.status);
-
-    order.version = row.version; // la version qu'optimisticUpdate attendra
-
-    return order;
+    return Order.rehydrate(row.id, row.status);
   },
 
-  toRow(order: Order, version: number): OrderRow {
-    return { id: order.id, status: order.currentStatus, version };
+  toRow(order: Order): Omit<OrderRow, 'version'> {
+    return { id: order.id, status: order.currentStatus };
   },
-};
+});
 
 @Repository(OrderRepository)
 export class DrizzleOrderRepository implements OrderRepository {
@@ -300,7 +296,7 @@ export class DrizzleOrderRepository implements OrderRepository {
     const db = this.database.executor();
 
     await optimisticUpdate(order, async ({ expected, next }) => {
-      const row = OrderMapper.toRow(order, next);
+      const row = { ...OrderMapper.toRow(order), version: next };
 
       if (expected === 0) {
         return (await insertIgnoringConflict(() => db.insert(orders).values(row), orders)) ? 1 : 0;
@@ -414,6 +410,7 @@ import {
   contextSchema,
   DrizzleContext,
   insertIgnoringConflict,
+  loadedAt,
   optimisticUpdate,
   ownTenantCondition,
   tenantColumn,
@@ -475,11 +472,7 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
       return undefined;
     }
 
-    const invoice = Invoice.rehydrate(row.id, row.amount, row.status);
-
-    invoice.version = row.version;
-
-    return invoice;
+    return loadedAt(Invoice.rehydrate(row.id, row.amount, row.status), row.version);
   }
 
   async save(invoice: Invoice): Promise<void> {

@@ -1,4 +1,4 @@
-import type { AuditStamp } from '@ddd-ts-kit/kernel';
+import { aggregateMapper, type AuditStamp } from '@ddd-ts-kit/kernel';
 import { Invitation } from '{{alias.context}}/domain/aggregates/invitation.aggregate{{alias.ext}}';
 import { EmailAddress } from '{{alias.context}}/domain/value-objects/email-address.vo{{alias.ext}}';
 import type { invitations } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
@@ -7,9 +7,9 @@ type InvitationRow = typeof invitations.$inferSelect;
 
 export type InvitationColumns = Omit<InvitationRow, 'version' | keyof AuditStamp>;
 
-export const InvitationMapper = {
+export const InvitationMapper = aggregateMapper({
   toDomain(row: InvitationRow): Invitation {
-    const loaded = Invitation.rehydrate(row.id, {
+    return Invitation.rehydrate(row.id, {
       organisationId: row.organisationId,
       email: EmailAddress.create(row.email),
       role: row.role,
@@ -21,10 +21,6 @@ export const InvitationMapper = {
       status: row.status,
       answeredAt: row.answeredAt ?? undefined,
     });
-
-    loaded.version = row.version;
-
-    return loaded;
   },
 
   toRow(saved: Invitation): InvitationColumns {
@@ -44,4 +40,4 @@ export const InvitationMapper = {
       answeredAt: state.answeredAt ?? null,
     };
   },
-};
+});

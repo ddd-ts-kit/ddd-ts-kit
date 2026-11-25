@@ -1,8 +1,8 @@
 {{#if tenant.scoped}}
-import type { AuditStamp, TenantScoped } from '@ddd-ts-kit/kernel';
+import { aggregateMapper, type AuditStamp, type TenantScoped } from '@ddd-ts-kit/kernel';
 {{/if}}
 {{#unless tenant.scoped}}
-import type { AuditStamp } from '@ddd-ts-kit/kernel';
+import { aggregateMapper, type AuditStamp } from '@ddd-ts-kit/kernel';
 {{/unless}}
 import { {{aggregate.pascal}} } from '{{alias.context}}/domain/aggregates/{{aggregate.kebab}}.aggregate{{alias.ext}}';
 import type { {{aggregate.tableCamel}} } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
@@ -11,14 +11,10 @@ type {{aggregate.pascal}}Row = typeof {{aggregate.tableCamel}}.$inferSelect;
 
 export type {{aggregate.pascal}}Columns = Omit<{{aggregate.pascal}}Row, 'version' | keyof AuditStamp{{#if tenant.scoped}} | keyof TenantScoped{{/if}}>;
 
-export const {{aggregate.pascal}}Mapper = {
+export const {{aggregate.pascal}}Mapper = aggregateMapper({
   toDomain(row: {{aggregate.pascal}}Row): {{aggregate.pascal}} {
     // TODO(domain): rebuild each value object of {{aggregate.pascal}}State from its columns.
-    const loaded = {{aggregate.pascal}}.rehydrate(row.id, {});
-
-    loaded.version = row.version;
-
-    return loaded;
+    return {{aggregate.pascal}}.rehydrate(row.id, {});
   },
 
   toRow(saved: {{aggregate.pascal}}): {{aggregate.pascal}}Columns {
@@ -35,4 +31,4 @@ export const {{aggregate.pascal}}Mapper = {
     return { id: saved.id, ...saved.toState() };
 {{/unless}}
   },
-};
+});

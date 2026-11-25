@@ -1417,7 +1417,7 @@ timing of the unit of work):
 
 ```ts
 await this.invoices.save(invoice);
-await this.dispatcher.dispatch(invoice.pullEvents());
+await this.dispatcher.dispatch(takeRecordedEvents(invoice));
 return invoice.id;
 ```
 
@@ -1477,7 +1477,7 @@ export class IssueInvoiceHandler implements CommandHandler<IssueInvoice> {
 ```
 
 A handler writes `await this.orders.save(order); return order.id;` and nothing else: no
-`pullEvents()`, no `DomainEventDispatcher` in a use case. `kernelModule()` puts
+`takeRecordedEvents()`, no `DomainEventDispatcher` in a use case. `kernelModule()` puts
 `dispatchingOnSave` of the kernel around every binding of kind `repository`, in every module:
 declared with `@Repository`, bound `.as('repository')`, or bound under a port that extends the
 kernel `Repository` (which is a repository whether the module says so or not). A repository
@@ -1498,7 +1498,7 @@ command dispatches them at its end.
 | A handler sends a command | Before the commit, that command joins the unit of work in progress: one dispatch, at the end of the outermost, one commit. After the commit, it is a unit of work of its own |
 | The same aggregate saved twice | The second save announces what was recorded since the first, which may be nothing |
 | A save outside of any unit of work | Dispatches before it resolves, `before-commit` handlers then `after-commit` ones. Nothing is atomic then: the state is written, the handlers run, and a handler that fails rejects the save without undoing it |
-| An adapter that pulls the events itself | Leaves nothing to dispatch: no double dispatch, and no dispatch at all unless the adapter does it. An adapter never calls `pullEvents()` |
+| An adapter that pulls the events itself | Leaves nothing to dispatch: no double dispatch, and no dispatch at all unless the adapter does it. An adapter never calls `takeRecordedEvents()` |
 | Order of the wrappers | Outermost first: the `decorate` hook, the instrumentation (the span of the save), the hand-over of the events, the aspects other modules put around the kind (`builder.around`), the aspects of the binding (`.with(retry(...))`). A retried save announces once |
 
 A `before-commit` handler may only have effects the transaction covers, because the commit can

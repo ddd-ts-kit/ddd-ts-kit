@@ -3,14 +3,14 @@ import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 
 const DISPATCHER = 'DomainEventDispatcher';
-const PULL = /\.\s*pullEvents\s*\(/g;
+const PULL = /(?<![\w$.])(?<!function\s+)takeRecordedEvents\s*\(/g;
 const IMPORTED = /(?<![\w$.])import\b[\w\s{},*$]*?(?<![\w$])DomainEventDispatcher(?![\w$])/g;
 const TYPED = /:\s*(?:[\w$]+\s*\.\s*)*DomainEventDispatcher(?![\w$])/;
 
 const FIX =
   'Events leave with the save: `await repository.save(aggregate)` and nothing else; a removal that announces an event takes the aggregate.';
 
-/** What a file of a context is held to: every judged file calls no `pullEvents()`, some also know no dispatcher. */
+/** What a file of a context is held to: every judged file calls no `takeRecordedEvents()`, some also know no dispatcher. */
 interface Judged {
   readonly place: string;
   readonly refusesDispatcher: boolean;
@@ -19,15 +19,15 @@ interface Judged {
 export const domainEventsDispatchedOnSave: FileRule = {
   id: 'domain-events/dispatched-on-save',
   description:
-    'Domain events leave with the save: no `pullEvents()` in application/ or infrastructure/, no DomainEventDispatcher in a command, a query or a repository adapter.',
+    'Domain events leave with the save: no `takeRecordedEvents()` in application/ or infrastructure/, no DomainEventDispatcher in a command, a query or a repository adapter.',
   severity: 'error',
   doc: {
-    why: 'Domain events leave with the save. Once a repository method that was handed an aggregate resolves, the events the aggregate recorded are dispatched in order, inside the unit of work of the command, so their handlers and the outbox commit or roll back with the state. A handler that pulls the events and dispatches them itself announces them twice or outside the transaction, and a repository adapter that dispatches mixes persistence with wiring. Reported: a call to pullEvents() in application/ or infrastructure/ of a context, and DomainEventDispatcher imported, listed as a dependency or received by a constructor in application/commands, application/queries and a repository adapter. The module file, the tests, the platform and main.ts are left alone.',
+    why: 'Domain events leave with the save. Once a repository method that was handed an aggregate resolves, the events the aggregate recorded are dispatched in order, inside the unit of work of the command, so their handlers and the outbox commit or roll back with the state. A handler that pulls the events and dispatches them itself announces them twice or outside the transaction, and a repository adapter that dispatches mixes persistence with wiring. Reported: a call to takeRecordedEvents() in application/ or infrastructure/ of a context, and DomainEventDispatcher imported, listed as a dependency or received by a constructor in application/commands, application/queries and a repository adapter. The module file, the tests, the platform and main.ts are left alone.',
     bad: `// application/commands/issue-invoice/issue-invoice.handler.ts
 @CommandHandler(IssueInvoiceCommand)
 constructor(private readonly invoices: InvoiceRepository, private readonly dispatcher: DomainEventDispatcher) {}
 await this.invoices.save(invoice);
-await this.dispatcher.dispatch(invoice.pullEvents());`,
+await this.dispatcher.dispatch(takeRecordedEvents(invoice));`,
     good: `// application/commands/issue-invoice/issue-invoice.handler.ts
 @CommandHandler(IssueInvoiceCommand)
 constructor(private readonly invoices: InvoiceRepository) {}
@@ -85,7 +85,7 @@ function judgedAs(file: SourceFile): Judged | undefined {
 function pulled({ scan }: SourceFile): Named[] {
   return [...scan.code.matchAll(PULL)].map((match) => ({
     line: scan.lineAt(match.index),
-    what: '`pullEvents()` is called',
+    what: '`takeRecordedEvents()` is called',
   }));
 }
 

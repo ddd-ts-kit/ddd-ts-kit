@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { given } from '@ddd-ts-kit/testing';
+import { given, recordedBy } from '@ddd-ts-kit/testing';
 import { Notification } from '@/contexts/notification/domain/aggregates/notification.aggregate';
 import { aNotification } from '@/contexts/notification/test/builders/notification.builder';
 
@@ -19,7 +19,7 @@ describe('Notification', () => {
     const loaded = Notification.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 
   it('records nothing once it is sent: a sent notification does not change', () => {
@@ -40,7 +40,7 @@ describe('Notification', () => {
       .bornAt(sentAt)
       .build();
 
-    expect(born.pullEvents()).toMatchObject([
+    expect(recordedBy(born)).toMatchObject([
       {
         name: 'notification.notification.sent',
         aggregateId: 'notification-1',

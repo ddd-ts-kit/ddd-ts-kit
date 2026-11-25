@@ -18,7 +18,7 @@ const IMPORTED = "import { DomainEventDispatcher } from '@ddd-ts-kit/kernel';";
 const SAVED =
   'export class IssueInvoiceHandler {\n  async execute(): Promise<string> {\n    await this.invoices.save(invoice);\n\n    return invoice.id;\n  }\n}';
 
-const PULLED = 'for (const event of invoice.pullEvents()) await handle(event);';
+const PULLED = 'for (const event of takeRecordedEvents(invoice)) await handle(event);';
 
 const pulled = (place: string) => ({ messageId: 'pulled' as const, data: { place } });
 const dispatcher = (how: string, place: string) => ({ messageId: 'dispatcher' as const, data: { how, place } });
@@ -40,18 +40,21 @@ ruleTester.run('domain-events-dispatched-on-save', domainEventsDispatchedOnSave,
     at(GATEWAY, IMPORTED),
     at(
       MODULE,
-      `${IMPORTED}\nbuilder.resolve(DomainEventDispatcher).register(InvoiceIssued, handler);\nconst events = invoice.pullEvents();`,
+      `${IMPORTED}\nbuilder.resolve(DomainEventDispatcher).register(InvoiceIssued, handler);\nconst events = takeRecordedEvents(invoice);`,
     ),
-    at(AGGREGATE, 'export class Invoice { drain(): void { this.pullEvents(); } }'),
-    at(SPEC, `${IMPORTED}\nexpect(invoice.pullEvents()).toEqual([]);`),
+    at(AGGREGATE, 'export class Invoice { drain(): void { takeRecordedEvents(this); } }'),
+    at(SPEC, `${IMPORTED}\nexpect(takeRecordedEvents(invoice)).toEqual([]);`),
     at(
       `${BILLING}/application/commands/issue-invoice/issue-invoice.handler.spec.ts`,
-      `${IMPORTED}\nexpect(invoice.pullEvents()).toEqual([]);`,
+      `${IMPORTED}\nexpect(takeRecordedEvents(invoice)).toEqual([]);`,
     ),
-    at('src/platform/events/dispatching.ts', `${IMPORTED}\nconst events = aggregate.pullEvents();`),
+    at('src/platform/events/dispatching.ts', `${IMPORTED}\nconst events = takeRecordedEvents(aggregate);`),
     at('src/main.ts', IMPORTED),
-    at('src/apps/billing/main.ts', `${IMPORTED}\naggregate.pullEvents();`),
-    at(HANDLER, 'const pullEvents = 1;\npullEvents;\nclass Outbox { pullEvents(): void {} }'),
+    at('src/apps/billing/main.ts', `${IMPORTED}\ntakeRecordedEvents(aggregate);`),
+    at(
+      HANDLER,
+      'const takeRecordedEvents = 1;\ntakeRecordedEvents;\nclass Outbox { takeRecordedEvents(): void {} }\noutbox.takeRecordedEvents();',
+    ),
     at(HANDLER, PULLED, { ...SAMPLE_CONFIG, rules: { 'domain-events/dispatched-on-save': 'off' } }),
     at(
       HANDLER,
@@ -61,14 +64,17 @@ ruleTester.run('domain-events-dispatched-on-save', domainEventsDispatchedOnSave,
   invalid: [
     { ...at(HANDLER, PULLED), errors: [pulled('application/commands')] },
     {
-      ...at(EVENT_HANDLER, 'const events = this.invoice?.pullEvents();'),
+      ...at(EVENT_HANDLER, 'const events = takeRecordedEvents(this.invoice);'),
       errors: [pulled('application/event-handlers')],
     },
-    { ...at(INTEGRATION_HANDLER, "invoice['pullEvents']();"), errors: [pulled('application/integration')] },
+    {
+      ...at(INTEGRATION_HANDLER, 'takeRecordedEvents(invoice).forEach(handle);'),
+      errors: [pulled('application/integration')],
+    },
     {
       ...at(
         ADAPTER,
-        'export class PgInvoiceRepository { async save(invoice: Invoice): Promise<void> { await this.dispatch(invoice.pullEvents()); } }',
+        'export class PgInvoiceRepository { async save(invoice: Invoice): Promise<void> { await this.dispatch(takeRecordedEvents(invoice)); } }',
       ),
       errors: [pulled('infrastructure/persistence')],
     },

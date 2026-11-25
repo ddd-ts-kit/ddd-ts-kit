@@ -1,17 +1,16 @@
 import { AST_NODE_TYPES, type TSESLint, type TSESTree } from '@typescript-eslint/utils';
 import type { LintedFile } from '../project/linted-file';
-import { propertyName } from '../support/globals/property-name';
 import { dependencyListListener } from '../support/ports/dependency-list-listener';
 import { defineRule } from '../support/rule/define-rule';
 import { parameterTypeName } from '../support/types/parameter-type-name';
 
 const DISPATCHER = 'DomainEventDispatcher';
-const PULL = 'pullEvents';
+const PULL = 'takeRecordedEvents';
 
 const ON_SAVE =
   'events leave with the save: `await repository.save(aggregate)` and nothing else; a removal that announces an event takes the aggregate.';
 
-/** What a file of a context is held to: every judged file calls no `pullEvents()`, some also know no dispatcher. */
+/** What a file of a context is held to: every judged file calls no `takeRecordedEvents()`, some also know no dispatcher. */
 interface Judged {
   readonly place: string;
   readonly refusesDispatcher: boolean;
@@ -24,7 +23,7 @@ export const domainEventsDispatchedOnSave = defineRule<'pulled' | 'dispatcher'>(
   type: 'problem',
   recommended: 'error',
   description:
-    'Domain events leave with the save: no `pullEvents()` in application/ or infrastructure/, no DomainEventDispatcher in a command, a query or a repository adapter.',
+    'Domain events leave with the save: no `takeRecordedEvents()` in application/ or infrastructure/, no DomainEventDispatcher in a command, a query or a repository adapter.',
   messages: {
     pulled: `\`${PULL}()\` is called in {{place}}: ${ON_SAVE}`,
     dispatcher: `${DISPATCHER} is {{how}} in {{place}}: ${ON_SAVE}`,
@@ -103,7 +102,7 @@ function judgedAs(file: LintedFile): Judged | undefined {
 }
 
 function isPull(node: TSESTree.CallExpression): boolean {
-  return node.callee.type === AST_NODE_TYPES.MemberExpression && propertyName(node.callee) === PULL;
+  return node.callee.type === AST_NODE_TYPES.Identifier && node.callee.name === PULL;
 }
 
 function importsDispatcher(specifier: TSESTree.ImportClause): boolean {

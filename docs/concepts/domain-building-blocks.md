@@ -113,7 +113,7 @@ The life of a domain event:
   handler has returned they are dispatched in recording order, inside the transaction, before
   the commit ([ARCHITECTURE.md](../ARCHITECTURE.md), section 4, "Domain events"). Every handler
   sees every save of the command. The handlers and the outbox commit or roll back with the
-  state change. A command handler only saves: it never calls `pullEvents()` and receives no
+  state change. A command handler only saves: it never calls `takeRecordedEvents()` and receives no
   dispatcher (`domain-events/dispatched-on-save`).
 - A handler runs **before the commit** by default, and may only have effects the transaction
   covers. One whose effect is outside the database is declared `phase: 'after-commit'`: it runs
@@ -366,7 +366,7 @@ appointment.cancel(command.reason, this.clock.now());
 appointment.cancel(command.reason, this.clock.now());
 ```
 
-The handler never calls `pullEvents()` and never publishes: the save hands the recorded events
+The handler never calls `takeRecordedEvents()` and never publishes: the save hands the recorded events
 over, and the unit of work dispatches them.
 
 ## Factories

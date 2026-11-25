@@ -217,7 +217,7 @@ export const AUTHZ_AND_EVENT_INJECTIONS: readonly Injection[] = [
       {
         file: PLAN_HANDLER,
         from: SAVED,
-        to: `${SAVED}    reminder.pullEvents();\n`,
+        to: `${SAVED}    takeRecordedEvents(reminder);\n`,
       },
     ],
     checker: true,

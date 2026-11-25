@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   AggregateRoot,
   InMemoryDomainEventDispatcher,
+  aggregateMapper,
   appendChanges,
   dispatchingOnSave,
   loadedAt,
@@ -41,6 +42,18 @@ describe('what the infrastructure reads and moves of an aggregate', () => {
 
     expect(loadedAt(cart, 7)).toBe(cart);
     expect(cart.version).toBe(7);
+  });
+
+  it('maps a row to the aggregate loaded at the version of that row: the mapper declares the state, never the version', () => {
+    const CartMapper = aggregateMapper({
+      toDomain: (row: { readonly id: string; readonly version: number }) => Cart.rehydrate(row.id),
+      toRow: (cart: Cart) => ({ id: cart.id }),
+    });
+
+    const cart = CartMapper.toDomain({ id: 'c1', version: 5 });
+
+    expect([cart.id, cart.version]).toEqual(['c1', 5]);
+    expect(CartMapper.toRow(cart)).toEqual({ id: 'c1' });
   });
 
   it('reads the recorded events and leaves them on the aggregate', () => {

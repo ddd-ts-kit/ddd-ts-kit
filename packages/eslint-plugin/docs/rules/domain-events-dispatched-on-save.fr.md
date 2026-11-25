@@ -1,5 +1,5 @@
 [English](domain-events-dispatched-on-save.md) · **Français**
-<!-- translation-of: domain-events-dispatched-on-save.md sha256:815a6be7014d66ca -->
+<!-- translation-of: domain-events-dispatched-on-save.md sha256:8737ca0a75ea5658 -->
 
 # ddd-ts-kit/domain-events-dispatched-on-save
 
@@ -13,7 +13,7 @@ Les événements du domaine partent avec l'enregistrement. Une fois résolue une
 
 ## Signalé
 
-- un appel à `.pullEvents()` dans tout fichier de production sous `application/` ou `infrastructure/` d'un contexte
+- un appel à `.takeRecordedEvents()` dans tout fichier de production sous `application/` ou `infrastructure/` d'un contexte
 - dans `application/commands/`, `application/queries/` et un adaptateur de *repository* (`infrastructure/persistence/**/*.repository.ts`) : `DomainEventDispatcher` importé (de n'importe quel module, imports de type seul compris), nommé dans une liste de dépendances, ou typant un paramètre de constructeur
 
 Incorrect :
@@ -34,7 +34,7 @@ export class IssueInvoiceHandler {
     const invoice = Invoice.issue(command.customerId, this.clock.now());
 
     await this.invoices.save(invoice);
-    await this.dispatcher.dispatch(invoice.pullEvents());
+    await this.dispatcher.dispatch(takeRecordedEvents(invoice));
 
     return invoice.id;
   }
@@ -66,9 +66,9 @@ export class IssueInvoiceHandler {
 
 ## Détails
 
-`pullEvents` se lit comme un appel de méthode sur n'importe quoi (`invoice.pullEvents()`, `this.invoice?.pullEvents()`, `invoice['pullEvents']()`) : une déclaration de ce nom et un identifiant seul ne sont pas des appels. Une liste de dépendances est le dernier argument d'un décorateur de déclaration de `@ddd-ts-kit/kernel/declarations` (`@CommandHandler(M, [..])`, `@QueryHandler`, `@Repository`) et le second argument de `.toClass(C, [..])` et de `.handledBy(H, [..])`.
+`takeRecordedEvents` se lit comme l'appel de la fonction du noyau (`takeRecordedEvents(invoice)`, `takeRecordedEvents(this.invoice)`) : une déclaration de ce nom, un identifiant seul et une méthode de ce nom sur un autre objet ne sont pas cet appel. Une liste de dépendances est le dernier argument d'un décorateur de déclaration de `@ddd-ts-kit/kernel/declarations` (`@CommandHandler(M, [..])`, `@QueryHandler`, `@Repository`) et le second argument de `.toClass(C, [..])` et de `.handledBy(H, [..])`.
 
-Ne sont pas jugés : `domain/` (l'agrégat enregistre et remet ses propres événements), les *specs* et tout ce qui est sous `test/` d'un contexte, `<context>.module.ts` (le module explicite peut encore enregistrer des gestionnaires d'événements sur le distributeur), la plateforme, `main.ts`, `apps/` et tout fichier hors d'un contexte. `application/event-handlers/` et `application/integration/` ne sont tenus qu'à la partie `pullEvents()`.
+Ne sont pas jugés : `domain/` (l'agrégat enregistre et remet ses propres événements), les *specs* et tout ce qui est sous `test/` d'un contexte, `<context>.module.ts` (le module explicite peut encore enregistrer des gestionnaires d'événements sur le distributeur), la plateforme, `main.ts`, `apps/` et tout fichier hors d'un contexte. `application/event-handlers/` et `application/integration/` ne sont tenus qu'à la partie `takeRecordedEvents()`.
 
 ## Options
 
@@ -83,4 +83,4 @@ Aucune.
 
 ## Avec le checker de la CLI
 
-`ddd-ts-kit check` signale le même identifiant à partir du texte des fichiers : un constat par ligne qui appelle `.pullEvents(`, par import qui lie `DomainEventDispatcher`, par liste de dépendances et par constructeur qui le nomme. Cette règle fait autorité.
+`ddd-ts-kit check` signale le même identifiant à partir du texte des fichiers : un constat par ligne qui appelle `.takeRecordedEvents(`, par import qui lie `DomainEventDispatcher`, par liste de dépendances et par constructeur qui le nomme. Cette règle fait autorité.

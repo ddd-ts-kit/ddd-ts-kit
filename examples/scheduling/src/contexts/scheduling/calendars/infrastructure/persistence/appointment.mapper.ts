@@ -1,3 +1,4 @@
+import { aggregateMapper } from '@ddd-ts-kit/kernel';
 import {
   Appointment,
   type AppointmentState,
@@ -11,13 +12,9 @@ import type {
   AppointmentRow,
 } from '@/contexts/scheduling/calendars/infrastructure/persistence/appointment-row.schema';
 
-export const AppointmentMapper = {
+export const AppointmentMapper = aggregateMapper({
   toDomain(row: AppointmentRow): Appointment {
-    const loaded = Appointment.rehydrate(row.id, stateOf(row));
-
-    loaded.version = row.version;
-
-    return loaded;
+    return Appointment.rehydrate(row.id, stateOf(row));
   },
 
   toRow(saved: Appointment): AppointmentColumns {
@@ -45,7 +42,7 @@ export const AppointmentMapper = {
       ...documentColumnsOf(document),
     };
   },
-};
+});
 
 type DocumentColumns = Pick<
   AppointmentColumns,
