@@ -78,7 +78,7 @@ export const governanceRecordedDeviation: Rule = {
 
 function unrecordedSuppressions(file: SourceFile, records: DecisionRecords): Finding[] {
   const incomplete = findSuppressions(file).filter(
-    (suppression) => suppression.ruleId === '' || suppression.reason === '',
+    (suppression) => suppression.ruleIds.length === 0 || suppression.reason === '',
   );
 
   const reportedElsewhere = new Set(incomplete.map((suppression) => suppression.line));

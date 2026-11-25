@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:211de62fa18753e0 -->
+<!-- translation-of: README.md sha256:be71c9a13f9c0cce -->
 
 # @ddd-ts-kit/eslint-plugin
 
@@ -398,7 +398,9 @@ ESLint de l'éditeur après avoir modifié `ddd-ts-kit.config.json`.
 
 Deux choses fonctionnent comme avec le *checker* de la CLI : `rules.<id>: "off"` dans la config
 fait taire la règle même quand la config ESLint l'active, et
-`// ddd-ts-kit-disable-next-line <id> -- <reason>` fait taire une ligne pour les deux outils. Une
+`// ddd-ts-kit-disable-next-line <id> -- <reason>` fait taire une ligne pour les deux outils. Elle
+nomme plusieurs règles séparées par des virgules (`<id>, <id> -- <reason>`), et des directives
+l'une au-dessus de l'autre couvrent toutes la ligne qui suit la dernière. Une
 désactivation sans raison ne fait rien taire, et `governance/recorded-deviation` demande que la
 raison renvoie à un enregistrement de décision (`ADR-<number>`) :
 

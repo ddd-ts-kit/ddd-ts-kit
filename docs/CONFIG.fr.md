@@ -1,5 +1,5 @@
 [English](CONFIG.md) · **Français**
-<!-- translation-of: CONFIG.md sha256:a8f8e063f76fb35d -->
+<!-- translation-of: CONFIG.md sha256:7c8448ecae709af9 -->
 
 # `ddd-ts-kit.config.json`
 
@@ -694,7 +694,10 @@ ajoute l'entrée :
 `check --rule governance/recorded-deviation` ne signale alors plus rien. Une entrée sans raison,
 ou dont l'`adr` nomme un enregistrement que `docs/adr/` ne contient pas, est signalée elle aussi.
 Un commentaire de désactivation dans le code suit la même règle :
-`// ddd-ts-kit-disable-next-line <rule> -- ADR-0001: <reason>`.
+`// ddd-ts-kit-disable-next-line <rule> -- ADR-0001: <reason>`. Il nomme plusieurs règles séparées
+par des virgules, ou se place au-dessus d'une autre directive : les deux couvrent la ligne de code
+qui suit. Une directive qui ne nomme aucune règle du kit, ou qui ne fait plus rien taire, est
+signalée (`config/unused-suppression`), pour qu'elle parte avec ce qu'elle excusait.
 
 La décision porte sur les *mappers*, mais `"off"` seul fait taire la règle dans tous les fichiers
 du projet : une longue fonction écrite la semaine suivante dans un *handler* passerait inaperçue.
