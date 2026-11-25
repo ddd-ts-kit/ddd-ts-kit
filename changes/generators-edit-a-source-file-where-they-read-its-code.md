@@ -2,3 +2,4 @@
 
 - `generate ... --grant <role>`: the grant is written in the list of the role named, or refused when that list cannot be read. A role whose grants are a named constant (`[Role.Admin]: EVERYTHING`) is refused with the grant to write by hand; a role keyed by its value (`admin: [...]`) is found; an object of roles written on one line is refused.
 - An import a generator adds follows the last import of the file whatever its style: without semicolons, with double quotes, on several lines, with a comment after it. It was written inside the first function of a file formatted without semicolons. A file that already binds the name, however its statement is written, is left as it is.
+- `generate error` adds a factory in the body of the error class, after its type parameters and what it extends: a class written `extends Refusal<{ invoiceId: string }>` had the factory written inside that type. A factory that returns an object type is followed after its block.

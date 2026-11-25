@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CliError } from '../src/cli-error';
+import { addFactory } from '../src/generate/errors/add-factory';
 import { withImport } from '../src/generate/with-import';
 import { SourceText } from '../src/source-text';
 
@@ -189,5 +190,47 @@ describe('an import added to a source', () => {
     expect(withImport("import { A } from '@/a'; const all = [\n  A,\n];\n", ADDED)).toBe(
       `import { A } from '@/a';\n${ADDED} const all = [\n  A,\n];\n`,
     );
+  });
+});
+
+describe('a factory added to a class', () => {
+  const factory = { className: 'InvoiceRefusal', name: 'forPaid', text: '  static forPaid() {}' };
+
+  it('opens the body of the class, never an object type or an argument of what it extends', () => {
+    const heads = [
+      'export class InvoiceRefusal extends Refusal<{ invoiceId: string }> {',
+      'export class InvoiceRefusal<Facts extends { id: string } = { id: string }> extends Refusal<Facts> {',
+      "export class InvoiceRefusal extends refusalOf({ code: 'PAID' }) implements Told<{ at: Date }> {",
+      'export class InvoiceRefusal\n  extends Refusal<() => { id: string }>\n{',
+    ];
+
+    for (const head of heads) {
+      expect(addFactory(`${head}\n  readonly kept = true;\n}\n`, factory)).toBe(
+        `${head}\n  static forPaid() {}\n\n  readonly kept = true;\n}\n`,
+      );
+    }
+  });
+
+  it('follows the block of the last factory, never the object type it returns', () => {
+    const source = [
+      'export class InvoiceRefusal extends Refusal {',
+      '  static forDraft(): { refusal: InvoiceRefusal } | undefined {',
+      '    return undefined;',
+      '  }',
+      '',
+      '  readonly kept = true;',
+      '}',
+      '',
+    ];
+
+    expect(addFactory(source.join('\n'), factory)).toBe(
+      [...source.slice(0, 4), '', '  static forPaid() {}', ...source.slice(4)].join('\n'),
+    );
+  });
+
+  it('finds no class in a comment or a string that names it', () => {
+    expect(
+      addFactory("// class InvoiceRefusal {}\nconst text = 'class InvoiceRefusal {}';\n", factory),
+    ).toBeUndefined();
   });
 });
