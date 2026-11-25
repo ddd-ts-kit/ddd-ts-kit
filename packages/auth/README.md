@@ -631,6 +631,7 @@ It fails closed:
 | The strategy | The call |
 |---|---|
 | succeeds | goes on as the actor `actorOf` answers |
+| succeeds, and `actorOf` answers something that is not an actor | is refused, the error reported as any other: a mapper that forgot `attributes`, or answered nothing, never makes the caller anonymous |
 | fails a request that presents a credential | is refused, 401 (`InvalidCredentialError`) |
 | fails a request that presents none | goes on anonymous, for the guards of the route to decide |
 | passes | goes on anonymous |

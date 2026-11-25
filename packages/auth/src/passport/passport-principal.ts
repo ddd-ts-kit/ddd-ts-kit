@@ -1,4 +1,4 @@
-import { anonymousSession, type Session } from '@ddd-ts-kit/kernel';
+import { anonymousSession, isActor, type Actor, type Session } from '@ddd-ts-kit/kernel';
 import { sessionOf } from '../authentication/session-of';
 import { InvalidCredentialError } from '../errors/invalid-credential-error';
 import type { PassportPrincipalOptions } from './passport-principal-options';
@@ -14,8 +14,9 @@ const DEFAULT_TIMEOUT_MS = 10_000;
  * closed: a credential the strategy refuses is a 401, whose reason is the code the strategy failed
  * with (`fail({ message: 'NO_EXPIRY' })`, a code in upper snake case), else `refused-by-strategy`,
  * since the message of a library is not a code; an error of the strategy or a strategy that
- * redirects (a sign-in flow, not the authentication of a call) refuses the request, and only a
- * request without credential, or one the strategy passes, goes on anonymous.
+ * redirects (a sign-in flow, not the authentication of a call) refuses the request, and so does
+ * an `actorOf` that answers no actor for the user the strategy let through; only a request
+ * without credential, or one the strategy passes, goes on anonymous.
  *
  * Takes the strategy, or a function that answers it when the container that builds it, Nest's,
  * has started.
@@ -31,7 +32,7 @@ export function passportPrincipal(
 
     switch (outcome.kind) {
       case 'success':
-        return sessionOf(await actorOf(outcome.user, outcome.info));
+        return sessionOf(authenticated(await actorOf(outcome.user, outcome.info)));
       case 'fail':
         if (presented(raw)) {
           throw new InvalidCredentialError(reasonOf(outcome.challenge));
@@ -48,6 +49,17 @@ export function passportPrincipal(
         );
     }
   };
+}
+
+/** The contract of `actorOf`, held: a user the strategy authenticated is never read as nobody. */
+function authenticated(actor: unknown): Actor {
+  if (!isActor(actor)) {
+    throw new Error(
+      'actorOf answered no actor for a user the strategy of Passport authenticated: it answers an actor whole (id, type, roles, attributes), or throws InvalidCredentialError for a user it refuses.',
+    );
+  }
+
+  return actor;
 }
 
 const REASON_CODE = /^[A-Z][A-Z0-9_]*$/;

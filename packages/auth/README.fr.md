@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:3aba6554137da10b -->
+<!-- translation-of: README.md sha256:3b47e27489008acf -->
 
 # @ddd-ts-kit/auth
 
@@ -656,6 +656,7 @@ Il refuse par défaut :
 | La stratégie | L'appel |
 |---|---|
 | réussit | continue avec l'acteur que répond `actorOf` |
+| réussit, et `actorOf` répond autre chose qu'un acteur | est refusé, l'erreur signalée comme toute autre : un *mapper* qui a oublié `attributes`, ou n'a rien répondu, ne rend jamais l'appelant anonyme |
 | échoue sur une requête qui présente un identifiant | est refusé, 401 (`InvalidCredentialError`) |
 | échoue sur une requête qui n'en présente aucun | continue anonyme, les gardes de la route décident |
 | passe (`pass`) | continue anonyme |
