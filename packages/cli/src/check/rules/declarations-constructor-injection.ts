@@ -15,6 +15,28 @@ export const declarationsConstructorInjection: Rule = {
   id: 'declarations/constructor-injection',
   description:
     'In the declared style, a class whose decorator lists no dependency states them in its constructor: each parameter is typed by one class, with no `?`, default value, rest or destructuring, and an inherited constructor is one the project can read. Under "stack.dependencies": "signature" a decorator carries no list.',
+  severity: 'error',
+  doc: {
+    why: 'The constructor signature is the one statement of what a declared class depends on: `ddd-ts-kit docs` reads it and writes the list the composition root injects, so nothing is repeated in the decorator and nothing can disagree with the constructor. That only works when each parameter names exactly one injection token, and a token is a class: an interface, a type alias or a primitive is erased by the compiler, a union names two things, an optional or defaulted parameter says the container might not give a value, which it always does. A constructor inherited from a class of a package cannot be read at all. The compiler is not asked for the types at run time: `emitDecoratorMetadata` exists only with legacy decorators compiled by tsc or swc, not with standard decorators nor under tsx or esbuild. Under "stack.dependencies": "signature" a list left in a decorator is a second statement: it wins at run time, so it is removed when it repeats the constructor (ESLint fixes it) and reported when it differs. A project whose config does not say lists its dependencies in its decorators, as 0.1 did, and may keep doing so.',
+    bad: `@CommandHandler(IssueInvoiceCommand)
+export class IssueInvoiceHandler {
+  constructor(
+    private readonly invoices: InvoiceRepository | undefined,
+    private readonly settings: InvoiceSettings,   // an interface
+    private readonly retries = 3,
+  ) {}
+}
+// "stack.dependencies": "signature"
+@CommandHandler(IssueInvoiceCommand, [InvoiceRepository, Clock])`,
+    good: `@CommandHandler(IssueInvoiceCommand)
+export class IssueInvoiceHandler {
+  constructor(
+    private readonly invoices: InvoiceRepository,
+    private readonly settings: InvoiceSettings,   // an abstract class of application/ports, bound to a value in the platform
+    private readonly clock: Clock,
+  ) {}
+}`,
+  },
   scope: 'file',
   run(project) {
     if (!isDeclaredStyle(project)) {

@@ -101,6 +101,23 @@ export const authzInApplication: Rule = {
   id: 'authz/in-application',
   description:
     'The permission is decided in the application layer: no role test in presentation/, no authorization in infrastructure/, no knowledge of the actor in domain/.',
+  severity: 'error',
+  doc: {
+    why: 'A right decided in a route is skipped by every other entry point: a consumer, a job, another route. Decided in an adapter or in an aggregate, it is invisible and tied to one authorization model. In the application layer, behind the Authorizer port, every right is declared once, tested once, and changing from roles to policies or relationships changes an adapter only. A route keeps the request glue of @ddd-ts-kit/auth (actorOf, sessionOf, resolveSession, a SessionAuthenticator); the domain sees neither the Actor, the Session nor the ExecutionContext. The access decorators (Requires, Public, Policy of @ddd-ts-kit/kernel/declarations) and the access ports of @ddd-ts-kit/auth (Access, PolicyAccess) are how the application layer says it: they are imported in application/ and refused in presentation/, infrastructure/ and domain/.',
+    bad: `// presentation/http/void-invoice.route.ts
+if (!context.principal.roles.includes('admin')) {
+  return { status: 403 };
+}
+// presentation/http/void-invoice.route.ts
+import { Requires } from '@ddd-ts-kit/kernel/declarations';`,
+    good: `// presentation/http/void-invoice.route.ts
+await commandBus.execute(new VoidInvoiceCommand(actorOf(context.principal), params.invoiceId));
+// application/commands/void-invoice/void-invoice.handler.ts
+await this.access.authorize(command.actor, billingPermissions['invoice.void'], invoice);
+// application/authorization/only-issuer-voids.policy.ts
+@Policy(billingPermissions['invoice.void'], { name: 'billing.only-issuer-voids' })
+export class OnlyIssuerVoidsPolicy {}`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => DUTIES.flatMap((duty) => breaches(file, duty)));

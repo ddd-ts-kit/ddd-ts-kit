@@ -1,6 +1,7 @@
 import type { Project } from '../model/project';
 import type { Rule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
+import { JUDGED_ONLY_WHEN_ON } from '../privacy/judged-only-when-on';
 import { privacyJudged } from '../privacy/privacy-judged';
 import { publishedEventsOf } from '../privacy/published-events-of';
 import { escapeRegExp } from '../text/escape-reg-exp';
@@ -20,6 +21,16 @@ export const privacyErasureReachesCopies: Rule = {
   id: 'privacy/erasure-reaches-copies',
   description:
     'A context that consumes an integration event carrying personal data declares a PersonalDataErasure or handles privacy.data-subject.erased.',
+  severity: 'warn',
+  doc: {
+    why: `A consumer of an event that carries personal data may keep a copy of the person (a contact, a read model, a denormalised name), and the erasure of the person has to reach it (GDPR article 17, and article 19 for the recipients). In the monolith, privacy:erase runs every PersonalDataErasure listed in src/platform/privacy/; a context run as a service of its own erases when the platform announces privacy.data-subject.erased. Judged: for every event whose personal option is declared, a context other than its producer whose application layer names the definition of the event (an integration handler, a projection, a process manager) declares a PersonalDataErasure (\`extends PersonalDataErasure\`) or handles privacy.data-subject.erased (dataSubjectErasedV1). A consumer that keeps nothing of the person, only reacts, records it. ${JUDGED_ONLY_WHEN_ON}`,
+    bad: `// contexts/notification/application/projections/contacts.projection.ts
+on(customerRegisteredV1, (event) => contacts.upsert(event.payload.customerId, event.payload.email));
+// and notification declares no PersonalDataErasure`,
+    good: `// npx ddd-ts-kit generate repository notification Contact --personal address
+// writes contact.personal-fields.ts and the erasure of notification, which privacy:erase runs;
+// as a service of its own: npx ddd-ts-kit generate erasure-handler notification`,
+  },
   scope: 'project',
   run(project) {
     if (!privacyJudged(project)) {

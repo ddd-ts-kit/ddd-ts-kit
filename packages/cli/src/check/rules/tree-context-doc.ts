@@ -12,6 +12,12 @@ export const treeContextDoc: Rule = {
   id: 'tree/context-doc',
   description:
     'Every context has a CONTEXT.md with the required sections and the classification declared in the config.',
+  severity: 'error',
+  doc: {
+    why: 'CONTEXT.md is where the vocabulary and the boundaries are agreed with the domain experts. Without it, names drift and nobody can tell whether a concept belongs here. The classification says how much design effort the context deserves.',
+    bad: `contexts/billing/ without CONTEXT.md, or with "## Classification" saying generic while the config says core`,
+    good: `## Purpose, ## Classification, ## Ubiquitous language, ## Aggregates, ## Published events, ## Relationships`,
+  },
   scope: 'project',
   run(project) {
     const report = reporter(project, this.id);

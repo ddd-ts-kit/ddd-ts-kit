@@ -15,6 +15,16 @@ export const eventsDefinedInPublishedLanguage: Rule = {
   id: 'events/defined-in-published-language',
   description:
     "An integration event is declared once with defineIntegrationEvent in the producer's published-language/, with a payload schema.",
+  severity: 'error',
+  doc: {
+    why: 'Integration events are the only way two contexts communicate, so their shape is a public contract. One declaration with a payload schema gives the type, validates what is published and consumed, and feeds the generated catalog and AsyncAPI document. An event described by hand, or declared twice, drifts from what is really sent.',
+    bad: `// application/integration/publishers/invoice-issued.publisher.ts
+const event = { type: 'billing.invoice.issued', version: 1, payload };`,
+    good: `// published-language/invoice-issued.v1.integration-event.ts
+export const invoiceIssuedV1 = defineIntegrationEvent({
+  type: 'billing.invoice.issued', version: 1, payload: zodSchema(z.object({ invoiceId: z.string() })),
+});`,
+  },
   scope: 'file',
   run(project) {
     // Remembers, across the files of the project, where each version of an event was first seen.

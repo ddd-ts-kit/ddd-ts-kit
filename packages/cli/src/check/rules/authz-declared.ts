@@ -33,6 +33,20 @@ const SECURITY_FIX =
 export const authzDeclared: Rule = {
   id: 'authz/declared',
   description: 'Every command, query and route declares the permission it requires, or declares itself public.',
+  severity: 'error',
+  doc: {
+    why: 'A use case nobody thought about is reachable by everybody. Declaring the permission next to the registration, or declaring the use case public, makes the decision visible in review and lets the bus middleware refuse everything else. The same holds for a route: its security is part of the contract, not a default. The route type enforces it already (`defineRoute` does not compile without `security` and refuses an empty list); this rule stays as the net for a definition built loosely, from an untyped object or a cast. On a message class, @Requires(...) or @Public() of @ddd-ts-kit/kernel/declarations is the declaration, in any project; in the declared style there is no registration to read, so a command or query class carrying neither is reported.',
+    bad: `builder.command(VoidInvoiceCommand).handledBy(VoidInvoiceHandler, [InvoiceRepository]);
+defineRoute({ method: 'POST', path: '/invoices/:id/void' }, handler);
+// application/commands/void-invoice/void-invoice.command.ts, declared style
+export class VoidInvoiceCommand extends AuthorizedCommand<void> {}`,
+    good: `builder.command(VoidInvoiceCommand).requires(billingPermissions['invoice.void']).handledBy(VoidInvoiceHandler, [InvoiceRepository]);
+builder.query(GetCatalogQuery).public().handledBy(GetCatalogHandler, [CatalogReader]);
+defineRoute({ method: 'POST', path: '/invoices/:id/void', security: ['bearer'] }, handler);
+// application/commands/void-invoice/void-invoice.command.ts, declared style
+@Requires(billingPermissions['invoice.void'])
+export class VoidInvoiceCommand extends AuthorizedCommand<void> {}`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => [

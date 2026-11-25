@@ -9,6 +9,12 @@ const FIX =
 export const configSuppressionNeedsReason: Rule = {
   id: 'config/suppression-needs-reason',
   description: 'An inline suppression names its rule, or its rules after commas, and gives a reason after `--`.',
+  severity: 'error',
+  doc: {
+    why: 'An exception to an architecture rule is a decision someone will question later. The reason written next to it is what makes it reviewable; a bare suppression is indistinguishable from a shortcut.',
+    bad: `// ddd-ts-kit-disable-next-line layer/domain-purity`,
+    good: `// ddd-ts-kit-disable-next-line layer/domain-purity -- ADR-0012: decimal.js is our money arithmetic`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) =>

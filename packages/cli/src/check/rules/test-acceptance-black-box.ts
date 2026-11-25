@@ -14,6 +14,16 @@ export const testAcceptanceBlackBox: Rule = {
   id: 'test/acceptance-black-box',
   description:
     'An acceptance spec of `test/acceptance/` drives the application as a client does: it imports nothing from the source root but the builders of a context and its published language.',
+  severity: 'warn',
+  doc: {
+    why: 'An acceptance scenario says what a client of the application observes once a story is built, and it is written before the code of the story: the scenario of a route not built yet fails on its answer, and stays wrapped in `pending(...)` until the rows it names are built. A class of the application imported by the spec would not exist yet, so the spec could not even compile before the code; once it exists, the scenario that calls it tests the class, not what the client gets. The spec drives the routes and asserts the answer, the problem document and the integration events. It may import the builders of a context (test data) and its published language (the contract its clients already read), the support of test/e2e/ and the packages. It is a warning.',
+    bad: `// test/acceptance/us5.acceptance.spec.ts
+import { Invoice } from '@/contexts/billing/domain/aggregates/invoice.aggregate.js';`,
+    good: `// test/acceptance/us5.acceptance.spec.ts
+it('#US5.02 AC1 an accountant issues an invoice', pending(async () => {
+  expectStatus(await accountant.post('/invoices', anInvoiceRequest()), 201);
+}));`,
+  },
   scope: 'project',
   run(project) {
     const report = reporter(project, this.id);

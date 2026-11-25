@@ -27,6 +27,35 @@ export const schedulingJobTriggersUseCase: Rule = {
   id: 'scheduling/job-triggers-use-case',
   description:
     'A job only triggers use cases: a class of application/scheduling/*.job.ts implements ScheduledJob, sends a command from run, and depends on no repository, no part of the model and no adapter.',
+  severity: 'error',
+  doc: {
+    why: 'A job says when something happens, a use case says what. A job that loads an aggregate, calls a repository or an adapter is a use case nobody can send by another way: no permission, no unit of work, no audit entry, no test through the bus. Kept to one command sent through the CommandBus port, the job is a line of schedule, and the work is a handler like any other. It lives in application/scheduling/*.job.ts, implements ScheduledJob, and depends on buses and ports only.',
+    bad: `// application/scheduling/send-reminders.job.ts
+import { Invoice } from '@/contexts/billing/domain/aggregates/invoice.aggregate';
+
+@Scheduled('billing.send-reminders', { every: '15m' })
+export class SendRemindersJob {
+  constructor(
+    private readonly invoices: InvoiceRepository,
+    private readonly mailer: Mailer,
+  ) {}
+
+  async run(): Promise<void> {
+    for (const invoice of await this.invoices.findOverdue()) {
+      await this.mailer.remind(invoice);
+    }
+  }
+}`,
+    good: `// application/scheduling/send-reminders.job.ts
+@Scheduled('billing.send-reminders', { every: '15m' })
+export class SendRemindersJob implements ScheduledJob {
+  constructor(private readonly commands: CommandBus) {}
+
+  async run(execution: JobExecution): Promise<void> {
+    await this.commands.execute(new SendRemindersCommand(systemActor('billing.send-reminders'), execution.scheduledAt));
+  }
+}`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

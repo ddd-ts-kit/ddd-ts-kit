@@ -19,6 +19,22 @@ export const portsNoTokenConstant: Rule = {
   id: 'ports/no-token-constant',
   description:
     'No injection token beside the port: no token(), no Symbol or string token, no UPPER_SNAKE_CASE name in a dependency list, no *.ports.ts nor tokens.ts file.',
+  severity: 'error',
+  doc: {
+    why: 'The abstract class of a port is its injection token: it names the dependency, carries its type and lets the compiler check a dependency list against a constructor. A constant beside it (a token() call, a Symbol, a string, an UPPER_SNAKE_CASE name in a list) is a second name for the same thing that nothing ties to the type, and a file of tokens is one more place to keep in step with the ports. There is one way to name a dependency: the class.',
+    bad: `// application/ports/billing.ports.ts
+export const INVOICE_REPOSITORY = token<InvoiceRepository>('billing.InvoiceRepository');
+// billing.module.ts, explicit style
+builder.command(IssueInvoiceCommand).handledBy(IssueInvoiceHandler, [INVOICE_REPOSITORY, CLOCK]);
+builder.bind(Symbol.for('billing.PaymentGateway')).toClass(StripePaymentGateway, []);`,
+    good: `// domain/repositories/invoice.repository.ts
+export abstract class InvoiceRepository extends Repository<Invoice> {}
+// application/commands/issue-invoice/issue-invoice.handler.ts
+@CommandHandler(IssueInvoiceCommand)
+constructor(private readonly invoices: InvoiceRepository, private readonly clock: Clock) {}
+// billing.module.ts, explicit style
+builder.bind(PaymentGateway).toClass(StripePaymentGateway, [PaymentSettings]);`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) =>

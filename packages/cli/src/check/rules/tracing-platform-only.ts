@@ -11,6 +11,15 @@ export const tracingPlatformOnly: Rule = {
   id: 'tracing/platform-only',
   description:
     'Tracing is wired once: @ddd-ts-kit/tracing and @opentelemetry/* are imported only by the platform directory, main.ts and apps/.',
+  severity: 'error',
+  doc: {
+    why: 'Tracing is non-invasive and wired once. One action is one trace because every span is opened by the same few places: the request boundary, the bus middleware, the instrumentation around adapters and handlers, the outbox relay. A context that imports @ddd-ts-kit/tracing or an @opentelemetry package opens spans of its own, with names and attributes nobody reviews, and can no longer be traced differently by changing the composition root alone. Judged: every source under the source root, tests included, but the platform directory, main.ts and apps/.',
+    bad: `// infrastructure/external/stripe-payment.gateway.ts
+import { trace } from '@opentelemetry/api';`,
+    good: `// src/platform/observability/tracing.ts
+import { traceApplication, tracedPublisher } from '@ddd-ts-kit/tracing';
+import { initTracing } from '@ddd-ts-kit/tracing/node';`,
+  },
   scope: 'file',
   run(project) {
     const { platformDir } = project.config;

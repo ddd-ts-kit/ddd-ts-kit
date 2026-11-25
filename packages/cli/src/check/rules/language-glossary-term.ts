@@ -18,6 +18,14 @@ export const languageGlossaryTerm: Rule = {
   id: 'language/glossary-term',
   description:
     'Every aggregate, entity, value object, domain service, domain event, command and query is named with terms of the Ubiquitous language table of its context\'s CONTEXT.md, and under "stack.refusals": "factories" or "named" every class of domain/errors/ too; a value object (*.vo.ts) of the shared kernel, and its refusals (*.error.ts) likewise, with the terms of <sharedKernelDir>/CONTEXT.md. A refusal class (under "named", one that extends DomainRefusal) may also use the qualifiers invalid, unknown, already, too, no, missing and required; <context>.codes.ts holds no class and is not judged.',
+  severity: 'error',
+  doc: {
+    why: 'The ubiquitous language is the contract between the domain experts and the code. A class named with a word nobody defined is either a concept the experts do not know, or a synonym that will split the vocabulary in two. Writing the term and its meaning first forces the conversation that the name needs. Under "stack.refusals": "factories" or "named" the classes of domain/errors/ are judged too: `AppointmentError` names `Appointment`, `SlotTaken` names `Slot` and `Take`; a refusal class may also use the qualifiers of a refusal, invalid, unknown, already, too, no, missing and required (`BookingTooLate`, `InvalidAppointment`), and <context>.codes.ts, which holds no class, is not judged.',
+    bad: `// CONTEXT.md glossary: Invoice, Issue
+export class BillDispatcher {}`,
+    good: `// CONTEXT.md glossary: Invoice, Issue
+export class IssueInvoiceCommand {}`,
+  },
   scope: 'file',
   run(project) {
     const report = reporter(project, this.id);

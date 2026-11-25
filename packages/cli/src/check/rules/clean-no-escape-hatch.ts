@@ -22,7 +22,14 @@ export const cleanNoEscapeHatch: Rule = {
   id: 'clean/no-escape-hatch',
   description:
     'No any, no non-null assertion, no @ts-ignore, no @ts-expect-error without a reason, no eslint-disable without a reason.',
+  severity: 'error',
+  doc: {
+    why: 'any, the non-null assertion and suppressed diagnostics tell the compiler to stop checking, and the error it would have reported comes back at run time, far from its cause. When one is really needed, the written reason is what lets a reviewer judge it.',
+    bad: `const total = (order as any).lines!.length; // @ts-ignore`,
+    good: `if (order.lines === undefined) throw new OrderWithoutLines(order.id);`,
+  },
   scope: 'file',
+  standalone: true,
   run(project) {
     const report = reporter(project, this.id);
 

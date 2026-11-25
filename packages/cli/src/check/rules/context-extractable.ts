@@ -34,6 +34,21 @@ export const contextExtractable: Rule = {
   id: 'context/extractable',
   description:
     'A context can run alone: its module and its declared classes wire nothing of another context, it reads no table of another context, shares no repository nor port with one and exports no mutable state.',
+  severity: 'error',
+  doc: {
+    why: 'A bounded context is a deployable unit in waiting. Moving one to its own service must change a composition root and adapters, never domain or application code. A module that wires another context, a repository that reads its tables, a handler that loads its aggregates or a map shared through an export all hold only while both live in one process and one database. In the declared style the wiring is written on the classes: a role file that imports a port of another context (anything of its domain/repositories/*.repository.ts or application/ports/*.port.ts) ties the composition of the two, so ports come from the context itself, the kernel, @ddd-ts-kit/auth and the platform.',
+    bad: `// contexts/shipping/infrastructure/persistence/drizzle-parcel.repository.ts
+import { invoices } from '@/contexts/billing/infrastructure/persistence/invoice.schema';
+export const cache = new Map<string, Parcel>();
+// contexts/shipping/application/commands/ship-parcel/ship-parcel.handler.ts, declared style
+import { InvoiceRepository } from '@/contexts/billing/domain/repositories/invoice.repository';`,
+    good: `// contexts/shipping/application/ports/invoice-status.gateway.port.ts
+export abstract class InvoiceStatusGateway { abstract isPaid(invoiceId: string): Promise<boolean>; }
+// contexts/shipping/infrastructure/external/in-process-invoice-status.gateway.ts
+import type { InvoiceStatus } from '@/contexts/billing/published-language';
+// contexts/shipping/application/commands/ship-parcel/ship-parcel.handler.ts, declared style
+import { InvoiceStatusGateway } from '@/contexts/shipping/application/ports/invoice-status.gateway.port';`,
+  },
   scope: 'file',
   run(project) {
     const contexts = Object.keys(project.config.contexts);

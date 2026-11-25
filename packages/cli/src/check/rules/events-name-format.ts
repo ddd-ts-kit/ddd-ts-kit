@@ -17,6 +17,12 @@ interface Named {
 export const eventsNameFormat: Rule = {
   id: 'events/name-format',
   description: 'Domain and integration event names follow <context>.<aggregate>.<fact-in-past-tense>, in kebab-case.',
+  severity: 'error',
+  doc: {
+    why: 'Event names are routing keys and part of the public contract. A uniform <context>.<aggregate>.<fact> name tells who owns the event and what happened, and never collides across contexts.',
+    bad: `static readonly eventName = 'InvoiceIssued';`,
+    good: `static readonly eventName = 'billing.invoice.issued';`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

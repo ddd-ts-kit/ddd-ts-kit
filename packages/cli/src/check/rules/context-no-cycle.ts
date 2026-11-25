@@ -11,6 +11,14 @@ const FIX =
 export const contextNoCycle: Rule = {
   id: 'context/no-cycle',
   description: 'The declared relationships between contexts form no cycle.',
+  severity: 'error',
+  doc: {
+    why: 'Two contexts that are upstream of each other are one context with a line drawn through it: neither can be changed, deployed or understood alone. One of them has to be the supplier.',
+    bad: `"billing": { "upstreams": [{ "context": "shipping" }] },
+"shipping": { "upstreams": [{ "context": "billing" }] }`,
+    good: `"billing": { "upstreams": [] },
+"shipping": { "upstreams": [{ "context": "billing" }] }`,
+  },
   scope: 'project',
   run(project) {
     const report = reporter(project, this.id);

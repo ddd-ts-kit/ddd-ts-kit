@@ -16,6 +16,20 @@ export const portsValueImport: Rule = {
   id: 'ports/value-import',
   description:
     'A class named in a dependency list or bound with bind or rebind is imported as a value, never with `import type`: the class is the token.',
+  severity: 'error',
+  doc: {
+    why: 'A port named in a dependency list or given to bind is used as a value: the class itself is looked up in the container. `import type` erases the import when the file is compiled, so the list would hold undefined at run time, or the file would not compile. The import of a token is a plain import; `import type` stays right for a class that only types a parameter.',
+    bad: `import type { InvoiceRepository } from '@/contexts/billing/domain/repositories/invoice.repository';
+import { type Clock } from '@ddd-ts-kit/kernel';
+
+// billing.module.ts, explicit style
+builder.command(IssueInvoiceCommand).handledBy(IssueInvoiceHandler, [InvoiceRepository, Clock]);`,
+    good: `import { Clock } from '@ddd-ts-kit/kernel';
+import { InvoiceRepository } from '@/contexts/billing/domain/repositories/invoice.repository';
+
+// billing.module.ts, explicit style
+builder.command(IssueInvoiceCommand).handledBy(IssueInvoiceHandler, [InvoiceRepository, Clock]);`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

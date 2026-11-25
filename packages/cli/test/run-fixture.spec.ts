@@ -62,6 +62,8 @@ describe('a rule fixture that does not behave as it says', () => {
 const WITHOUT_FIX: Rule = {
   id: 'spec/without-fix',
   description: 'Reports every source without a fix.',
+  severity: 'error',
+  doc: { why: 'A spec needs a rule that says nothing of the repair.', bad: 'any source', good: 'no source' },
   scope: 'file',
   run(project) {
     return project.files.map(({ path }) => ({

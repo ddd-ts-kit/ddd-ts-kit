@@ -11,6 +11,13 @@ const BOOLEAN_PARAMETER =
 export const cleanNoFlagArgument: Rule = {
   id: 'clean/no-flag-argument',
   description: 'No boolean parameter on a public method of the domain or a use case: two intentions are two methods.',
+  severity: 'warn',
+  doc: {
+    why: 'A boolean parameter means the method does two things, and the call site (`close(true)`) does not say which. Two methods named after the two intentions are readable at the call site and can each guard their own invariants.',
+    bad: `cancel(refund: boolean): void {}`,
+    good: `cancel(): void {}
+cancelAndRefund(): void {}`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) =>

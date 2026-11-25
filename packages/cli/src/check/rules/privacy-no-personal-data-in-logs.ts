@@ -1,5 +1,6 @@
 import type { Rule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
+import { JUDGED_ONLY_WHEN_ON } from '../privacy/judged-only-when-on';
 import { personalDeclarationsOf } from '../privacy/personal-declarations-of';
 import { privacyJudged } from '../privacy/privacy-judged';
 import { personalTermOf } from '../privacy/personal-term-of';
@@ -29,6 +30,12 @@ export const privacyNoPersonalDataInLogs: Rule = {
   id: 'privacy/no-personal-data-in-logs',
   description:
     'A call to the logger or to the metrics names no field a personalFields declaration or the personal option of an integration event says is personal data.',
+  severity: 'warn',
+  doc: {
+    why: `A log line is copied, shipped, indexed and kept for months by systems the erasure never reaches, and read by people the person never dealt with; a metric with a label per person does the same. The opaque id of the person is enough to follow a request. An approximation at the level of the text: a name among the arguments of a call to the logger or to the metrics (logger.info(...), this.log.warn(...), metrics.increment(...)), an identifier, a property or a key, compared with the personal fields of the personalFields declarations and of the personal option of the integration events, in the files of the contexts and of the platform. A declared field of one word outside the vocabulary (name, label) is left out, too common to judge; a value reached through a variable of another name is not seen. Silent without a declaration. ${JUDGED_ONLY_WHEN_ON}`,
+    bad: `this.logger.info('invoice sent', { invoiceId: invoice.id, customerEmail: invoice.customerEmail });`,
+    good: `this.logger.info('invoice sent', { invoiceId: invoice.id, customerId: invoice.customerId });`,
+  },
   scope: 'project',
   run(project) {
     if (!privacyJudged(project)) {

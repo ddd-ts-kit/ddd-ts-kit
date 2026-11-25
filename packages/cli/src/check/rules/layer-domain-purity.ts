@@ -24,6 +24,19 @@ export const layerDomainPurity: Rule = {
   id: 'layer/domain-purity',
   description:
     'domain/ imports only its own domain/, the shared kernel and the allowed kernel packages: no framework, ORM, validation library or Node built-in.',
+  severity: 'error',
+  doc: {
+    why: 'The domain is the part of the system that has to survive a change of framework, database or transport. Every outside import ties a business rule to a technical choice and makes it impossible to test without that choice. Values that come from the outside world (ids, time, randomness) enter as parameters. The packages that apply a concern from outside (@ddd-ts-kit/aspects, audit, redis, scheduling, sentry, tracing) are refused whatever `domainAllowedPackages` says. The kernel itself is allowed, its entry @ddd-ts-kit/kernel/declarations is not: a declaration is wiring, and the domain declares nothing, neither a decorator on a class nor a dependency list. A repository port is a plain abstract class. An allowed package of the kit does not allow its entries for adapters, wiring and test doubles (@ddd-ts-kit/kernel/testing, @ddd-ts-kit/auth/jwt, /passport, /rebac, /di, /testing): the domain imports one only when `domainAllowedPackages` names that entry itself.',
+    bad: `// domain/aggregates/invoice.aggregate.ts
+import { randomUUID } from 'node:crypto';
+import { IsEmail } from 'class-validator';
+import { Logged } from '@ddd-ts-kit/aspects/decorators';
+import { Repository } from '@ddd-ts-kit/kernel/declarations';
+import { FixedClock } from '@ddd-ts-kit/kernel/testing';`,
+    good: `// domain/aggregates/invoice.aggregate.ts
+import { AggregateRoot } from '@ddd-ts-kit/kernel';
+import { Money } from '@/contexts/billing/domain/value-objects/money.vo';`,
+  },
   scope: 'file',
   run(project) {
     const allowed = project.config.domainAllowedPackages;

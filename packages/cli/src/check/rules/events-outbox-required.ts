@@ -40,6 +40,18 @@ export const eventsOutboxRequired: Rule = {
   id: 'events/outbox-required',
   description:
     'With a database, integration events are published through the transactional outbox, never straight to a broker or a bus from a handler.',
+  severity: 'error',
+  doc: {
+    why: 'Publishing an event and committing the state change it describes must succeed or fail together. A handler that talks to a broker or a bus publishes events of transactions that roll back, and loses events when the broker is down. Written to the outbox in the transaction of the command, the event is relayed afterwards, whatever the transport.',
+    bad: `// application/commands/issue-invoice/issue-invoice.handler.ts
+import { connect } from 'amqplib';
+// ddd-ts-kit.config.json
+"stack": { "orm": "drizzle", "events": "in-memory" }`,
+    good: `// application/commands/issue-invoice/issue-invoice.handler.ts
+constructor(private readonly publisher: IntegrationEventPublisher) {}
+// platform/composition/platform.module.ts
+eventPublisher: new OutboxPublisher(persistence.outbox),`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => [

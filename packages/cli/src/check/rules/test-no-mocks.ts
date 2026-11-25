@@ -29,6 +29,14 @@ export const testNoMocks: Rule = {
   id: 'test/no-mocks',
   description:
     "No vi.mock, jest.mock, vi.fn, jest.fn, vi.spyOn, jest.spyOn or mocking library in a context's tests: use the fake of the port.",
+  severity: 'warn',
+  doc: {
+    why: 'A mock asserts that a call was made, not that the outcome is right, so it breaks on every refactoring and passes on wrong behaviour. A fake is a working in-memory implementation held to the same contract suite as the real adapter. Tests assert its state, the published events or the returned value.',
+    bad: `const repository = { save: vi.fn() };
+expect(repository.save).toHaveBeenCalledOnce();`,
+    good: `const repository = new FakeInvoiceRepository();
+expect(await repository.findById(id)).toBeDefined();`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

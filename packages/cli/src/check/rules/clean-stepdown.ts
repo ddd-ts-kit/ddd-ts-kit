@@ -14,7 +14,16 @@ export const cleanStepdown: Rule = {
   id: 'clean/stepdown',
   description:
     'A file reads top to bottom: public members before private ones, a function above the functions it calls.',
+  severity: 'error',
+  doc: {
+    why: 'A reader opens a file to learn what it does, then, if needed, how. With the public members first and each helper below its first caller, the file reads once from top to bottom, like a newspaper article. Helpers on top force the reader to hold details before knowing what they serve.',
+    bad: `function parseLine(line: string) {}
+export function parseFile(text: string) { return text.split('\\n').map(parseLine); }`,
+    good: `export function parseFile(text: string) { return text.split('\\n').map(parseLine); }
+function parseLine(line: string) {}`,
+  },
   scope: 'file',
+  standalone: true,
   run(project) {
     return perFile(project, this.id, (file) => {
       const { classes, functions } = file.structure;

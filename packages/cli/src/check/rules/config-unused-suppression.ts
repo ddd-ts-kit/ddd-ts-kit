@@ -18,6 +18,19 @@ export const configUnusedSuppression: Rule = {
   id: 'config/unused-suppression',
   description:
     'An inline suppression silences something: each id it names is a rule, and breaks on the line of code after it.',
+  severity: 'error',
+  doc: {
+    why: 'A suppression is an exception with a reason, and it lives as long as the finding it excuses. Once the code is repaired, the rule renamed or the line moved, the comment silences nothing and still reads as an accepted deviation: the next finding on that line would be excused by a reason written for another one. A directive that names an id no rule has is reported at once; one that silences nothing is reported by `ddd-ts-kit check` when it runs every rule, and only for a rule this checker alone decides, since ESLint reads the same directive and may find what a reading of the text does not.',
+    bad: `// ddd-ts-kit-disable-next-line tenancy/scoped-statment -- ADR-0004: the history keeps no tenant yet
+const rows = await this.database.executor()('attendance_history');
+
+// ddd-ts-kit-disable-next-line tenancy/scoped-statement -- ADR-0004: the history keeps no tenant yet
+const rows = await tenantTable(this.database, 'attendance_history');`,
+    good: `// ddd-ts-kit-disable-next-line tenancy/scoped-statement -- ADR-0004: the history keeps no tenant yet
+const rows = await this.database.executor()('attendance_history');
+
+const rows = await tenantTable(this.database, 'attendance_history');`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) =>

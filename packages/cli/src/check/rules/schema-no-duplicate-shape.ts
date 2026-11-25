@@ -31,6 +31,19 @@ export const schemaNoDuplicateShape: Rule = {
   id: 'schema/no-duplicate-shape',
   description:
     'Under "stack.schemas": "shared", one shape of the HTTP contract is declared once in its context: no two DTO classes, and no two object schemas (zod, valibot, TypeBox), of the presentation layer of one context, or of a context and presentation/ of the shared kernel, declare the same properties with the same constraints. Two contexts may declare the same shape; request parameters and shapes the generator left to fill are not judged.',
+  severity: 'error',
+  doc: {
+    why: 'Two routes that declare the same shape by hand document it twice, as two unrelated schemas: the contract grows a copy per route, a client SDK generates two types for one thing, and the day the shape changes one copy is forgotten. Declared once and shared, it lands once in components.schemas and every route points at it with $ref; a route that needs a part of it derives that part (pick, omit, partial, extend) from the one declaration. Judged within one context, and between a context and presentation/ of the shared kernel: two contexts may declare the same structure, because an equal shape with two meanings is two concepts and sharing it would couple contexts that stay extractable. Compared: a DTO class (a class of the module that extends nothing, has no method and decorates each property), compared by its property names, their decorators with their arguments and whether each is optional; and the object of a schema builder (`z.object({...})`, `v.object({...})`, `Type.Object({...})`), compared by its entries whatever their order and layout. Empty shapes, shapes that still carry a TODO(domain) of the generator (every search line starts as `{ id }`) or a TODO(review), *.params.ts, *.query.ts and *.headers.ts files and the objects assigned to params, query or headers are not judged: a request parameter is documented per operation, never as a component. The original is the declaration of the shared kernel, then the one under presentation/http/shared/ of the context, then the first in path order; each copy is reported with the place of the original. Judged under "stack.schemas": "shared" only.',
+    bad: `// appointments/cancel-appointment/cancel-appointment.accepted.ts
+export class CancelAppointmentAccepted { @IsString() id = ''; }
+// appointments/confirm-appointment/confirm-appointment.accepted.ts
+export class ConfirmAppointmentAccepted { @IsString() id = ''; }`,
+    good: `// both controllers answer with the identifier schema of the platform
+import { acceptedSchema, type Accepted } from '@ddd-ts-kit/http';
+response: { status: 201, description: 'Done.', body: acceptedSchema },
+// a shape of the context, declared once: presentation/http/shared/slot.schema.ts
+export const slotSchema = z.object({ startsAt: z.iso.datetime(), endsAt: z.iso.datetime() }).meta({ id: 'Slot' });`,
+  },
   scope: 'project',
   run(project) {
     if (!sharesSchemas(project)) {

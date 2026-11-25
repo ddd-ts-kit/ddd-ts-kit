@@ -18,6 +18,29 @@ export const schedulingJobRegistered: Rule = {
   id: 'scheduling/job-registered',
   description:
     'Every job (application/scheduling/*.job.ts) and background job (application/background/*.background-job.ts) is registered by a module file, in the explicit style.',
+  severity: 'error',
+  doc: {
+    why: 'The scheduler runs the jobs the module files register, and nothing else. A class in `application/scheduling/*.job.ts` or `application/background/*.background-job.ts` that no registration names is dead code: its spec passes, every other rule passes, and the job never runs. Judged on the exported class of each of those files: in the explicit style another file outside the tests names it in `.handledBy(..)`, in `.register(..)` (`platform.jobs.register`, `platform.backgroundJobs.register`) or builds it with `new`; the declared style registers a class by its decorator, which `declarations/role-declared` requires, and is not judged here. A registration made by a loop or a list the checker does not read is reported as well: write the plain form. `generate job` and `generate background-job` write the registration; a class written by hand needs it. An error from the first day.',
+    bad: `// application/scheduling/check-registration.job.ts
+export class CheckRegistrationJob implements ScheduledJob {}
+// brokerage.module.ts
+function registerJobs(platform: Platform): void {
+  // ddd-ts-kit:jobs
+  // /ddd-ts-kit:jobs
+}`,
+    good: `// brokerage.module.ts
+function registerJobs(platform: Platform): void {
+  // ddd-ts-kit:jobs
+  const checkRegistrationJob = new CheckRegistrationJob(platform.commands);
+
+  platform.jobs.register({
+    name: 'brokerage.check-registration',
+    schedule: { cron: '0 6 * * *', timeZone: 'Europe/Paris' },
+    run: (execution) => checkRegistrationJob.run(execution),
+  });
+  // /ddd-ts-kit:jobs
+}`,
+  },
   scope: 'project',
   run(project) {
     // In the declared style a class without its decorator is reported by declarations/role-declared.

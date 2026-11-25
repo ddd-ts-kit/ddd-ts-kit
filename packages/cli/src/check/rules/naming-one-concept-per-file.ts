@@ -18,6 +18,22 @@ export const namingOneConceptPerFile: Rule = {
   id: 'naming/one-concept-per-file',
   description:
     'One exported aggregate, entity, value object, event, handler or job per file, and one declared class per role file.',
+  severity: 'error',
+  doc: {
+    why: 'One concept per file keeps the file name truthful and the diff of a change small. A second class in an aggregate file is usually an entity or a value object that deserves its own name and its own tests. In the declared style a role file is found by its name and holds one declared class: a second class carrying a declaration decorator in the same file is reported, whatever the role.',
+    bad: `// invoice.aggregate.ts
+export class Invoice {}
+export class InvoiceLine {}
+// application/authorization/invoice.policy.ts, declared style
+@Policy(billingPermissions['invoice.void'], { name: 'billing.only-issuer-voids' })
+export class OnlyIssuerVoidsPolicy {}
+@Policy(billingPermissions['invoice.issue'], { name: 'billing.only-accountant-issues' })
+export class OnlyAccountantIssuesPolicy {}`,
+    good: `// invoice.aggregate.ts
+export class Invoice {}
+// ../entities/invoice-line.entity.ts
+export class InvoiceLine {}`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

@@ -7,9 +7,9 @@ export interface Rule {
   readonly id: string;
   readonly description: string;
   /** The severity of the rule when the config says nothing. */
-  readonly severity?: 'error' | 'warn';
+  readonly severity: 'error' | 'warn';
   /** What `ddd-ts-kit explain` shows: the reason behind the rule and one example each way. */
-  readonly doc?: RuleDoc;
+  readonly doc: RuleDoc;
   /** The rule judges a source on its own, whatever the project around it: `check --clean-only` runs it. */
   readonly standalone?: true;
   /** `file` rules need one source at a time and run in `check-file`; `project` rules need the tree. */

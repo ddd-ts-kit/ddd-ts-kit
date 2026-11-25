@@ -17,6 +17,15 @@ export const eventsNameDeclaredOnce: Rule = {
   id: 'events/name-declared-once',
   description:
     'Every domain event class declares its name once, `static readonly eventName`, and its `readonly name` reads it.',
+  severity: 'error',
+  doc: {
+    why: 'A domain event handler and a projection are attached under the name the event class declares, static readonly eventName: the compiler refuses a reaction to an event class without it. Checked on every domain event, a missing name is found when the event is written, not later when someone first reacts to it. A name written a second time, as a literal in readonly name, drifts from the one the reactions read: extend NamedDomainEvent and the instance name reads the static one.',
+    bad: `export class InvoiceIssued implements DomainEvent {
+  readonly name = 'billing.invoice.issued';
+}`,
+    good: `export class InvoiceIssued extends NamedDomainEvent('billing.invoice.issued') {
+}`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

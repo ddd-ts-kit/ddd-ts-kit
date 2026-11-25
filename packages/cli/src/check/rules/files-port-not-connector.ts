@@ -11,6 +11,20 @@ export const filesPortNotConnector: Rule = {
   id: 'files/port-not-connector',
   description:
     'domain/ and application/ name the `FileStorage` port of the kernel, never one of its connectors (`InMemoryFileStorage`, `LocalFileStorage`): where files live is chosen by the platform.',
+  severity: 'error',
+  doc: {
+    why: 'Where files live is a choice of the platform: a directory in development, the memory in the tests, a bucket in a deployment. A handler or an aggregate that names a connector has made that choice for every environment, and its tests no longer run on the memory connector. The port says what is needed, streams in and out, signed links, and the platform binds the connector of each environment.',
+    bad: `import { LocalFileStorage } from '@ddd-ts-kit/kernel';
+
+export class AttachReceiptHandler {
+  private readonly files = new LocalFileStorage({ directory: 'files' });
+}`,
+    good: `import type { FileKeys, FileStaging } from '@ddd-ts-kit/kernel';
+
+export class AttachReceiptHandler {
+  constructor(private readonly staging: FileStaging, private readonly keys: FileKeys) {}
+}`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

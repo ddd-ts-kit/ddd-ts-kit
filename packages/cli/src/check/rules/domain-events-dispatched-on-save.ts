@@ -21,6 +21,21 @@ export const domainEventsDispatchedOnSave: Rule = {
   id: 'domain-events/dispatched-on-save',
   description:
     'Domain events leave with the save: no `pullEvents()` in application/ or infrastructure/, no DomainEventDispatcher in a command, a query or a repository adapter.',
+  severity: 'error',
+  doc: {
+    why: 'Domain events leave with the save. Once a repository method that was handed an aggregate resolves, the events the aggregate recorded are dispatched in order, inside the unit of work of the command, so their handlers and the outbox commit or roll back with the state. A handler that pulls the events and dispatches them itself announces them twice or outside the transaction, and a repository adapter that dispatches mixes persistence with wiring. Reported: a call to pullEvents() in application/ or infrastructure/ of a context, and DomainEventDispatcher imported, listed as a dependency or received by a constructor in application/commands, application/queries and a repository adapter. The module file, the tests, the platform and main.ts are left alone.',
+    bad: `// application/commands/issue-invoice/issue-invoice.handler.ts
+@CommandHandler(IssueInvoiceCommand)
+constructor(private readonly invoices: InvoiceRepository, private readonly dispatcher: DomainEventDispatcher) {}
+await this.invoices.save(invoice);
+await this.dispatcher.dispatch(invoice.pullEvents());`,
+    good: `// application/commands/issue-invoice/issue-invoice.handler.ts
+@CommandHandler(IssueInvoiceCommand)
+constructor(private readonly invoices: InvoiceRepository) {}
+await this.invoices.save(invoice);
+// a removal that announces an event takes the aggregate
+await this.invoices.remove(invoice);`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

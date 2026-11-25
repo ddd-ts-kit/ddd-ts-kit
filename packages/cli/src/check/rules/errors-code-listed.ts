@@ -39,6 +39,35 @@ export const errorsCodeListed: Rule = {
   id: 'errors/code-listed',
   description:
     'Under "stack.refusals": "named", every refusal class of domain/errors/ (a class extending DomainRefusal) reads its code from the code list of its context, `readonly code = <Context>Codes.<Class>`, which <context>.codes.ts declares `as const`; every key of the list is a refusal class of the context and every value a string literal in constant case.',
+  severity: 'error',
+  doc: {
+    why: 'Under "stack.refusals": "named" a refusal is a class of its own, `SlotTaken`, and its code is what everything outside the domain knows it by: the error mapper gives it a status, the OpenAPI document and the client list it, a test asserts it. The codes of a context are therefore one closed list, <context>.codes.ts, `export const SchedulingCodes = { SlotTaken: \'SLOT_TAKEN\' } as const`, and each class reads its code from it under its own name, `readonly code = SchedulingCodes.SlotTaken`: the list is the contract of the context in one file, two refusals cannot drift to one code unseen, and the type of each code stays its own literal. Reported: a refusal class (a class of domain/errors/ that extends DomainRefusal, abstract ones aside) without a code, with a code written another way (a string literal, another entry, the list of another context), a context with refusal classes and no codes.ts, a class whose name the list does not hold; in codes.ts, a list missing or not `as const`, a key that names no refusal class of the context (a code nothing raises), and a value that is not a string literal in constant case. The value is usually the name of the class in constant case, but need not be: a migrated project keeps its codes, since the code is the contract. Judged under "stack.refusals": "named" only.',
+    bad: `// scheduling.codes.ts
+export const SchedulingCodes = {
+  SlotTaken: 'SLOT_TAKEN',
+  SlotHeld: 'SLOT_HELD',
+};
+
+// domain/errors/slot-taken.error.ts
+export class SlotTaken extends DomainRefusal {
+  readonly code = 'SLOT_TAKEN';
+}`,
+    good: `// scheduling.codes.ts
+export const SchedulingCodes = {
+  SlotTaken: 'SLOT_TAKEN',
+} as const;
+
+export type SchedulingCode = (typeof SchedulingCodes)[keyof typeof SchedulingCodes];
+
+// domain/errors/slot-taken.error.ts
+export class SlotTaken extends DomainRefusal {
+  readonly code = SchedulingCodes.SlotTaken;
+
+  static forCalendar(calendarId: string, startsAt: Date) {
+    return SlotTaken.refusal(\`The slot starting at \${startsAt.toISOString()} is already held.\`, { calendarId, startsAt });
+  }
+}`,
+  },
   scope: 'project',
   run(project) {
     if (!namesRefusals(project)) {

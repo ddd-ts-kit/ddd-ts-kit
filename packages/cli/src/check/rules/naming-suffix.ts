@@ -17,6 +17,16 @@ import { WITHOUT_MODULE } from '../../model-modules';
 export const namingSuffix: Rule = {
   id: 'naming/suffix',
   description: "A file in a role directory carries the role's suffix, in kebab-case.",
+  severity: 'error',
+  doc: {
+    why: 'The suffix states the role of a file before it is opened and lets the other rules know what they are looking at. Kebab-case avoids case-only renames that break on some file systems. A use case folder holds its message, its handler and, when it answers something, its result (*.result.ts); a job is application/scheduling/*.job.ts. Under presentation/http/ a controller lives in a folder of its own, presentation/http/<resource>/<use-case>/, with the schemas of its request and of its answer (*.params.ts, *.query.ts, *.headers.ts, *.body.ts, *.accepted.ts, *.answer.ts, *.line.ts), its *.mapper.ts and its *.serializer.ts; a route group is presentation/http/<name>.routes.ts, a guard presentation/http/guards/*.guard.ts, and what several routes share is under presentation/http/shared/. Function routes stay flat: *.route.ts and *.dto.ts, listed in presentation/http/<context>.routes.ts. A barrel (index.ts) in a role folder that has a suffix is reported: a role folder holds its role files and nothing else, each imported by its own path.',
+    bad: `domain/aggregates/Invoice.ts`,
+    good: `domain/aggregates/invoice.aggregate.ts
+application/commands/issue-invoice/issue-invoice.result.ts
+application/scheduling/send-reminders.job.ts
+presentation/http/invoices.routes.ts
+presentation/http/invoices/issue-invoice/issue-invoice.controller.ts`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

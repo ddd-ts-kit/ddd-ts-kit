@@ -15,6 +15,20 @@ export const schemaPresentationOnly: Rule = {
   id: 'schema/presentation-only',
   description:
     'Under "stack.schemas": "shared", a schema of the HTTP contract lives in presentation/: of its context, or of the shared kernel when several contexts answer with it. The shared kernel declares no schema anywhere else, and no domain, application, infrastructure or published language imports one of its presentation/.',
+  severity: 'error',
+  doc: {
+    why: 'A schema says what a client sends or receives: it is a presentation type, and it changes with the contract, not with the model. The shared kernel is imported by every layer of every context, so a schema written there reaches the domain and the use cases, which then depend on the shape of a request. A schema shared by several contexts therefore lives under presentation/ of the shared kernel, and only presentation layers import it; a schema of one context lives in its presentation layer (domain/ and application/ are already refused any validation library by the layer rules). Judged: in the shared kernel outside presentation/, an import of a validation library (zod, class-validator, class-transformer, class-validator-jsonschema, valibot, arktype, TypeBox, @ddd-ts-kit/validation); in domain/, application/, infrastructure/ and published-language/ of a context, and in the shared kernel outside presentation/, an import of a file of presentation/ of the shared kernel. Specs are not judged. Judged under "stack.schemas": "shared" only.',
+    bad: `// shared-kernel/money.ts
+import { IsInt, IsString } from 'class-validator';
+export class MoneyDto { @IsInt() cents = 0; @IsString() currency = ''; }
+// contexts/billing/application/commands/issue-invoice/issue-invoice.command.ts
+import { MoneyDto } from '@/shared-kernel/presentation/money.schema';`,
+    good: `// shared-kernel/presentation/money.schema.ts
+export class Money { @IsInt() cents = 0; @IsString() currency = ''; }
+// contexts/billing/presentation/http/invoices/issue-invoice/issue-invoice.mapper.ts
+import type { Money } from '@/shared-kernel/presentation/money.schema';
+// maps Money to the command, which carries plain values`,
+  },
   scope: 'file',
   run(project) {
     if (!sharesSchemas(project)) {

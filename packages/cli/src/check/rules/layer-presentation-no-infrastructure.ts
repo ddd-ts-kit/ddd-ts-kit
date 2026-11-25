@@ -6,6 +6,14 @@ import { perFile } from '../support/per-file';
 export const layerPresentationNoInfrastructure: Rule = {
   id: 'layer/presentation-no-infrastructure',
   description: 'presentation/ imports application/ (and domain types for mapping), never infrastructure/.',
+  severity: 'error',
+  doc: {
+    why: 'A route translates a transport request into a command or a query and maps the answer back. Reaching an adapter directly skips the use case, so the business rule that guards the operation is skipped too.',
+    bad: `// presentation/http/issue-invoice.route.ts
+import { PgInvoiceRepository } from '@/contexts/billing/infrastructure/persistence/pg-invoice.repository';`,
+    good: `// presentation/http/issue-invoice.route.ts
+import type { IssueInvoiceHandler } from '@/contexts/billing/application/commands/issue-invoice/issue-invoice.handler';`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

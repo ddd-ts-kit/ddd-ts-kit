@@ -25,7 +25,14 @@ const SPLIT_FIX =
 export const cleanFunctionSize: Rule = {
   id: 'clean/function-size',
   description: `A function has at most 3 parameters and 30 lines (configurable under \`limits\`), and never more than ${FUNCTION_LINES_CEILING} lines, which is an error whatever the severity of the rule.`,
+  severity: 'warn',
+  doc: {
+    why: 'A long function mixes several levels of abstraction, and its parts can be neither named nor tested alone. More than three parameters usually travel together because they are one concept without a type: name it, as a typed props object or a value object (`Invoice.draft({ customer, lines, currency, draftedAt })`), rather than adding a fourth parameter. One parameter typed `Actor` or `Date`, who acts and when, is the context of an intention and is not counted. Small functions with few arguments are what makes the stepdown order readable. The limits are configurable under `limits`, up to a ceiling: no function is longer than 100 lines, describe callbacks, module files and tests included, and that ceiling is an error whatever the severity of the rule. A `describe` longer than that covers several behaviours: the spec file holds one top-level `describe` per behaviour (a nested one counts in its parent), and a second spec file is needed only past the 350 lines of `clean/file-size`.',
+    bad: `function issue(id: string, customer: string, amount: number, currency: string, dueOn: Date) {}`,
+    good: `function issue(id: string, customer: CustomerId, total: Money) {}`,
+  },
   scope: 'file',
+  standalone: true,
   run(project) {
     const report = reporter(project, this.id);
     const { limits } = project.config;

@@ -8,6 +8,14 @@ const FIX =
 export const layerInfrastructureNoPresentation: Rule = {
   id: 'layer/infrastructure-no-presentation',
   description: 'infrastructure/ implements ports of application/ and domain/, never imports presentation/.',
+  severity: 'error',
+  doc: {
+    why: 'Adapters implement ports declared inward. An adapter that knows a DTO or a route depends on one transport, and both outer layers start changing together.',
+    bad: `// infrastructure/persistence/pg-invoice.repository.ts
+import type { InvoiceDto } from '@/contexts/billing/presentation/http/invoice.dto';`,
+    good: `// infrastructure/persistence/pg-invoice.repository.ts
+import { InvoiceRepository } from '@/contexts/billing/domain/repositories/invoice.repository';`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

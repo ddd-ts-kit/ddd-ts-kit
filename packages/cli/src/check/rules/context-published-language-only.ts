@@ -5,6 +5,14 @@ import { perFile } from '../support/per-file';
 export const contextPublishedLanguageOnly: Rule = {
   id: 'context/published-language-only',
   description: "A file imports from another context only through that context's published-language/.",
+  severity: 'error',
+  doc: {
+    why: 'A bounded context owns its model and must be free to change it. The published language is the only part designed for others; importing anything else couples two models and turns every refactoring into a cross-team negotiation.',
+    bad: `// contexts/shipping/application/...
+import { Invoice } from '@/contexts/billing/domain/aggregates/invoice.aggregate';`,
+    good: `// contexts/shipping/application/...
+import type { InvoiceIssuedV1 } from '@/contexts/billing/published-language';`,
+  },
   scope: 'file',
   run(project) {
     const { contextsDir } = project.config;

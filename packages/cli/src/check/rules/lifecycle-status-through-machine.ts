@@ -14,6 +14,22 @@ export const lifecycleStatusThroughMachine: Rule = {
   id: 'lifecycle/status-through-machine',
   description:
     'The status of an aggregate that has a state machine changes only through it: an aggregate that writes a status imports domain/state-machines/<aggregate>.state-machine.ts and writes it from machine.next(..) or machine.start(..), or copies a status already read.',
+  severity: 'error',
+  doc: {
+    why: 'A state machine says once which status follows which, and what refuses a forbidden transition with a static factory of the concept error. An aggregate that also writes its status by hand keeps a second, silent copy of its lifecycle: a transition the machine forbids happens anyway, and the diagram of CONTEXT.md, drawn from the machine, lies. So an aggregate whose machine exists (domain/state-machines/<aggregate>.state-machine.ts) imports it once it writes a status, and writes its status only from machine.next(..) or machine.start(..), or copies a status it read.',
+    bad: `// domain/aggregates/appointment.aggregate.ts
+confirm(now: Date): void {
+  if (this.state.status !== 'requested') {
+    throw AppointmentError.alreadyConfirmed(this.id);
+  }
+
+  this.state = { ...this.state, changedAt: now, status: 'booked' };
+}`,
+    good: `// domain/aggregates/appointment.aggregate.ts
+confirm(now: Date): void {
+  this.state = { ...this.state, changedAt: now, status: appointmentLifecycle.next(this.state.status, 'confirm') };
+}`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => (isAggregateFile(file) ? byHand(file) : []));

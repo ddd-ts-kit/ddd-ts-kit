@@ -17,6 +17,20 @@ export const eventSourcingProjectionNeverAppends: Rule = {
   id: 'event-sourcing/projection-never-appends',
   description:
     'A projection never appends to a stream: it names no event store, and a projection fed by the event store names no repository of domain/repositories/ either.',
+  severity: 'error',
+  doc: {
+    why: "A projection turns facts into a read model; it is replayed from position zero whenever its read model is rebuilt. A projection that appends to a stream would append again at every rebuild, and makes the read side decide facts. Judged: production files of application/projections/ and any file declaring a class with @Projection; naming EventStore or EventSourcedRepository of @ddd-ts-kit/kernel is reported, and so is anything imported from domain/repositories/ in a projection declared @Projection(name, { feed: 'event-store' }). A projection fed by the dispatcher keeps the imports it had before event sourcing.",
+    bad: `// application/projections/attendance-history.projection.ts
+@Projection('scheduling.attendance-history', { feed: 'event-store' })
+export class AttendanceHistoryProjection {
+  constructor(private readonly history: AttendanceHistory, private readonly records: AttendanceRecordRepository) {}
+}`,
+    good: `// application/projections/attendance-history.projection.ts
+@Projection('scheduling.attendance-history', { feed: 'event-store' })
+export class AttendanceHistoryProjection {
+  constructor(private readonly history: AttendanceHistory) {}
+}`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => (isProjection(file) ? appending(file) : []));

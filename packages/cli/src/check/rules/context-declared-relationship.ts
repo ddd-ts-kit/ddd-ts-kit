@@ -8,6 +8,13 @@ export const contextDeclaredRelationship: Rule = {
   id: 'context/declared-relationship',
   description:
     'Importing the published language of another context requires the relationship to be declared in the config.',
+  severity: 'error',
+  doc: {
+    why: 'The context map is a strategic decision, not a side effect of an import. Declaring the upstream and the pattern keeps the map reviewable and lets the cycle check work.',
+    bad: `// shipping imports billing/published-language, config has "shipping": { "upstreams": [] }`,
+    good: `"shipping": { "classification": "supporting",
+  "upstreams": [{ "context": "billing", "relationship": "published-language" }] }`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

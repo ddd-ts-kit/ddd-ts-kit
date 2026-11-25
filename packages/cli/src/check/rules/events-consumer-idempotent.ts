@@ -28,6 +28,23 @@ export const eventsConsumerIdempotent: Rule = {
   id: 'events/consumer-idempotent',
   description:
     'Every integration event handler is registered or declared with a stable consumer name, unique in the project, and a processed-event store.',
+  severity: 'error',
+  doc: {
+    why: "Delivery is at least once: a consumer sees the same event again after a retry, a restart or a replay. The processed-event store recognises a redelivery by the pair consumer name and event id, in the transaction of the handler. A consumer without a name, or sharing the name of another, either handles events twice or skips events it never handled. An integration event handler class that carries @IntegrationEventHandler(definition, { consumer }) is named by its declaration and needs no registration; the name is a string literal, and it is unique across declarations and registrations alike. Options that spread a shared object ({ ...options, consumer: 'ctx.name' }) are accepted when the file shows that object carrying `processed`: a `const` initialised with an object literal, or a value typed `ConsumeOptions`; a spread whose content is not in the file is refused.",
+    bad: `// billing.module.ts
+subscriber.subscribe('catalog.product.listed', (event) => productListedHandler.handle(event));
+// application/integration/handlers/product-listed.integration-handler.ts
+@IntegrationEventHandler(productListedV1, { consumer: CONSUMER_NAME })`,
+    good: `// billing.module.ts
+builder.on(productListedV1, { consumer: 'billing.product-listed' }).handledBy(ProductListedHandler, [CommandBus]);
+// or, wired by hand
+consume(productListedV1, { consumer: 'billing.product-listed', processed, unitOfWork }, (event) => productListedHandler.handle(event));
+// or declared on the class
+@IntegrationEventHandler(productListedV1, { consumer: 'billing.product-listed' })
+export class ProductListedHandler {
+  constructor(private readonly commands: CommandBus) {}
+}`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) =>

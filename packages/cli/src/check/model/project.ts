@@ -14,6 +14,8 @@ export interface Project {
   readonly contextsOnDisk: readonly string[];
   /** The severity of a rule for the whole project. */
   severity(ruleId: string): Severity;
+  /** The severity a rule states for itself, which holds when the config does not set one. */
+  defaultSeverity(ruleId: string): 'error' | 'warn';
   /** The severity a setting for some files gives `file`; undefined when no such setting names it. */
   fileSeverity(ruleId: string, file: string): Severity | undefined;
   locate(file: string): Location;

@@ -32,6 +32,18 @@ export const authzSystemActorGranted: Rule = {
   id: 'authz/system-actor-granted',
   description:
     'Under relationships, every system actor a context acts as is named by a relationship of the platform when it sends a protected command or query.',
+  severity: 'error',
+  doc: {
+    why: "Under relationships, the application acts on its own behalf as a system actor: a scheduled job, an integration handler, a process, an event handler that sends a command. The actor `system:<name>` is a subject of type `system`, and nothing is permitted to it until a relationship says so; the command it sends is refused with FORBIDDEN when the application runs, and a spec on a fake authorizer never shows it. `generate job` writes the relationship for a job; a handler written by hand needs its line in `systemRelationships` of `<platformDir>/auth/relationships/relate-system-actors.ts`. Judged: every `systemActor(<name>)` of a context outside the tests, with a name the checker reads (a string literal, or `<Class>.name` of a class of the same file), in a file that sends at least one command or query not declared public (`@Public()`, `.public()`, `publicUseCase(..)`): the files of `auth/relationships/` must name the subject `system:system:<name>` (the authorizer reads an actor as `<type>:<id>`, and the id of a system actor is `system:<name>`; a grant written `system:<name>` never matches). Not judged: a name the checker cannot read, a file that sends no message, and a project whose rights are roles or attributes, where the right is the permission of a role or a rule shared by system actors rather than a relationship per actor. Silent without `relate-system-actors.ts`, and with an authorizer of the project's own (`createAuthorizer` imports a `*Authorizer` of the project), which may let a system actor operate its context. An error: the refusal is certain at run time with the standard authorizer.",
+    bad: `// application/event-handlers/open-portfolio-for-advisor.event-handler.ts
+await this.commands.execute(new OpenPortfolioCommand(systemActor(OpenPortfolioForAdvisorEventHandler.name), branchId));
+// platform/auth/relationships/relate-system-actors.ts
+const systemRelationships: readonly RelationTuple[] = [];`,
+    good: `// platform/auth/relationships/relate-system-actors.ts
+const systemRelationships: readonly RelationTuple[] = [
+  { object: 'context:branch-network', relation: 'operator', subject: 'system:system:OpenPortfolioForAdvisorEventHandler' },
+];`,
+  },
   scope: 'project',
   run(project) {
     if (project.config.stack.authz !== 'rebac' || ownAuthorizer(project)) {

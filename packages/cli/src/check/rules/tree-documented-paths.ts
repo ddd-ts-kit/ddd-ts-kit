@@ -19,6 +19,12 @@ export const treeDocumentedPaths: Rule = {
   id: 'tree/documented-paths',
   description:
     'A path of a bounded context cited as code in docs/architecture (a plan, a design note, a review), in full or relative to its context, is a place the canonical tree allows: a document that names a directory the tree refuses describes a design the code no longer has.',
+  severity: 'warn',
+  doc: {
+    why: 'A plan, a design note or a review of docs/architecture is read by the next person or agent before the code. When a rule moved a file (a service of application/services became a port), a document that still names the old place sends its reader to a design the code no longer has, and a worker may build it again. Each path of a context written as code in a Markdown file of docs/architecture is judged as tree/closed judges a file: its directories and the file itself must have a place in the canonical tree. A path written relative to its context (`application/services/credit-limit.service.ts`) names no context: it is reported only when every declared context refuses it, their extra directories considered; a path starting with `test/` is left alone, since the project root has `test/e2e/` too. A path that does not exist yet is not reported: a plan names files to create; nor is a path through a dot-directory of a context, which is no part of the tree. It is a warning.',
+    bad: `docs/architecture/design-review.md: "add \`src/contexts/billing/application/services/credit-limit.service.ts\`"`,
+    good: `docs/architecture/design-review.md: "add the port \`src/contexts/billing/application/ports/credit-limit-reader.port.ts\`"`,
+  },
   scope: 'project',
   run(project) {
     const report = reporter(project, this.id);

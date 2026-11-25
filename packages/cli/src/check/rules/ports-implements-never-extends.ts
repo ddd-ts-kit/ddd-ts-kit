@@ -20,6 +20,20 @@ export const portsImplementsNeverExtends: Rule = {
   id: 'ports/implements-never-extends',
   description:
     'An adapter implements its port and never extends it: a class declared with @Repository, @Gateway or @Adapter, a class bound with toClass, and any class of infrastructure/.',
+  severity: 'error',
+  doc: {
+    why: 'An adapter says which contract it honours with `implements`, and the compiler holds it to that contract. Extending the port instead would inherit from a class that holds nothing, make the adapter a second port for the container, and is refused when the binding is registered. The rule reads the class behind @Repository, @Gateway and @Adapter, the class given to bind(P).toClass(C) or rebind(P).toClass(C), and every class of infrastructure/ that extends a class of a port file. A class bound to itself is no port and is left alone.',
+    bad: `// infrastructure/persistence/knex-invoice.repository.ts
+@Repository(InvoiceRepository)
+export class KnexInvoiceRepository extends InvoiceRepository {}
+// billing.module.ts
+builder.bind(PaymentGateway).toClass(StripePaymentGateway, [PaymentSettings]);   // class StripePaymentGateway {}`,
+    good: `// infrastructure/persistence/knex-invoice.repository.ts
+@Repository(InvoiceRepository)
+export class KnexInvoiceRepository implements InvoiceRepository {}
+// infrastructure/external/stripe-payment.gateway.ts
+export class StripePaymentGateway implements PaymentGateway {}`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

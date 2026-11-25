@@ -29,7 +29,22 @@ export const cleanBlankLines: Rule = {
   id: 'clean/blank-lines',
   description:
     'A blank line before every `return` that is not alone in its block, and no blank line padding a block of statements (an object, array or type literal is not one). An approximation of the layout ESLint and the formatter hold in full.',
+  severity: 'error',
+  doc: {
+    why: 'A function reads in steps: what it gathers, what it decides, what it answers. A blank line before `return` sets the outcome apart, and a block that starts and ends on its braces wastes no line. This checker holds the cheap part only: the `return` and the padded block. ESLint holds the blank lines between statements (after a group of declarations, around `if`, `for`, `try` and a multiline statement, between class members) and is authoritative, with an automatic fix; the formatter removes the padding of a block.',
+    bad: `function total(lines: readonly Line[]): Money {
+
+  const amounts = lines.map((line) => line.amount);
+  return sum(amounts);
+}`,
+    good: `function total(lines: readonly Line[]): Money {
+  const amounts = lines.map((line) => line.amount);
+
+  return sum(amounts);
+}`,
+  },
   scope: 'file',
+  standalone: true,
   run(project) {
     return perFile(project, this.id, (file) => {
       const lines = linesOf(file);

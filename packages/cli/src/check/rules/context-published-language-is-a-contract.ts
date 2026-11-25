@@ -11,6 +11,14 @@ export const contextPublishedLanguageIsAContract: Rule = {
   id: 'context/published-language-is-a-contract',
   description:
     'published-language/ imports only the kernel, the event declaration helper with the schema library of the project, and other published languages.',
+  severity: 'error',
+  doc: {
+    why: 'A contract that re-exports a domain class is no contract: consumers get the internal model and its behaviour through the back door. The published language holds serializable types that are versioned on purpose.',
+    bad: `// published-language/index.ts
+export { Invoice } from '@/contexts/billing/domain/aggregates/invoice.aggregate';`,
+    good: `// published-language/invoice-issued.v1.integration-event.ts
+export interface InvoiceIssuedV1Payload { readonly invoiceId: string }`,
+  },
   scope: 'file',
   run(project) {
     const allowed = project.config.publishedLanguageAllowedPackages;

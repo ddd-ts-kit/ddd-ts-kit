@@ -1,5 +1,6 @@
 import type { Finding } from '../model/finding';
 import type { Rule } from '../model/rule';
+import type { RuleDoc } from '../model/rule-doc';
 import type { SourceFile } from '../model/source-file';
 import { inLayers } from '../support/in-layers';
 import { perFile } from '../support/per-file';
@@ -12,10 +13,12 @@ import type { PurityTable } from './reference/purity-table';
  * in domain/ and application/. The table, and the words of a finding, are those of the ESLint
  * plugin; this checker reads the text where the plugin reads the syntax tree.
  */
-export function definePurityRule(table: PurityTable): Rule {
+export function definePurityRule(table: PurityTable, doc: RuleDoc): Rule {
   return {
     id: table.id,
     description: table.description,
+    severity: 'error',
+    doc,
     scope: 'file',
     run: (project) =>
       perFile(project, table.id, (file) => {

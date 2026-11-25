@@ -25,6 +25,17 @@ export const nestControllersCurrent: Rule = {
   id: 'nest/controllers-current',
   description:
     'With Nest controllers ("stack.routes": "nest"), the generated <context>.controllers.ts of each context lists its Nest controllers with what the signature of each method says, and every route method takes and answers types the kit reads into schemas: a part of the request taken whole is typed by a DTO class, or given in `request` of `@KitRoute`; the answer is a DTO class, `Accepted` or `void`, or given in `response` of `@KitRoute`.',
+  severity: 'error',
+  doc: {
+    why: 'A Nest controller the kit serves says what a method answers in its signature (`Promise<IssuedInvoice>`), which TypeScript erases: the kit reads it from the source into the generated <context>.controllers.ts, which the module of the context lists and the bridge reads, so that the route answers its body and the contract documents it without a second statement. A file left behind lists a controller that is gone, misses one, or names an answer that changed; a method whose answer is no DTO class, `Accepted` or `void` (an array, a type written inline, an interface, no type) has no schema to read, and its route would answer nothing.',
+    bad: `// presentation/http/invoices/search-lines/search-lines.controller.ts
+@Get(':invoiceId/lines')
+lines(): Promise<InvoiceLine[]> { ... }`,
+    good: `@Get(':invoiceId/lines')
+lines(): Promise<InvoiceLinesAnswer> { ... }
+// or
+@KitRoute({ response: { body: linesSchema } })`,
+  },
   scope: 'project',
   run(project) {
     if (project.config.stack.routes !== 'nest') {

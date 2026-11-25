@@ -63,7 +63,17 @@ export const cleanNoNoiseComment: Rule = {
   id: 'clean/no-noise-comment',
   description:
     'No comment that restates the code, no banner, no journal, no closing-brace comment, no @param without description.',
+  severity: 'warn',
+  doc: {
+    why: 'A comment that repeats the name, draws a banner or records who changed what adds reading time and no information, and it drifts from the code it sits on. Comments are kept for what the code cannot say: why, a warning, an external reference.',
+    bad: `/** Gets the order. */
+getOrder(): Order {}
+// ---------- helpers ----------`,
+    good: `// Rounded half-even: required by the tax authority (art. 242).
+round(amount: Money): Money {}`,
+  },
   scope: 'file',
+  standalone: true,
   run(project) {
     return perFile(project, this.id, (file) => [...noise(file), ...restatements(file)]);
   },

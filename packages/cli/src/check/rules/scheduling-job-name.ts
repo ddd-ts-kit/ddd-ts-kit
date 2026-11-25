@@ -17,6 +17,18 @@ export const schedulingJobName: Rule = {
   id: 'scheduling/job-name',
   description:
     'A job is named by a string literal `<context>.<job-name>` in lower-case kebab-case, the context being its own; systemActor(..) of a job file passes that same name; a job name is unique in the project.',
+  severity: 'error',
+  doc: {
+    why: 'The name of a job is its identity everywhere a run leaves a trace: the scheduler and its lock, the settings that enable or reschedule it, the logs, the metrics and the audit trail, where the job is the system actor of the command it sends. It is written once as a string literal, `<context>.<job-name>` in lower-case kebab-case, so that it survives the renaming of a class and tells which context owns the job. Two jobs under one name share a lock and overwrite each other, so a name is unique in the project.',
+    bad: `@Scheduled(JOB_NAME, { every: '15m' })
+@Scheduled('SendReminders', { every: '15m' })
+// in contexts/billing
+builder.job('shipping.send-reminders', { every: '15m' }).handledBy(SendRemindersJob, [CommandBus]);
+new SendRemindersCommand(systemActor('billing.reminders'), execution.scheduledAt);`,
+    good: `@Scheduled('billing.send-reminders', { every: '15m' })
+builder.job('billing.send-reminders', { every: '15m' }).handledBy(SendRemindersJob, [CommandBus]);
+new SendRemindersCommand(systemActor('billing.send-reminders'), execution.scheduledAt);`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {

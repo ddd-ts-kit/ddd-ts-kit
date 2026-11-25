@@ -23,6 +23,21 @@ export const namingSearchNotList: Rule = {
   id: 'naming/search-not-list',
   description:
     'A method of a port or of an adapter and a query are named `search...`, never `list...`: a read that takes criteria, a scope or a page is a search.',
+  severity: 'error',
+  doc: {
+    why: 'A read that takes criteria, a scope or a page is a search, and the whole project says so with one word: a port, its adapters, its fakes, the query and its folder. Two words for one thing make a reader wonder what the difference is, and a generated name then disagrees with a written one. Judged: a method named list, or list followed by an upper-case letter, in domain/repositories/*.repository.ts, application/ports/*.port.ts, infrastructure/ and test/fakes/ of a context (properties are not judged, nor listAccessible, which the Authorizer port of the kit requires); and under application/queries/, a folder or a file named list or starting with list- or list., and a class named List or starting with List followed by an upper-case letter. A read of one element or none stays findById or findBy...',
+    bad: `// application/ports/invoice-reader.port.ts
+abstract list(scope: AccessScope, page: PageRequest<InvoiceSort>): Promise<Page<InvoiceLine>>;
+abstract listByCustomer(customerId: string): Promise<readonly InvoiceLine[]>;
+// application/queries/list-invoices/list-invoices.query.ts
+export class ListInvoicesQuery {}`,
+    good: `// application/ports/invoice-reader.port.ts
+abstract search(scope: AccessScope, page: PageRequest<InvoiceSort>): Promise<Page<InvoiceLine>>;
+abstract searchByCustomer(customerId: string): Promise<readonly InvoiceLine[]>;
+abstract findById(id: string): Promise<InvoiceLine | undefined>;
+// application/queries/search-invoices/search-invoices.query.ts
+export class SearchInvoicesQuery {}`,
+  },
   scope: 'file',
   run(project) {
     return perFile(project, this.id, (file) => {
