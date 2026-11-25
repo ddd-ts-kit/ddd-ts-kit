@@ -5,7 +5,7 @@ import {
   type IntegrationEvent,
 } from '@ddd-ts-kit/kernel';
 import { ContractSuite } from '../contract-suite';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
 import { Consignment } from './consignment';
 import { Consignments } from './consignments';
 import type { EventStoreUnderContract } from './event-store-under-contract';

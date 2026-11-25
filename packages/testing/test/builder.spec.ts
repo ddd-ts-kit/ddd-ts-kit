@@ -87,3 +87,38 @@ describe('Builder (class form)', () => {
     expect(resolve({ id: 'c', name: 'Plain' })).toEqual({ id: 'c', name: 'Plain' });
   });
 });
+
+describe('the fields of a Builder subclass', () => {
+  interface Visit {
+    readonly room: string;
+    readonly at: Date;
+  }
+
+  class VisitBuilder extends Builder<Visit, Visit> {
+    private readonly opening = new Date('2026-03-01T09:00:00.000Z');
+
+    constructor(private readonly room: string) {
+      super();
+    }
+
+    protected defaults(): Defaults<Visit> {
+      return { room: this.room, at: this.opening };
+    }
+
+    protected construct(props: Visit): Visit {
+      return props;
+    }
+
+    at(instant: Date): this {
+      return this.with('at', instant);
+    }
+  }
+
+  it('follow the builder through every step, whether an initializer or the constructor set them', () => {
+    const later = new Date('2026-03-01T15:00:00.000Z');
+    const visit = new VisitBuilder('room-2').at(later).at(later);
+
+    expect(visit.build()).toEqual({ room: 'room-2', at: later });
+    expect(new VisitBuilder('room-2').build().at).toEqual(new Date('2026-03-01T09:00:00.000Z'));
+  });
+});

@@ -1,6 +1,6 @@
 import { InMemoryUnitOfWork, UnitOfWorkAbortedError } from '@ddd-ts-kit/kernel';
 import { ContractSuite } from '../contract-suite';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
 import { Parcel } from './parcel';
 import { ShippingBench } from './shipping-bench';
 import type { UnitOfWorkUnderContract } from './unit-of-work-under-contract';

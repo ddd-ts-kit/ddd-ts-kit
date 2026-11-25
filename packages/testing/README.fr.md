@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:87871a77a6ff6e7d -->
+<!-- translation-of: README.md sha256:f20ed9e2faba08f3 -->
 
 # @ddd-ts-kit/testing
 
@@ -224,7 +224,14 @@ aLine().with('quantity', 3).build(); // { sku: 'sku-1', quantity: 3 }
   et dans les tableaux : `.with('lines', [aLine(), { sku: 'pen', quantity: 2 }])`.
 - `sequence('order')` donne `order-1`, `order-2`... à chaque construction ; `lazy(() => new Date())`
   calcule une valeur par défaut à chaque construction. Une valeur donnée par `with` ne consomme rien.
+- Une donnée simple (un objet littéral, une liste) est copiée à chaque construction, dans les valeurs
+  par défaut comme dans ce que `with` a reçu : modifier une valeur construite ne change jamais la
+  suivante. Une instance de classe (une `Date`, un objet-valeur, un agrégat) est remise telle quelle.
 - Appelez `resetSequences()` dans `beforeEach`, pour qu'un test ne dépende pas de ceux qui le précèdent.
+- Ce dont une construction a besoin est une propriété des *props* du *builder*. Une étape copie le
+  *builder* sans exécuter son constructeur : un champ déclaré `private` ou `readonly` suit la copie, un
+  champ `#private` de JavaScript ne la suit pas et lève une `TypeError` quand la copie le lit ; une
+  classe de *builder* n'en déclare donc aucun.
 - La forme en classe garde `with`, `withMany` et `adding` protégées à dessein : la surface publique
   d'un *builder* d'agrégat est le langage du domaine, pas les noms de ses propriétés.
 
@@ -341,17 +348,20 @@ it('refuses to pay an order twice', () => {
   given(anOrder().paid())
     .when((order) => order.pay())
     .thenError('ORDER_ALREADY_PAID')
+    .thenNoEvent()
     .thenState((order) => expect(order.status).toBe('paid'));
 });
 ```
 
 `given` prend un agrégat ou son *builder* et écarte les événements de la mise en place
 (`pullEvents()`), si bien que seuls les événements de `when` sont vérifiés. `scenario(() => aggregate)` fait
-de même avec la mise en place sous forme de fonction, rejouée à partir d'un agrégat neuf à chaque `when`.
+de même avec la mise en place sous forme de fonction, rejouée à partir d'un agrégat neuf à chaque `when`,
+comme l'est `given(builder)`. Un agrégat déjà construit est donné à un seul `when` : un second `when` sur
+le même `given(aggregate)` agirait sur ce que le premier a laissé, et lève une `TypeError` qui le dit.
 
 | Assertion | Passe quand |
 |---|---|
-| `thenEvents([...])` | exactement ces événements, dans l'ordre ; chacun décrit par son nom, sa classe, ou les propriétés qui comptent |
+| `thenEvents([...])` | exactement ces événements, dans l'ordre ; chacun décrit par son nom, sa classe, ou les propriétés qui comptent : un sous-ensemble à toute profondeur, objet d'une liste compris (une liste se lit position par position et a le nombre d'éléments attendu). Un *matcher* nomme au moins une propriété : `{}` est refusé, puisque tout événement lui correspondrait |
 | `thenEventNames([...])` | exactement ces noms, dans l'ordre |
 | `thenNoEvent()` | rien n'a été enregistré |
 | `thenError(code)`, `thenError(code, facts)` | l'action a refusé avec ce code, quelle que soit la classe de l'erreur, en portant ces faits s'ils sont donnés (elle peut en porter d'autres) |
@@ -360,7 +370,9 @@ de même avec la mise en place sous forme de fonction, rejouée à partir d'un a
 
 Les échecs sont des `AssertionError` de `node:assert`, avec les événements attendus et enregistrés côte à
 côte, si bien qu'ils se lisent bien sous n'importe quel runner. Une erreur levée par `when` n'est jamais
-avalée : toute assertion sauf `thenError` échoue sur elle. Quand `when` (ou la mise en place) est
+avalée : toute assertion sauf `thenError` échoue sur elle. Une fois que `thenError` l'a vérifiée, les
+autres lisent ce que l'action a laissé, événements enregistrés avant la levée compris :
+`.thenError('ORDER_ALREADY_PAID').thenNoEvent()` est un refus qui n'a rien enregistré. Quand `when` (ou la mise en place) est
 asynchrone, la chaîne est une promesse : `await given(order).when(async (o) => ...).thenEventNames([...])`.
 
 ### Un agrégat en event sourcing
@@ -395,8 +407,10 @@ Une étape d'un gestionnaire de processus est une fonction de son état et de ce
 `givenProcess(state)` (ou `undefined` pour une instance qui n'existe pas) l'exécute et vérifie sa
 décision sans stockage, sans file d'attente ni bus. `thenIgnored()`, `thenState(state)`,
 `thenCommands([...])` (chacune par sa classe ou par les propriétés qui comptent), `thenTimeouts([...])`,
-`thenCancelled([...])` et `thenEnded()` s'enchaînent ; un échec est une `AssertionError` qui dit ce qui
-diffère.
+`thenCancelled([...])` et `thenEnded()` s'enchaînent ; un échec est une `AssertionError` qui se lit comme
+celle d'un scénario : une phrase, puis les commandes ou les échéances attendues et décidées côte à côte,
+et ce qui diffère, les positions comptées à partir de 1
+(`command 1.invoiceId: expected 'invoice-2', decided 'invoice-1'`).
 
 ## Refus
 
@@ -412,7 +426,9 @@ await expectRefusal(() => commands.execute(command), 'SLOT_TAKEN', { calendarId:
 ```
 
 `expectRefusal(subject, code, facts?)` lit une action, qu'elle exécute, un `Result`, ou une erreur déjà
-attrapée. Une action qui rend une promesse donne une promesse à attendre. Elle rend l'erreur, et échoue
+attrapée. Une promesse, celle qu'une action rend ou celle donnée à sa place
+(`await expectRefusal(commands.execute(command), 'SLOT_TAKEN')`), est attendue et ce qu'elle répond est lu
+de la même façon, un `Result` compris : l'assertion est alors une promesse à attendre. Elle rend l'erreur, et échoue
 avec une `AssertionError` qui nomme ce qui a été refusé à la place, ou les faits qui diffèrent, un par
 ligne. Les faits donnés doivent être portés avec ces valeurs ; le refus peut en porter d'autres.
 
@@ -682,10 +698,10 @@ afterAll(() => server.close());
 | `client.get / post / put / patch / delete` | du JSON en entrée, `{ status, headers, body }` en sortie ; `body` est analysé quand le type de contenu est JSON, du texte sinon ; un 4xx ou un 5xx est une réponse, pas une exception |
 | `client.post(path, body, { headers })`, `client.withHeaders(headers)` | des en-têtes pour un appel, ou un client pour un autre appelant |
 | `expectStatus(response, 201)` | rend la réponse, ou échoue en montrant le corps, où l'API dit pourquoi |
-| `expectProblem(response, { status, code, facts })` | vérifie une réponse RFC 9457 `application/problem+json` et rend le document ; `code` et `facts` sont optionnels, et `facts` nomme les faits que le document doit exposer, tels que JSON les écrit (une date est son texte ISO) |
+| `expectProblem(response, { status, code, facts })` | vérifie une réponse RFC 9457 `application/problem+json` et rend le document ; `code` et `facts` sont optionnels, et `facts` nomme les faits que le document doit exposer, tels que JSON les écrit (une date est son texte ISO). Quand elle échoue, elle montre ce qui était attendu, ce qui a été reçu et le corps, où l'API dit pourquoi |
 | `settled(sources, { timeoutMs = 2000, intervalMs = 10 })` | se résout dès que chaque source ne compte plus de travail en attente ; quand le temps est écoulé, échoue en nommant chaque source qui attend encore, combien elle en tient et combien en a échoué |
 | `eventually(assertion, { timeoutMs = 2000, intervalMs = 20 })` | réessaie jusqu'à ce que l'assertion passe ; quand le temps est écoulé, échoue en citant la dernière erreur |
-| `pending(body)` | tient un scénario d'acceptation écrit avant son code : passe tant qu'une assertion de `body` échoue, échoue dès que `body` passe (retirer l'enveloppe) ou s'arrête sur autre chose qu'une assertion (le scénario est cassé) ; `it('#US5.02 AC1 ...', pending(async () => { ... }))`. Une assertion se reconnaît à sa forme, jamais par `instanceof Error` : une `AssertionError` de `node:assert`, que Jest charge dans un autre royaume (*realm*) que la spec, ou un *matcher* de Vitest ou de Jest qui échoue, y compris comme cause de l'échec d'`eventually` |
+| `pending(body)` | tient un scénario d'acceptation écrit avant son code : passe tant qu'une assertion de `body` échoue, échoue dès que `body` passe (retirer l'enveloppe) ou s'arrête sur autre chose qu'une assertion (le scénario est cassé) ; `it('#US5.02 AC1 ...', pending(async () => { ... }))`. Une assertion se reconnaît à sa forme, jamais par `instanceof Error` : une `AssertionError` de `node:assert`, que Jest charge dans un autre royaume (*realm*) que la spec, ou un *matcher* de Vitest ou de Jest qui échoue, y compris comme cause de l'échec d'`eventually`. Une attente qu'`until` ou `settled` abandonne échoue comme une assertion : un scénario qui attend une projection ou l'outbox est donc tenu comme un autre |
 | `collectEvents(subscriber, types)` | enregistre les événements d'intégration publiés : `received(type?)`, `waitFor(type, predicate?, options?)`, `stop()` |
 
 Les assertions sont celles de `node:assert` : elles se lisent de la même façon sous n'importe quel runner.
