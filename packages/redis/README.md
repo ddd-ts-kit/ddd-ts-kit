@@ -697,7 +697,7 @@ process.on('SIGTERM', async () => {
 | Option | Default | Effect |
 |---|---|---|
 | `connection` | required | URL, ioredis options or client. A connection opened here takes `FAIL_FAST` and a reconnection delay from `reconnect` |
-| `prefix`, `streamOf` | `integration-events` | the stream of a type is `<prefix>:<type>`, or what `streamOf(type)` answers |
+| `prefix`, `streamOf` | `integration-events` | the stream of a type is `<prefix>:<type>`, or what `streamOf(type)` answers. Several types may share a stream: a handler receives the events of its type only, and an entry of a type the consumer never subscribed to is acknowledged unhandled |
 | `consumer` | none | the consumer `bus.subscribe` reads for |
 | `instance` | host, process id, random suffix | the name of this process inside its groups; unique per process |
 | `batchSize` | 10 | entries read at once per stream (`COUNT`), then handled in order, one at a time |

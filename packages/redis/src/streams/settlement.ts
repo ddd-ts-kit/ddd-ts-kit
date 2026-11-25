@@ -32,6 +32,11 @@ export interface SettlementSettings {
   readonly onDelivery: (delivery: RedisStreamsDelivery) => void;
 }
 
+/** The handlers of an event type; nothing for a type the consumer never subscribed to. */
+export interface HandlersByType {
+  handlersOf(type: string): ReadonlySet<IntegrationEventCallback> | undefined;
+}
+
 export const POISON_ENTRY = 'POISON_ENTRY';
 
 /** The code of an entry that used its deliveries up without a handler answering: its consumers crashed on it. */
@@ -46,18 +51,19 @@ export class Settlement {
   constructor(
     private readonly client: Redis,
     private readonly settings: SettlementSettings,
+    private readonly subscriptions: HandlersByType,
   ) {}
 
   /** Never rejects: an entry that could not be settled stays pending and is delivered again. */
-  async settle(delivery: Delivery, handlers: ReadonlySet<IntegrationEventCallback>): Promise<void> {
+  async settle(delivery: Delivery): Promise<void> {
     try {
-      await this.decide(delivery, handlers);
+      await this.decide(delivery);
     } catch {
       return;
     }
   }
 
-  private async decide(delivery: Delivery, handlers: ReadonlySet<IntegrationEventCallback>): Promise<void> {
+  private async decide(delivery: Delivery): Promise<void> {
     if (this.isForAnotherConsumer(delivery.entry)) {
       await this.acknowledge(delivery);
 
@@ -68,6 +74,15 @@ export class Settlement {
 
     if (event === undefined) {
       await this.buryPoison(delivery);
+
+      return;
+    }
+
+    const handlers = this.subscriptions.handlersOf(event.type);
+
+    if (handlers === undefined) {
+      // A type this consumer never subscribed to, on a stream that carries several.
+      await this.acknowledge(delivery);
     } else if (delivery.attempt > this.settings.retry.maxAttempts) {
       await this.fail(delivery, event, ATTEMPTS_EXHAUSTED);
     } else if (handlers.size > 0) {

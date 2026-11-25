@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:9e02c42e5ab46747 -->
+<!-- translation-of: README.md sha256:e40f8b2123bd4981 -->
 
 # @ddd-ts-kit/redis
 
@@ -716,7 +716,7 @@ process.on('SIGTERM', async () => {
 | Option | Défaut | Effet |
 |---|---|---|
 | `connection` | requis | URL, options ioredis ou client. Une connexion ouverte ici prend `FAIL_FAST` et un délai de reconnexion tiré de `reconnect` |
-| `prefix`, `streamOf` | `integration-events` | le flux d'un type est `<prefix>:<type>`, ou ce que répond `streamOf(type)` |
+| `prefix`, `streamOf` | `integration-events` | le flux d'un type est `<prefix>:<type>`, ou ce que répond `streamOf(type)`. Plusieurs types peuvent partager un flux : un gestionnaire ne reçoit que les événements de son type, et une entrée d'un type auquel le consommateur ne s'est jamais abonné est acquittée sans être traitée |
 | `consumer` | aucun | le consommateur pour lequel lit `bus.subscribe` |
 | `instance` | hôte, identifiant de processus, suffixe aléatoire | le nom de ce processus dans ses groupes ; unique par processus |
 | `batchSize` | 10 | entrées lues à la fois par flux (`COUNT`), puis traitées dans l'ordre, une par une |
