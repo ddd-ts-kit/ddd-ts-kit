@@ -228,10 +228,7 @@ function executionOf(call: Call, principal: unknown, params: unknown): Execution
 async function answer(result: RouteOutput, call: Call): Promise<RouteResponse> {
   const chosen = call.negotiated?.answer;
 
-  const written = reportingFailures(
-    chosen === undefined ? asItIs(result) : await represented(call.route, result, chosen),
-    call,
-  );
+  const written = reportingFailures(await represented(call.route, result, chosen), call);
 
   const kept = {
     ...cacheHeadersOf(call.route, result.status, call.options.resolveTenant?.headers),
@@ -262,11 +259,6 @@ function reportingFailures(written: RepresentedAnswer, call: Call): RepresentedA
   };
 
   return { ...written, stream: reportedStream(written.stream, report) };
-}
-
-/** An answer no representation writes: the value of the handler, for the adapter to serialize. */
-function asItIs({ body }: RouteOutput): RepresentedAnswer {
-  return body === undefined ? { headers: {} } : { headers: {}, body };
 }
 
 function defaultContentType(body: unknown): Record<string, string> {

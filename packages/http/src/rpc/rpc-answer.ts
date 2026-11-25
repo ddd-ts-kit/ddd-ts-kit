@@ -4,7 +4,6 @@ import type { Problem } from '../error/problem';
 import { toProblem } from '../error/to-problem';
 import type { RouteResponse } from '../pipeline/route-response';
 import { NotAcceptableError } from '../representation/not-acceptable-error';
-import { isAsyncIterable } from '../support/is-async-iterable';
 import { isRecord } from '../support/is-record';
 import type { RpcRefusal } from './rpc-refusal';
 
@@ -38,9 +37,8 @@ export async function rpcAnswer(response: RouteResponse, protocol: RpcProtocol, 
     throw streamed('a file');
   }
 
-  // No representation writes it: the pipeline hands over a list read as it comes as the body itself.
-  if (isAsyncIterable(body)) {
-    await body[Symbol.asyncIterator]().return?.();
+  if (response.stream !== undefined) {
+    await response.stream[Symbol.asyncIterator]().return?.();
 
     throw streamed('a list read as it comes');
   }

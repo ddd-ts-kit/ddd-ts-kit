@@ -2,6 +2,7 @@ import type { BodyShape } from '../representation/body-shape';
 import { JsonRepresentation } from '../representation/json-representation';
 import type { Chosen } from '../representation/representations';
 import { isAsyncIterable } from '../support/is-async-iterable';
+import { closingWith } from './closing-with';
 import type { RepresentedAnswer } from './represented-answer';
 
 const encoder = new TextEncoder();
@@ -20,5 +21,9 @@ export function writtenIn(value: unknown, chosen: Chosen, shape: BodyShape): Rep
 
   const written = chosen.representation.write(value, shape);
 
-  return typeof written === 'string' ? { headers, body: encoder.encode(written) } : { headers, stream: written };
+  if (typeof written === 'string') {
+    return { headers, body: encoder.encode(written) };
+  }
+
+  return { headers, stream: isAsyncIterable(value) ? closingWith(written, value) : written };
 }
