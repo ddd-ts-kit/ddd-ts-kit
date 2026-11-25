@@ -2,6 +2,7 @@ import { CliError } from '../cli-error';
 import { heldToGlossary } from './held-to-glossary';
 import type { Kind } from './kind';
 import { KINDS } from './kinds';
+import { optionsOf } from './options-of';
 import { usageOf } from './usage-of';
 
 /** The kinds that take `--term`, as the refusal of the flag names them. */
@@ -22,7 +23,7 @@ const REASONS: Readonly<Record<string, string>> = {
  */
 export function refuseUndeclaredFlags(kind: Kind, passed: readonly string[], common: readonly string[]): void {
   const usage = usageOf(kind);
-  const taken = new Set([...common, ...Object.keys(kind.options), ...(kind.writesInModules ? ['module'] : [])]);
+  const taken = new Set([...common, ...Object.keys(optionsOf(kind))]);
   const refused = passed.filter((flag) => !taken.has(flag));
   const [first] = refused;
 

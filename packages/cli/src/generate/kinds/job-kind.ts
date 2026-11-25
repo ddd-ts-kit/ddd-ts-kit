@@ -40,7 +40,6 @@ export const jobKind: Kind = {
     '(--every <duration> | --cron "<expression>" [--time-zone <zone>]) --command <UseCaseName> [--global] [--term "<Term>=<meaning>"]...',
   writesShared: true,
   writesInModules: true,
-  textFlags: ['command'],
   run: (request) => {
     const scope = openScope(request);
     const schedule = writtenSchedule(requestedSchedule(request.flags));

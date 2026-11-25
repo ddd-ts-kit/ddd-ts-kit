@@ -29,7 +29,6 @@ export const backgroundJobKind: Kind = {
   shownOptions: '--command <UseCaseName> [--term "<Term>=<meaning>"]...',
   writesShared: false,
   writesInModules: true,
-  textFlags: ['command'],
   run: (request) => {
     const scope = openScope(request);
 

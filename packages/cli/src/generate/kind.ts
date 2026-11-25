@@ -138,7 +138,5 @@ export interface Kind {
    * kind in a context divided into modules to keep this true.
    */
   readonly writesInModules: boolean;
-  /** The flags this kind reads as a text where the other kinds read a switch: `--command <UseCase>` of a job. */
-  readonly textFlags?: readonly string[];
   run(request: KindRequest): void;
 }
