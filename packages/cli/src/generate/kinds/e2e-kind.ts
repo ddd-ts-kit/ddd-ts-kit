@@ -4,10 +4,8 @@ import { fitStatement } from '../../layout';
 import { toName, type Name } from '../../naming';
 import type { RenderContext } from '../../templating';
 import { renderTemplate } from '../../templating';
-import type { Kind } from '../kind';
 import { label } from '../label';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { vars } from '../vars';
 import { actingRole } from './e2e/acting-role';
@@ -18,10 +16,10 @@ import { stillRefusing } from './e2e/still-refusing';
 import { tracedCommand } from './traced-command';
 import { isControlPlane } from '../../config/is-control-plane';
 import { declaredModules } from '../../model-modules';
+import { defineKind } from '../define-kind';
 
-export const e2eKind: Kind = {
+export const e2eKind = defineKind({
   name: 'e2e',
-  aliases: [],
   summary:
     'An end-to-end spec on the whole application, in test/e2e/ at the project root: driving the route of a use case, or, for a use case no route reaches, publishing the integration event its handler receives (--event names it when several do) or running the job that sends its command, the scheduled one at once and the background one with what is due on its queue (--job names one job, also for a use case a route reaches, and writes test/e2e/<use-case>-<job>.e2e.spec.ts). After `generate route <context> <UseCaseName>`, or the `generate integration-handler`, `generate job` or `generate background-job` that starts its use case.',
   scope: 'context',
@@ -29,15 +27,14 @@ export const e2eKind: Kind = {
   options: { event: { type: 'string', value: '<eventType>' }, job: { type: 'string', value: '<JobName>' } },
   shownOptions: '[--event <eventType> | --job <JobName>]',
   writesInModules: false,
-  run: (request) => {
-    const scope = openScope(request);
+  run: (scope, request) => {
     const name = label(scope, request.args[1] ?? '', { what: 'use case', strip: ['route', 'controller', 'handler'] });
     const file = `${scope.dir}/presentation/http/${name.kebab}.route.ts`;
     const endpoint = namesItsStarter(scope) ? undefined : endpointOf(scope, name, file);
 
     noteSupport(scope, endpoint === undefined ? startedSpec(scope, name, file) : routeSpec(scope, name, endpoint));
   },
-};
+});
 
 /** The spec of a use case no route reaches, or whose starter a flag names: it publishes the event its handler receives, or runs the jobs that send its command. Answers what it needs of the support. */
 function startedSpec(scope: Scope, name: Name, routeFile: string): readonly Support[] {

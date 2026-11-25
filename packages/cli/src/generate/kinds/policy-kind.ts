@@ -5,20 +5,17 @@ import { applyWiring } from '../apply-wiring';
 import { declarePermission } from '../declare-permission';
 import { emit } from '../emit';
 import { isDeclared } from '../is-declared';
-import type { Kind } from '../kind';
 import { TERM } from '../kind-options';
 import { label } from '../label';
-import { learnTerms } from '../learn-terms';
 import { markPolicyQuestions } from '../mark-policy-questions';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import { permissionNamed } from '../permission-named';
 import { vars } from '../vars';
 import { platformPath } from '../platform-path';
+import { defineKind } from '../define-kind';
 
-export const policyKind: Kind = {
+export const policyKind = defineKind({
   name: 'policy',
-  aliases: [],
   summary:
     'A rule about one element (only the author, not after closing), its spec and its registration with the policies Access asks.',
   scope: 'context',
@@ -30,11 +27,7 @@ export const policyKind: Kind = {
     when: 'stack.style is explicit',
   },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const name = label(scope, request.args[1] ?? '', { what: 'policy', strip: ['policy'] });
     const { permission } = scope.flags;
 
@@ -65,7 +58,7 @@ export const policyKind: Kind = {
       );
     }
   },
-};
+});
 
 /**
  * The question a policy answers, the title of its spec: the last segment of the permission is its

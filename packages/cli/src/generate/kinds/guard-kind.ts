@@ -1,24 +1,20 @@
 import { CONFIG_FILE } from '../../config';
 import { CliError } from '../../cli-error';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
 import { label } from '../label';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import { vars } from '../vars';
+import { defineKind } from '../define-kind';
 
-export const guardKind: Kind = {
+export const guardKind = defineKind({
   name: 'guard',
-  aliases: [],
   summary:
     'A guard of the project: a declared class in presentation/http/guards/ that a route group or a controller names in `guards`, and its spec. It controls the caller at the edge; permissions stay on the use cases.',
   scope: 'context',
   positionals: ['Name'],
   options: {},
   writesInModules: false,
-  run: (request) => {
-    const scope = openScope(request);
-
+  run: (scope, request) => {
     if (scope.config.stack.http === 'none') {
       throw new CliError(
         'This project has no HTTP stack (stack.http is "none").',
@@ -33,4 +29,4 @@ export const guardKind: Kind = {
       ['controller/guard.spec.ts.tpl', `test/unit/${name.kebab}.guard.spec.ts`],
     ]);
   },
-};
+});

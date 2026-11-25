@@ -1,18 +1,15 @@
 import { emit } from '../emit';
-import type { Kind } from '../kind';
 import { TERM } from '../kind-options';
-import { learnTerms } from '../learn-terms';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import { vars } from '../vars';
 import { existingAggregate } from './existing-aggregate';
 import { parseTransitions } from './state-machine/parse-transitions';
 import { stateMachineVars } from './state-machine/state-machine-vars';
 import { statusVocabulary } from './state-machine/status-vocabulary';
+import { defineKind } from '../define-kind';
 
-export const stateMachineKind: Kind = {
+export const stateMachineKind = defineKind({
   name: 'state-machine',
-  aliases: [],
   summary:
     'The lifecycle of an aggregate: its status as the closed vocabulary <Aggregate>Status (created, or extended with the --value it misses, the first one initial), the machine of domain/state-machines/ with the transitions asked, and its spec. CONTEXT.md draws it. After `generate aggregate <context> <Aggregate>`.',
   scope: 'context',
@@ -23,11 +20,7 @@ export const stateMachineKind: Kind = {
     term: TERM,
   },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const aggregate = existingAggregate(scope, request.args[1] ?? '');
     const states = statusVocabulary(scope, aggregate);
 
@@ -46,4 +39,4 @@ export const stateMachineKind: Kind = {
       ['state-machine/state-machine.spec.ts.tpl', `test/unit/${aggregate.kebab}.state-machine.spec.ts`],
     ]);
   },
-};
+});

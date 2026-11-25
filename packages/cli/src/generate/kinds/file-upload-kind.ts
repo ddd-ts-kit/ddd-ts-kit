@@ -3,11 +3,8 @@ import { CliError } from '../../cli-error';
 import { accessVars } from '../access-vars';
 import { concept } from '../concept';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
 import { TERM } from '../kind-options';
-import { learnTerms } from '../learn-terms';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { specVars } from '../spec-vars';
 import { vars } from '../vars';
@@ -19,10 +16,10 @@ import { findUseCase } from './route/find-use-case';
 import { parseEndpoint } from './route/parse-endpoint';
 import { planController } from './route/plan-controller';
 import { GRANTED, GRANTS } from '../shared-write';
+import { defineKind } from '../define-kind';
 
-export const fileUploadKind: Kind = {
+export const fileUploadKind = defineKind({
   name: 'file-upload',
-  aliases: [],
   summary:
     'An upload: a controller that declares the file it receives (`@Upload()` of a Nest controller; size and media types in the contract, checked as it streams; with `--text` a text file such as a CSV, `single-byte` when it may be in Windows-1252 as well as UTF-8), the command that carries it as a FileUpload (staged by the command bus before the transaction), the handler that records it and promotes it with the commit, and their specs. Needs "stack.storage".',
   scope: 'context',
@@ -41,11 +38,8 @@ export const fileUploadKind: Kind = {
     '--path <path> (--permission <aggregate>.<action> [--grant <role>] | --public) [--method <POST|PUT>] [--group <Name>] [--text <utf-8|single-byte>] [--term "<Term>=<meaning>"]...',
   shared: { files: GRANTS, when: GRANTED, worker: 'without --grant' },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
+  run: (scope, request) => {
     assertFileStack(scope);
-    learnTerms(scope);
 
     const name = concept(scope, request.args[1] ?? '', {
       what: 'use case',
@@ -78,7 +72,7 @@ export const fileUploadKind: Kind = {
       writeUploadController(scope, plan);
     }
   },
-};
+});
 
 function assertFileStack(scope: Scope): void {
   const { storage, http } = scope.config.stack;

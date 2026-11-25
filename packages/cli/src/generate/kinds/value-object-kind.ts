@@ -1,14 +1,12 @@
 import { concept } from '../concept';
+import { defineKind } from '../define-kind';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
 import { TERM } from '../kind-options';
-import { learnTerms } from '../learn-terms';
 import { named } from '../named';
-import { openScope } from '../open-scope';
-import { vars } from '../vars';
 import { IN_SHARED_KERNEL, SHARED_GLOSSARY } from '../shared-write';
+import { vars } from '../vars';
 
-export const valueObjectKind: Kind = {
+export const valueObjectKind = defineKind({
   name: 'value-object',
   aliases: ['vo'],
   summary:
@@ -22,11 +20,7 @@ export const valueObjectKind: Kind = {
     worker: 'in its own context',
   },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request, { sharedKernel: true });
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const name = concept(scope, request.args[1] ?? '', { what: 'value object', strip: ['vo'] });
 
     emit(scope, vars(scope, { name: named(name) }), [
@@ -34,4 +28,4 @@ export const valueObjectKind: Kind = {
       ['value-object/value-object.spec.ts.tpl', `test/unit/${name.kebab}.vo.spec.ts`],
     ]);
   },
-};
+});

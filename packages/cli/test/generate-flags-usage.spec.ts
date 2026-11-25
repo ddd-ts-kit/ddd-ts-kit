@@ -7,6 +7,7 @@ import { REPO_ROOT } from './helpers';
 
 const SOURCES = path.join(REPO_ROOT, 'packages/cli/src');
 const KINDS_DIRECTORY = path.join(SOURCES, 'generate/kinds');
+const DEFINE_KIND = path.join(SOURCES, 'generate/define-kind.ts');
 const KIND_FLAGS = fs.readFileSync(path.join(SOURCES, 'generate/kind.ts'), 'utf8');
 
 /** The fields of `KindFlags` the probe of `plan-waves` gives in place of a flag: the names it hears, the files built on. */
@@ -106,7 +107,8 @@ function unshown(kind: (typeof KINDS)[number]): string[] {
     ...(READ_WITH_FLAGS_OF_ITS_OWN[kind.name]?.flags ?? []),
   ]);
 
-  const read = [...closureOf(sourceOf(kind.name))].flatMap(fieldsReadBy);
+  // The steps `defineKind` takes for every kind read `--term` of the kinds that declare it alone.
+  const read = [...closureOf(sourceOf(kind.name), new Set([DEFINE_KIND]))].flatMap(fieldsReadBy);
   const flags = read.map((field) => FLAG_OF[field] ?? field.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`));
 
   return [...new Set(flags)].filter((flag) => !shown.has(flag));

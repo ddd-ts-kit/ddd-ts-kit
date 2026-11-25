@@ -2,11 +2,8 @@ import { CliError } from '../../cli-error';
 import type { Name } from '../../naming';
 import { concept } from '../concept';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
 import { TERM } from '../kind-options';
-import { learnTerms } from '../learn-terms';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { specVars } from '../spec-vars';
 import { vars } from '../vars';
@@ -15,13 +12,13 @@ import { backgroundJobVars } from './background/background-job-vars';
 import { specFamily } from './background/spec-family';
 import { readSentCommand } from './job/read-sent-command';
 import { worldArrangement } from './world/world-arrangement';
+import { defineKind } from '../define-kind';
 
 /** `CompileReportBackgroundJob` and `compile-report-background-job` name the job `CompileReport`. */
 const ROLE_SUFFIX = /(?<=[a-z0-9])[-_]?background[-_]?job$/i;
 
-export const backgroundJobKind: Kind = {
+export const backgroundJobKind = defineKind({
   name: 'background-job',
-  aliases: [],
   summary:
     'A job a use case enqueues, run later by a worker as the actor that enqueued it, with retries and a lease: the class named by its static jobName, its spec through a queue in memory and its registration. After `generate command <context> <UseCaseName>` of its --command.',
   scope: 'context',
@@ -29,11 +26,7 @@ export const backgroundJobKind: Kind = {
   options: { command: { type: 'string', value: '<UseCaseName>' }, term: TERM },
   shownOptions: '--command <UseCaseName> [--term "<Term>=<meaning>"]...',
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const input = (request.args[1] ?? '').replace(ROLE_SUFFIX, '');
     const name = concept(scope, input, { what: 'background job', strip: ['job'] });
     const command = readSentCommand(scope, commandNamed(scope, name), 'background job');
@@ -62,7 +55,7 @@ export const backgroundJobKind: Kind = {
       scope.ws.note(world.hint);
     }
   },
-};
+});
 
 function commandNamed(scope: Scope, name: Name): string {
   const { commandName } = scope.flags;

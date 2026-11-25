@@ -3,23 +3,20 @@ import { prerequisiteRefusal } from '../prerequisite-refusal';
 import type { Scope } from '../scope';
 import { emit } from '../emit';
 import { isDeclared } from '../is-declared';
-import type { Kind } from '../kind';
-import { openScope } from '../open-scope';
 import { vars } from '../vars';
 import { wire } from '../wire';
 import { personalNames, type PersonalNames } from './personal-data/personal-names';
+import { defineKind } from '../define-kind';
 
-export const erasureHandlerKind: Kind = {
+export const erasureHandlerKind = defineKind({
   name: 'erasure-handler',
-  aliases: [],
   summary:
     'The idempotent handler of privacy.data-subject.erased that erases what the context keeps of the person through its PersonalDataErasure, its spec and its subscription: for a context that runs as a service of its own, or that copies personal data from integration events. After `generate repository <context> <Aggregate> --personal <column>,...`.',
   scope: 'context',
   positionals: [],
   options: {},
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
+  run: (scope) => {
     const names = personalNames(scope.config.stack.orm, scope.context);
     const adapter = erasureAdapterOf(scope, names);
     const external = scope.config.stack.broker !== 'none';
@@ -43,7 +40,7 @@ export const erasureHandlerKind: Kind = {
 
     wire(scope, 'erasure-handler', context);
   },
-};
+});
 
 /** The erasure the handler calls: the one `generate repository --personal` wrote for the context, or nothing to call. */
 function erasureAdapterOf(scope: Scope, names: PersonalNames): string {

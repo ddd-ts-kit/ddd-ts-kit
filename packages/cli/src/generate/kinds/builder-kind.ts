@@ -1,8 +1,6 @@
 import type { Name } from '../../naming';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { vars } from '../vars';
 import type { Birth } from './birth';
@@ -13,21 +11,20 @@ import { factoryOf } from './factory-of';
 import { instantOf } from './instant-of';
 import { isEventSourced } from './is-event-sourced';
 import { parameterCount } from './parameter-count';
+import { defineKind } from '../define-kind';
 
 /** What `create` of a generated aggregate takes: its identifier and the instant it is born at. */
 const GENERATED_PARAMETERS = 2;
 
-export const builderKind: Kind = {
+export const builderKind = defineKind({
   name: 'builder',
-  aliases: [],
   summary:
     'The test data builder of an existing aggregate, in test/builders/; the instant of its birth is an ingredient named after the fact its create records (issuedAt), and the builder of an event-sourced aggregate replays its birth event. After `generate aggregate <context> <Aggregate>`.',
   scope: 'context',
   positionals: ['Aggregate'],
   options: {},
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
+  run: (scope, request) => {
     const aggregate = existingAggregate(scope, request.args[1] ?? '');
     const read = birthOf(scope, aggregate);
 
@@ -40,7 +37,7 @@ export const builderKind: Kind = {
     writeBuilder(scope, aggregate, read.birth);
     noteFactsAtBirth(scope, aggregate);
   },
-};
+});
 
 /** No builder is better than one whose `construct` calls `create` in a way it does not take. */
 function refrain(scope: Scope, aggregate: Name, why: string): void {

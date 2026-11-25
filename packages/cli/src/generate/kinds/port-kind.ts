@@ -1,22 +1,19 @@
 import { emit } from '../emit';
 import { toName } from '../../naming';
 import { isDeclared } from '../is-declared';
-import type { Kind } from '../kind';
 import { label } from '../label';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import { vars } from '../vars';
+import { defineKind } from '../define-kind';
 
-export const portKind: Kind = {
+export const portKind = defineKind({
   name: 'port',
-  aliases: [],
   summary: 'A port of the application layer, an abstract class that is also its injection token, and its fake.',
   scope: 'context',
   positionals: ['Name'],
   options: {},
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
+  run: (scope, request) => {
     const name = label(scope, request.args[1] ?? '', { what: 'port', strip: ['port'] });
     const module = request.flags.module === undefined ? '' : ` --module ${toName(request.flags.module).kebab}`;
     const adapter = `\`ddd-ts-kit generate adapter ${scope.context.kebab} ${name.pascal}${module}\``;
@@ -35,4 +32,4 @@ export const portKind: Kind = {
         : `${name.pascal} has no adapter yet: ${adapter} writes one in infrastructure/external and binds it in ${scope.context.kebab}.module.ts (${simulated}).`,
     );
   },
-};
+});

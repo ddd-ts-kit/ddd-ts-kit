@@ -5,11 +5,8 @@ import { parseContextName, toName, type Name } from '../../naming';
 import type { RenderContext } from '../../templating';
 import { emit } from '../emit';
 import { label } from '../label';
-import type { Kind } from '../kind';
 import { TERM } from '../kind-options';
-import { learnTerms } from '../learn-terms';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { vars } from '../vars';
 import { wire } from '../wire';
@@ -21,8 +18,9 @@ import { eventTypeAsPublished } from './event-type-as-published';
 import { pickDeclaration } from './pick-declaration';
 import { refuseUnpublishedVersion } from './refuse-unpublished-version';
 import { ownEntry } from '../../config/values/own-entry';
+import { defineKind } from '../define-kind';
 
-export const projectionKind: Kind = {
+export const projectionKind = defineKind({
   name: 'projection',
   aliases: ['projector'],
   summary:
@@ -32,11 +30,7 @@ export const projectionKind: Kind = {
   options: { term: TERM },
   shown: { eventType: '<eventType>[@v<n>]' },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const name = label(scope, request.args[1] ?? '', { what: 'projection', strip: ['projection', 'projector'] });
 
     const input = request.args[2] ?? '';
@@ -75,7 +69,7 @@ export const projectionKind: Kind = {
     wire(scope, 'projection', context);
     noteTheReadModel(scope, name, readModel.known);
   },
-};
+});
 
 /**
  * The read model of the same name, when `generate read-model <context> <Name>` wrote its port already.

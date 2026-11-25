@@ -3,12 +3,9 @@ import { CliError } from '../../cli-error';
 import type { Name } from '../../naming';
 import type { RenderContext } from '../../templating';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
 import { TERM } from '../kind-options';
 import { label } from '../label';
-import { learnTerms } from '../learn-terms';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { vars } from '../vars';
 import { wire } from '../wire';
@@ -20,15 +17,15 @@ import { listReadModel } from './read-model/list-read-model';
 import { readModelFields } from './read-model/read-model-fields';
 import { readModelStore, type ReadModelStore } from './read-model/read-model-store';
 import { STORAGE } from '../shared-write';
+import { defineKind } from '../define-kind';
 
 const STORED_READ_MODEL =
   'with an ORM of the kit, always: the store joins the list of the read model tables the application checks when it starts; and when its table is the first of its context, with drizzle, knex or typeorm the tables file of the context joins the schema index, with prisma the database schema of the context joins the datasource (its model goes to prisma/schema/<context>.prisma, the file of the context); never without an ORM of the kit';
 
 const LISTED_READ_MODELS = 'the list of the read model tables (<platformDir>/database/read-model-tables.ts)';
 
-export const readModelKind: Kind = {
+export const readModelKind = defineKind({
   name: 'read-model',
-  aliases: [],
   summary:
     "The read model a projection keeps: its port (an abstract class of the application layer over ReadModelStore, with the type of its row and the criteria its readers may ask), its table in the schema of the context with the columns of each --field, the store adapter of the project's ORM (in memory without one) bound to the port, its fake, and the contract suite both pass. The projection that writes it comes from `generate projection <context> <Name> <eventType>`.",
   scope: 'context',
@@ -40,11 +37,7 @@ export const readModelKind: Kind = {
   },
   shared: { files: [LISTED_READ_MODELS, ...STORAGE], when: STORED_READ_MODEL },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const name = label(scope, request.args[1] ?? '', { what: 'read model', strip: ['port'] });
 
     refusePlainPort(scope, name);
@@ -80,7 +73,7 @@ export const readModelKind: Kind = {
       `Fake${name.pascal} (test/fakes) and ${store.adapter} pass the same readModelContract (test/integration): the projection and the handlers that read ${name.pascal} are tested with the fake, and receive the port in their constructor.`,
     );
   },
-};
+});
 
 const CHANGED_BY_HAND =
   'Change the table by hand in <file>, with the row and the criteria of its port and the columns of its store adapter; the generator declares a table once.';

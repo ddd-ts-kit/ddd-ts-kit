@@ -1,17 +1,15 @@
 import { concept } from '../concept';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
 import { TERM } from '../kind-options';
-import { learnTerms } from '../learn-terms';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import { specVars } from '../spec-vars';
 import { vars } from '../vars';
 import { wire } from '../wire';
 import { specFamily } from './background/spec-family';
 import { worldArrangement } from './world/world-arrangement';
+import { defineKind } from '../define-kind';
 
-export const processKind: Kind = {
+export const processKind = defineKind({
   name: 'process',
   aliases: ['process-manager'],
   summary:
@@ -20,11 +18,7 @@ export const processKind: Kind = {
   positionals: ['Name'],
   options: { term: TERM },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const name = concept(scope, request.args[1] ?? '', { what: 'process', strip: ['process', 'saga'] });
 
     const spec = specVars(scope, { protected: false });
@@ -56,4 +50,4 @@ export const processKind: Kind = {
       scope.ws.note(world.hint);
     }
   },
-};
+});

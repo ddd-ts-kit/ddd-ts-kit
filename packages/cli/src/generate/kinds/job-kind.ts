@@ -6,11 +6,8 @@ import { renderTemplate } from '../../templating';
 import { applyWiring } from '../apply-wiring';
 import { concept } from '../concept';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
 import { TERM } from '../kind-options';
-import { learnTerms } from '../learn-terms';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { specVars } from '../spec-vars';
 import { vars } from '../vars';
@@ -21,10 +18,10 @@ import { requestedSchedule } from './job/requested-schedule';
 import { writtenSchedule } from './job/written-schedule';
 import { platformPath } from '../platform-path';
 import { worldArrangement } from './world/world-arrangement';
+import { defineKind } from '../define-kind';
 
-export const jobKind: Kind = {
+export const jobKind = defineKind({
   name: 'job',
-  aliases: [],
   summary:
     'A job run by time (once per tenant under tenancy, or `--global`) that sends one command as its own system actor, its spec, its registration, its switch in the job settings of the platform and, where the authorization model makes it one line, the grant of that actor. After `generate command <context> <UseCaseName>` of its --command.',
   scope: 'context',
@@ -44,11 +41,8 @@ export const jobKind: Kind = {
     conductorStep: true,
   },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
+  run: (scope, request) => {
     const schedule = writtenSchedule(requestedSchedule(request.flags));
-
-    learnTerms(scope);
 
     const name = concept(scope, request.args[1] ?? '', { what: 'job', strip: ['job'] });
     const command = readSentCommand(scope, commandNamed(scope, name));
@@ -74,7 +68,7 @@ export const jobKind: Kind = {
       scope.ws.note(world.hint);
     }
   },
-};
+});
 
 /**
  * Under tenancy a job runs once per tenant unless `--global` says it works across them: a global job

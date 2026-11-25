@@ -1,21 +1,18 @@
 import { emit } from '../emit';
-import type { Kind } from '../kind';
 import { label } from '../label';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import { vars } from '../vars';
 import { ownEntry } from '../../config/values/own-entry';
+import { defineKind } from '../define-kind';
 
-export const aclKind: Kind = {
+export const aclKind = defineKind({
   name: 'acl',
-  aliases: [],
   summary: 'An anti-corruption translator for the model of another context or system, and its spec.',
   scope: 'context',
   positionals: ['upstreamOrSystemName'],
   options: {},
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
+  run: (scope, request) => {
     const name = label(scope, request.args[1] ?? '', { what: 'upstream', strip: ['translator'] });
 
     const relationship = ownEntry(scope.config.contexts, scope.context.kebab)?.upstreams.find(
@@ -37,4 +34,4 @@ export const aclKind: Kind = {
       );
     }
   },
-};
+});

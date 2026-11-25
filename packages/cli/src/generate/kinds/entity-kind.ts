@@ -1,25 +1,18 @@
 import { concept } from '../concept';
+import { defineKind } from '../define-kind';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
 import { TERM } from '../kind-options';
-import { learnTerms } from '../learn-terms';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import { vars } from '../vars';
 
-export const entityKind: Kind = {
+export const entityKind = defineKind({
   name: 'entity',
-  aliases: [],
   summary: 'An entity living inside an aggregate, and its spec.',
   scope: 'context',
   positionals: ['Name'],
   options: { term: TERM },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const name = concept(scope, request.args[1] ?? '', { what: 'entity', strip: ['entity'] });
 
     emit(scope, vars(scope, { name: named(name) }), [
@@ -27,4 +20,4 @@ export const entityKind: Kind = {
       ['entity/entity.spec.ts.tpl', `test/unit/${name.kebab}.entity.spec.ts`],
     ]);
   },
-};
+});

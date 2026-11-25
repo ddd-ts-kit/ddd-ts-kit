@@ -2,10 +2,8 @@ import { CliError } from '../../cli-error';
 import type { Name } from '../../naming';
 import { type RenderContext, renderTemplate } from '../../templating';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
 import { label } from '../label';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { vars } from '../vars';
 import { wire } from '../wire';
@@ -15,10 +13,10 @@ import { wiringFamily } from '../wiring-family';
 import { publishInIndex } from './publish-in-index';
 import { platformPath } from '../platform-path';
 import { ownEntry } from '../../config/values/own-entry';
+import { defineKind } from '../define-kind';
 
-export const gatewayKind: Kind = {
+export const gatewayKind = defineKind({
   name: 'gateway',
-  aliases: [],
   summary:
     "A port of the caller for a synchronous need from an upstream, its in-process adapter over the upstream's published read contract, a fake and one contract suite.",
   scope: 'context',
@@ -31,8 +29,7 @@ export const gatewayKind: Kind = {
     ],
   },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
+  run: (scope, request) => {
     const upstream = declaredUpstream(scope, request.args[1] ?? '');
     const name = label(scope, request.args[2] ?? '', { what: 'gateway', strip: ['gateway'] });
     const context = vars(scope, { name: named(name), upstream: { kebab: upstream } });
@@ -52,7 +49,7 @@ export const gatewayKind: Kind = {
     wire(scope, 'gateway', context);
     explain(scope, upstream, name);
   },
-};
+});
 
 /**
  * The contract is bound once, to a refusal: a second context that needs it finds it bound already, maybe to the

@@ -1,10 +1,8 @@
-import type { Kind } from '../kind';
-import { openScope } from '../open-scope';
 import { declareTablePersonalFields } from './personal-data/declare-table-personal-fields';
+import { defineKind } from '../define-kind';
 
-export const personalFieldsKind: Kind = {
+export const personalFieldsKind = defineKind({
   name: 'personal-fields',
-  aliases: [],
   summary:
     'The declaration of the personal columns of a table no aggregate owns (a read model, a table of received messages, a table written by hand), by its SQL name: next to the adapters, joined to the erasure and to the export of the context, or written with them (ports, adapters, fakes, a spec of it.todo, registration) when it is the first. --subject is required: the row of such a table is rarely the person. The table and its columns are read in the schema of the context and never changed; a column it does not hold is refused. After the table is written in the schema of the context; the table of an aggregate is declared by `generate repository <context> <Aggregate> --personal <column>,...`.',
   scope: 'context',
@@ -25,7 +23,7 @@ export const personalFieldsKind: Kind = {
     when: 'the declaration is the first of its context, which brings its erasure and its export',
   },
   writesInModules: true,
-  run: (request) => {
-    declareTablePersonalFields(openScope(request), request.args[1] ?? '');
+  run: (scope, request) => {
+    declareTablePersonalFields(scope, request.args[1] ?? '');
   },
-};
+});
