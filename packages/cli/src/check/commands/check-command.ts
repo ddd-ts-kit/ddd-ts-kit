@@ -1,108 +1,46 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import { CliError } from '../../cli-error';
-import { Arguments } from '../../commands/arguments';
+import type { Arguments } from '../../commands/arguments';
+import { defineCommand } from '../../commands/command';
 import { findRoot } from '../../commands/find-root';
-import { type Command } from '../../commands/command';
-import type { Io } from '../../commands/io';
+import { knownCommit } from '../../commit/known-commit';
 import { applyBaseline } from '../baseline/apply-baseline';
-import { BASELINE_FILE, readBaseline } from '../baseline/read-baseline';
-import { writeBaseline } from '../baseline/write-baseline';
-import { baselineFollowingMoves } from '../baseline/baseline-following-moves';
-import { prunedBaseline } from '../baseline/pruned-baseline';
-import { renamedFiles } from '../baseline/renamed-files';
-import { recordedBaseline } from '../baseline/recorded-baseline';
-import { STANDALONE_RULE_IDS } from '../catalogue/standalone-rule-ids';
+import { readBaseline } from '../baseline/read-baseline';
 import type { CheckResult } from '../engine/check-result';
-import { formatCheck, type CheckFormat } from '../engine/format-check';
 import { runCheck } from '../engine/run-check';
 import { summarize } from '../engine/summarize';
-import { explanationsOf } from '../explain/explanations-of';
 import type { Project } from '../model/project';
 import type { Violation } from '../model/violation';
-import { loadLooseProject } from '../project/load-loose-project';
 import { loadProject } from '../project/load-project';
 import { toPosix } from '../project/to-posix';
-import { knownCommit } from '../../commit/known-commit';
 import { changedSince } from './changed-since';
+import { CHECK_FORMATS } from './check-formats';
 import { isReportedSince } from './is-reported-since';
 import { knownRules } from './known-rules';
-import { selfCheck } from './self-check';
-
-const FORMATS: readonly CheckFormat[] = ['text', 'json', 'github', 'gitlab'];
+import { printCheck } from './print-check';
+import { refuseMissingPaths } from './refuse-missing-paths';
 
 const CHANGED_SINCE_FIX =
   'Run it in a git repository and name a branch, a tag or a commit git knows (`git fetch origin` first in CI, with enough history): `--changed-since origin/main`.';
 
-export const checkCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
+/** `check [paths...]`: the architecture rules on the project, or on the paths given, the errors its baseline records left quiet. */
+export const checkCommand = defineCommand({
+  name: 'check',
+  options: {
     rule: { type: 'string', multiple: true },
     format: { type: 'string' },
     'changed-since': { type: 'string' },
-    self: { type: 'boolean', default: false },
-    'clean-only': { type: 'boolean', default: false },
-    explain: { type: 'boolean', default: false },
-    baseline: { type: 'string' },
-  });
+    explain: { type: 'boolean' },
+  },
+  run(args, io) {
+    const format = args.format(CHECK_FORMATS, 'text');
+    const result = checkProject(args, knownRules(args.many('rule')));
 
-  if (args.flag('self')) {
-    return selfCheck(args, io);
-  }
+    return printCheck(io, result, { format, explain: args.flag('explain') });
+  },
+});
 
-  const baseline = args.text('baseline');
-
-  if (baseline !== undefined) {
-    return rewriteBaseline(args, io, baseline);
-  }
-
-  const format = args.format(FORMATS, 'text');
-  const rules = knownRules(args.many('rule'));
-  const result = args.flag('clean-only') ? checkCleanliness(args, rules) : checkProject(args, rules);
-
-  const explanations = args.flag('explain') ? explanationsOf(result.violations) : undefined;
-
-  io.out(formatCheck(result, format, explanations));
-
-  return result.errorCount > 0 ? 1 : 0;
-};
-
-/** The rules that judge a file on its own, on any directories: no project, no config. */
-function checkCleanliness(args: Arguments, rules: readonly string[]): CheckResult {
-  const directories = args.positionals.length > 0 ? args.positionals : ['.'];
-
-  refuseWhatNeedsAProject(args, rules);
-  refuseMissingPaths(args);
-
-  const selected = rules.length > 0 ? rules : STANDALONE_RULE_IDS;
-
-  const project = loadLooseProject(
-    args.workingDirectory,
-    directories.map((entry) => toPosix(path.normalize(entry))),
-  );
-
-  return runCheck(project, { rules: selected });
-}
-
-/** Directories read as they are have no history to compare with, and no project for a rule that asks about one. */
-function refuseWhatNeedsAProject(args: Arguments, rules: readonly string[]): void {
-  if (args.text('changed-since') !== undefined) {
-    throw new CliError(
-      '--clean-only compares with no ref.',
-      'Run it without --changed-since: it judges the directories given as they are, outside a project and its history.',
-    );
-  }
-
-  const needing = rules.filter((id) => !STANDALONE_RULE_IDS.includes(id));
-
-  if (needing.length > 0) {
-    throw new CliError(
-      `--clean-only does not run ${needing.join(', ')}.`,
-      `It holds the rules that judge a file on its own: ${STANDALONE_RULE_IDS.join(', ')}.`,
-    );
-  }
-}
-
-function checkProject(args: Arguments, rules: readonly string[]): CheckResult {
+function checkProject(args: Arguments<'changed-since'>, rules: readonly string[]): CheckResult {
   const cwd = args.workingDirectory;
   const root = findRoot(cwd);
 
@@ -125,18 +63,6 @@ function checkProject(args: Arguments, rules: readonly string[]): CheckResult {
   );
 
   return summarize(reported, result);
-}
-
-/** A path that exists nowhere is a slip of the caller; an empty report on it would read as clean. */
-function refuseMissingPaths(args: Arguments): void {
-  const missing = args.positionals.filter((entry) => !fs.existsSync(path.resolve(args.workingDirectory, entry)));
-
-  if (missing.length > 0) {
-    throw new CliError(
-      `No such path: ${missing.join(', ')}.`,
-      'Name a file or a folder of the project (`ddd-ts-kit check src`), or leave the path out to check the whole project.',
-    );
-  }
 }
 
 /**
@@ -167,55 +93,6 @@ function withBaseline(root: string, result: CheckResult, rules: readonly string[
   return baseline === undefined
     ? result
     : summarize(applyBaseline(result.violations, baseline, { stale: rules.length === 0 }), result);
-}
-
-/**
- * `--baseline write` records the errors of every rule on every file; `--baseline prune` lowers the
- * recorded counts to what the project still has, and never raises one.
- */
-function rewriteBaseline(args: Arguments, io: Io, mode: string): number {
-  if (mode !== 'write' && mode !== 'prune') {
-    throw new CliError(`Unknown --baseline "${mode}".`, 'Use --baseline write or --baseline prune.');
-  }
-
-  if (narrowsOrDecorates(args)) {
-    throw new CliError(
-      `--baseline ${mode} judges every rule on every file.`,
-      'Run it without --rule, a path, --changed-since, --clean-only or --explain.',
-    );
-  }
-
-  const root = findRoot(args.workingDirectory);
-  const { violations } = runCheck(loadProject(root));
-  const recorded = readBaseline(root);
-
-  const baseline =
-    mode === 'write' || recorded === undefined
-      ? recordedBaseline(violations)
-      : prunedBaseline(baselineFollowingMoves(recorded, renamedFiles(root)), violations);
-
-  writeBaseline(root, baseline);
-  io.out(baselineSummary(baseline));
-
-  return 0;
-}
-
-/** What `--baseline` would not honour: fewer rules or files than all of them, and a report of the findings. */
-function narrowsOrDecorates(args: Arguments): boolean {
-  return (
-    args.many('rule').length > 0 ||
-    args.positionals.length > 0 ||
-    args.text('changed-since') !== undefined ||
-    args.flag('clean-only') ||
-    args.flag('explain')
-  );
-}
-
-function baselineSummary(baseline: ReturnType<typeof recordedBaseline>): string {
-  const entries = Object.values(baseline).flatMap((rules) => Object.values(rules));
-  const errors = entries.reduce((total, { count }) => total + count, 0);
-
-  return `${BASELINE_FILE}: ${errors} error${errors === 1 ? '' : 's'} recorded in ${Object.keys(baseline).length} file${Object.keys(baseline).length === 1 ? '' : 's'}. Commit it; \`ddd-ts-kit check\` reports only what it does not hold, and fails when a count it records is no longer reached.`;
 }
 
 /** In scope: a finding on a file given, or one repaired in a file given (the list a store is missing from). */

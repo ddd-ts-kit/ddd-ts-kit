@@ -45,8 +45,8 @@ export interface Declaration {
 /** One command of the CLI: its arguments and where it prints, answering its exit code. */
 export interface Command {
   (args: readonly string[], io: Io): number;
-  /** What it declares of itself; absent from a command not declared yet. */
-  readonly spec?: Declaration;
+  /** What it declares of itself. */
+  readonly spec: Declaration;
 }
 
 /** A command from its declaration: it reads its arguments as declared, then runs, under the lock it says it takes. */

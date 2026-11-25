@@ -6,9 +6,7 @@ import { ArgumentsError } from './arguments-error';
 import { findRoot } from './find-root';
 
 /** One option of a command: a switch, or a text, which may be given several times. */
-type OptionSpec =
-  | { readonly type: 'boolean'; readonly default?: false }
-  | { readonly type: 'string'; readonly multiple?: true };
+type OptionSpec = { readonly type: 'boolean' } | { readonly type: 'string'; readonly multiple?: true };
 
 /** The options of one command, each under the name it has on the command line, without its dashes. */
 export type OptionSpecs = Readonly<Record<string, OptionSpec>>;
@@ -47,11 +45,6 @@ export class Arguments<Text extends string = string, Flag extends string = strin
 
   /** The arguments a command accepts, read as it declares them: an option it does not declare is refused. */
   static declared<const O extends OptionSpecs>(args: readonly string[], options: O): ArgumentsOf<O> {
-    return new Arguments(args, ...read(args, options));
-  }
-
-  /** The same for a command not declared yet, which names its options as it reads them. */
-  static parse(args: readonly string[], options: OptionSpecs): Arguments {
     return new Arguments(args, ...read(args, options));
   }
 

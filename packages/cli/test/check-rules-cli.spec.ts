@@ -136,7 +136,7 @@ describe('check --clean-only', () => {
     expect(cli(root, 'check', '--clean-only', 'other').code).toBe(0);
   });
 
-  it('refuses a ref to compare with and a rule that needs a project, which it would not honour', () => {
+  it('refuses a ref to compare with, which is no option of it, and a rule that needs a project', () => {
     const root = tempDir('clean-refusals');
 
     write(root, 'src/a.ts', 'export const fine = 1;\n');
@@ -145,7 +145,8 @@ describe('check --clean-only', () => {
     const rule = cli(root, 'check', '--clean-only', '--rule', 'layer/domain-purity', '--rule', 'clean/braces', 'src');
 
     expect(since.code).toBe(2);
-    expect(failure(since).message).toBe('--clean-only compares with no ref.');
+    expect(failure(since).message).toContain("Unknown option '--changed-since'.");
+    expect(failure(since).fix).toContain('ddd-ts-kit check --clean-only <dir>...');
     expect(rule.code).toBe(2);
     expect(rule.stderr).toContain('--clean-only does not run layer/domain-purity.');
     expect(rule.stderr).toContain('clean/stepdown, clean/function-size');

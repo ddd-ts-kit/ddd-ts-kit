@@ -7,7 +7,7 @@ import { COMMANDS } from '../src/run';
 /** What every command accepts, which a usage line may name beside the options of its command. */
 const OF_EVERY_COMMAND = ['json', 'cwd', 'help'];
 
-const DECLARED: readonly Declaration[] = Object.values(COMMANDS).flatMap((command) => command.spec ?? []);
+const DECLARED: readonly Declaration[] = Object.values(COMMANDS).map((command) => command.spec);
 
 /** The options the usage lines of a command name, each once, without its dashes. */
 function optionsInUsageOf(command: string): string[] {
@@ -21,7 +21,7 @@ function optionsInUsageOf(command: string): string[] {
 describe('a command declared with defineCommand', () => {
   it('is declared under the name the entry runs it by', () => {
     const named = Object.entries(COMMANDS).flatMap(([name, command]) =>
-      command.spec === undefined || command.spec.name === name ? [] : [`${name} declares ${command.spec.name}`],
+      command.spec.name === name ? [] : [`${name} declares ${command.spec.name}`],
     );
 
     expect(DECLARED.length).toBeGreaterThan(2);

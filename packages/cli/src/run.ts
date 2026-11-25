@@ -156,7 +156,7 @@ function asksForHelp(asked: readonly string[], argv: readonly string[]): boolean
   }
 
   return (
-    ownEntry(COMMANDS, asked[0] ?? '')?.spec?.passesArgumentsOn !== true &&
+    ownEntry(COMMANDS, asked[0] ?? '')?.spec.passesArgumentsOn !== true &&
     argv.some((argument) => argument === '--help' || argument === '-h')
   );
 }
