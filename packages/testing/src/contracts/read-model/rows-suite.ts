@@ -23,6 +23,7 @@ export class RowsSuite extends ReadModelStoreSuite {
     this.ordersEachKindOfStamp();
     this.deletesOutsideTheHistory();
     this.replacesOnTheWholeStamp();
+    this.replacesARowWithoutVersion();
     this.searches();
   }
 
@@ -208,20 +209,41 @@ export class RowsSuite extends ReadModelStoreSuite {
 
       await table.insert({ key: 'a1', row: row('a1'), stamp: versioned('evt-1', 1, 2) });
 
-      this.expect(await table.replace(next, versioned('evt-1', 1, 3))).toBe(false);
-      this.expect(await table.replace(next, at('evt-1', 1))).toBe(false);
-      this.expect(await table.replace(next, versioned('evt-1', 1, 2))).toBe(true);
+      this.holds(
+        !(await table.replace(next, versioned('evt-1', 1, 3))),
+        'a row was replaced on a stamp whose version is not the one it holds',
+      );
+
+      this.holds(
+        !(await table.replace(next, at('evt-1', 1))),
+        'a row that holds a version was replaced on a stamp that has none',
+      );
+
+      this.holds(
+        await table.replace(next, versioned('evt-1', 1, 2)),
+        'a row was not replaced on the whole stamp it holds',
+      );
+
       this.expect((await this.store.get('a1'))?.title).toBe('next');
     });
+  }
 
+  private replacesARowWithoutVersion(): void {
     this.it('replaces a row that holds no version only on a stamp that has none', async () => {
       const { table } = this.subject;
       const next = { key: 'a1', row: { ...row('a1'), title: 'next' }, stamp: at('evt-2', 2) };
 
       await table.insert({ key: 'a1', row: row('a1'), stamp: at('evt-1', 1) });
 
-      this.expect(await table.replace(next, versioned('evt-1', 1, 0))).toBe(false);
-      this.expect(await table.replace(next, at('evt-1', 1))).toBe(true);
+      this.holds(
+        !(await table.replace(next, versioned('evt-1', 1, 0))),
+        'a row that holds no version was replaced on a stamp that has one',
+      );
+
+      this.holds(
+        await table.replace(next, at('evt-1', 1)),
+        'a row that holds no version was not replaced on the stamp it holds',
+      );
     });
   }
 

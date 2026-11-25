@@ -44,7 +44,7 @@ export async function startHttpServer(served: Served, config: AppConfig): Promis
   const app = new Hono();
 
   // A failed middleware is answered as a problem, not as a text with the error written to stderr.
-  app.onError(problemErrorHandler({ logger: served.logger }));
+  app.onError(problemErrorHandler({ logger: served.logger, errorMapper: served.boundary.errorMapper }));
   // A path no route serves is answered 404 as a problem, not as the text of Hono.
   app.notFound(problemNotFoundHandler({ logger: served.logger }));
 

@@ -73,6 +73,61 @@ describe('init --tenancy', () => {
   });
 });
 
+describe('the fake of a tenant-scoped aggregate', () => {
+  const FAKE = 'src/contexts/billing/test/fakes/invoice.repository.fake.ts';
+  const CONTRACT = 'src/contexts/billing/test/integration/invoice.repository.contract.spec.ts';
+
+  const CONFINED =
+    'Both pass tenantIsolationContract too: FakeInvoiceRepository is confined to the tenant of the scope it is given, `acme` when it is built alone. A spec about several tenants hands it the executionScope of its harness.';
+
+  function withInvoices(...flags: string[]): { project: string; notes: string } {
+    const project = initProject(...flags, '--context', 'billing:core');
+
+    cli(project, 'generate', 'aggregate', 'billing', 'Invoice', '--allow-name');
+
+    const notes = cli(project, 'generate', 'repository', 'billing', 'Invoice', '--allow-name').stdout;
+
+    return { project, notes };
+  }
+
+  it.each([
+    ['drizzle', 'Drizzle'],
+    ['knex', 'Knex'],
+    ['prisma', 'Prisma'],
+    ['typeorm', 'TypeOrm'],
+  ])(
+    'is confined to the scope it is given, and passes the tenant isolation contract its %s adapter passes',
+    (orm, prefix) => {
+      const { project, notes } = withInvoices('--orm', orm, '--tenancy', 'shared-table');
+      const fake = read(project, FAKE);
+      const contract = read(project, CONTRACT);
+
+      expect(fake).toContain("import { InMemoryRepository, oneTenantScope, snapshots } from '@ddd-ts-kit/testing';");
+      expect(fake).toContain('  constructor(scope: ExecutionScope = oneTenantScope()) {');
+      expect(fake).toContain('      { confinedTo: scope },\n    );');
+      expect(notes).toContain(CONFINED);
+      expect(notes).toContain(CONFINED);
+
+      expect(contract).toContain(
+        "  name: 'FakeInvoiceRepository',\n  elevatedReads: true,\n  createRepository: (scope) => new FakeInvoiceRepository(scope),",
+      );
+
+      expect(contract).toContain(
+        `  name: '${prefix}InvoiceRepository',\n  elevatedReads: true,\n  createRepository: async (scope) => {\n    await database.reset();\n\n    return new ${prefix}InvoiceRepository(database.persistence.database, scope, clock);`,
+      );
+    },
+  );
+
+  it('stays a repository of no tenant in a project of one customer', () => {
+    const { project, notes } = withInvoices();
+
+    expect(notes).not.toContain('tenantIsolationContract');
+    expect(read(project, FAKE)).toContain('  constructor() {\n    super(\n      snapshots({');
+    expect(read(project, FAKE)).not.toContain('confinedTo');
+    expect(read(project, CONTRACT)).not.toContain('tenantIsolationContract');
+  });
+});
+
 describe('generate repository --tenant-scoped on a custom store', () => {
   it('says how to confine the statements by hand, since no ORM package carries the helpers', () => {
     const project = initProject('--orm', 'custom', '--context', 'billing:core');

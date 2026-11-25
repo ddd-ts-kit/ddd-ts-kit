@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { expectVersion } from '@ddd-ts-kit/kernel';
@@ -70,6 +71,33 @@ function renameCalendar(ifMatch: IfMatch, version = 7): Route {
   );
 }
 
+describe('a file whose version the caller already holds', () => {
+  it('closes a file nobody will read when the caller holds the version its handler names', async () => {
+    const file = Readable.from(['%PDF']);
+
+    const printed = defineRoute(
+      {
+        method: 'GET',
+        path: '/calendars/:calendarId/print',
+        operationId: 'printCalendar',
+        summary: 'Print a calendar',
+        responses: { 200: { description: 'The calendar, printed.', body: zodSchema(z.unknown()) } },
+        security: false,
+        cache: { scope: CacheScope.private, maxAge: '0s', etag: 'representation' },
+      },
+      () => ({ status: 200, body: file, headers: { etag: '"seventh"', 'content-type': 'application/pdf' } }),
+    );
+
+    // A file has no strong tag of its own, its bytes are not known yet: the one its handler names stands.
+    expect((await executeRoute(printed, request())).headers['etag']).toBe('"seventh"');
+
+    const response = await executeRoute(printed, request({ 'if-none-match': '"seventh"' }));
+
+    expect(response).toMatchObject({ status: 304, payload: { kind: 'none' } });
+    expect(file.destroyed).toBe(true);
+  });
+});
+
 describe('a read that names its version', () => {
   it('answers a weak ETag made of the version its body carries', async () => {
     const response = await executeRoute(versioned, request());
@@ -85,6 +113,7 @@ describe('a read that names its version', () => {
       expect(response).toEqual({
         status: 304,
         headers: expect.objectContaining({ etag: 'W/"7"', 'cache-control': 'public, max-age=60' }),
+        payload: { kind: 'none' },
       });
 
       expect(response.headers['content-type']).toBeUndefined();

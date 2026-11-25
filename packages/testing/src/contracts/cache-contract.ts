@@ -11,7 +11,10 @@ export interface CacheContractOptions {
   elapse(ms: number): Awaitable<void>;
 }
 
-/** What every adapter of the kernel `Cache` port guarantees, the in-memory one included. */
+/**
+ * What every adapter of the kernel `Cache` port guarantees, the in-memory one included. A cache
+ * shared between instances stores text: a value comes back as a copy, as JSON carries it.
+ */
 export function cacheContract(runner: ContractRunner, options: CacheContractOptions): void {
   new CacheSuite(runner, options).describe(`${options.name} (cache contract)`);
 }
@@ -32,6 +35,7 @@ class CacheSuite extends ContractSuite<Cache> {
 
   protected tests(): void {
     this.readsWhatWasWritten();
+    this.keepsItsOwnCopy();
     this.forgets();
     this.expires();
   }
@@ -62,6 +66,32 @@ class CacheSuite extends ContractSuite<Cache> {
 
       this.expect((await this.subject.get(quoteOf('EUR/USD')))?.rate).toBe(1.09);
       this.expect((await this.subject.get(quoteOf('EUR/GBP')))?.pair).toBe('EUR/GBP');
+    });
+  }
+
+  private keepsItsOwnCopy(): void {
+    this.it(
+      'keeps its own copy: a value changed after it was written, or after it was read, is not what the cache holds',
+      async () => {
+        const written = { ...EUR_USD, sources: [...EUR_USD.sources] };
+
+        await this.subject.set(MUTABLE_QUOTE, written);
+        written.rate = 2;
+        written.sources.push('changed after the write');
+
+        const read = await this.subject.get(MUTABLE_QUOTE);
+
+        this.expect(read).toEqual(EUR_USD);
+        read?.sources.push('changed after the read');
+
+        this.expect(await this.subject.get(MUTABLE_QUOTE)).toEqual(EUR_USD);
+      },
+    );
+
+    this.it('gives a value back as JSON carries it: an instant as its text', async () => {
+      await this.subject.set(cacheKey<unknown>('quoted'), { pair: 'EUR/USD', at: new Date(QUOTED_AT) });
+
+      this.expect(await this.subject.get(cacheKey<unknown>('quoted'))).toEqual({ pair: 'EUR/USD', at: QUOTED_AT });
     });
   }
 
@@ -114,6 +144,11 @@ class CacheSuite extends ContractSuite<Cache> {
 }
 
 const EUR_USD: Quote = { pair: 'EUR/USD', rate: 1.0842, sources: ['ecb', 'desk'] };
+
+const QUOTED_AT = '2026-03-01T10:00:00.000Z';
+
+/** The same entry under a type that lets the suite change what it wrote and what it read. */
+const MUTABLE_QUOTE = cacheKey<{ pair: string; rate: number; sources: string[] }>('quote', 'mutable');
 
 function quoteOf(pair: string): CacheKey<Quote> {
   return cacheKey<Quote>('quote', pair);

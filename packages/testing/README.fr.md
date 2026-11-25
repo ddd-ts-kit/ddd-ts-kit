@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:a310737df32e3cda -->
+<!-- translation-of: README.md sha256:c73a91a2a1fdfcc9 -->
 
 # @ddd-ts-kit/testing
 
@@ -22,6 +22,7 @@ npm i -D @ddd-ts-kit/testing
 | `@ddd-ts-kit/testing/vitest` | `decorators()`, le *plugin* Vite qui permet à Vitest d'exécuter les décorateurs standard, et `decoratorCoverage()` | Node seulement ; exécute le `tsc` du projet |
 | `@ddd-ts-kit/testing/coverage` | `governedCoverage()`, `governedJestCoverage()`, `unaffectedContexts()` : la couverture que mesure le runner et son plancher, lus dans `ddd-ts-kit.config.json` | Node seulement |
 | `@ddd-ts-kit/testing/budget`, `/budget/vitest`, `/budget/jest` | le budget de temps de chaque niveau de *specs*, lu dans `ddd-ts-kit.config.json`, et les reporters qui y tiennent chaque fichier de *spec* | Node seulement ; le runner |
+| `@ddd-ts-kit/testing/setup/vitest`, `/setup/jest` | le fichier de *setup* du runner : avant chaque test, les séquences repartent de 1 et le générateur de données de sa graine | le runner (`vitest`, pair optionnel ; le `beforeEach` que Jest rend global) |
 | `@ddd-ts-kit/testing/mutation` | `governedMutation()` : ce que Stryker mute, l'*ignorer* du kit qui écarte les textes des refus, les mutants statiques ignorés et le plancher, lus dans `ddd-ts-kit.config.json` | Node seulement |
 
 L'entrée principale, `/contracts` et `/e2e` suivent les
@@ -227,7 +228,11 @@ aLine().with('quantity', 3).build(); // { sku: 'sku-1', quantity: 3 }
 - Une donnée simple (un objet littéral, une liste) est copiée à chaque construction, dans les valeurs
   par défaut comme dans ce que `with` a reçu : modifier une valeur construite ne change jamais la
   suivante. Une instance de classe (une `Date`, un objet-valeur, un agrégat) est remise telle quelle.
-- Appelez `resetSequences()` dans `beforeEach`, pour qu'un test ne dépende pas de ceux qui le précèdent.
+- Un test ne dépend pas de ceux qui le précèdent : la configuration du runner qu'écrit `init` liste
+  l'entrée de *setup* du *package*, `setupFiles: ['@ddd-ts-kit/testing/setup/vitest']` ou
+  `setupFilesAfterEnv: ['@ddd-ts-kit/testing/setup/jest']`, qui appelle `restartTestData()` avant chaque
+  test : chaque séquence repart de 1 et le générateur de données de `/faker` de sa graine. Sans cette
+  entrée, appelez `resetSequences()` dans `beforeEach`, comme le fait l'exemple ci-dessus.
 - Ce dont une construction a besoin est une propriété des *props* du *builder*. Une étape copie le
   *builder* sans exécuter son constructeur : un champ déclaré `private` ou `readonly` suit la copie, un
   champ `#private` de JavaScript ne la suit pas et lève une `TypeError` quand la copie le lit ; une
@@ -536,6 +541,16 @@ sa propre copie de ce qui est sauvegardé (par `snapshots({ toSnapshot, fromSnap
 applique la concurrence optimiste sur `version`, en levant `ConcurrencyError` (code
 `CONCURRENCY_CONFLICT`). Vérifiez son état avec `all()` et `count()`.
 
+Le *fake* d'un agrégat rattaché à un *tenant* est confiné comme l'est son adaptateur :
+`super(snapshots({ ... }), { confinedTo: scope })` tient chaque lecture et chaque écriture dans le *tenant*
+du travail en cours dans `scope`. Un *tenant* ne trouve, ne liste et ne compte que ce qu'il a enregistré,
+un enregistrement sous un id que détient un autre *tenant* est refusé par `ConcurrencyError`, une élévation
+élargit les lectures et aucune écriture, et un travail qui ne nomme aucun *tenant* est refusé
+(`NoCurrentTenantError`). Il passe `tenantIsolationContract`, et `generate repository` l'écrit ainsi pour
+un agrégat rattaché à un *tenant*, avec une portée qui vaut par défaut `oneTenantScope()`, le travail d'un
+membre d'`acme` : une spec sur un seul *tenant* construit le *fake* seul, une spec sur une fuite entre
+*tenants* lui donne l'`executionScope` de son harnais et change de *tenant* avec `asTenant`.
+
 ### Un fake, pas un mock
 
 Au lieu d'un *mock*, qui vérifie les appels qu'a faits le gestionnaire et rien de leur effet :
@@ -663,7 +678,8 @@ Ce sont deux classes sur `Builder`, immuables comme tout *builder*, et elles acc
 où l'on attend un acteur ou une session (`aSession().of(anActor().withRole('accountant'))` avec le
 *builder* d'acteur de `@ddd-ts-kit/auth/testing`). `scoped(scope, context, work)` exécute un bloc dans un
 contexte donné comme valeur ou comme *builder*, avec n'importe quel `ExecutionScope` ; `asTenant(scope,
-'acme', work)` l'exécute comme membre d'un *tenant*, et `elevatedOver('all')` construit le contexte du
+'acme', work)` l'exécute comme membre d'un *tenant*, `oneTenantScope()` est une portée fixée sur le travail
+d'un membre d'un seul *tenant* (`acme` sauf mention contraire), et `elevatedOver('all')` construit le contexte du
 personnel de la plateforme sous une élévation, sans l'entrée d'audit qu'écrit `acrossTenants`.
 
 ## De bout en bout
@@ -886,8 +902,8 @@ repositoryContract(runner, { ...options, name: 'DrizzleOrderRepository', createR
 | Suite | Tient |
 |---|---|
 | `repositoryContract` | enregistrer puis retrouver, id inconnu, mise à jour, isolement de la copie stockée, concurrence optimiste (toute erreur de code `CONCURRENCY_CONFLICT`), et avec `createAggregateTaking` un nouvel agrégat qui prend une valeur unique d'un autre refusé avec le code `CONFLICT`, rien de stocké, et avec `createAggregateAgain` un nouvel agrégat enregistré plusieurs fois en même temps : un enregistrement l'écrit et les autres sont refusés avec le code `CONCURRENCY_CONFLICT`, jamais pour sa valeur unique |
-| `tenantIsolationContract` | un *repository* sous une stratégie d'isolement des *tenants* : ce qu'un *tenant* a enregistré est caché à un autre ; un autre *tenant* qui enregistre sous le même id le laisse intact, par une mise à jour ou (si `recreate(aggregate)` est donné, un nouvel agrégat sous le même id) par une insertion ; le personnel de la plateforme, avec une élévation sur tous les *tenants*, n'écrit rien, et lit l'agrégat de l'autre *tenant* quand `elevatedReads` est vrai (tables partagées, sécurité au niveau des lignes) ; une écriture d'un travail qui ne nomme aucun *tenant* est refusée (`NoCurrentTenantError`) et une lecture est refusée ou ne trouve rien. `createRepository(scope)` lit le *tenant* dans la portée qu'on lui donne, sur un stockage où existent les *tenants* `acme` et `globex`. Pour prouver la sécurité au niveau des lignes elle-même, exécutez-la sur un *repository* qui n'écrit aucune condition de *tenant* |
-| `eventBusContract` | tout fournisseur d'`EventBus` : routage par type, plusieurs abonnés, désabonnement, aller-retour exact de l'enveloppe (`traceparent`, `correlationId`, `tenantId`), remontée de l'échec d'un gestionnaire. Les relivraisons sont acceptées ; rendez `settle()` depuis `createBus` pour les fournisseurs qui livrent de façon asynchrone |
+| `tenantIsolationContract` | un *repository* sous une stratégie d'isolement des *tenants* : ce qu'un *tenant* a enregistré est caché à un autre ; un autre *tenant* qui enregistre sous le même id le laisse intact, par une mise à jour ou (si `recreate(aggregate)` est donné, un nouvel agrégat sous le même id) par une insertion ; le personnel de la plateforme, avec une élévation sur tous les *tenants*, n'écrit rien, et lit l'agrégat de l'autre *tenant* quand `elevatedReads` est vrai (tables partagées, sécurité au niveau des lignes) ; une écriture d'un travail qui ne nomme aucun *tenant* est refusée (`NoCurrentTenantError`) et une lecture est refusée ou ne trouve rien. Sans `mutate`, le cas de la mise à jour sous un id déjà détenu reste en attente. `createRepository(scope)` lit le *tenant* dans la portée qu'on lui donne, sur un stockage où existent les *tenants* `acme` et `globex`. Pour prouver la sécurité au niveau des lignes elle-même, exécutez-la sur un *repository* qui n'écrit aucune condition de *tenant* |
+| `eventBusContract` | tout fournisseur d'`EventBus` : routage par type, plusieurs abonnés, désabonnement, aller-retour exact de l'enveloppe (`traceparent`, `correlationId`, `tenantId`), un événement reçu tel que JSON le porte et jamais l'objet publié (une `Date` de la charge utile sous forme de texte), remontée de l'échec d'un gestionnaire. Les relivraisons sont acceptées ; rendez `settle()` depuis `createBus` pour les fournisseurs qui livrent de façon asynchrone |
 | `unitOfWorkContract` | toute `UnitOfWork`, appelée par `run` sans bus de commandes : les événements du domaine attendent la fin et sont distribués avant la validation (commit), si bien que les gestionnaires voient chaque sauvegarde et que ce qu'ils écrivent, l'outbox comprise, est validé avec ; un échec dans une sauvegarde, dans le travail, dans un gestionnaire ou dans la validation (une contrainte différée) ne laisse rien derrière lui ; les gestionnaires `after-commit` s'exécutent une fois les lignes validées, jamais autrement. Un adaptateur qui n'est pas construit sur `withinUnitOfWork` échoue ici |
 | `outboxStoreContract` | tout stockage d'outbox : ordre, limite, bail, prises concurrentes, publié, échoué, mort, `retryDead`, purge ; avec `carriesTenant: true`, le *tenant* de chaque événement conservé |
 | `processedEventStoreContract` | tout `ProcessedEventStore` : une fois par consommateur et par événement, aussi sous des livraisons concurrentes |
@@ -895,7 +911,7 @@ repositoryContract(runner, { ...options, name: 'DrizzleOrderRepository', createR
 | `eventStoreUnitOfWorkContract` | un `EventStore` transactionnel avec l'outbox de sa base de données sous une même `UnitOfWork` : le flux et les enregistrements de l'outbox publiés pour ses événements sont validés ensemble ; rien ne reste dans l'outbox pour un ajout défait par un retour arrière (rollback), ni pour un ajout refusé par un conflit de concurrence. `createSubject()` rend `{ unitOfWork, store, outbox }` |
 | `processStoreContract` | tout `ProcessStore` de gestionnaires de processus : une instance telle qu'enregistrée (état JSON, délais armés, fin), une version qui n'est pas la suivante refusée avec `CONCURRENCY_CONFLICT`, un seul de deux premiers enregistrements qui l'emporte, avec `unitOfWork` rien de laissé par une sauvegarde défaite par un retour arrière (rollback), et avec `storeInTenant` une instance cachée à un autre tenant, deux tenants avec chacun une instance sous la même clé, et un travail qui ne nomme aucun tenant refusé |
 | `jobStoreContract` | tout `JobStore` de *jobs* en arrière-plan : les *jobs* dus, le plus ancien d'abord et chacun à une seule prise, les *jobs* différés, les clés d'idempotence restreintes au *tenant* (deux *tenants* n'en partagent jamais une), le *tenant* et le sujet que montre `find`, le bail et ses battements de cœur, les comptes rendus entendus seulement de la tentative qui tient le *job* (progression, point de reprise remis à la tentative suivante, succès, nouvelle tentative, mort et ranimé, libération), l'annulation d'un *job* en attente et d'un *job* en cours, la purge. Avec `unitOfWork` (sur le même contexte que le stockage qui vient d'être créé), un *job* ajouté, annulé ou ranimé dans une unité de travail qui revient en arrière (rollback) reste tel qu'il était, et un *job* dont l'unité de travail est validée est ajouté, annulé ou ranimé. Les prises demandent un bail de 30 s |
-| `cacheContract` | tout `Cache` : aller-retour de chaque forme de valeur, isolement des entrées, suppression, durée de vie |
+| `cacheContract` | tout `Cache` : aller-retour de chaque forme de valeur, une copie qui lui est propre (une valeur modifiée après son écriture ou après sa lecture n'est pas ce que le cache détient), une valeur rendue telle que JSON la porte (une `Date` sous forme de texte), isolement des entrées, suppression, durée de vie |
 | `cachePurgerContract` | tout `CachePurger` avec son cache partagé (`store`, `holds`) : un tag purge ce qu'il nomme et rien d'autre, une sorte atteint chaque élément, les *tenants* restent séparés, la purge est idempotente |
 | `lockContract` | tout `Lock` : un seul détenteur à la fois, aussi sous des demandes concurrentes, libération, expiration, une libération tardive ignorée, jeton de clôture (*fencing token*) croissant, `waitMs` |
 | `jobSchedulerContract` | tout `JobScheduler` : enregistrement et description, un nom en double et une planification illisible refusés, `runNow` (aussi pour un *job* désactivé, un nom inconnu rejeté), rien par le temps avant `start` ni après `stop`, aucun chevauchement par défaut, un *job* en échec, signalé `failed` avec son code, pendant que les autres continuent, le contexte d'exécution d'une exécution |
@@ -929,7 +945,10 @@ Les suites n'utilisent que `describe`, `it`, `beforeEach`, `expect(...).toBe` et
 runner est le type `ContractRunner`.
 
 Un *package* qui tient un port à lui publie son contrat sur la même base, `ContractSuite` : un sujet créé à
-neuf avant chaque test, et `it`, `expect`, `afterEach` liés au runner.
+neuf avant chaque test, et `it`, `expect`, `afterEach` liés au runner. `holds(condition, otherwise)`
+affirme ce qui n'est pas une valeur à comparer, et échoue avec la phrase qui dit ce que l'adaptateur a
+fait : l'auteur d'un adaptateur lit `the key is still refused after its holder released it`, jamais
+`expected false to be true`. Les suites du *package* sont écrites ainsi.
 
 <!-- checked sample -->
 ```ts
@@ -948,6 +967,12 @@ class GeocoderSuite extends ContractSuite<Geocoder> {
   protected tests(): void {
     this.it('answers undefined for an address it does not know', async () => {
       this.expect(await this.subject.locate('nowhere')).toBe(undefined);
+    });
+
+    this.it('locates London north of the equator', async () => {
+      const found = await this.subject.locate('10 Downing Street, London');
+
+      this.holds((found?.latitude ?? 0) > 0, `London was located at the latitude ${String(found?.latitude)}`);
     });
   }
 }

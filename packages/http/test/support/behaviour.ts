@@ -6,6 +6,7 @@ import { refusesDuplicates } from './behaviour-duplicates';
 import { carriesIdentifiers } from './behaviour-identifiers';
 import { answersProblems } from './behaviour-problems';
 import { answersInSeveralMediaTypes } from './behaviour-representations';
+import { refusesWhatCannotBeWritten } from './behaviour-unwritable';
 import type { ReadAuthorization, StartServer } from './running-server';
 
 /** The one suite every adapter must pass: the behaviour belongs to the pipeline, not the framework. */
@@ -19,5 +20,6 @@ export function describeAdapter(name: string, start: StartServer, readAuthorizat
     refusesDuplicates(start);
     mountsControllers(start, readAuthorization);
     answersInSeveralMediaTypes(start);
+    refusesWhatCannotBeWritten(start);
   });
 }

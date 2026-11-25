@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:84d504cf4373feae -->
+<!-- translation-of: README.md sha256:5267bd6b2d861de6 -->
 
 # @ddd-ts-kit/http
 
@@ -166,6 +166,7 @@ anonyme atteindre `handle`.
 | `HttpRequest<{ params, query, headers, body }>` | la requête HTTP telle que `handle`, un *mapper* ou une garde la nomment, avec `actor` et `context` |
 | `controllerRoutes(controllers, { resolve, security, guards })` | la `Route` de chaque contrôleur, donné comme classe (construite par `resolve`) ou comme instance ; `security` nomme les schémas de sécurité de l'application (`['bearer']` par défaut) ; `guards: 'skip'` sert à la *spec* d'un contrôleur seul |
 | `controllerRoute(controller, options)` | l'unique route d'un contrôleur, pour une *spec* |
+| `writtenText(response)` | (`@ddd-ts-kit/http/testing`) le texte qu'un adaptateur écrit pour une réponse, lu jusqu'au bout : le XML ou le CSV d'une représentation, une liste en flux ; `response.body` est la valeur avant son écriture |
 | `routeOf(controller or route, options)` | (`@ddd-ts-kit/http/testing`) la route d'une *spec* et `send(request)`, par tout le pipeline au nom d'un `caller` authentifié, gardes comprises sauf si `guards: 'skip'` dit le contraire, réponses vérifiées : voir [La *spec* d'une route](#la-spec-dune-route--routeof) |
 
 Un contrôleur sans groupe et sans garde est refusé dès que sa classe est définie. Les gardes
@@ -187,7 +188,13 @@ brut reste une fonction `defineRoute`. Les raisons sont sur la page
 `executeRoute(route, request, options)` est tout le comportement du package : un adaptateur ne
 fait que copier la requête HTTP de son framework dans une `RawRequest` (`params`, `query`,
 `headers`, `body`, `raw`, et le flux du corps, `stream`), l'appeler, et réécrire la
-`RouteResponse` qu'elle renvoie.
+`RouteResponse` qu'elle renvoie : un `status`, des `headers` et un `payload` déjà décidé,
+`{ kind: 'none' }`, `{ kind: 'text', text }` (du JSON, une autre représentation, un *problem*),
+`{ kind: 'bytes', bytes }` ou `{ kind: 'stream', stream }` (un fichier, ou les morceaux d'une
+liste en flux). Un adaptateur ne sérialise rien : une valeur qui ne peut pas être écrite (un
+cycle) échoue dans le pipeline, est signalée à `onError` et reçoit un 500 sous forme de
+*problem*, avec les en-têtes d'un refus. `body` porte la valeur répondue, avant toute écriture,
+pour une *spec* et pour une procédure RPC.
 
 ![Les étapes que suit executeRoute pour une requête HTTP : les identifiants, puis, dans le hook around, authentification, téléversement, validation, If-Match, contexte d'exécution et tenant, puis les gardes et handle dans la portée d'exécution, le contrôle de la réponse, les en-têtes et le 304 ; chaque étape qui peut refuser nomme son statut, et chaque refus devient un document problem](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/http-package-pipeline.fr.svg)
 
@@ -1051,9 +1058,11 @@ plus de JSON (`consumes`), sur `@Controller` comme sur `defineRoute` :
   `produces` et `consumes` ou non. Sans `representations`, le contrat ne dit que JSON et aucun
   des deux statuts, comme répond le serveur.
 - **Sans `representations`**, rien ne change : chaque réponse est en JSON, quoi que la requête
-  HTTP accepte. Avec elles, une réponse dans le JSON du kit reste une valeur dans la
-  `RouteResponse` (une *spec* qui appelle `executeRoute` la lit comme avant) ; une autre
-  représentation donne des octets dans `body`, ou des morceaux dans `stream`.
+  HTTP accepte, une liste en flux comprise, écrite comme un seul tableau JSON. Avec ou sans
+  elles, `body` de la `RouteResponse` est la valeur répondue (une *spec* qui appelle
+  `executeRoute` la lit comme avant) et `payload` ce qui est écrit : `writtenText(response)` de
+  `@ddd-ts-kit/http/testing` le lit jusqu'au bout, le XML ou le CSV d'une réponse, les morceaux
+  d'une liste en flux.
 
 ### Les règles de sérialisation, les mêmes dans chaque représentation
 
@@ -1288,16 +1297,26 @@ declare const options: ExecuteOptions;
 declare const logger: Logger;
 
 const app = express();
-app.use(express.json()); // obligatoire : l'adaptateur n'analyse pas les corps
-mountExpress(app, routes, options); // un express.Router() convient aussi
+mountExpress(app, routes, options); // un express.Router() convient aussi ; lit lui-même les corps
 app.use(problemNotFoundHandler({ logger })); // après les routes : un chemin qu'aucune ne sert
 app.use(problemErrorHandler({ logger })); // en dernier : ce qu'Express refuse avant une route
 app.listen(3000);
 ```
 
+L'adaptateur lit lui-même le corps de chaque route, jusqu'à `bodyLimit` octets (1 Mio par
+défaut, comme Fastify et Hono) : du JSON quelle que soit sa valeur, un objet ou `null`, un
+nombre, un texte, pour que le schéma de la route décide (422), et un type de média que la route
+consomme, en texte. Une route qui lit son propre flux (un téléversement, un corps brut) ne
+reçoit aucun analyseur. Un analyseur de l'application passé avant l'emporte : `express.json()`
+refuse avec 400 une valeur JSON qui n'est ni un objet ni un tableau, sauf avec `strict: false`,
+et lit au plus 100 ko.
+
 `problemErrorHandler` répond sous forme de *problem* à ce qui atteint Express avant une route du
-kit : un corps que `express.json()` ne sait pas analyser reçoit un 400 `MALFORMED_BODY`, un corps
-au-delà de sa limite (100 ko par défaut) un 413 `BODY_TOO_LARGE`, une autre erreur porteuse d'un
+kit : un corps qui n'est pas du JSON reçoit un 400 `MALFORMED_BODY`, un corps
+au-delà de la limite un 413 `BODY_TOO_LARGE`, une erreur du kit qu'un middleware passe à `next`
+(`UnauthorizedError`, `ForbiddenError`, une `DomainError` du projet) le *problem* qu'une route
+répond pour elle, sous le statut que `errorMapper` donne à son code (la correspondance par
+défaut s'il est omis), une autre erreur porteuse d'un
 statut (`status` ou `statusCode`, 4xx ou 5xx) ce statut, avec le code que le kit lui donne
 (`UNAUTHORIZED`, `VALIDATION_FAILED` pour 422, `SERVICE_UNAVAILABLE` pour le 503 d'un stockage
 en panne) et les en-têtes qu'elle porte pour son client (`WWW-Authenticate`, `Allow`,
@@ -1366,7 +1385,7 @@ serve({ fetch: app.fetch, port: 3000 });
 ```
 
 L'adaptateur lit lui-même le corps JSON, morceau par morceau et jusqu'à `bodyLimit` octets
-(1 Mio par défaut, comme Fastify ; Express s'arrête à 100 ko) : un corps plus grand reçoit un 413
+(1 Mio par défaut, comme Fastify et Express) : un corps plus grand reçoit un 413
 sous forme de *problem* (`BODY_TOO_LARGE`), un corps qui n'est pas du JSON un 400
 (`MALFORMED_BODY`), les deux avant le pipeline et sans garder le corps en entier. Un corps dans
 un type de média que la route consomme (`consumes`) est lu comme du texte sous la même limite,
@@ -1428,6 +1447,11 @@ trop grand reçoit un 413 `BODY_TOO_LARGE`, un chemin qu'aucune route ne sert un
 un corps qui n'est pas du JSON un 400 `MALFORMED_BODY` comme sur les autres frameworks : Nest
 enveloppe l'erreur de son analyseur dans une exception à lui avant tout filtre, que le filtre
 reconnaît à son statut, à son message et à une requête JSON dont le corps n'a jamais été lu.
+Sur Express, l'analyseur de Nest refuse avec 400 une valeur JSON qui n'est ni un objet ni un
+tableau (`null`, un nombre, un texte), là où le schéma de la route répond 422 sur les autres
+frameworks : `app.useBodyParser('json', { strict: false })`, avant que l'application n'écoute,
+laisse la route décider. Le filtre prend l'`errorMapper` de l'application comme
+`problemErrorHandler`, pour une erreur du kit levée par un middleware.
 
 ### Contrôleurs Nest servis par le kit
 
@@ -1935,7 +1959,7 @@ l'application sert elle-même, le répertoire local du développement ou la mém
 `GET /files?token=` télécharge (en pièce jointe, `nosniff`, `no-store`), `PUT /files?token=`
 téléverse, refusé avec 413 au-delà de la taille pour laquelle le lien a été signé. Ces routes
 sont publiques, le jeton étant l'autorisation, et ne font pas partie du contrat. Avec
-Express, montez-les avant `express.json()` : cet analyseur lit d'abord un corps JSON. Un
+Express, montez-les avant un `express.json()` de l'application, si elle en a un : cet analyseur lit d'abord un corps JSON. Un
 stockage objet répond à ses propres liens et n'a besoin d'aucune route.
 
 Un gestionnaire peut répondre un flux (`Readable`) comme corps : il est envoyé dans la réponse,

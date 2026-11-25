@@ -1,9 +1,10 @@
 import 'reflect-metadata';
-import { TransformationType, type TypeMetadata } from 'class-transformer';
+import { TransformationType } from 'class-transformer';
 import { defaultMetadataStorage } from 'class-transformer/cjs/storage.js';
 import { getMetadataStorage } from 'class-validator';
 import type { DtoClass } from './dto-class';
 import { prototypeOf } from './prototype-of';
+import { typeMetadataOf } from './type-metadata-of';
 
 const TRANSFORMATIONS = [
   TransformationType.PLAIN_TO_CLASS,
@@ -51,11 +52,6 @@ function copyTransformations(source: DtoClass<object>, target: DtoClass<object>,
       defaultMetadataStorage.addTransformMetadata({ ...transform, target });
     }
   }
-}
-
-/** class-transformer answers `undefined` for a property without `@Type`, which its declaration does not say. */
-function typeMetadataOf(source: DtoClass<object>, property: string): TypeMetadata | undefined {
-  return defaultMetadataStorage.findTypeMetadata(source, property);
 }
 
 function copyReflectedType(source: DtoClass<object>, target: DtoClass<object>, property: string): void {

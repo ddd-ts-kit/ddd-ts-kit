@@ -258,6 +258,15 @@ export const DECLARATIONS_FIXTURES: readonly Fixture[] = [
       [STRIPE]: stripeGateway(
         '// ddd-ts-kit-disable-next-line declarations/port-adapter-wired -- ADR-0001: kept for the switch back to Stripe',
       ),
+      [COMMAND]: DECLARED.command,
+      ...handler(
+        DECLARED.handler
+          .replace(
+            "import { InvoiceRepository } from '@/contexts/billing/domain/repositories/invoice.repository.js';",
+            PORT_IMPORT,
+          )
+          .replace('[InvoiceRepository, Clock]', '[PaymentGateway, Clock]'),
+      ),
     }),
   },
   {

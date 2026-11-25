@@ -221,7 +221,7 @@ class OutboxStoreSuite extends ContractSuite<OutboxStoreUnderContract> {
       const batch = [outboxEvent('evt-2'), outboxEvent('evt-1')];
       const failure = await failureOf(() => this.subject.append(batch));
 
-      this.expect(failure !== undefined).toBe(true);
+      this.holds(failure !== undefined, 'a batch with an event id the store already holds was accepted');
       this.expect(await this.subject.stats()).toEqual({ pending: 1, failed: 0, dead: 0 });
     });
   }

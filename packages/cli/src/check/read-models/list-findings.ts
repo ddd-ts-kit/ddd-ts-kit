@@ -102,7 +102,7 @@ function whatIsMissing(project: Project, name: string, file: string): string | u
   }
 
   const answers =
-    source.isTest || names(source.scan.code, name) || source.scan.imports.some(({ kind }) => kind === 'export');
+    source.isTest || names(source.scan.code, name) || source.imports.some(({ kind }) => kind === 'export');
 
   if (answers) {
     return undefined;

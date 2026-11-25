@@ -3,34 +3,40 @@ import type { Rule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inLayers } from '../support/in-layers';
 import { perFile } from '../support/per-file';
-import type { PurityRule } from './purity-rule';
+import { forbiddenNamedImports } from './forbidden-named-imports';
+import { forbiddenUses } from './forbidden-uses';
+import type { PurityTable } from './reference/purity-table';
 
-/** The three purity/* rules share one mechanism: forbidden tokens and modules in domain/ and application/. */
-export function definePurityRule(rule: PurityRule): Rule {
+/**
+ * The three purity/* rules share one mechanism: the globals and the modules their table forbids
+ * in domain/ and application/. The table, and the words of a finding, are those of the ESLint
+ * plugin; this checker reads the text where the plugin reads the syntax tree.
+ */
+export function definePurityRule(table: PurityTable): Rule {
   return {
-    id: rule.id,
-    description: rule.description,
+    id: table.id,
+    description: table.description,
     scope: 'file',
     run: (project) =>
-      perFile(project, rule.id, (file) => {
+      perFile(project, table.id, (file) => {
         const layer = inLayers(file, ['domain', 'application'])?.layer;
 
-        return layer === undefined ? [] : [...forbiddenCode(file, rule, layer), ...forbiddenImports(file, rule, layer)];
+        return layer === undefined
+          ? []
+          : [...forbiddenModules(file, table, layer), ...forbiddenCode(file, table, layer)];
       }),
   };
 }
 
-function forbiddenCode(file: SourceFile, rule: PurityRule, layer: string): Finding[] {
-  return rule.code.flatMap(({ pattern, what }) =>
-    [...file.scan.code.matchAll(pattern)].map((match) => ({
-      line: file.scan.lineAt(match.index),
-      message: `${what} is used in the ${layer} layer.`,
-      fix: rule.fix,
-    })),
-  );
+function forbiddenCode(file: SourceFile, table: PurityTable, layer: string): Finding[] {
+  return [...forbiddenNamedImports(file.scan, table), ...forbiddenUses(file.scan, table)].map(({ at, what }) => ({
+    line: file.scan.lineAt(at),
+    message: `${what} is used in the ${layer} layer.`,
+    fix: table.fix,
+  }));
 }
 
-function forbiddenImports(file: SourceFile, rule: PurityRule, layer: string): Finding[] {
+function forbiddenModules(file: SourceFile, table: PurityTable, layer: string): Finding[] {
   return file.imports.flatMap(({ target, line }) => {
     if (target.kind === 'file') {
       return [];
@@ -38,8 +44,8 @@ function forbiddenImports(file: SourceFile, rule: PurityRule, layer: string): Fi
 
     const name = target.kind === 'builtin' ? (target.name.replace(/^node:/, '').split('/')[0] ?? '') : target.name;
 
-    return rule.modules.includes(name)
-      ? [{ line, message: `"${target.name}" is imported in the ${layer} layer.`, fix: rule.fix }]
+    return table.modules.includes(name)
+      ? [{ line, message: `"${target.name}" is imported in the ${layer} layer.`, fix: table.fix }]
       : [];
   });
 }

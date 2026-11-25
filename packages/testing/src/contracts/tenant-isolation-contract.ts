@@ -21,8 +21,11 @@ export interface TenantIsolationContractOptions<A extends AggregateRoot<Id>, Id 
   createRepository(scope: ExecutionScope): Awaitable<Repository<A, Id>>;
   /** A new valid aggregate with an id of its own at each call. */
   createAggregate(): A;
-  /** Any business operation that changes what `stateOf` returns. */
-  mutate(aggregate: A): void;
+  /**
+   * Any business operation that changes what `stateOf` returns. Optional: without it, the case of
+   * the save under the id another tenant holds stays pending until the contract is given one.
+   */
+  mutate?(aggregate: A): void;
   idOf(aggregate: A): Id;
   stateOf(aggregate: A): unknown;
   /**
@@ -93,6 +96,15 @@ class TenantIsolationSuite<A extends AggregateRoot<Id>, Id extends string | numb
 
   private keepsAnotherTenantFromOverwriting(): void {
     const { options } = this;
+    const mutate = options.mutate?.bind(options);
+
+    if (mutate === undefined) {
+      this.todo(
+        'leaves untouched what a tenant saved when another saves under the same id (give the contract a mutate that records a change of state)',
+      );
+
+      return;
+    }
 
     this.it('leaves untouched what a tenant saved when another saves under the same id', async () => {
       const saved = options.createAggregate();
@@ -103,7 +115,7 @@ class TenantIsolationSuite<A extends AggregateRoot<Id>, Id extends string | numb
       const intruder = await this.as(ACME, () => this.subject.findById(options.idOf(saved)));
 
       if (intruder !== undefined) {
-        options.mutate(intruder);
+        mutate(intruder);
         await failureOf(() => this.as(GLOBEX, () => this.subject.save(intruder)));
       }
 
@@ -129,7 +141,7 @@ class TenantIsolationSuite<A extends AggregateRoot<Id>, Id extends string | numb
 
       const clash = recreate(saved);
 
-      options.mutate(clash);
+      options.mutate?.(clash);
       await failureOf(() => this.as(GLOBEX, () => this.subject.save(clash)));
 
       const kept = await this.as(ACME, () => this.subject.findById(options.idOf(saved)));
@@ -158,7 +170,7 @@ class TenantIsolationSuite<A extends AggregateRoot<Id>, Id extends string | numb
       const changed = await this.as(ACME, () => this.subject.findById(options.idOf(saved)));
 
       if (changed !== undefined) {
-        options.mutate(changed);
+        options.mutate?.(changed);
         await failureOf(() => TenantIsolationSuite.scope.run(staff, () => this.subject.save(changed)));
       }
 
@@ -186,8 +198,15 @@ class TenantIsolationSuite<A extends AggregateRoot<Id>, Id extends string | numb
       const write = await failureOf(() => scope.run(job, () => this.subject.save(options.createAggregate())));
 
       // Refused by the adapter, or, under row-level security alone, shown nothing by the database.
-      this.expect(read instanceof NoCurrentTenantError || read === undefined).toBe(true);
-      this.expect(write instanceof NoCurrentTenantError).toBe(true);
+      this.holds(
+        read instanceof NoCurrentTenantError || read === undefined,
+        `a read of work that names no tenant was neither refused with NoCurrentTenantError nor shown nothing: got ${String(read)}`,
+      );
+
+      this.holds(
+        write instanceof NoCurrentTenantError,
+        `a write of work that names no tenant was not refused with NoCurrentTenantError: got ${String(write)}`,
+      );
     });
   }
 

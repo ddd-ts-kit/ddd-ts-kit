@@ -259,6 +259,19 @@ export const STRUCTURE_INJECTIONS: readonly Injection[] = [
     ],
   },
   {
+    rule: 'config/unused-suppression',
+    what: 'a suppression of a rule the next line does not break',
+    file: HANDLER,
+    changes: [
+      {
+        file: HANDLER,
+        from: '    reminder.withdraw();\n',
+        to: '    // ddd-ts-kit-disable-next-line tenancy/scoped-statement -- ADR-0004: the history keeps no network yet\n    reminder.withdraw();\n',
+      },
+    ],
+    checker: true,
+  },
+  {
     rule: 'tenancy/scoped-statement',
     what: 'a statement of a reader that reaches its table straight from the executor, outside the network of the work',
     file: SEARCH_READER,
