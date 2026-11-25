@@ -72,11 +72,12 @@ function reasonOf(challenge: unknown): string {
   return typeof message === 'string' && REASON_CODE.test(message) ? message : 'refused-by-strategy';
 }
 
+/** A header that is there presents a credential, an empty one too: it is refused, never ignored. */
 function hasAuthorization(raw: unknown): boolean {
   const headers: unknown = typeof raw === 'object' && raw !== null ? Reflect.get(raw, 'headers') : undefined;
 
   const authorization: unknown =
     typeof headers === 'object' && headers !== null ? Reflect.get(headers, 'authorization') : undefined;
 
-  return typeof authorization === 'string' && authorization.trim() !== '';
+  return typeof authorization === 'string';
 }

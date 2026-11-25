@@ -644,7 +644,9 @@ It fails closed:
 | redirects (an OAuth sign-in) | is refused: a sign-in flow is served by the platform, not by the authentication of a call |
 | answers nothing within `timeoutMs` (10 s) | is refused |
 
-A credential is presented when the request carries an `Authorization` header; a strategy that
+A credential is presented when the request carries an `Authorization` header, an empty one
+included: like every authenticator of the kit, the bridge refuses an empty credential and reads
+only an absent one as anonymous. A strategy that
 reads a cookie says where with `presented: (raw) => ...`. The `InvalidCredentialError` of a
 refusal carries the reason the strategy failed with when it is a code (`fail({ message:
 'NO_EXPIRY' })`, in upper snake case), and `refused-by-strategy` otherwise: the message of a
@@ -652,7 +654,9 @@ library (`invalid signature`) is not a code.
 
 `passportAuthenticator(strategy, { actorOf })` is the same strategy behind the `Authenticator`
 port: the bearer credential is handed to the strategy as `Authorization: Bearer <credential>`,
-so that the procedures, the scripts and the end-to-end tests authenticate through it too.
+so that the procedures, the scripts and the end-to-end tests authenticate through it too; an
+empty credential is refused before the strategy runs (`MALFORMED_TOKEN`), as `JwtAuthenticator`
+refuses it.
 `actorOfClaims(claims)` reads the claims of a token as `JwtAuthenticator` does, for the
 `actorOf` of a strategy that hands its payload on. `ddd-ts-kit init --authn passport` writes
 that platform: a strategy of `passport-jwt` on the key set of the issuer (`jwks-rsa`), its

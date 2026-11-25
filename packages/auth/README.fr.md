@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:dfc37c6f40e46e36 -->
+<!-- translation-of: README.md sha256:bf726debd5cb5e6a -->
 
 # @ddd-ts-kit/auth
 
@@ -669,7 +669,9 @@ Il refuse par défaut :
 | redirige (une connexion OAuth) | est refusé : un parcours de connexion est servi par la plateforme, pas par l'authentification d'un appel |
 | ne répond rien avant `timeoutMs` (10 s) | est refusé |
 
-Un identifiant est présenté quand la requête porte un en-tête `Authorization` ; une stratégie qui
+Un identifiant est présenté quand la requête porte un en-tête `Authorization`, même vide : comme
+tous les authentificateurs du kit, le pont refuse un identifiant vide et ne lit comme anonyme
+qu'un identifiant absent. Une stratégie qui
 lit un cookie dit où avec `presented: (raw) => ...`. L'`InvalidCredentialError` d'un refus porte
 la raison avec laquelle la stratégie a échoué quand c'est un code (`fail({ message:
 'NO_EXPIRY' })`, en majuscules séparées par des tirets bas), et `refused-by-strategy` sinon : le
@@ -678,7 +680,8 @@ message d'une bibliothèque (`invalid signature`) n'est pas un code.
 `passportAuthenticator(strategy, { actorOf })` est la même stratégie derrière le port
 `Authenticator` : l'identifiant bearer est remis à la stratégie comme `Authorization: Bearer
 <identifiant>`, de sorte que les procédures, les scripts et les tests de bout en bout
-s'authentifient aussi par elle. `actorOfClaims(claims)` lit les *claims* d'un jeton comme
+s'authentifient aussi par elle ; un identifiant vide est refusé avant que la stratégie ne tourne
+(`MALFORMED_TOKEN`), comme le refuse `JwtAuthenticator`. `actorOfClaims(claims)` lit les *claims* d'un jeton comme
 `JwtAuthenticator`, pour l'`actorOf` d'une stratégie qui transmet sa charge utile.
 `ddd-ts-kit init --authn passport` écrit cette plateforme : une stratégie de `passport-jwt` sur le
 jeu de clés de l'émetteur (`jwks-rsa`), son `actorOf`, et les identifiants de bout en bout signés
