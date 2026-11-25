@@ -129,14 +129,16 @@ export class OutboxRelay {
     } catch (error) {
       this.order.suspend(tick.groups, tick.settled);
 
+      // The store failed mid-batch: what did go out must not go out twice for that. A store that
+      // cannot mark it either is reported, and the tick still fails with its first error.
+      await this.markPublished(tick).catch((unmarked: unknown) => {
+        this.onFailure({ kind: 'tick', code: errorCode(unmarked) });
+      });
+
       throw error;
-    } finally {
-      // Also when the store fails mid-batch: what did go out must not go out twice for that.
-      if (tick.published.length > 0) {
-        await this.store.markPublished(tick.published, this.clock.now());
-      }
     }
 
+    await this.markPublished(tick);
     await this.measure();
 
     return { published: tick.published.length, failed: tick.failed };
@@ -170,6 +172,12 @@ export class OutboxRelay {
     clearTimeout(this.timer);
     this.timer = undefined;
     await this.running;
+  }
+
+  private async markPublished(tick: Tick): Promise<void> {
+    if (tick.published.length > 0) {
+      await this.store.markPublished(tick.published, this.clock.now());
+    }
   }
 
   private async measure(): Promise<void> {
