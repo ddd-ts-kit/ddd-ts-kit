@@ -85,7 +85,7 @@ export class TransactionSuite extends ContractSuite<StoreInUnitOfWork> {
     this.it('leaves the job dead when the unit of work that revived it rolled back', async () => {
       await this.subject.store.add(aJob('job-1'));
       await this.claimed();
-      await this.subject.store.fail({ id: 'job-1', attempt: 1 }, { errorCode: 'X', retryAt: null, at: NOW });
+      await this.subject.store.fail({ id: 'job-1', claim: 1 }, { errorCode: 'X', retryAt: null, at: NOW });
 
       await failureOf(() =>
         this.subject.unitOfWork.run(async () => {

@@ -13,6 +13,8 @@ export interface StoredJob {
   readonly sequence: number;
   status: QueuedJobStatus;
   attempts: number;
+  /** How many times it was claimed: the lease of the claim that holds it. Never moves back. */
+  claims: number;
   runAt: Date;
   leaseUntil: Date | undefined;
   progress: JobProgress | undefined;

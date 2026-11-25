@@ -58,6 +58,6 @@
   },
   "devDependencies": {
     "@ddd-ts-kit/testing": "0.114.1",
-    "@openfga/sdk": "0.9.7"
+    "@openfga/sdk": "0.9.8"
   }
 }

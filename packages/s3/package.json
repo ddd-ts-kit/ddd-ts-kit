@@ -68,9 +68,9 @@
     }
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "3.1166.0",
-    "@aws-sdk/lib-storage": "3.1166.0",
-    "@aws-sdk/s3-request-presigner": "3.1166.0",
+    "@aws-sdk/client-s3": "3.1169.0",
+    "@aws-sdk/lib-storage": "3.1169.0",
+    "@aws-sdk/s3-request-presigner": "3.1169.0",
     "@ddd-ts-kit/testing": "0.114.1"
   }
 }

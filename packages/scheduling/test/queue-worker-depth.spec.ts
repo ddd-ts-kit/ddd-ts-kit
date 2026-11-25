@@ -2,7 +2,7 @@ import {
   AsyncLocalStorageExecutionScope,
   FixedClock,
   InMemoryLogger,
-  type InMemoryMetrics,
+  InMemoryMetrics,
   SequentialIdGenerator,
 } from '@ddd-ts-kit/kernel';
 import { describe, expect, it } from 'vitest';
@@ -18,6 +18,25 @@ refuseUnhandledRejections();
 class StoreWithoutStats extends InMemoryJobStore {
   override stats(): Promise<JobStoreStats> {
     return Promise.reject(new Error('stats asked'));
+  }
+}
+
+/** A store whose count takes time, as a SQL count does: it answers once `answer()` is called. */
+class StoreWithSlowStats extends InMemoryJobStore {
+  private readonly asked: (() => void)[] = [];
+
+  override async stats(queue: string): Promise<JobStoreStats> {
+    await new Promise<void>((resolve) => {
+      this.asked.push(resolve);
+    });
+
+    return super.stats(queue);
+  }
+
+  answer(): void {
+    this.asked.splice(0).forEach((resolve) => {
+      resolve();
+    });
   }
 }
 
@@ -69,6 +88,32 @@ describe('a started worker given metrics', () => {
 
     expect(job.runs).toHaveLength(1);
     expect(logger.entries.filter(({ level }) => level === 'error')).toEqual([]);
+    await worker.stop();
+  });
+
+  it('claims the next job when an attempt ended while the depth was counted', async () => {
+    const clock = new FixedClock(new Date('2026-03-02T10:00:00.000Z'));
+    const timers = new ManualJobTimers(clock);
+    const store = new StoreWithSlowStats();
+    const scope = new AsyncLocalStorageExecutionScope();
+    const queue = new StoredJobQueue({ store, clock, ids: new SequentialIdGenerator('job'), scope });
+    const worker = new QueueWorker({ store, clock, scope, timers, metrics: new InMemoryMetrics() });
+    const job = new CompileStatementsJob();
+
+    worker.register(job.definition());
+    await queue.enqueue(CompileStatementsJob, { month: '2026-01', customers: [] });
+    await queue.enqueue(CompileStatementsJob, { month: '2026-02', customers: [] });
+
+    const started = worker.start();
+
+    await timers.advance(0);
+    expect(job.runs).toHaveLength(1);
+
+    store.answer();
+    await started;
+    await timers.advance(0);
+
+    expect(job.runs).toHaveLength(2);
     await worker.stop();
   });
 });

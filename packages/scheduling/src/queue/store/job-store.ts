@@ -11,9 +11,10 @@ import type { NewJob } from './new-job';
  * Where background jobs wait between `enqueue` and their run, and what a worker reports of them.
  *
  * A claim is a lease: a job claimed and not heard of before its lease ends is claimed again,
- * which is how the jobs of a worker that died come back. Every report names the attempt it
- * holds (`JobLease`): once the job was claimed again, or cancelled, the store answers false and
- * the worker stops. Every write answers false when it changed nothing.
+ * which is how the jobs of a worker that died come back. Every report names the lease its claim
+ * was handed (`JobLease`), which no other claim of the job ever holds: once the job was claimed
+ * again, or cancelled, the store answers false and the worker stops. Every write answers false
+ * when it changed nothing.
  */
 export abstract class JobStore {
   static readonly tokenKey = 'scheduling.JobStore';
@@ -29,8 +30,8 @@ export abstract class JobStore {
 
   /**
    * Claims up to `limit` jobs of the queue that are due (waiting with `runAt` passed, or running
-   * with an expired lease), the earliest first, and counts the attempt. Two concurrent claims
-   * never return the same job.
+   * with an expired lease), the earliest first, counts the attempt and hands each job under a
+   * lease of its own. Two concurrent claims never return the same job.
    */
   abstract claim(request: ClaimRequest): Promise<ClaimedJob[]>;
 
@@ -45,7 +46,10 @@ export abstract class JobStore {
   /** Schedules the next attempt, or declares the job dead when `retryAt` is null. */
   abstract fail(lease: JobLease, failure: JobFailure): Promise<boolean>;
 
-  /** Gives a job back without counting the attempt: the worker stops before the run could end. */
+  /**
+   * Gives a job back without counting the attempt: the worker stops before the run could end.
+   * The lease is not given back: the next claim holds another.
+   */
   abstract release(lease: JobLease, runAt: Date): Promise<boolean>;
 
   /**
@@ -56,7 +60,7 @@ export abstract class JobStore {
 
   abstract find(id: string): Promise<QueuedJob | undefined>;
 
-  /** Puts dead jobs back with a fresh attempt budget. Answers how many. */
+  /** Puts dead jobs back with a fresh attempt budget, and no lease of before. Answers how many. */
   abstract retryDead(ids: readonly string[], now: Date): Promise<number>;
 
   /** Housekeeping: drops the jobs that succeeded or were cancelled before `before`. Dead jobs stay. */

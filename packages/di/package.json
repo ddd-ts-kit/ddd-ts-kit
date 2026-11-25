@@ -61,7 +61,7 @@
     "@ddd-ts-kit/scheduling": "0.114.1"
   },
   "peerDependencies": {
-    "awilix": "^13.0.5",
+    "awilix": "^13.0.6",
     "inversify": "^8.3.0",
     "reflect-metadata": ">=0.2.0",
     "tsyringe": "^4.10.0"
@@ -81,7 +81,7 @@
     }
   },
   "devDependencies": {
-    "awilix": "^13.0.5",
+    "awilix": "^13.0.6",
     "inversify": "^8.3.0",
     "reflect-metadata": "^0.2.2",
     "tsyringe": "^4.10.0"

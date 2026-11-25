@@ -13,7 +13,7 @@ import {
   type BackgroundJobPayloadSchema,
 } from '@ddd-ts-kit/kernel';
 import { Background } from '@ddd-ts-kit/kernel/declarations';
-import { InMemoryJobStore, JobStore, QueueWorker } from '@ddd-ts-kit/scheduling';
+import { InMemoryJobStore, JobLease, JobStore, QueueWorker } from '@ddd-ts-kit/scheduling';
 import { lazyJobStore } from '../src/kernel/lazy-job-store';
 import { defineContextModule, kernelModule, overrideForTests, type ModuleBuilder } from '../src';
 import { createApplication, createTestApplication } from './support/on-container';
@@ -222,7 +222,8 @@ describe('the queue ports of the kernel module', () => {
     const app = createApplication({ modules: [kernelModule({ jobStore: store })] });
     const lazy = lazyJobStore(app.resolve);
     const now = new Date('2026-03-02T10:00:00.000Z');
-    const lease = { id: 'job-1', attempt: 1 };
+    const lease = JobLease.ofClaim('job-1', 1);
+    const claimedAgain = JobLease.ofClaim('job-1', 2);
     const enqueuedBy = { correlationId: 'c', actor: { id: 'a', type: 'user' as const, roles: [], attributes: {} } };
 
     await lazy.add({
@@ -242,7 +243,7 @@ describe('the queue ports of the kernel module', () => {
       await lazy.update(lease, { progress: { done: 1 } }, now),
       await lazy.release(lease, now),
       (await lazy.claim({ queue: 'billing', limit: 1, now, leaseMs: 1_000 })).length,
-      await lazy.fail(lease, { errorCode: 'X', retryAt: null, at: now }),
+      await lazy.fail(claimedAgain, { errorCode: 'X', retryAt: null, at: now }),
       await lazy.retryDead(['job-1'], now),
       await lazy.cancel('job-1', now),
       (await lazy.find('job-1'))?.status,

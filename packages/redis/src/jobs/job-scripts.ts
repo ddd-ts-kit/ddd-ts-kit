@@ -39,6 +39,7 @@ for index = 1, math.min(#records, limit) do
   local record = records[index]
   record.status = 'running'
   record.attempts = record.attempts + 1
+  record.claims = (record.claims or 0) + 1
   record.leaseUntil = tonumber(ARGV[3])
   local raw = cjson.encode(record)
   redis.call('HSET', KEYS[1], record.id, raw)
@@ -50,15 +51,16 @@ return claimed`;
 
 /**
  * KEYS: records, waiting, running, dead, finished. ARGV: id, statuses allowed (space separated),
- * attempt or '', change. A change sets fields, removes those it sets to false, and adds
- * `attemptsDelta` to the attempts. Answers 1 when it applied, 0 otherwise.
+ * claim of the lease or '', change. A change sets fields, removes those it sets to false, and adds
+ * `attemptsDelta` to the attempts. The claims are counted by the claim alone: no change moves
+ * them. Answers 1 when it applied, 0 otherwise.
  */
 export const TRANSITION_JOB = `
 local raw = redis.call('HGET', KEYS[1], ARGV[1])
 if not raw then return 0 end
 local record = cjson.decode(raw)
 if not string.find(' ' .. ARGV[2] .. ' ', ' ' .. record.status .. ' ', 1, true) then return 0 end
-if ARGV[3] ~= '' and record.attempts ~= tonumber(ARGV[3]) then return 0 end
+if ARGV[3] ~= '' and (record.claims or 0) ~= tonumber(ARGV[3]) then return 0 end
 for field, value in pairs(cjson.decode(ARGV[4])) do
   if field == 'attemptsDelta' then record.attempts = record.attempts + value
   elseif value == false then record[field] = nil

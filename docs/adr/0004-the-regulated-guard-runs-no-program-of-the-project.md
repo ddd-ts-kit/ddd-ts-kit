@@ -4,7 +4,7 @@
 
 ## Decision
 
-Under the regulated profile the guard of the plugin (`plugin/hooks/guard.mjs`) starts, at no hook, the `ddd-ts-kit` or the Biome of `node_modules`. The rules the guard reads itself keep running: a generated file, the scope of a worker, the lock of a fix, the size of a commit. The entry of the change is `changes/the-regulated-guard-runs-no-program-of-the-project.md`.
+Under the regulated profile the guard of the plugin (`plugin/hooks/guard.mjs` and the modules beside it) starts, at no hook, the `ddd-ts-kit` or the Biome of `node_modules`. The rules the guard reads itself keep running: a generated file, the scope of a worker, the lock of a fix, the size of a commit. The entry of the change is `changes/the-regulated-guard-runs-no-program-of-the-project.md`.
 
 The profile is read by `isRegulated`, at the root of the project and in every folder above it, from:
 

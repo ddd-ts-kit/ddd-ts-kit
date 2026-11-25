@@ -15,6 +15,8 @@ export interface RedisJobRecord {
   readonly seq: number;
   readonly status: QueuedJobStatus;
   readonly attempts: number;
+  /** How many times it was claimed: the lease of the claim that holds it. Absent before the first claim. */
+  readonly claims?: number;
   readonly runAt: number;
   readonly leaseUntil?: number;
   readonly progress?: JobProgress;
