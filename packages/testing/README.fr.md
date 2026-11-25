@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:7cf3310adf8540a8 -->
+<!-- translation-of: README.md sha256:6983c46c328495d6 -->
 
 # @ddd-ts-kit/testing
 
@@ -520,6 +520,16 @@ sa propre copie de ce qui est sauvegardé (par `snapshots({ toSnapshot, fromSnap
 applique la concurrence optimiste sur `version`, en levant `ConcurrencyError` (code
 `CONCURRENCY_CONFLICT`). Vérifiez son état avec `all()` et `count()`.
 
+Le *fake* d'un agrégat rattaché à un *tenant* est confiné comme l'est son adaptateur :
+`super(snapshots({ ... }), { confinedTo: scope })` tient chaque lecture et chaque écriture dans le *tenant*
+du travail en cours dans `scope`. Un *tenant* ne trouve, ne liste et ne compte que ce qu'il a enregistré,
+un enregistrement sous un id que détient un autre *tenant* est refusé par `ConcurrencyError`, une élévation
+élargit les lectures et aucune écriture, et un travail qui ne nomme aucun *tenant* est refusé
+(`NoCurrentTenantError`). Il passe `tenantIsolationContract`, et `generate repository` l'écrit ainsi pour
+un agrégat rattaché à un *tenant*, avec une portée qui vaut par défaut `oneTenantScope()`, le travail d'un
+membre d'`acme` : une spec sur un seul *tenant* construit le *fake* seul, une spec sur une fuite entre
+*tenants* lui donne l'`executionScope` de son harnais et change de *tenant* avec `asTenant`.
+
 ### Un fake, pas un mock
 
 Au lieu d'un *mock*, qui vérifie les appels qu'a faits le gestionnaire et rien de leur effet :
@@ -647,7 +657,8 @@ Ce sont deux classes sur `Builder`, immuables comme tout *builder*, et elles acc
 où l'on attend un acteur ou une session (`aSession().of(anActor().withRole('accountant'))` avec le
 *builder* d'acteur de `@ddd-ts-kit/auth/testing`). `scoped(scope, context, work)` exécute un bloc dans un
 contexte donné comme valeur ou comme *builder*, avec n'importe quel `ExecutionScope` ; `asTenant(scope,
-'acme', work)` l'exécute comme membre d'un *tenant*, et `elevatedOver('all')` construit le contexte du
+'acme', work)` l'exécute comme membre d'un *tenant*, `oneTenantScope()` est une portée fixée sur le travail
+d'un membre d'un seul *tenant* (`acme` sauf mention contraire), et `elevatedOver('all')` construit le contexte du
 personnel de la plateforme sous une élévation, sans l'entrée d'audit qu'écrit `acrossTenants`.
 
 ## De bout en bout
@@ -870,7 +881,7 @@ repositoryContract(runner, { ...options, name: 'DrizzleOrderRepository', createR
 | Suite | Tient |
 |---|---|
 | `repositoryContract` | enregistrer puis retrouver, id inconnu, mise à jour, isolement de la copie stockée, concurrence optimiste (toute erreur de code `CONCURRENCY_CONFLICT`), et avec `createAggregateTaking` un nouvel agrégat qui prend une valeur unique d'un autre refusé avec le code `CONFLICT`, rien de stocké, et avec `createAggregateAgain` un nouvel agrégat enregistré plusieurs fois en même temps : un enregistrement l'écrit et les autres sont refusés avec le code `CONCURRENCY_CONFLICT`, jamais pour sa valeur unique |
-| `tenantIsolationContract` | un *repository* sous une stratégie d'isolement des *tenants* : ce qu'un *tenant* a enregistré est caché à un autre ; un autre *tenant* qui enregistre sous le même id le laisse intact, par une mise à jour ou (si `recreate(aggregate)` est donné, un nouvel agrégat sous le même id) par une insertion ; le personnel de la plateforme, avec une élévation sur tous les *tenants*, n'écrit rien, et lit l'agrégat de l'autre *tenant* quand `elevatedReads` est vrai (tables partagées, sécurité au niveau des lignes) ; une écriture d'un travail qui ne nomme aucun *tenant* est refusée (`NoCurrentTenantError`) et une lecture est refusée ou ne trouve rien. `createRepository(scope)` lit le *tenant* dans la portée qu'on lui donne, sur un stockage où existent les *tenants* `acme` et `globex`. Pour prouver la sécurité au niveau des lignes elle-même, exécutez-la sur un *repository* qui n'écrit aucune condition de *tenant* |
+| `tenantIsolationContract` | un *repository* sous une stratégie d'isolement des *tenants* : ce qu'un *tenant* a enregistré est caché à un autre ; un autre *tenant* qui enregistre sous le même id le laisse intact, par une mise à jour ou (si `recreate(aggregate)` est donné, un nouvel agrégat sous le même id) par une insertion ; le personnel de la plateforme, avec une élévation sur tous les *tenants*, n'écrit rien, et lit l'agrégat de l'autre *tenant* quand `elevatedReads` est vrai (tables partagées, sécurité au niveau des lignes) ; une écriture d'un travail qui ne nomme aucun *tenant* est refusée (`NoCurrentTenantError`) et une lecture est refusée ou ne trouve rien. Sans `mutate`, le cas de la mise à jour sous un id déjà détenu reste en attente. `createRepository(scope)` lit le *tenant* dans la portée qu'on lui donne, sur un stockage où existent les *tenants* `acme` et `globex`. Pour prouver la sécurité au niveau des lignes elle-même, exécutez-la sur un *repository* qui n'écrit aucune condition de *tenant* |
 | `eventBusContract` | tout fournisseur d'`EventBus` : routage par type, plusieurs abonnés, désabonnement, aller-retour exact de l'enveloppe (`traceparent`, `correlationId`, `tenantId`), remontée de l'échec d'un gestionnaire. Les relivraisons sont acceptées ; rendez `settle()` depuis `createBus` pour les fournisseurs qui livrent de façon asynchrone |
 | `unitOfWorkContract` | toute `UnitOfWork`, appelée par `run` sans bus de commandes : les événements du domaine attendent la fin et sont distribués avant la validation (commit), si bien que les gestionnaires voient chaque sauvegarde et que ce qu'ils écrivent, l'outbox comprise, est validé avec ; un échec dans une sauvegarde, dans le travail, dans un gestionnaire ou dans la validation (une contrainte différée) ne laisse rien derrière lui ; les gestionnaires `after-commit` s'exécutent une fois les lignes validées, jamais autrement. Un adaptateur qui n'est pas construit sur `withinUnitOfWork` échoue ici |
 | `outboxStoreContract` | tout stockage d'outbox : ordre, limite, bail, prises concurrentes, publié, échoué, mort, `retryDead`, purge ; avec `carriesTenant: true`, le *tenant* de chaque événement conservé |

@@ -512,6 +512,16 @@ copy of what is saved (through `snapshots({ toSnapshot, fromSnapshot })` or `{ c
 enforces optimistic concurrency on `version`, raising `ConcurrencyError` (code
 `CONCURRENCY_CONFLICT`). Assert its state with `all()` and `count()`.
 
+The fake of a tenant-scoped aggregate is confined as its adapter is: `super(snapshots({ ... }),
+{ confinedTo: scope })` keeps every read and every write to the tenant of the work in progress in
+`scope`. A tenant finds, lists and counts what it saved only, a save under an id another tenant
+holds is refused with `ConcurrencyError`, an elevation widens reads and no write, and work that
+names no tenant is refused (`NoCurrentTenantError`). It passes `tenantIsolationContract`, and
+`generate repository` writes it so for a tenant-scoped aggregate, with a scope that defaults to
+`oneTenantScope()`, the work of a member of `acme`: a spec about one tenant builds the fake alone,
+a spec about a leak between tenants hands it the `executionScope` of its harness and changes
+tenant with `asTenant`.
+
 ### A fake, not a mock
 
 Instead of a mock, which checks the calls the handler made and nothing of their effect:
@@ -637,7 +647,8 @@ Both are classes on `Builder`, immutable like every builder, and accept a builde
 actor or a session is expected (`aSession().of(anActor().withRole('accountant'))` with the
 actor builder of `@ddd-ts-kit/auth/testing`). `scoped(scope, context, work)` runs a block in a
 context given as a value or as a builder, with any `ExecutionScope`; `asTenant(scope, 'acme',
-work)` runs it as a member of a tenant, and `elevatedOver('all')` builds the context of platform
+work)` runs it as a member of a tenant, `oneTenantScope()` is a scope fixed on the work of a member
+of one tenant (`acme` unless named), and `elevatedOver('all')` builds the context of platform
 staff under an elevation, without the audit entry `acrossTenants` writes.
 
 ## End to end
@@ -860,7 +871,7 @@ repositoryContract(runner, { ...options, name: 'DrizzleOrderRepository', createR
 | Suite | Holds |
 |---|---|
 | `repositoryContract` | save then find, unknown id, update, isolation of the stored copy, optimistic concurrency (any error with code `CONCURRENCY_CONFLICT`), and with `createAggregateTaking` a new aggregate that takes a unique value of another refused with code `CONFLICT`, nothing stored, and with `createAggregateAgain` a new aggregate saved several times at once: one save writes it and the others are refused with code `CONCURRENCY_CONFLICT`, never for its unique value |
-| `tenantIsolationContract` | one repository under a strategy of tenant isolation: what a tenant saved is hidden from another; another tenant saving under the same id leaves it untouched, by an update or (given `recreate(aggregate)`, a new aggregate under the same id) by an insert; platform staff elevated over every tenant write nothing, and read the other tenant's aggregate when `elevatedReads` is true (shared tables, row-level security); a write of work that names no tenant is refused (`NoCurrentTenantError`) and a read is refused or finds nothing. `createRepository(scope)` reads the tenant from the scope it is given, on storage where the tenants `acme` and `globex` exist. To prove row-level security itself, run it against a repository that writes no tenant condition |
+| `tenantIsolationContract` | one repository under a strategy of tenant isolation: what a tenant saved is hidden from another; another tenant saving under the same id leaves it untouched, by an update or (given `recreate(aggregate)`, a new aggregate under the same id) by an insert; platform staff elevated over every tenant write nothing, and read the other tenant's aggregate when `elevatedReads` is true (shared tables, row-level security); a write of work that names no tenant is refused (`NoCurrentTenantError`) and a read is refused or finds nothing. Without `mutate`, the case of the update under a held id stays pending. `createRepository(scope)` reads the tenant from the scope it is given, on storage where the tenants `acme` and `globex` exist. To prove row-level security itself, run it against a repository that writes no tenant condition |
 | `eventBusContract` | any `EventBus` provider: routing by type, several subscribers, unsubscribe, exact envelope round trip (`traceparent`, `correlationId`, `tenantId`), handler failure surfaces. Redeliveries are accepted; return `settle()` from `createBus` for providers that deliver asynchronously |
 | `unitOfWorkContract` | any `UnitOfWork`, called through `run` without a command bus: domain events wait for the end and are dispatched before the commit, so handlers see every save and what they write, the outbox included, commits with it; a failure in a save, in the work, in a handler or in the commit (a deferred constraint) leaves nothing behind; `after-commit` handlers run once the rows are committed, never otherwise. An adapter not built on `withinUnitOfWork` fails here |
 | `outboxStoreContract` | any outbox store: order, limit, lease, concurrent claims, published, failed, dead, `retryDead`, purge; with `carriesTenant: true`, the tenant of each event kept |

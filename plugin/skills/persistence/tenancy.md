@@ -32,6 +32,9 @@ tenant is, the four strategies and the propagation of the tenant are in
     an `orWhere` at its top, and the condition in its last `where` or an `andWhere` after it: a
     `where` resets what comes before it.
 - Reads may widen under an audited elevation, writes never.
+- The fake of the aggregate is confined too (`{ confinedTo: scope }` of `InMemoryRepository`), and
+  the contract spec runs `tenantIsolationContract` on the fake and on the adapter. A spec about
+  several tenants hands the fake the `executionScope` of its harness.
 - A read model in OpenSearch takes the tenancy of the platform (`SearchIndexes`), never its own:
   [search.md](search.md).
 - A measure grouped then paged selects from the scoped query with `derivedTable`. A raw
