@@ -2,12 +2,12 @@ import { AssertionError } from 'node:assert';
 import { isDeepStrictEqual } from 'node:util';
 import type { ExpectedFacts } from '../refusals/expected-facts';
 import { factMismatches } from '../refusals/fact-mismatches';
+import { codeOf } from './code-of';
+import { describeError } from './describe-error';
 import { describeEvent } from './describe-event';
 import type { ErrorClass } from './error-class';
-import { errorClassOf } from './error-class-of';
 import type { EventMatcher } from './event-matcher';
 import { eventMismatches } from './event-mismatches';
-import { isErrorLike } from './is-error-like';
 import type { Outcome } from './outcome';
 import type { Recorded } from './recorded';
 import { show } from './show';
@@ -185,20 +185,4 @@ function assertFacts(error: unknown, expected: ExpectedFacts): void {
       operator: 'thenError',
     });
   }
-}
-
-function codeOf(error: unknown): string | undefined {
-  return typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string'
-    ? error.code
-    : undefined;
-}
-
-function describeError(error: unknown): string {
-  if (!isErrorLike(error)) {
-    return show(error);
-  }
-
-  const code = codeOf(error);
-
-  return `${errorClassOf(error)}${code === undefined ? '' : ` (code ${code})`}: ${error.message}`;
 }

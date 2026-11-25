@@ -1,8 +1,7 @@
 import { AssertionError } from 'node:assert';
-import { errorClassOf } from '../scenarios/error-class-of';
-import { isErrorLike } from '../scenarios/is-error-like';
+import { codeOf } from '../scenarios/code-of';
+import { describeError } from '../scenarios/describe-error';
 import { isPromiseLike } from '../scenarios/is-promise-like';
-import { show } from '../scenarios/show';
 import type { ExpectedFacts } from './expected-facts';
 import { factMismatches } from './fact-mismatches';
 
@@ -86,7 +85,7 @@ function refusalOf(attempt: Attempt, code: string, facts: ExpectedFacts): unknow
   const actual = codeOf(error);
 
   if (actual !== code) {
-    throw failure(`Expected a refusal with code ${code}, but got ${described(error)}.`, actual, code);
+    throw failure(`Expected a refusal with code ${code}, but got ${describeError(error)}.`, actual, code);
   }
 
   const mismatches = factMismatches(error, facts);
@@ -100,20 +99,4 @@ function refusalOf(attempt: Attempt, code: string, facts: ExpectedFacts): unknow
 
 function failure(message: string, actual: unknown, expected: unknown): AssertionError {
   return new AssertionError({ message, actual, expected, operator: 'expectRefusal' });
-}
-
-function codeOf(error: unknown): string | undefined {
-  return typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string'
-    ? error.code
-    : undefined;
-}
-
-function described(error: unknown): string {
-  if (!isErrorLike(error)) {
-    return show(error);
-  }
-
-  const code = codeOf(error);
-
-  return `${errorClassOf(error)}${code === undefined ? '' : ` (code ${code})`}: ${error.message}`;
 }

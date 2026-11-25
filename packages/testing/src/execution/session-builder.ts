@@ -9,10 +9,8 @@ import type { Buildable } from '../builders/buildable';
 import { Builder } from '../builders/builder';
 import type { Defaults } from '../builders/defaults';
 import { sequence } from '../builders/sequence';
+import { testEpoch } from '../harness/test-epoch';
 import { aTestUser } from './a-test-user';
-
-/** The instant sessions are dated from by default, the one `createTestBuses` freezes its clock at. */
-const TEST_EPOCH = new Date('2026-01-01T00:00:00.000Z');
 
 interface SessionProps {
   id: string;
@@ -80,7 +78,7 @@ export class SessionBuilder extends Builder<SessionProps, Session> {
     return {
       id: sequence('session'),
       actor: aTestUser,
-      issuedAt: TEST_EPOCH,
+      issuedAt: testEpoch(),
       expiresAt: undefined,
       authenticationMethod: 'password',
       authenticationStrength: undefined,

@@ -2,6 +2,7 @@ import type { ExecutionContext, ExecutionScope, JobExecution, JobScheduler } fro
 import type { Awaitable } from './awaitable';
 import type { ContractRunner } from './contract-runner';
 import { ContractSuite } from './contract-suite';
+import { codeOf } from '../scenarios/code-of';
 
 export interface JobSchedulerUnderContract {
   readonly scheduler: JobScheduler;
@@ -73,13 +74,15 @@ class JobSchedulerSuite extends ContractSuite<JobSchedulerUnderContract> {
       this.scheduler.register({ name: REMINDERS, schedule: EVERY_SECOND, run: async () => undefined });
 
       this.expect(
-        codeOf(() => this.scheduler.register({ name: REMINDERS, schedule: EVERY_SECOND, run: async () => undefined })),
+        codeThrownBy(() =>
+          this.scheduler.register({ name: REMINDERS, schedule: EVERY_SECOND, run: async () => undefined }),
+        ),
       ).toBe('DUPLICATE_JOB');
     });
 
     this.it('refuses a schedule it cannot read', async () => {
       this.expect(
-        codeOf(() =>
+        codeThrownBy(() =>
           this.scheduler.register({ name: REMINDERS, schedule: { cron: 'every day' }, run: async () => undefined }),
         ),
       ).toBe('INVALID_JOB_SCHEDULE');
@@ -131,7 +134,7 @@ class JobSchedulerSuite extends ContractSuite<JobSchedulerUnderContract> {
         (error: unknown) => error,
       );
 
-      this.expect(codeOf(() => rethrow(failure))).toBe('UNKNOWN_JOB');
+      this.expect(codeThrownBy(() => rethrow(failure))).toBe('UNKNOWN_JOB');
     });
   }
 
@@ -256,13 +259,14 @@ class JobSchedulerSuite extends ContractSuite<JobSchedulerUnderContract> {
   }
 }
 
-function codeOf(attempt: () => unknown): unknown {
+/** The code of what the attempt threw, the thrown value itself when it carries none, nothing when it went through. */
+function codeThrownBy(attempt: () => unknown): unknown {
   try {
     attempt();
 
     return undefined;
   } catch (error) {
-    return typeof error === 'object' && error !== null && 'code' in error ? error.code : error;
+    return codeOf(error) ?? error;
   }
 }
 

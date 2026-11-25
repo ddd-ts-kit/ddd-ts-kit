@@ -67,7 +67,7 @@ describe('pending', () => {
       pending(async () => {
         throw undefined;
       })(),
-    ).rejects.toThrow(/stops on Error: A scenario threw nothing\./);
+    ).rejects.toThrow(/stops on Error: failed without a reason/);
   });
 
   it('treats an AssertionError of node:assert built by hand as an assertion', async () => {
