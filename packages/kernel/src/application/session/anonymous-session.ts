@@ -1,11 +1,13 @@
 import { anonymousActor } from '../actor/anonymous-actor';
-import { NEVER_ISSUED } from './never-issued';
+import { neverIssued } from './never-issued';
 import type { Session } from './session';
 
 const ANONYMOUS_SESSION: Session = Object.freeze({
   id: 'anonymous',
   actor: anonymousActor(),
-  issuedAt: NEVER_ISSUED,
+  get issuedAt() {
+    return neverIssued();
+  },
   authenticationMethod: 'none',
   extensions: Object.freeze({}),
 });
