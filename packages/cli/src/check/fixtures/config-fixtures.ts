@@ -11,6 +11,7 @@ import { source } from './source';
 const { AGGREGATE, DECIMAL_ADR } = PATHS;
 const LONG_FILE = 'src/platform/ledger-import.ts';
 const { RECORD } = SAMPLES;
+const GUARDS = 'one-line guards approved in ADR 12';
 
 export const CONFIG_FIXTURES: readonly Fixture[] = [
   {
@@ -141,6 +142,40 @@ export const CONFIG_FIXTURES: readonly Fixture[] = [
         "// ddd-ts-kit-disable-next-line layer/domain-purity\nimport Decimal from 'decimal.js';\nexport class Invoice { total = new Decimal(0); }\n",
       ),
     ),
+  },
+  {
+    ruleId: 'config/unused-suppression',
+    name: 'a suppression of a rule the next line breaks',
+    expect: 'pass',
+    files: project({
+      ...aggregate(
+        `export class Invoice {\n  private paid = false;\n\n  // ddd-ts-kit-disable-next-line clean/braces -- ${GUARDS}\n  settle(): void { if (this.paid) return; this.paid = true; }\n}\n`,
+      ),
+      [DECIMAL_ADR]: RECORD,
+    }),
+  },
+  {
+    ruleId: 'config/unused-suppression',
+    name: 'a suppression that names a rule the checker does not know',
+    expect: { file: AGGREGATE },
+    also: ['clean/braces'],
+    files: project({
+      ...aggregate(
+        `export class Invoice {\n  private paid = false;\n\n  // ddd-ts-kit-disable-next-line clean/brace -- ${GUARDS}\n  settle(): void { if (this.paid) return; this.paid = true; }\n}\n`,
+      ),
+      [DECIMAL_ADR]: RECORD,
+    }),
+  },
+  {
+    ruleId: 'config/unused-suppression',
+    name: 'a suppression of a rule the next line does not break',
+    expect: { file: AGGREGATE },
+    files: project({
+      ...aggregate(
+        `export class Invoice {\n  // ddd-ts-kit-disable-next-line clean/braces -- ${GUARDS}\n  private paid = false;\n}\n`,
+      ),
+      [DECIMAL_ADR]: RECORD,
+    }),
   },
   {
     ruleId: 'config/valid',

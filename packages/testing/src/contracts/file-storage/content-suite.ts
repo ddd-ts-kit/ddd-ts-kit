@@ -38,8 +38,12 @@ export class ContentSuite extends FileStorageSuite {
         'application/pdf',
       ]);
 
-      this.expect(metadata?.checksum === undefined || metadata.checksum === checksum).toBe(true);
-      this.expect(metadata?.lastModified instanceof Date).toBe(true);
+      this.holds(
+        metadata?.checksum === undefined || metadata.checksum === checksum,
+        `the checksum stat answers, ${String(metadata?.checksum)}, is not the one of what was written, ${checksum}`,
+      );
+
+      this.holds(metadata?.lastModified instanceof Date, 'stat does not say when the file was last modified');
     });
   }
 

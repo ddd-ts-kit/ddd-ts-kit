@@ -25,6 +25,7 @@ export class TableAgreementSuite extends ReadModelTablesSuite {
   protected tests(): void {
     this.agreesOnTheFields();
     this.agreesOnWhatNoMigrationOpens();
+    this.agreesOnADomainAndAnAbsentTable();
     this.agreesOnTheTenantColumn();
     this.agreesOnTheStamp();
     this.agreesOnTheDefinition();
@@ -65,7 +66,11 @@ export class TableAgreementSuite extends ReadModelTablesSuite {
         const refusal = await this.agrees(TABLES.composite, found);
 
         this.expect(refusal?.statements).toEqual([]);
-        this.expect(refusal?.message.includes('"region" is part of the primary key')).toBe(true);
+
+        this.holds(
+          refusal?.message.includes('"region" is part of the primary key') === true,
+          `the refusal does not say that "region" is part of the primary key: ${String(refusal?.message)}`,
+        );
       },
     );
 
@@ -79,19 +84,28 @@ export class TableAgreementSuite extends ReadModelTablesSuite {
 
       this.expect(refusal?.statements).toEqual([]);
     });
+  }
 
+  private agreesOnADomainAndAnAbsentTable(): void {
     this.it('refuses, as the store does, a field of a domain that refuses NULL', async () => {
       const unfit = [{ column: 'title', because: 'domain' }] as const;
       const refusal = await this.agrees(TABLES.domained, this.expected('domained_rows', { unfit }));
 
       this.expect(refusal?.statements).toEqual([]);
-      this.expect(refusal?.message.includes('"title" is of a domain that refuses NULL')).toBe(true);
+
+      this.holds(
+        refusal?.message.includes('"title" is of a domain that refuses NULL') === true,
+        `the refusal does not say that "title" is of a domain that refuses NULL: ${String(refusal?.message)}`,
+      );
     });
 
     this.it('refuses, as the store does, a table that is not in the database', async () => {
       const refusal = await this.agrees(TABLES.absent, this.expected('absent_rows', { exists: false }, 'unread'));
 
-      this.expect(refusal?.message.includes('it is not in this database')).toBe(true);
+      this.holds(
+        refusal?.message.includes('it is not in this database') === true,
+        `the refusal does not say that the table is not in this database: ${String(refusal?.message)}`,
+      );
     });
   }
 
@@ -127,7 +141,10 @@ export class TableAgreementSuite extends ReadModelTablesSuite {
       const found = this.expected('renamed_rows', { refusing: ['title'], row: ['title'], deleted: 'removed' });
       const refusal = await this.agrees(TABLES.renamed, found);
 
-      this.expect(refusal?.statements.some((statement) => statement.includes('check ("removed" or ('))).toBe(true);
+      this.holds(
+        refusal?.statements.some((statement) => statement.includes('check ("removed" or (')) === true,
+        `the migration does not write the constraint on "removed", the column the definition names for a deleted row: ${String(refusal?.statements.join('; '))}`,
+      );
 
       await this.migrate(TABLES.renamed);
 
@@ -149,7 +166,11 @@ export class TableAgreementSuite extends ReadModelTablesSuite {
         const refusal = await this.agrees(TABLES.strict, found);
 
         this.expect(refusal?.statements).toEqual([]);
-        this.expect(refusal?.message.includes('The definition the store reads says so')).toBe(true);
+
+        this.holds(
+          refusal?.message.includes('The definition the store reads says so') === true,
+          `the refusal does not say that the definition the store reads refuses NULL: ${String(refusal?.message)}`,
+        );
       },
     );
   }

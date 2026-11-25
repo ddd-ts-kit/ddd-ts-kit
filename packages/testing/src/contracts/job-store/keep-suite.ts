@@ -10,6 +10,7 @@ export class KeepSuite extends ContractSuite<JobStoreUnderContract> {
     this.cancels();
     this.purges();
     this.erasesASubject();
+    this.stopsARunningJobOfAnErasedSubject();
     this.erasesOnlyThatSubject();
   }
 
@@ -17,7 +18,7 @@ export class KeepSuite extends ContractSuite<JobStoreUnderContract> {
     this.it('cancels a waiting job: it is never handed out', async () => {
       await this.subject.add(aJob('job-1', { runAt: later(60_000) }));
 
-      this.expect(await this.subject.cancel('job-1', NOW)).toBe(true);
+      this.holds(await this.subject.cancel('job-1', NOW), 'the cancellation of a waiting job answered false');
 
       const job = await this.subject.find('job-1');
 
@@ -29,9 +30,17 @@ export class KeepSuite extends ContractSuite<JobStoreUnderContract> {
       await this.subject.add(aJob('job-1'));
       await this.claim(NOW);
 
-      this.expect(await this.subject.cancel('job-1', NOW)).toBe(true);
-      this.expect(await this.subject.heartbeat({ id: 'job-1', attempt: 1 }, later(LEASE_MS))).toBe(false);
-      this.expect(await this.subject.complete({ id: 'job-1', attempt: 1 }, NOW)).toBe(false);
+      this.holds(await this.subject.cancel('job-1', NOW), 'the cancellation of a running job answered false');
+
+      this.holds(
+        !(await this.subject.heartbeat({ id: 'job-1', attempt: 1 }, later(LEASE_MS))),
+        'the heartbeat of a cancelled job was accepted',
+      );
+
+      this.holds(
+        !(await this.subject.complete({ id: 'job-1', attempt: 1 }, NOW)),
+        'the completion of a cancelled job was accepted',
+      );
     });
 
     this.it('cannot cancel what is over or unknown', async () => {
@@ -39,8 +48,8 @@ export class KeepSuite extends ContractSuite<JobStoreUnderContract> {
       await this.claim(NOW);
       await this.subject.complete({ id: 'job-1', attempt: 1 }, NOW);
 
-      this.expect(await this.subject.cancel('job-1', NOW)).toBe(false);
-      this.expect(await this.subject.cancel('unknown', NOW)).toBe(false);
+      this.holds(!(await this.subject.cancel('job-1', NOW)), 'the cancellation of a job that is over answered true');
+      this.holds(!(await this.subject.cancel('unknown', NOW)), 'the cancellation of an unknown job answered true');
     });
   }
 
@@ -82,14 +91,24 @@ export class KeepSuite extends ContractSuite<JobStoreUnderContract> {
       this.expect(await this.subject.retryDead(['job-2'], later(60_000))).toBe(0);
       this.expect(await this.subject.stats(QUEUE)).toEqual({ waiting: 0, running: 0, dead: 0 });
     });
+  }
 
+  private stopsARunningJobOfAnErasedSubject(): void {
     this.it('stops a running job of the subject at its next report', async () => {
       await this.subject.add(aJob('job-1', { subject: 'cus-1' }));
       await this.claim(NOW);
 
       this.expect(await this.subject.eraseSubject('cus-1')).toBe(1);
-      this.expect(await this.subject.heartbeat({ id: 'job-1', attempt: 1 }, later(LEASE_MS))).toBe(false);
-      this.expect(await this.subject.complete({ id: 'job-1', attempt: 1 }, NOW)).toBe(false);
+
+      this.holds(
+        !(await this.subject.heartbeat({ id: 'job-1', attempt: 1 }, later(LEASE_MS))),
+        'the heartbeat of a job whose subject was erased was accepted',
+      );
+
+      this.holds(
+        !(await this.subject.complete({ id: 'job-1', attempt: 1 }, NOW)),
+        'the completion of a job whose subject was erased was accepted',
+      );
     });
   }
 

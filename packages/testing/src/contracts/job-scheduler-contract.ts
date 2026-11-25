@@ -50,6 +50,7 @@ class JobSchedulerSuite extends ContractSuite<JobSchedulerUnderContract> {
     this.runsByTime();
     this.doesNotOverlap();
     this.isolatesFailures();
+    this.survivesASynchronousThrow();
     this.opensAScope();
   }
 
@@ -149,8 +150,12 @@ class JobSchedulerSuite extends ContractSuite<JobSchedulerUnderContract> {
 
       await this.scheduler.start();
       await this.subject.elapse(2_500);
-      this.expect(runs >= 2).toBe(true);
-      this.expect(this.scheduler.describe()[0]?.nextRunAt instanceof Date).toBe(true);
+      this.holds(runs >= 2, `a job due every second ran ${String(runs)} time(s) in the 2.5 seconds after the start`);
+
+      this.holds(
+        this.scheduler.describe()[0]?.nextRunAt instanceof Date,
+        'the description of a started job does not say when it runs next',
+      );
     });
 
     this.it('runs nothing more once stopped', async () => {
@@ -207,11 +212,21 @@ class JobSchedulerSuite extends ContractSuite<JobSchedulerUnderContract> {
         const run = await this.scheduler.runNow(EXPORT);
 
         this.expect([run.outcome, run.errorCode]).toEqual(['failed', 'LEDGER_CLOSED']);
-        this.expect(JSON.stringify(this.scheduler.describe()).includes('ACME')).toBe(false);
-        this.expect(runs >= 2).toBe(true);
+
+        this.holds(
+          !JSON.stringify(this.scheduler.describe()).includes('ACME'),
+          'the description of the jobs carries the message of the failure of a run',
+        );
+
+        this.holds(
+          runs >= 2,
+          `the job beside a failing one ran ${String(runs)} time(s) in the 2.5 seconds after the start`,
+        );
       },
     );
+  }
 
+  private survivesASynchronousThrow(): void {
     this.it('answers failed for a job that throws before it answers a promise', async () => {
       this.scheduler.register({
         name: EXPORT,
@@ -251,8 +266,9 @@ class JobSchedulerSuite extends ContractSuite<JobSchedulerUnderContract> {
 
         this.expect(context?.scheduledAt?.getTime()).toBe(first.scheduledAt.getTime());
 
-        this.expect(typeof context?.correlationId === 'string' && context.correlationId !== next?.correlationId).toBe(
-          true,
+        this.holds(
+          typeof context?.correlationId === 'string' && context.correlationId !== next?.correlationId,
+          'two runs of a job do not each have a correlation id of their own',
         );
       },
     );

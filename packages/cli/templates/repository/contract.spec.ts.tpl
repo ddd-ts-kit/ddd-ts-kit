@@ -13,7 +13,12 @@ import {
   type ExecutionContext,
 } from '@ddd-ts-kit/kernel';
 {{/if}}
+{{#if tenant.scoped}}
+import { repositoryContract, tenantIsolationContract } from '@ddd-ts-kit/testing/contracts';
+{{/if}}
+{{#unless tenant.scoped}}
 import { repositoryContract } from '@ddd-ts-kit/testing/contracts';
+{{/unless}}
 import type { {{aggregate.pascal}} } from '{{alias.context}}/domain/aggregates/{{aggregate.kebab}}.aggregate{{alias.ext}}';
 import { {{adapter.pascal}}{{aggregate.pascal}}Repository } from '{{alias.context}}/infrastructure/persistence/{{adapter.kebab}}-{{aggregate.kebab}}.repository{{alias.ext}}';
 {{#if adapter.needsDatabase}}
@@ -36,6 +41,15 @@ repositoryContract<{{aggregate.pascal}}>(runner, {
   name: 'Fake{{aggregate.pascal}}Repository',
   createRepository: () => new Fake{{aggregate.pascal}}Repository(),
 });
+{{#if tenant.scoped}}
+
+tenantIsolationContract<{{aggregate.pascal}}>(runner, {
+  ...expectations,
+  name: 'Fake{{aggregate.pascal}}Repository',
+  elevatedReads: true,
+  createRepository: (scope) => new Fake{{aggregate.pascal}}Repository(scope),
+});
+{{/if}}
 
 {{#if adapter.needsDatabase}}
 const clock = new FixedClock(new Date('2026-01-01T00:00:00.000Z'));
@@ -62,20 +76,15 @@ repositoryContract<{{aggregate.pascal}}>(runner, {
 });
 {{#if tenant.scoped}}
 
-describe('{{adapter.pascal}}{{aggregate.pascal}}Repository, tenant by tenant', () => {
-  it('hides from a tenant what another tenant saved', async () => {
+tenantIsolationContract<{{aggregate.pascal}}>(runner, {
+  ...expectations,
+  name: '{{adapter.pascal}}{{aggregate.pascal}}Repository',
+  elevatedReads: true,
+  createRepository: async (scope) => {
     await database.reset();
 
-    const scope = new FixedExecutionScope(workOf('acme'));
-    const repository = new {{adapter.pascal}}{{aggregate.pascal}}Repository(database.persistence.database, scope, clock);
-    const saved = {{aggregate.article}}{{aggregate.pascal}}().build();
-
-    await repository.save(saved);
-
-    scope.enter(workOf('globex'));
-
-    expect(await repository.findById(saved.id)).toBeUndefined();
-  });
+    return new {{adapter.pascal}}{{aggregate.pascal}}Repository(database.persistence.database, scope, clock);
+  },
 });
 {{/if}}
 

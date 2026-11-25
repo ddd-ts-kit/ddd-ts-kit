@@ -4,5 +4,7 @@ import base from './jest.config.js';
 export default {
   ...base,
   testMatch: ['<rootDir>/{{config.sourceRoot}}/**/*.spec.ts'],
+  // Before each test the sequences of the builders start again at 1 and the data generator at its seed: no value depends on the order of the tests of a file.
+  setupFilesAfterEnv: ['@ddd-ts-kit/testing/setup/jest'],
   testPathIgnorePatterns: [...base.testPathIgnorePatterns, '/{{config.contextsDir}}/[^/]+/(?:test|[^/]+/test)/integration/'],
 };

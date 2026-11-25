@@ -669,7 +669,10 @@ entry:
 
 `check --rule governance/recorded-deviation` then reports nothing. An entry without a reason, or whose `adr` names a record that
 `docs/adr/` does not hold, is reported too. A suppression comment in the code follows the same
-rule: `// ddd-ts-kit-disable-next-line <rule> -- ADR-0001: <reason>`.
+rule: `// ddd-ts-kit-disable-next-line <rule> -- ADR-0001: <reason>`. It names several rules after
+commas, or stands above another directive: both cover the line of code that follows. A directive
+that names no rule of the kit, or that silences nothing any more, is reported
+(`config/unused-suppression`), so that it leaves with what it excused.
 
 The decision is about the mappers, but `"off"` alone silences the rule in every file of the
 project: a long function written next week in a handler would pass unseen. `check` says so, as

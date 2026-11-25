@@ -22,6 +22,8 @@ const sharedServer = {{endToEnd.sharedInJest}};
 export default {
   ...base,
   testMatch: ['<rootDir>/test/e2e/**/*.e2e.spec.ts', '<rootDir>/test/acceptance/**/*.acceptance.spec.ts'],
+  // Before each test the sequences of the builders start again at 1 and the data generator at its seed: no value depends on the order of the tests of a file.
+  setupFilesAfterEnv: ['@ddd-ts-kit/testing/setup/jest'],
   testTimeout: 20000,
 {{#if persistence.hasDatabase}}
   // With DATABASE_URL, copies the migrated database once and checks that the files of the run fit in the connections of
