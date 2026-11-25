@@ -6,7 +6,7 @@ The tenant of a context is refused when it is not a text: `tenantOfContext` hand
 
 `PolicyAccess` refuses with `AuthorizationSetupError` a policy whose `allows` answers neither a boolean nor a decision, a promise included: `allows` is synchronous, and the error names the policy instead of reading as a refusal of the actor.
 
-`passportPrincipal` and `PassportAuthenticator` refuse an empty credential with `InvalidCredentialError`, as `JwtAuthenticator` does: a credential that was presented and is not acceptable is refused, only an absent one is anonymous.
+The Passport bridge refuses an empty credential with `InvalidCredentialError`, as `JwtAuthenticator` does: `passportAuthenticator` before the strategy runs (`MALFORMED_TOKEN`), and `passportPrincipal` when the strategy fails a request whose `Authorization` header is there and empty. A credential that was presented and is not acceptable is refused, only an absent one is anonymous.
 
 To move: replace `new RoleBasedAuthorizer({ roles, tenantOf: tenantOfContext, crossTenantRoles })` by `new TenantBoundAuthorizer({ model: new RoleBasedAuthorizer({ roles }), crossTenantRoles })`; `tenantOf` moves with it and defaults to `tenantOfContext`. A role of `crossTenantRoles` is now read from the roles of the actor as its credential states them: take the `systemRole` out of that list, a system actor acts in the tenant of its work. When a `SignedInGrantsAuthorizer` wraps the model, the bound authorizer goes around it.
 
@@ -17,3 +17,5 @@ To move: a custom `tenantOf` is typed `(request) => unknown`; nothing to change 
 To move: make an `allows` declared `async` synchronous, and load what it awaited in the handler, before it asks `Access`.
 
 To move: an `actorOf` given to `passportPrincipal` answers a whole actor (`id`, `type`, `roles`, `attributes`) for every user the strategy lets through.
+
+To move: a client that sent an empty `Authorization` header, or an empty credential, to call as nobody leaves it out.
