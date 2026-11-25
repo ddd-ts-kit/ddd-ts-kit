@@ -111,9 +111,13 @@ What the shape gives:
 - **Equality for free.** `ValueObject` freezes the props at construction and compares them in
   `equals`, dates by their instant and arrays item by item: two slots built from the same
   instants are equal, `===` is not the question.
-- **Props are a `type`, not an `interface`.** `ValueObject<Props>` requires
-  `Record<string, unknown>`: an object type alias satisfies it, an interface does not, because
-  TypeScript gives an implicit index signature to the first only.
+- **Props are a `type`, not an `interface`, and hold values only.** `ValueObject<Props>` requires
+  `ValueObjectProps`: each prop is a primitive, a `Date`, another value object, or a list or a
+  plain record of those, so that the value object can copy, freeze and compare all it holds. A
+  `Map`, a `Set`, a function, an entity or `unknown` does not compile: hold the content as plain
+  data. An object type alias satisfies the constraint, an interface does not, because TypeScript
+  gives an implicit index signature to the first only; that holds for a record nested in the
+  props too.
 
 In a spec, the value is used as the business speaks of it:
 

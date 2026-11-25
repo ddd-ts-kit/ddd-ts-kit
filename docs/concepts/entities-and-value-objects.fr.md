@@ -1,5 +1,5 @@
 [English](entities-and-value-objects.md) · **Français**
-<!-- translation-of: entities-and-value-objects.md sha256:5945c42b5cfb4bbb -->
+<!-- translation-of: entities-and-value-objects.md sha256:e80231869852b434 -->
 
 # Entités et objets-valeurs
 
@@ -114,9 +114,14 @@ Ce que cette forme apporte :
 - **L'égalité offerte.** `ValueObject` gèle les propriétés à la construction et les compare dans
   `equals`, les dates par leur instant et les tableaux élément par élément : deux créneaux
   construits à partir des mêmes instants sont égaux, `===` n'est pas la question.
-- **Les propriétés sont un `type`, pas une `interface`.** `ValueObject<Props>` exige
-  `Record<string, unknown>` : un alias de type objet le satisfait, une interface non, parce que
-  TypeScript donne une signature d'index implicite au premier seulement.
+- **Les propriétés sont un `type`, pas une `interface`, et ne tiennent que des valeurs.**
+  `ValueObject<Props>` exige `ValueObjectProps` : chaque propriété est une primitive, une `Date`,
+  un autre objet-valeur, ou une liste ou un enregistrement simple de ceux-ci, pour que
+  l'objet-valeur puisse copier, geler et comparer tout ce qu'il tient. Une `Map`, un `Set`, une
+  fonction, une entité ou `unknown` ne compile pas : tenez le contenu en données simples. Un alias
+  de type objet satisfait la contrainte, une interface non, parce que TypeScript donne une
+  signature d'index implicite au premier seulement ; cela vaut aussi pour un enregistrement
+  imbriqué dans les propriétés.
 
 Dans une *spec*, la valeur s'emploie comme le métier en parle :
 
