@@ -2,15 +2,16 @@ import type { ConfirmChannel, ConsumeMessage, GetMessage, Message, Options, Repl
 import { DeclaringChannel } from './declaring-channel';
 import { AmqpError, IllegalOperation, Unsupported } from './errors';
 import { fieldsOf, propertiesOf } from './messages';
-import type {
-  BrokerState,
-  ChannelOwner,
-  Consumer,
-  ConsumerChannel,
-  QueueState,
-  StoredMessage,
-  Unacked,
-  Wire,
+import {
+  type BrokerState,
+  type ChannelOwner,
+  type Consumer,
+  type ConsumerChannel,
+  type QueueState,
+  type StoredMessage,
+  type Unacked,
+  type Wire,
+  unanswered,
 } from './model';
 
 type Confirmation = (error: unknown, ok: Replies.Empty) => void;
@@ -147,6 +148,11 @@ export class MemoryChannel extends DeclaringChannel implements ConfirmChannel, C
 
   async get(queue: string, options: Options.Get = {}): Promise<GetMessage | false> {
     const found = this.existingQueue(queue);
+
+    if (!this.wire.answering('get')) {
+      return unanswered();
+    }
+
     const message = found.take();
 
     if (message === undefined) {

@@ -1,4 +1,5 @@
 import type { RabbitMqEventBusOptions } from '../../src';
+import type { BrokerRequest } from './amqp/model';
 
 /**
  * Between a bus and the broker, what a test sabotages: the replies of the broker stop (the
@@ -11,6 +12,8 @@ export interface Network {
   /** Grows with what the bus sends, to know that a publication left it. */
   readonly traffic: number;
   holdReplies(): void;
+  /** The broker stops answering one request: a channel never opens, a `get` never returns. In memory only. */
+  stopAnswering(request: BrokerRequest): void;
   /** The channels start closing: amqplib refuses to publish until the broker answered. In memory only. */
   beginClosing(): void;
   cutConnections(): void;

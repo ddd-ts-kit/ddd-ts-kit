@@ -25,8 +25,9 @@ export interface RabbitMqEventBusOptions {
   readonly onUnroutable?: 'ignore' | 'fail';
   /**
    * Time the broker has to confirm a publication before `publish` rejects (`PUBLISH_NOT_CONFIRMED`),
-   * to confirm the copy of a failed message to its retry or dead queue and each copy of `replayDead`,
-   * and to answer each step of `close()`, which goes on without the answer. Default 30000.
+   * to confirm the copy of a failed message to its retry or dead queue, to answer each request of
+   * `replayDead` (`BROKER_UNAVAILABLE`, reason `REQUEST_TIMEOUT`), and to answer each step of
+   * `close()`, which goes on without the answer. Default 30000.
    */
   readonly publishTimeoutMs?: number;
   readonly retry?: RetryOptions;

@@ -1,10 +1,11 @@
 import type { ChannelModel } from 'amqplib';
 import { ConnectionRefused } from './errors';
-import type { Opening, Severable, Wire } from './model';
+import type { BrokerRequest, Opening, Severable, Wire } from './model';
 
 /**
  * The network between a bus and the broker: it can stop passing the replies of the broker
- * (confirmations never arrive), cut every connection made through it and refuse new ones.
+ * (confirmations never arrive) or its answer to one request, cut every connection made through
+ * it and refuse new ones.
  * The same sabotage as the TCP relay used against a real broker, without a socket.
  */
 export class InMemoryNetwork implements Wire {
@@ -15,6 +16,8 @@ export class InMemoryNetwork implements Wire {
   private closed = false;
 
   private repliesHeld = false;
+
+  private readonly unanswered = new Set<BrokerRequest>();
 
   private closing = false;
 
@@ -40,6 +43,10 @@ export class InMemoryNetwork implements Wire {
     return this.repliesHeld;
   }
 
+  answering(request: BrokerRequest): boolean {
+    return !this.unanswered.has(request);
+  }
+
   closingChannels(): boolean {
     return this.closing;
   }
@@ -56,6 +63,10 @@ export class InMemoryNetwork implements Wire {
     this.repliesHeld = true;
   }
 
+  stopAnswering(request: BrokerRequest): void {
+    this.unanswered.add(request);
+  }
+
   cutConnections(): void {
     for (const connection of [...this.connections]) {
       connection.sever();
@@ -68,6 +79,7 @@ export class InMemoryNetwork implements Wire {
 
   restore(): void {
     this.repliesHeld = false;
+    this.unanswered.clear();
     this.closing = false;
     this.refusing = false;
   }
