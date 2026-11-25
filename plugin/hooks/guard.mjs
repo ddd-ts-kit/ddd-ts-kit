@@ -21,6 +21,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { call } from './call.mjs';
 import {
   filesIn,
   isDirectory,
@@ -714,26 +715,14 @@ const MODES = {
 
 // The projects this run of the guard has described: a hook finds the same one several times.
 const projects = new Map();
-// The input of the call, for the root of its session; the profile of each folder read and the common
-// git directory of the repository of each session root found.
-let called = {};
+// The profile of each folder read.
 const profiles = new Map();
+// The common git directory of the repository of each session root found.
 const repositories = new Map();
 // The scope of a worker in each worktree, read once per call of the guard (`workerScope`).
 const scopes = new Map();
 // The scope files of the story worktrees this run has read, by project root.
 const storyScopes = new Map();
-// The end of the time of a session start for the CLI, and whether a call was skipped or stopped for it.
-let briefingEnds;
-let briefingCut = false;
-// The seconds after which a run of the CLI was stopped, by its command: the stop says it of `check`.
-const timedOut = new Map();
-// The commands of the CLI whose answer was past what the guard reads: the stop says it of `check`.
-const oversized = new Set();
-// The reader of shell commands, loaded only when a worker runs one: every other call of the guard skips its cost.
-let shell;
-// The notice due to a context-builder near its turn limit, said with the decision of the call or alone.
-let notice;
 
 main();
 
@@ -742,7 +731,7 @@ function main() {
     const run = MODES[process.argv[2]];
     if (run) {
       const input = readInput();
-      called = isRecord(input) ? input : {};
+      call.input = isRecord(input) ? input : {};
       Promise.resolve(run(input))
         .then(sayNotice)
         .catch(() => {
@@ -756,14 +745,14 @@ function main() {
 
 // A notice no decision carried is said alone, as context of the call.
 function sayNotice() {
-  if (notice) {
-    emit({ hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: notice } });
+  if (call.notice) {
+    emit({ hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: call.notice } });
   }
 }
 
 function session(input) {
   // A whole number of milliseconds: a time limit of spawnSync is an integer.
-  briefingEnds = Date.now() + Math.round(BRIEFING_BUDGET * TIME_SCALE);
+  call.briefingEnds = Date.now() + Math.round(BRIEFING_BUDGET * TIME_SCALE);
   const directory = input.cwd ?? process.cwd();
   const project = findProject(directory);
   if (project) {
@@ -821,7 +810,7 @@ function noteCrossings(input) {
     return said ? [said] : [];
   });
   if (crossings.length > 0) {
-    notice = [notice, ...crossings].filter(Boolean).join('\n');
+    call.notice = [call.notice, ...crossings].filter(Boolean).join('\n');
   }
 }
 
@@ -877,7 +866,7 @@ function cliVerdict(writes, input) {
   );
   const verdict = refusalOf(judged.slice(0, CLI_WRITE_FILES), input, cliRefusal);
   if (!verdict && judged.length > CLI_WRITE_FILES) {
-    notice = `ddd-ts-kit: ${judged.length - CLI_WRITE_FILES} more written file(s) not judged before the write here: the check after it reads them.`;
+    call.notice = `ddd-ts-kit: ${judged.length - CLI_WRITE_FILES} more written file(s) not judged before the write here: the check after it reads them.`;
   }
   return verdict;
 }
@@ -933,7 +922,7 @@ async function preBash(input) {
 }
 
 async function shellVerdict(input, command, cwd) {
-  shell = await readerOfTheShell();
+  call.shell = await readerOfTheShell();
   // A leading `cd` out of every project leaves the command to be judged against the session's project;
   // a worker whose session stands in no project is judged in the project its command names.
   const project = withPinnedMode(
@@ -986,13 +975,13 @@ function namedProject(input, command, cwd) {
   }
   let commands;
   try {
-    commands = shell.simpleCommands(command, cwd);
+    commands = call.shell.simpleCommands(command, cwd);
   } catch {
     return undefined;
   }
   const places = commands.flatMap((simple) => [
-    ...(['cd', 'pushd'].includes(shell.commandName(simple.words))
-      ? [{ place: shell.placeOf(simple.words[1] ?? shell.UNKNOWN, simple.directory) }]
+    ...(['cd', 'pushd'].includes(call.shell.commandName(simple.words))
+      ? [{ place: call.shell.placeOf(simple.words[1] ?? call.shell.UNKNOWN, simple.directory) }]
       : []),
     ...writtenTargets(simple),
     ...changedPaths(simple),
@@ -1004,7 +993,7 @@ function namedProject(input, command, cwd) {
 // same text, so a reader that breaks on it answers no command at all.
 function readCommands(project, command, cwd) {
   try {
-    const commands = shell.simpleCommands(command, cwd);
+    const commands = call.shell.simpleCommands(command, cwd);
     writtenProjectPaths(project, commands);
     return commands;
   } catch {
@@ -1044,7 +1033,8 @@ function readOnlyReason(input, commands) {
       ({ place }) => place !== undefined && findProject(place) !== undefined,
     );
     const { subcommand, tail } = gitInvocation(command.words.slice(1), command.directory);
-    const git = shell.commandName(command.words) === 'git' && !readsAnywhere(subcommand, tail) && subcommand !== 'add';
+    const git =
+      call.shell.commandName(command.words) === 'git' && !readsAnywhere(subcommand, tail) && subcommand !== 'add';
     if (written || git) {
       const by = written ? `${written.by} changes ${written.place}` : `\`git ${subcommand}\` changes the work tree`;
       return `A read-only agent changes no file of a project: ${by}. Read with \`git show <ref>:<path>\` and \`git diff\`, and write what you find in your answer. ${FREE_OUTPUT}`;
@@ -1084,10 +1074,10 @@ async function codexPatchVerdict(input, command, cwd) {
   if (hostOf(input) !== 'codex') {
     return undefined;
   }
-  shell = await readerOfTheShell();
+  call.shell = await readerOfTheShell();
   const project = findProject(cwd);
   const commands = readCommands(project ?? { root: cwd }, command, cwd);
-  if (!commands?.some(({ words }) => shell.commandName(words) === 'apply_patch')) {
+  if (!commands?.some(({ words }) => call.shell.commandName(words) === 'apply_patch')) {
     return undefined;
   }
   const patches = command.split('*** Begin Patch').slice(1);
@@ -1145,7 +1135,7 @@ function builderWrites(commands) {
 // A pure reader, git that reads (or versions in the worker's own worktree, which `workerGitReason`
 // decides first), or the kit asked what it knows.
 function readsFromAnywhere(command) {
-  if (shell.commandName(command.words) === 'git') {
+  if (call.shell.commandName(command.words) === 'git') {
     const { subcommand, tail } = gitInvocation(command.words.slice(1), command.directory);
     const plain = command.assigned.length === 0 && !command.words.some(runsAProgramOfGit);
     return plain && (readsAnywhere(subcommand, tail) || ['add', 'commit'].includes(subcommand));
@@ -1221,14 +1211,14 @@ function elsewhereReason(project, commands) {
   // After a `cd` the guard cannot follow (`cd <dir>; cmd`, a subshell), a command runs where that
   // `cd` leads when it succeeds: the checkout it names is where the command is judged.
   const led = commands
-    .filter(({ words }) => ['cd', 'pushd'].includes(shell.commandName(words)))
-    .map(({ words, directory }) => shell.placeOf(words[1] ?? shell.UNKNOWN, directory ?? project.root))
+    .filter(({ words }) => ['cd', 'pushd'].includes(call.shell.commandName(words)))
+    .map(({ words, directory }) => call.shell.placeOf(words[1] ?? call.shell.UNKNOWN, directory ?? project.root))
     .find((place) => place !== undefined && elsewhere(place));
   const moved = commands.find(
     (command) => acts(command) && (command.directory === undefined ? led !== undefined : elsewhere(command.directory)),
   );
   return moved
-    ? `A worker runs its commands in its own worktree: \`${shell.commandName(moved.words)}\` would run in ${moved.directory ?? led}, another checkout, where a worker only reads (\`git log\`, \`git diff\`, \`cat\`). ${REPORT_TO_CONDUCTOR}`
+    ? `A worker runs its commands in its own worktree: \`${call.shell.commandName(moved.words)}\` would run in ${moved.directory ?? led}, another checkout, where a worker only reads (\`git log\`, \`git diff\`, \`cat\`). ${REPORT_TO_CONDUCTOR}`
     : undefined;
 }
 
@@ -1259,8 +1249,8 @@ function placeVariableReason(commands) {
 function unknownProgramReason(commands) {
   for (const { words } of commands) {
     const program = words[0];
-    if (program !== undefined && (program.includes(shell.UNKNOWN) || program.includes('$'))) {
-      const shown = program.replaceAll(shell.UNKNOWN, '$(...)');
+    if (program !== undefined && (program.includes(call.shell.UNKNOWN) || program.includes('$'))) {
+      const shown = program.replaceAll(call.shell.UNKNOWN, '$(...)');
       return `A worker runs no command whose name only the shell knows: \`${shown}\` is computed when the command runs. ${EDIT_WITH_TOOLS}`;
     }
   }
@@ -1332,7 +1322,7 @@ async function countBuilderCall(input, project, command) {
   if (places) {
     const runs = await import('./builder-runs.mjs');
     try {
-      notice = runs.countCall(input, places, command);
+      call.notice = runs.countCall(input, places, command);
     } catch {
       // a count that fails never drops the decision of the call
     }
@@ -1404,8 +1394,8 @@ function changedAtStop(places, input) {
   }
   const { changed } = workerScope(project, input);
   const told = settleNote(project, input, false) ?? heldChangeReason(project, input, [])?.reason;
-  const said = [notice, changed, told, branchOutsideReason(project, input)].filter(Boolean).join('\n');
-  notice = undefined;
+  const said = [call.notice, changed, told, branchOutsideReason(project, input)].filter(Boolean).join('\n');
+  call.notice = undefined;
   return said || undefined;
 }
 
@@ -1466,10 +1456,10 @@ function stop(input) {
 // A check stopped at its time limit, or past what the guard reads, lets the stop through: the session
 // is told it did not finish.
 function unfinishedCheck() {
-  if (oversized.has('check')) {
+  if (call.oversized.has('check')) {
     return 'architecture check answered more than the guard reads: run `npx ddd-ts-kit check`';
   }
-  const seconds = timedOut.get('check');
+  const seconds = call.timedOut.get('check');
   return seconds === undefined
     ? undefined
     : `architecture check timed out after ${seconds} s: run \`npx ddd-ts-kit check\``;
@@ -1715,7 +1705,7 @@ function projectBriefing(project, input) {
   } else {
     lines.push(project.regulated ? REGULATED_NOTICE : installAdvice(project));
   }
-  if (briefingCut) {
+  if (call.briefingCut) {
     lines.push(BRIEFING_CUT);
   }
   const reminder = project.mode === 'off' ? undefined : commitReminder(project, input, { repeat: true });
@@ -2404,7 +2394,7 @@ function judgeReads(simple) {
   if (invocations.length > 0) {
     return invocations.every(kitReads);
   }
-  return shell.commandName(simple.words) !== 'git' || isPureReader(simple);
+  return call.shell.commandName(simple.words) !== 'git' || isPureReader(simple);
 }
 
 // Whether the path a command writes is `file`, or a folder that holds it (`.../{}`: what `find` finds under a folder).
@@ -2432,7 +2422,7 @@ function foundPlaces(simple) {
   }
   return simple.words
     .filter((word) => word.includes('{}'))
-    .map((word) => ({ place: shell.placeOf(word, simple.directory) }));
+    .map((word) => ({ place: call.shell.placeOf(word, simple.directory) }));
 }
 
 // The project paths a command writes, each glob expanded against the tree so a pattern that names a
@@ -2457,7 +2447,7 @@ function expandGlob(project, place) {
 // `sed` without an in-place edit nor a script that writes, `awk` whose program writes nothing, `less` without a log.
 function readsOnly(simple) {
   const { words } = simple;
-  const name = shell.commandName(words);
+  const name = call.shell.commandName(words);
   const args = words.slice(1);
   if (name === 'rg') {
     return !args.some((word) => word.startsWith('--pre'));
@@ -2501,7 +2491,7 @@ function sedWrites(args) {
       scripts.push(args[index].slice('--expression='.length));
     }
   }
-  const [first = ''] = shell.operands(args, ['-l', '--line-length']);
+  const [first = ''] = call.shell.operands(args, ['-l', '--line-length']);
   return (scripts.length > 0 ? scripts : [first]).some(sedScriptWrites);
 }
 
@@ -2566,7 +2556,7 @@ function inPlaceFlag(args) {
 
 // A test runner, however it is launched, as long as it runs no inline code of its own.
 function runsTests(simple) {
-  return RUNNING_PROGRAMS.has(shell.commandName(simple.words)) && !runsInlineCode(simple);
+  return RUNNING_PROGRAMS.has(call.shell.commandName(simple.words)) && !runsInlineCode(simple);
 }
 
 // What a scenario asserts, the wrapper `pending(...)`, white space, parentheses and commas aside.
@@ -2923,7 +2913,7 @@ const COMMIT_VALUED_OPTIONS = new Set(['-m', '-F', '-C', '-c', '-t', '--message'
 // A git command that skips the hooks of the project: `--no-verify` (and `-n` on a commit),
 // `-c core.hooksPath=...`, or `LEFTHOOK=0` / `HUSKY=0` set for the command.
 function hooksSkippedReason(commands) {
-  const gits = commands.filter(({ words }) => shell.commandName(words) === 'git');
+  const gits = commands.filter(({ words }) => call.shell.commandName(words) === 'git');
   if (gits.length === 0) {
     return undefined;
   }
@@ -3012,10 +3002,10 @@ function otherBranchReason(input, commands) {
 // The branches `git branch` deletes, moves, copies (both names) or resets (the first operand).
 function rewrittenBranches(words) {
   const { subcommand, tail } = gitInvocation(words.slice(1));
-  if (shell.commandName(words) !== 'git' || subcommand !== 'branch') {
+  if (call.shell.commandName(words) !== 'git' || subcommand !== 'branch') {
     return [];
   }
-  const names = shell.operands(tail);
+  const names = call.shell.operands(tail);
   if (hasBranchOption(tail, [...BRANCH_DELETES, ...BRANCH_MOVES])) {
     return names;
   }
@@ -3098,7 +3088,7 @@ function gitConfigReason(input, commands) {
   if (variable) {
     return `\`${variable.split('=')[0]}\` hands git a program or settings to run it: a sub-agent sets none. ${REPORT_TO_CONDUCTOR}`;
   }
-  for (const { words } of commands.filter((simple) => shell.commandName(simple.words) === 'git')) {
+  for (const { words } of commands.filter((simple) => call.shell.commandName(simple.words) === 'git')) {
     const reason = gitConfigKeyReason(words);
     if (reason) {
       return reason;
@@ -3109,7 +3099,7 @@ function gitConfigReason(input, commands) {
 
 // The variables a command sets for itself, and those `export`, `declare` or `typeset` set for the rest of the line.
 function exportedVariables({ words, assigned }) {
-  return ['export', 'declare', 'typeset'].includes(shell.commandName(words)) ? [...assigned, ...words] : assigned;
+  return ['export', 'declare', 'typeset'].includes(call.shell.commandName(words)) ? [...assigned, ...words] : assigned;
 }
 
 function gitConfigKeyReason(words) {
@@ -3141,7 +3131,7 @@ function setsConfig(tail) {
   if (tail.some((word) => CONFIG_READS.has(word))) {
     return false;
   }
-  const operands = shell.operands(tail, ['--type', '-t', '--file', '-f', '--default']);
+  const operands = call.shell.operands(tail, ['--type', '-t', '--file', '-f', '--default']);
   if (CONFIG_VERBS.has(operands[0])) {
     return CONFIG_VERBS.get(operands[0]);
   }
@@ -3164,14 +3154,14 @@ function writesBaseline(args) {
 
 // What a package script runs, `npm run <script>` or `pnpm <script>`, with the words given after its name.
 function scriptCommands(project, { words, directory }) {
-  if (!SCRIPT_MANAGERS.includes(shell.commandName(words))) {
+  if (!SCRIPT_MANAGERS.includes(call.shell.commandName(words))) {
     return [];
   }
   const args = words.slice(1);
   const at = args.findIndex((word) => !word.startsWith('-') && !['run', 'run-script'].includes(word));
   const text = readJson(join(project.root, 'package.json'))?.scripts?.[args[at]];
   const given = args.slice(at + 1).filter((word) => word !== '--');
-  return typeof text === 'string' ? shell.simpleCommands([text, ...given].join(' '), directory) : [];
+  return typeof text === 'string' ? call.shell.simpleCommands([text, ...given].join(' '), directory) : [];
 }
 
 // With dependenciesBeforeWrite, the lines a write adds to a TypeScript file, those it did not hold
@@ -3388,7 +3378,7 @@ function workerGitReason(project, input, commands) {
   if (own === undefined && !hasWorkerWorktree(project.root)) {
     return undefined;
   }
-  for (const { words, directory } of commands.filter((simple) => shell.commandName(simple.words) === 'git')) {
+  for (const { words, directory } of commands.filter((simple) => call.shell.commandName(simple.words) === 'git')) {
     const { subcommand, tail, moved } = gitInvocation(words.slice(1), directory);
     if (changesRepository(subcommand, tail)) {
       return `\`git ${subcommand}\`: the worktrees and the refs of the repository are the conductor's. ${REPORT_TO_CONDUCTOR}`;
@@ -3425,18 +3415,18 @@ function workerBranch(root, scope) {
 // checkout or a switch to another branch, a new one or none. `branch` is read only when a ref is named.
 function leavesOwnBranch(subcommand, tail, { moved, branch }) {
   if (subcommand === 'fetch') {
-    return shell
+    return call.shell
       .operands(tail, FETCH_VALUED)
       .slice(1)
       .some((spec) => spec.includes(':'));
   }
   if (subcommand === 'tag') {
-    return shell.operands(tail, TAG_VALUED).length > 0 && !tail.some((word) => TAG_LISTS.test(word));
+    return call.shell.operands(tail, TAG_VALUED).length > 0 && !tail.some((word) => TAG_LISTS.test(word));
   }
   if (subcommand === 'push') {
     return (
       tail.some((word) => PUSH_OTHER_REFS.test(word) || /^-[a-zA-Z46]*[fd]/.test(word)) ||
-      shell
+      call.shell
         .operands(tail, PUSH_VALUED)
         .slice(1)
         .some((spec) => !pushesOwnBranch(spec, branch))
@@ -3468,7 +3458,7 @@ function pushesOwnBranch(spec, branch) {
 // The branch a checkout or a switch moves to: for a checkout, its one operand that names no file of
 // the tree, unless an option gives paths (`--ours`, `--theirs`, `--patch`, `--pathspec-from-file`).
 function switchTarget(subcommand, tail, moved) {
-  const named = shell.operands(tail, SWITCH_VALUED);
+  const named = call.shell.operands(tail, SWITCH_VALUED);
   if (subcommand === 'switch') {
     return named[0];
   }
@@ -3503,7 +3493,7 @@ function changesRepository(subcommand, tail) {
     subcommand === 'update-ref' ||
     (subcommand === 'worktree' && ['remove', 'move', 'prune', 'lock', 'unlock', 'repair'].includes(tail[0])) ||
     (subcommand === 'symbolic-ref' &&
-      (shell.operands(tail).length > 1 || tail.some((word) => /^(?:-d|--delete)$/.test(word))))
+      (call.shell.operands(tail).length > 1 || tail.some((word) => /^(?:-d|--delete)$/.test(word))))
   );
 }
 
@@ -3512,7 +3502,7 @@ function readsAnywhere(subcommand, tail) {
     return listsBranches(tail);
   }
   if (subcommand in GIT_READING_FORMS) {
-    return GIT_READING_FORMS[subcommand].includes(shell.operands(tail)[0]);
+    return GIT_READING_FORMS[subcommand].includes(call.shell.operands(tail)[0]);
   }
   return subcommand === undefined || GIT_READS_ANYWHERE.has(subcommand);
 }
@@ -3539,13 +3529,13 @@ function launcherAt(words) {
   if (words.length > 0 && isKitLauncher(words[0])) {
     return 0;
   }
-  const name = shell.commandName(words);
+  const name = call.shell.commandName(words);
   const skipped = SCRIPT_MANAGERS.includes(name) && ['exec', 'dlx', 'x'].includes(words[1]) ? 2 : 1;
   const runs = ['npx', 'pnpx', 'bunx', 'node', 'nodejs', 'pnpm', 'yarn'].includes(name) || skipped === 2;
   if (!runs || words.slice(1).some((word) => INLINE_CODE.node.test(word))) {
     return -1;
   }
-  const [first] = shell.operands(words.slice(skipped), LAUNCHER_VALUED);
+  const [first] = call.shell.operands(words.slice(skipped), LAUNCHER_VALUED);
   const node = name === 'node' || name === 'nodejs';
   return first !== undefined && isKitLauncher(first) && (!node || first.includes('/'))
     ? words.indexOf(first, skipped)
@@ -3570,7 +3560,7 @@ function oneSideMergeReason(project, input, commands) {
   }
   const taken = commands.some(({ words, directory }) => {
     const { subcommand, tail, moved } = gitInvocation(words.slice(1), directory);
-    if (shell.commandName(words) !== 'git') {
+    if (call.shell.commandName(words) !== 'git') {
       return false;
     }
     if (['merge', 'pull', 'rebase', 'cherry-pick', 'revert'].includes(subcommand)) {
@@ -3602,9 +3592,9 @@ function takesOneSide(tail) {
 
 // A path under the source root or the tests, or the whole tree; a place only the shell knows may be either.
 function heldPaths(project, directory, args) {
-  return shell
+  return call.shell
     .operands(args)
-    .map((word) => shell.placeOf(word, directory))
+    .map((word) => call.shell.placeOf(word, directory))
     .map((place) => (place === undefined ? '' : projectPath(project, place)))
     .some(
       (path) =>
@@ -3684,11 +3674,11 @@ function dependencyChangeReason(commands) {
 }
 
 function changesDependencies({ words }) {
-  const manager = shell.commandName(words);
+  const manager = call.shell.commandName(words);
   if (!(manager in DEPENDENCY_CHANGES)) {
     return false;
   }
-  const [subcommand, ...rest] = shell.operands(words.slice(1), VALUED_MANAGER_OPTIONS);
+  const [subcommand, ...rest] = call.shell.operands(words.slice(1), VALUED_MANAGER_OPTIONS);
   if (DEPENDENCY_CHANGES[manager].includes(subcommand)) {
     return true;
   }
@@ -3721,14 +3711,14 @@ function formatterReason(project, commands) {
 
 // The package a runner fetches (`npx`, `pnpm dlx`, ...), without its version, and whether `--no` keeps it to what is installed.
 function fetchedPackage(words) {
-  const name = shell.commandName(words);
+  const name = call.shell.commandName(words);
   const fetching = ['npx', 'pnpx', 'bunx'].includes(name) || (['pnpm', 'yarn'].includes(name) && words[1] === 'dlx');
   if (!fetching) {
     return undefined;
   }
   const args = words.slice(name === 'pnpm' || name === 'yarn' ? 2 : 1);
   const named = args[args.findIndex((word) => word === '-p' || word === '--package') + 1];
-  const first = shell.operands(args, ['-p', '--package', '-c', '--call'])[0];
+  const first = call.shell.operands(args, ['-p', '--package', '-c', '--call'])[0];
   const spec = args.some((word) => word === '-p' || word === '--package') ? named : first;
   return spec === undefined
     ? undefined
@@ -3781,7 +3771,7 @@ function folderLandingReason(project, input, command) {
   const into = describePlace(project, folder);
   const foreign = brings ? sources.find((source) => outsideScope(project, input, source.place)) : undefined;
   if (foreign) {
-    return `A worker brings no link and no whole tree from outside its scope into it: \`${name}\` brings ${foreign.word.replaceAll(shell.UNKNOWN, '$(...)')}, outside your scope, into ${into}. ${REPORT_TO_CONDUCTOR}`;
+    return `A worker brings no link and no whole tree from outside its scope into it: \`${name}\` brings ${foreign.word.replaceAll(call.shell.UNKNOWN, '$(...)')}, outside your scope, into ${into}. ${REPORT_TO_CONDUCTOR}`;
   }
   // A whole tree, or files whose names only the shell knows, may land on any file of the folder; a
   // file named lands on its name there.
@@ -3803,23 +3793,23 @@ function folderLandingReason(project, input, command) {
 // The sources and the folder of a command that lands files in a folder that exists, and whether it
 // `brings` links or whole trees: `ln` and `rsync` always, `cp` by its options. `install -d` makes folders.
 function folderLanding({ words, directory }) {
-  const name = shell.commandName(words);
+  const name = call.shell.commandName(words);
   const args = words.slice(1);
   if (!LANDING_COMMANDS.has(name) || (name === 'install' && args.includes('-d'))) {
     return undefined;
   }
   const target = targetDirectory(name, args);
   const valued = name === 'rsync' ? RSYNC_VALUED : PATH_COMMANDS[name].valued;
-  const operands = shell.operands(args, target === undefined ? valued : [...valued, '-t', '--target-directory']);
+  const operands = call.shell.operands(args, target === undefined ? valued : [...valued, '-t', '--target-directory']);
   const sources = target === undefined ? operands.slice(0, -1) : operands;
   if (sources.length === 0) {
     return undefined;
   }
-  const folder = shell.placeOf(target ?? operands.at(-1), directory);
+  const folder = call.shell.placeOf(target ?? operands.at(-1), directory);
   if (folder === undefined || !isDirectory(folder)) {
     return undefined;
   }
-  const placed = sources.map((word) => ({ word, place: shell.placeOf(word, directory) }));
+  const placed = sources.map((word) => ({ word, place: call.shell.placeOf(word, directory) }));
   return {
     name,
     folder,
@@ -3855,11 +3845,11 @@ function multiplyNamed(folder, budget, top = folder) {
 
 // The files a command writes by name, of a project or unknown to all but the shell.
 function writtenTargets(command) {
-  const at = (target, by, lock) => ({ place: shell.placeOf(target, command.directory), by, lock });
+  const at = (target, by, lock) => ({ place: call.shell.placeOf(target, command.directory), by, lock });
   const redirected = command.redirects
     .filter(({ operator }) => OUTPUT_REDIRECTS.has(operator))
     .map(({ operator, target, wrapper, unread, lock }) => {
-      const shown = target.replaceAll(shell.UNKNOWN, '$(...)');
+      const shown = target.replaceAll(call.shell.UNKNOWN, '$(...)');
       // A wrapper writes a file of its own as a redirection does; one given an option the guard
       // does not read may write anywhere.
       const written = unread
@@ -3922,14 +3912,14 @@ function shellWriteReason(project, input, { place, by }) {
 
 // `sed -i`, `perl -i` and `tee` write the files they are given.
 function inPlaceTargets({ words }) {
-  const name = shell.commandName(words);
+  const name = call.shell.commandName(words);
   const args = words.slice(1);
   if (name === 'tee') {
-    return shell.operands(args).map((word) => ({ word, by: `\`tee\` writing ${word}` }));
+    return call.shell.operands(args).map((word) => ({ word, by: `\`tee\` writing ${word}` }));
   }
   // A sed script writes a file by `w file`, `W file` or an `s///w` flag, whose target the script hides.
   if (name === 'sed' && !inPlaceFlag(args) && sedWrites(args)) {
-    return [{ word: shell.UNKNOWN, by: 'a sed script that writes a file' }];
+    return [{ word: call.shell.UNKNOWN, by: 'a sed script that writes a file' }];
   }
   const files = ['sed', 'perl', 'ruby'].includes(name) ? inPlaceFiles(args) : [];
 
@@ -3958,7 +3948,7 @@ function inPlaceFiles(args) {
 }
 
 function runsInlineCode({ words, heredoc, piped, redirects }) {
-  const name = shell.commandName(words);
+  const name = call.shell.commandName(words);
   const language = name.replace(/[\d.]+$/, '');
   const args = words.slice(1);
   if (!(language in INLINE_CODE)) {
@@ -3973,13 +3963,13 @@ function runsInlineCode({ words, heredoc, piped, redirects }) {
 
 // The paths a command changes, each with what changes it.
 function changedPaths(command) {
-  const name = shell.commandName(command.words);
+  const name = call.shell.commandName(command.words);
   return tableWrites(name, command) ?? programWrites(name, command.words, command.directory) ?? [];
 }
 
 // cp, mv, rm, dd, find -delete, patch and git: the writers whose targets the tables already read.
 function tableWrites(name, { words, directory, expression }) {
-  const at = (word, by) => ({ place: shell.placeOf(word, directory), by });
+  const at = (word, by) => ({ place: call.shell.placeOf(word, directory), by });
   if (name in PATH_COMMANDS) {
     const recursive = name === 'rm' && words.some((word) => /^(?:-[a-zA-Z]*[rR][a-zA-Z]*|--recursive)$/.test(word));
     return pathOperands(name, words.slice(1)).map((word) => ({
@@ -3995,8 +3985,8 @@ function tableWrites(name, { words, directory, expression }) {
     return words.filter((word) => word.startsWith('of=')).map((word) => at(word.slice(3), 'dd'));
   }
   if (name === 'find' && words.includes('-delete')) {
-    const roots = words.slice(1, shell.firstExpression(words));
-    const below = findReachesScope(words.slice(shell.firstExpression(words)));
+    const roots = words.slice(1, call.shell.firstExpression(words));
+    const below = findReachesScope(words.slice(call.shell.firstExpression(words)));
     return (roots.length > 0 ? roots : ['.']).map((root) => ({ ...at(`${root}/{}`, 'find -delete'), below }));
   }
   if (name === 'patch' && !words.includes('--dry-run')) {
@@ -4029,13 +4019,13 @@ function namedBy(pattern, name) {
 // The writers the cp and mv tables miss: an editor that rewrites in place, a downloader, an archive
 // tool, an awk program, a linter or runner given a path, or find writing a listing to a file.
 function programWrites(name, words, directory) {
-  const at = (word, by) => ({ place: shell.placeOf(word, directory), by });
+  const at = (word, by) => ({ place: call.shell.placeOf(word, directory), by });
   const args = words.slice(1);
   if (IN_PLACE_EDITORS.has(name)) {
-    return shell.operands(args).map((word) => at(word, name));
+    return call.shell.operands(args).map((word) => at(word, name));
   }
   if (name === 'rsync') {
-    const operands = shell.operands(args, RSYNC_VALUED);
+    const operands = call.shell.operands(args, RSYNC_VALUED);
     return operands.length > 1 ? [at(operands.at(-1), 'rsync')] : [];
   }
   if (name === 'curl' || name === 'wget') {
@@ -4062,7 +4052,7 @@ function downloadWrites(name, args, at) {
   const writes = [];
   for (let index = 0; index < args.length; index += 1) {
     if (flags.includes(args[index])) {
-      writes.push(at(args[index + 1] ?? shell.UNKNOWN, name));
+      writes.push(at(args[index + 1] ?? call.shell.UNKNOWN, name));
     }
   }
   if (name === 'curl' && args.some((word) => /^-[A-Za-z]*O[A-Za-z]*$/.test(word) && !word.startsWith('--'))) {
@@ -4107,7 +4097,7 @@ function tarFile(args) {
     (word, index) =>
       word === '--file' || (/^-?[A-Za-z]*f[A-Za-z]*$/.test(word) && (index === 0 || word.startsWith('-'))),
   );
-  return at === -1 ? undefined : (args[at + 1] ?? shell.UNKNOWN);
+  return at === -1 ? undefined : (args[at + 1] ?? call.shell.UNKNOWN);
 }
 
 // An awk program writes when it edits in place (`-i inplace`), redirects, pipes, or calls `system`.
@@ -4121,7 +4111,7 @@ function findListings(words, at) {
   const writes = [];
   words.forEach((word, index) => {
     if (['-fprint', '-fprintf', '-fls'].includes(word)) {
-      writes.push(at(words[index + 1] ?? shell.UNKNOWN, `find ${word.slice(1)}`));
+      writes.push(at(words[index + 1] ?? call.shell.UNKNOWN, `find ${word.slice(1)}`));
     }
   });
   return writes;
@@ -4133,7 +4123,7 @@ function toolWrites(name, args, at) {
     spec.kind === 'valued'
       ? valuedTargets(args, spec.valued)
       : spec.flags.some((flag) => args.includes(flag))
-        ? shell.operands(args, spec.valued).filter((word) => !spec.subcommands.includes(word))
+        ? call.shell.operands(args, spec.valued).filter((word) => !spec.subcommands.includes(word))
         : [];
   return targets.map((word) => at(word, name));
 }
@@ -4144,7 +4134,7 @@ function valuedTargets(args, valued) {
   for (let index = 0; index < args.length; index += 1) {
     const joined = valued.find((flag) => args[index].startsWith(`${flag}=`));
     if (valued.includes(args[index])) {
-      targets.push(args[index + 1] ?? shell.UNKNOWN);
+      targets.push(args[index + 1] ?? call.shell.UNKNOWN);
     } else if (joined) {
       targets.push(args[index].slice(joined.length + 1));
     }
@@ -4158,9 +4148,9 @@ function valuedTargets(args, valued) {
 function accessOperands(name, args) {
   const { valued, first, given } = ACCESS_COMMANDS[name];
   if (args.some((word) => /^--restore(?:=|$)/.test(word))) {
-    return [shell.UNKNOWN];
+    return [call.shell.UNKNOWN];
   }
-  const operands = shell.operands(args, valued).filter((word) => name !== 'chattr' || !/^[+=]/.test(word));
+  const operands = call.shell.operands(args, valued).filter((word) => name !== 'chattr' || !/^[+=]/.test(word));
   const spelled = name === 'chmod' && args.some((word) => /^-[rwxXstugo]+$/.test(word));
   return first && !spelled && !args.some((word) => given.test(word)) ? operands.slice(1) : operands;
 }
@@ -4168,7 +4158,7 @@ function accessOperands(name, args) {
 function pathOperands(name, args) {
   const { valued, changes } = PATH_COMMANDS[name];
   const directory = targetDirectory(name, args);
-  const words = shell.operands(args, directory === undefined ? valued : [...valued, '-t', '--target-directory']);
+  const words = call.shell.operands(args, directory === undefined ? valued : [...valued, '-t', '--target-directory']);
   if (changes === 'all' || (name === 'install' && args.includes('-d'))) {
     return directory === undefined ? words : [...words, directory];
   }
@@ -4184,7 +4174,7 @@ function targetDirectory(name, args) {
   }
   const spaced = args.findIndex((word) => word === '-t' || word === '--target-directory');
   if (spaced !== -1) {
-    return args[spaced + 1] ?? shell.UNKNOWN;
+    return args[spaced + 1] ?? call.shell.UNKNOWN;
   }
   const joined = args.find((word) => /^(?:-t.|--target-directory=)/.test(word));
   return joined?.replace(/^(?:-t|--target-directory=)/, '');
@@ -4194,7 +4184,7 @@ function targetDirectory(name, args) {
 // files of the work tree; `git apply` writes the files of a patch.
 function gitChangedPaths(args, directory) {
   const { subcommand, tail, moved } = gitInvocation(args, directory);
-  const at = (word) => ({ place: shell.placeOf(word, moved), by: `git ${subcommand}` });
+  const at = (word) => ({ place: call.shell.placeOf(word, moved), by: `git ${subcommand}` });
   const forced = forcedGitWrite(subcommand, tail, at);
   if (forced) {
     return forced;
@@ -4205,20 +4195,20 @@ function gitChangedPaths(args, directory) {
   if (subcommand === 'restore') {
     const staged = tail.some((word) => word === '--staged' || word === '-S');
     const worktree = tail.some((word) => word === '--worktree' || word === '-W');
-    return staged && !worktree ? [] : shell.operands(tail, ['-s', '--source']).map(at);
+    return staged && !worktree ? [] : call.shell.operands(tail, ['-s', '--source']).map(at);
   }
   if (subcommand === 'rm' || subcommand === 'mv') {
-    return shell.operands(tail).map(at);
+    return call.shell.operands(tail).map(at);
   }
   // The mode of a file in the index, or an entry of the index given whole, is a change of that file.
   if (subcommand === 'update-index' && tail.some((word) => /^--(?:cacheinfo|index-info|stdin)/.test(word))) {
     return [{ place: undefined, by: 'git update-index' }];
   }
   if (['add', 'update-index'].includes(subcommand) && tail.some((word) => word.startsWith('--chmod'))) {
-    return shell.operands(tail).map(at);
+    return call.shell.operands(tail).map(at);
   }
   if (subcommand === 'clean' && !tail.some((word) => /^(-[a-zA-Z]*n|--dry-run)$/.test(word))) {
-    const named = shell.operands(tail, ['-e', '--exclude']);
+    const named = call.shell.operands(tail, ['-e', '--exclude']);
     // `-x` and `-X` remove ignored files, `-d` enters the folders git does not track.
     const below = tail.some((word) => /^-[a-zA-Z]*[xX]/.test(word)) || untrackedBy(tail, /^-[a-zA-Z]*d/);
     return (named.length > 0 ? named : ['.']).map((word) => ({ ...at(word), below }));
@@ -4246,7 +4236,7 @@ function forcedGitWrite(subcommand, tail, at) {
     return [{ ...at('.'), below }];
   }
   if (subcommand === 'worktree' && tail[0] === 'add') {
-    return [at(shell.operands(tail.slice(1), ['-b', '-B']).at(-1) ?? '.')];
+    return [at(call.shell.operands(tail.slice(1), ['-b', '-B']).at(-1) ?? '.')];
   }
   if (subcommand === 'commit' && tail.some((word) => /^-[^-]*a/.test(word) || word === '--all')) {
     return [at('.')];
@@ -4283,7 +4273,7 @@ function gitInvocation(args, directory) {
   let moved = directory;
   while (index < args.length && args[index].startsWith('-')) {
     if (args[index] === '-C') {
-      moved = shell.placeOf(args[index + 1] ?? shell.UNKNOWN, moved);
+      moved = call.shell.placeOf(args[index + 1] ?? call.shell.UNKNOWN, moved);
     } else if (/^--(?:git-dir|work-tree)\b/.test(args[index])) {
       moved = undefined;
     }
@@ -4300,8 +4290,8 @@ function checkedOutPaths(tail, directory) {
     return tail.slice(dashes + 1);
   }
 
-  return shell.operands(tail, ['-b', '-B', '--orphan']).filter((word) => {
-    const place = shell.placeOf(word, directory);
+  return call.shell.operands(tail, ['-b', '-B', '--orphan']).filter((word) => {
+    const place = call.shell.placeOf(word, directory);
     return place === undefined || existsSync(place);
   });
 }
@@ -4378,11 +4368,11 @@ function sanctionedScripts(commands) {
 // `npm run <script>`, `pnpm <script>`, `yarn run <script>`... of a sanctioned script, as `<manager> run <script>`.
 // A script run in another folder (`--prefix`, `-C`, `--dir`, `--filter`) is no tool of this project.
 function scriptRun({ words }) {
-  const manager = shell.commandName(words);
+  const manager = call.shell.commandName(words);
   if (words.some((word) => /^(?:--prefix|-C|--dir|--filter|-F|-w|--workspace)(?:=|$)/.test(word))) {
     return undefined;
   }
-  const [first, second] = shell.operands(words.slice(1), VALUED_MANAGER_OPTIONS);
+  const [first, second] = call.shell.operands(words.slice(1), VALUED_MANAGER_OPTIONS);
   const script = ['run', 'run-script'].includes(first) ? second : manager === 'npm' ? undefined : first;
   return SCRIPT_MANAGERS.includes(manager) && SANCTIONED_SCRIPTS.has(script) ? `${manager} run ${script}` : undefined;
 }
@@ -4392,7 +4382,7 @@ function scriptRun({ words }) {
 // setting given to the command, nor an option that hands the files to a program (`grep -O`,
 // `--ext-diff`). It runs no code of the project.
 function isPureReader({ words, assigned }) {
-  const name = shell.commandName(words);
+  const name = call.shell.commandName(words);
   if (words[0]?.includes('/') && !SYSTEM_PROGRAMS.includes(dirname(words[0]))) {
     return false;
   }
@@ -4413,7 +4403,7 @@ function listsBranches(tail) {
   const writes = [...BRANCH_DELETES, ...BRANCH_MOVES, ...BRANCH_RESETS, ...BRANCH_SETTINGS];
   return (
     !hasBranchOption(tail, writes) &&
-    (shell.operands(tail).length === 0 || tail.some((word) => BRANCH_LISTS.includes(word)))
+    (call.shell.operands(tail).length === 0 || tail.some((word) => BRANCH_LISTS.includes(word)))
   );
 }
 
@@ -4446,8 +4436,8 @@ function namesNoOtherTrunk(args, base) {
 // An install of the lockfile, in any spelling the guard knows (`npm ci`, `npm clean-install`, a bare
 // `yarn`, `bun install --frozen-lockfile`): a worker's install of what the lockfile says is free.
 function installsPackages({ words }) {
-  const manager = shell.commandName(words);
-  const [subcommand] = shell.operands(words.slice(1), VALUED_MANAGER_OPTIONS);
+  const manager = call.shell.commandName(words);
+  const [subcommand] = call.shell.operands(words.slice(1), VALUED_MANAGER_OPTIONS);
   return (
     manager in DEPENDENCY_CHANGES &&
     (CLEAN_INSTALLS.includes(subcommand) || INSTALLS.includes(subcommand) || (manager === 'yarn' && !subcommand))
@@ -4570,7 +4560,7 @@ function settleNote(project, input, reading) {
   const { said, ground } = session ? sessionChanges(session, before.session) : {};
   const told = ground ?? packagesChangeReason(before.packages, project, session);
   if (said) {
-    notice = [notice, said].filter(Boolean).join('\n');
+    call.notice = [call.notice, said].filter(Boolean).join('\n');
   }
   if (reading && !settled && !told && !said) {
     writeState(noted, { worktree: before.worktree, script: before.script, trunks: before.trunks });
@@ -4587,7 +4577,7 @@ function holdChanges(project, input, { worktree: before, script, trunks: noted }
   const outside = worktreeOutside(project, input);
   const now = snapshot(project, outside);
   if (before.unread || now.unread) {
-    notice = [notice, UNCOMPARED_NOTE].filter(Boolean).join('\n');
+    call.notice = [call.notice, UNCOMPARED_NOTE].filter(Boolean).join('\n');
     return true;
   }
   const all = differences(project, outside, { before, now, trunks });
@@ -4598,10 +4588,10 @@ function holdChanges(project, input, { worktree: before, script, trunks: noted }
   const uncopied = all.filter((path) => !rewritten.includes(path) && hasNoCopy(project, before.changes[path]));
   const changed = all.filter((path) => !rewritten.includes(path) && !uncopied.includes(path));
   if (rewritten.length > 0) {
-    notice = [notice, rewrittenNotice(script, rewritten)].filter(Boolean).join('\n');
+    call.notice = [call.notice, rewrittenNotice(script, rewritten)].filter(Boolean).join('\n');
   }
   if (uncopied.length > 0) {
-    notice = [notice, uncopiedNotice(uncopied)].filter(Boolean).join('\n');
+    call.notice = [call.notice, uncopiedNotice(uncopied)].filter(Boolean).join('\n');
   }
   if (changed.length > 0) {
     const file = stateFile('outside', project, input);
@@ -4821,7 +4811,7 @@ function heldChangeReason(project, input, commands) {
     return undefined;
   }
   const paths = new Set(left.map(([path]) => path));
-  const acting = commands.filter(({ words }) => !NEUTRAL_PROGRAMS.has(shell.commandName(words)));
+  const acting = commands.filter(({ words }) => !NEUTRAL_PROGRAMS.has(call.shell.commandName(words)));
   const restoring = (command) => isGitCommit(command) && recordsRestoration(project, input, { now, since, left });
   if (acting.length > 0 && acting.every((command) => putsBack(project, command, paths) || restoring(command))) {
     return { undoing: true };
@@ -4861,11 +4851,11 @@ function putsBack(project, command, paths) {
 // named by its path: code the guard cannot read. The kit's own CLI, behind a runner or not, is
 // judged by what it is asked to do.
 function runsCode(command) {
-  const name = shell.commandName(command.words);
+  const name = call.shell.commandName(command.words);
   return (
     (CODE_RUNNERS.has(name) ||
       CODE_RUNNERS.has(name.replace(/[\d.]+$/, '')) ||
-      shell.SHELLS.has(name) ||
+      call.shell.SHELLS.has(name) ||
       isProgramPath(command.words[0])) &&
     kitInvocations([command]).length === 0
   );
@@ -4882,10 +4872,10 @@ function isProgramPath(word) {
 function isGitCommit(command) {
   const { subcommand, tail } = gitInvocation(command.words.slice(1));
   return (
-    shell.commandName(command.words) === 'git' &&
+    call.shell.commandName(command.words) === 'git' &&
     subcommand === 'commit' &&
     changedPaths(command).length === 0 &&
-    shell.operands(tail, [...COMMIT_VALUED_OPTIONS]).length === 0
+    call.shell.operands(tail, [...COMMIT_VALUED_OPTIONS]).length === 0
   );
 }
 
@@ -5054,8 +5044,8 @@ function decide(input, permissionDecision, reason) {
   if (host === 'codex' && permissionDecision === 'ask') {
     return emit({ systemMessage: permissionDecisionReason });
   }
-  const additionalContext = notice;
-  notice = undefined;
+  const additionalContext = call.notice;
+  call.notice = undefined;
   emit({
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
@@ -5073,10 +5063,10 @@ function isChecked(file) {
 // A run of the CLI, stopped at its time limit, and within what is left of a session start: past
 // that, it is not started.
 function runCli(project, args, timeout) {
-  const left = briefingEnds === undefined ? Number.POSITIVE_INFINITY : briefingEnds - Date.now();
+  const left = call.briefingEnds === undefined ? Number.POSITIVE_INFINITY : call.briefingEnds - Date.now();
   const limit = Math.min(Math.round(timeout * TIME_SCALE), left);
   if (limit <= 0) {
-    briefingCut = true;
+    call.briefingCut = true;
     return undefined;
   }
   const run = spawnSync(process.execPath, [project.cli.bin, ...args], {
@@ -5086,11 +5076,11 @@ function runCli(project, args, timeout) {
     maxBuffer: ANSWER_BYTES,
   });
   if (run.error?.code === 'ETIMEDOUT') {
-    timedOut.set(args[0], Math.round(limit / 1000));
-    briefingCut = briefingEnds !== undefined;
+    call.timedOut.set(args[0], Math.round(limit / 1000));
+    call.briefingCut = call.briefingEnds !== undefined;
   }
   if (run.error?.code === 'ENOBUFS') {
-    oversized.add(args[0]);
+    call.oversized.add(args[0]);
   }
   // A report is an object of JSON: no output (a run that could not start, whose null parses as null),
   // `null` or a bare value is none.
@@ -5192,7 +5182,7 @@ function regulatedSession(directory) {
 // The folder the session started in: Claude Code names it to its hooks, and its sandbox protects the
 // git config there; another host sends its working directory.
 function sessionRoot() {
-  const cwd = typeof called.cwd === 'string' ? called.cwd : process.cwd();
+  const cwd = typeof call.input.cwd === 'string' ? call.input.cwd : process.cwd();
   return resolve(process.env.CLAUDE_PROJECT_DIR || cwd);
 }
 
