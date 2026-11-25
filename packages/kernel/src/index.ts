@@ -240,6 +240,7 @@ export * from './application/tenancy/tenant-key';
 export * from './application/tenancy/tenant-reach-of';
 export * from './application/tenancy/tenant-reach';
 export * from './application/tenancy/tenants-of';
+export * from './application/undecided';
 export * from './application/use-case';
 export * from './infrastructure/clock/fixed-clock';
 export * from './infrastructure/clock/system-clock';
