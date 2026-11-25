@@ -1,4 +1,3 @@
-import { Writable } from 'node:stream';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { zodSchema } from '@ddd-ts-kit/validation/zod';
@@ -13,7 +12,6 @@ import {
 } from '../src';
 import { AsyncLocalStorageExecutionScope } from '@ddd-ts-kit/kernel';
 import { iteratedWithin } from '../src/pipeline/iterated-within';
-import { writeStream } from '../src/pipeline/write-stream';
 import { SchemaNode } from '../src/schema/schema-node';
 
 const representations = Representations.standard();
@@ -97,74 +95,6 @@ describe('a node of a JSON Schema', () => {
     expect(SchemaNode.of({ enum: ['a'] }).isScalar()).toBe(true);
     expect(SchemaNode.of({ type: 'array', enum: [[1]] }).isScalar()).toBe(true);
     expect(SchemaNode.of({ type: 'object' }).isScalar()).toBe(false);
-  });
-});
-
-describe('writing a streamed list to a connection', () => {
-  function sink(highWaterMark: number): { target: Writable; written: string[] } {
-    const written: string[] = [];
-
-    const target = new Writable({
-      highWaterMark,
-      write(chunk: Buffer, _encoding, done) {
-        written.push(chunk.toString());
-        setImmediate(done);
-      },
-    });
-
-    return { target, written };
-  }
-
-  it('waits for a slow reader, then ends', async () => {
-    const { target, written } = sink(1);
-
-    await writeStream(
-      target,
-      (async function* () {
-        yield 'a';
-        yield 'b';
-        yield 'c';
-      })(),
-    );
-
-    expect(written).toEqual(['a', 'b', 'c']);
-    expect(target.writableEnded).toBe(true);
-  });
-
-  it('stops reading the list once the reader has left', async () => {
-    const { target, written } = sink(1024);
-    let read = 0;
-
-    target.destroy();
-
-    await writeStream(
-      target,
-      (async function* () {
-        read += 1;
-        yield 'a';
-        read += 1;
-        yield 'b';
-      })(),
-    );
-
-    expect(written).toEqual([]);
-    expect(read).toBe(1);
-  });
-
-  it('cuts the connection when the list fails half way', async () => {
-    const { target } = sink(1024);
-    const closed = new Promise((resolve) => target.on('error', resolve));
-
-    await writeStream(
-      target,
-      (async function* () {
-        yield 'a';
-        throw new Error('cursor lost');
-      })(),
-    );
-
-    expect(await closed).toMatchObject({ message: 'cursor lost' });
-    expect(target.destroyed).toBe(true);
   });
 });
 

@@ -5,7 +5,6 @@ import type { ExecuteOptions } from '../pipeline/execute-options';
 import { assertCachedRoutes } from '../pipeline/assert-cached-routes';
 import { executeRoute } from '../pipeline/execute-route';
 import { serializeBody } from '../pipeline/serialize-body';
-import { writeStream } from '../pipeline/write-stream';
 import { assertServed } from '../representation/assert-served';
 import { assertUniqueRoutes } from '../route/assert-unique-routes';
 import type { HttpMethod } from '../route/http-method';
@@ -23,8 +22,8 @@ type Registrar = Record<HttpMethod, (path: string, ...handlers: RequestHandler[]
  * An upload and a raw body are read from the request stream, which that parser leaves alone
  * unless the request is JSON, whose bytes a raw body then takes from `request.rawBody`
  * (`express.json({ verify: (request, _, bytes) => { request.rawBody = bytes; } })`); a route that consumes another media type (`consumes`) gets a text
- * parser of its own for it. A body that is a stream is piped to the response, a streamed list
- * written chunk by chunk.
+ * parser of its own for it. A file and a list read as it comes are piped to the response,
+ * at the pace the client reads them.
  */
 export function mountExpress(target: IRouter, routes: readonly Route[], options: ExpressMountOptions = {}): void {
   assertUniqueRoutes(routes);
@@ -79,7 +78,7 @@ function handlerOf(route: Route, options: ExpressMountOptions): ExpressHandler {
     } else if (result.stream === undefined) {
       response.end(serializeBody(result));
     } else {
-      await writeStream(response, result.stream);
+      await pipeline(Readable.from(result.stream), response).catch(() => response.destroy());
     }
   };
 }
