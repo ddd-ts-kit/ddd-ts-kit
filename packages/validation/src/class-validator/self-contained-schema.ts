@@ -18,8 +18,8 @@ const DESCRIBING = { classTransformerMetadataStorage: defaultMetadataStorage, re
  * another bounded context, never lends it a field.
  */
 export function selfContainedSchema(dto: DtoClass<object>, shared: boolean): JsonSchema {
-  const all = describedByName(dto);
-  const own = all[dto.name] ?? describedAlone(dto);
+  const own = describedAlone(dto);
+  const all = { ...describedByName(dto), [dto.name]: own };
   const defs: SchemasByName = shared ? { [dto.name]: own } : {};
 
   collectDefs(own, all, defs);
@@ -40,9 +40,50 @@ function describedByName(dto: DtoClass<object>): SchemasByName {
   return Object.fromEntries([...reached].map(([name, reachedClass]) => [name, describedAlone(reachedClass)]));
 }
 
-/** The schema of one class, from the constraints of its lineage and of nothing else. */
+/**
+ * The schema of one class, from the constraints of its lineage and of nothing else: the properties
+ * of each class of the lineage, the farthest ancestor first, and every required name.
+ */
 function describedAlone(described: DtoClass<object>): JsonSchema {
-  return { type: 'object', ...targetConstructorToSchema(described, DESCRIBING) };
+  return inherited(
+    lineageOf(described)
+      .map((ancestor): JsonSchema => ({ ...targetConstructorToSchema(ancestor, DESCRIBING) }))
+      .filter((schema) => Object.keys(schema).length > 0),
+  );
+}
+
+/** The class and its ancestors, the farthest first. */
+function lineageOf(described: DtoClass<object>): DtoClass<object>[] {
+  const lineage: DtoClass<object>[] = [];
+
+  for (let current: unknown = described; isNamedClass(current); current = Object.getPrototypeOf(current)) {
+    lineage.unshift(current);
+  }
+
+  return lineage;
+}
+
+function isNamedClass(value: unknown): value is DtoClass<object> {
+  return typeof value === 'function' && value.name !== '';
+}
+
+/** The schemas of a lineage as one: the properties of each, the nearest class last, and every required name. */
+function inherited(schemas: readonly JsonSchema[]): JsonSchema {
+  if (schemas.length === 0) {
+    return { type: 'object' };
+  }
+
+  const merged: JsonSchema = {};
+  const properties: JsonSchema = {};
+  const required = new Set<unknown>();
+
+  for (const schema of schemas) {
+    Object.assign(merged, schema);
+    Object.assign(properties, schema['properties']);
+    (Array.isArray(schema['required']) ? schema['required'] : []).forEach((name: unknown) => required.add(name));
+  }
+
+  return { ...merged, properties, ...(required.size === 0 ? {} : { required: [...required] }) };
 }
 
 function collectDefs(node: unknown, all: SchemasByName, defs: SchemasByName): void {

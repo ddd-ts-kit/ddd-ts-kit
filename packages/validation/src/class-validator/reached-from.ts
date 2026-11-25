@@ -42,7 +42,7 @@ function nestedIn(owner: ReachedClass): ReachedClass[] {
   return getMetadataStorage()
     .getTargetValidationMetadatas(owner, '', true, false)
     .filter(({ type }) => type === ValidationTypes.NESTED_VALIDATION)
-    .map(({ target, propertyName }) => (isClass(target) ? typeOf(target, propertyName) : undefined))
+    .map(({ propertyName }) => typeOf(owner, propertyName))
     .filter(isClass);
 }
 

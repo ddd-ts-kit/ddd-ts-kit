@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { describe, expect, it } from 'vitest';
 import { Type } from 'class-transformer';
 import { IsString, ValidateNested } from 'class-validator';
+import { JSONSchema } from 'class-validator-jsonschema';
 import { DeclarationError } from '@ddd-ts-kit/kernel/declarations';
 import { classSchema } from '../src/class-validator';
 
@@ -82,5 +83,62 @@ describe('two classes of one name', () => {
     expect(() => moved.toJsonSchema()).toThrow(
       'MovedInvoiceDto reaches two classes named AddressDto, and a contract names a schema after its class: rename one of them.',
     );
+  });
+});
+
+/** A tree of folders: a class that nests itself, and twice. */
+class FolderDto {
+  @IsString()
+  declare name: string;
+
+  @ValidateNested()
+  @Type(() => FolderDto)
+  declare parent: FolderDto;
+
+  @ValidateNested({ each: true })
+  @Type(() => FolderDto)
+  declare children: FolderDto[];
+}
+
+class LabelledDto {
+  @ValidateNested()
+  @Type(() => String)
+  declare label: string;
+
+  /** A nested field whose class nothing tells: no `@Type`, and the compiler records `Object` for it. */
+  @ValidateNested()
+  declare untold: unknown;
+
+  @IsString()
+  @JSONSchema({ $ref: '#/$defs/WrittenByHand' })
+  declare elsewhere: string;
+}
+
+describe('the classes a class reaches', () => {
+  it('are each defined once, the class itself included when a field of its own points back at it', () => {
+    const schema = classSchema(FolderDto).toJsonSchema();
+
+    expect(Object.keys(schema['$defs'] ?? {})).toEqual(['FolderDto']);
+
+    expect(schema).toMatchObject({
+      properties: {
+        parent: { $ref: '#/$defs/FolderDto' },
+        children: { type: 'array', items: { $ref: '#/$defs/FolderDto' } },
+      },
+    });
+  });
+
+  it('are classes only: a scalar is its type, a field typed as nothing more is any object, a reference written by hand stays', () => {
+    const schema = classSchema(LabelledDto).toJsonSchema();
+
+    expect(schema['$defs']).toEqual({ Object: { type: 'object' } });
+
+    expect(schema).toMatchObject({
+      properties: {
+        label: { type: 'string' },
+        untold: { $ref: '#/$defs/Object' },
+        elsewhere: { $ref: '#/$defs/WrittenByHand' },
+      },
+    });
   });
 });
