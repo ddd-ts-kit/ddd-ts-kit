@@ -25,7 +25,7 @@ import { loadLooseProject } from '../project/load-loose-project';
 import { loadProject } from '../project/load-project';
 import { toPosix } from '../project/to-posix';
 import { knownCommit } from '../../commit/known-commit';
-import { changedFiles } from './changed-files';
+import { changedSince } from './changed-since';
 import { isReportedSince } from './is-reported-since';
 import { knownRules } from './known-rules';
 import { selfCheck } from './self-check';
@@ -109,7 +109,7 @@ function checkProject(args: Arguments, rules: readonly string[]): CheckResult {
   refuseScopeWithoutSources(project, args.positionals, scopes);
 
   const ref = args.text('changed-since');
-  const changed = ref === undefined ? undefined : changedFiles(root, knownCommit(root, ref, CHANGED_SINCE_FIX));
+  const changed = ref === undefined ? undefined : changedSince(root, knownCommit(root, ref, CHANGED_SINCE_FIX));
 
   const reported = result.violations.filter(
     (violation) => isInScope(violation, scopes) && isReportedSince(violation, changed),

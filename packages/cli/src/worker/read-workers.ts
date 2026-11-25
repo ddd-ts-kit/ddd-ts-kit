@@ -5,7 +5,7 @@ import { SLICES_FILE } from '../progress/read-slices';
 import { slicesIn } from '../progress/slices-in';
 import { WORKER_SCOPE_FILE } from '../commit/worker-scope-file';
 import { type BranchStanding, branchStanding } from './branch-standing';
-import { changedFiles } from './changed-files';
+import { worktreeFiles } from './worktree-files';
 import { listWorktrees, type Worktree } from './list-worktrees';
 import { overlapsOf } from './overlaps-of';
 import { readableProgress } from './readable-progress';
@@ -52,7 +52,7 @@ function workerIn(worktree: Worktree, project: string): WorkerStatus[] {
       ...(scope.base === undefined ? {} : { base: scope.base }),
       ...standingOf(standing, landedRows(project, { standing, scope })),
       installed: fs.existsSync(path.join(project, 'node_modules')),
-      files: changedFiles(worktree.path, standing?.since),
+      files: worktreeFiles(worktree.path, standing?.since),
       report: reportIn(project),
       ...(progress === undefined ? {} : { progress }),
     },
