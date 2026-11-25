@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:7106d8601025e308 -->
+<!-- translation-of: README.md sha256:17a6ceff0da01303 -->
 
 # @ddd-ts-kit/testing
 
@@ -412,7 +412,9 @@ await expectRefusal(() => commands.execute(command), 'SLOT_TAKEN', { calendarId:
 ```
 
 `expectRefusal(subject, code, facts?)` lit une action, qu'elle exécute, un `Result`, ou une erreur déjà
-attrapée. Une action qui rend une promesse donne une promesse à attendre. Elle rend l'erreur, et échoue
+attrapée. Une promesse, celle qu'une action rend ou celle donnée à sa place
+(`await expectRefusal(commands.execute(command), 'SLOT_TAKEN')`), est attendue et ce qu'elle répond est lu
+de la même façon, un `Result` compris : l'assertion est alors une promesse à attendre. Elle rend l'erreur, et échoue
 avec une `AssertionError` qui nomme ce qui a été refusé à la place, ou les faits qui diffèrent, un par
 ligne. Les faits donnés doivent être portés avec ces valeurs ; le refus peut en porter d'autres.
 

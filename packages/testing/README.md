@@ -407,7 +407,9 @@ await expectRefusal(() => commands.execute(command), 'SLOT_TAKEN', { calendarId:
 ```
 
 `expectRefusal(subject, code, facts?)` reads an action, which it runs, a `Result`, or an error
-already caught. An action that returns a promise gives a promise to await. It answers the
+already caught. A promise, the one an action returns or one given in its place
+(`await expectRefusal(commands.execute(command), 'SLOT_TAKEN')`), is awaited and what it answers is
+read the same way, a `Result` included: the assertion is then a promise to await. It answers the
 error, and fails with an `AssertionError` that names what was refused instead, or the facts
 that differ, one line each. The facts given must be carried with those values; the refusal may
 carry others.

@@ -129,6 +129,32 @@ describe('expectRefusal', () => {
   });
 });
 
+describe('expectRefusal on a promise', () => {
+  const nothing = 'Expected a refusal with code ORDER_ALREADY_PAID, but nothing was refused.';
+
+  it('reads the Result an asynchronous action answers, as it reads the one a synchronous action returns', async () => {
+    const error = await expectRefusal(async () => err(OrderError.alreadyPaid('o-1', paidAt)), 'ORDER_ALREADY_PAID');
+
+    expect(error).toBeInstanceOf(OrderError);
+    await expect(expectRefusal(async () => ok(1), 'ORDER_ALREADY_PAID')).rejects.toThrow(nothing);
+  });
+
+  it('awaits a promise given in place of the action: its rejection is the refusal', async () => {
+    const error = await expectRefusal(Promise.reject(OrderError.alreadyPaid('o-1', paidAt)), 'ORDER_ALREADY_PAID', {
+      orderId: 'o-1',
+    });
+
+    expect(error).toBeInstanceOf(OrderError);
+  });
+
+  it('reads what a promise given in place of the action answers: a Result, or a success', async () => {
+    const refused = Promise.resolve(err(new EmptyOrder('Nothing to pay.')));
+
+    expect(await expectRefusal(refused, 'EMPTY_ORDER')).toBeInstanceOf(EmptyOrder);
+    await expect(expectRefusal(Promise.resolve('done'), 'ORDER_ALREADY_PAID')).rejects.toThrow(nothing);
+  });
+});
+
 describe('thenError with facts', () => {
   const paid = () => {
     const order = anOrder().build();
