@@ -65,7 +65,7 @@ export const COMMANDS: Readonly<Record<string, Command>> = {
   todo: todoCommand,
   'plan-waves': planWavesCommand,
   'story-check': storyCheckCommand,
-  acceptance: takingTheLock('acceptance', acceptanceCommand, { onlyWith: '--lock' }),
+  acceptance: acceptanceCommand,
   'story-scope': storyScopeCommand,
   story: storyCommand,
   stories: storiesCommand,

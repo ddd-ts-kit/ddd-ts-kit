@@ -5,8 +5,7 @@ import { diagnose } from '../doctor/diagnose';
 import type { DoctorFinding } from '../doctor/doctor-finding';
 import { formatDiagnosis } from '../doctor/format-diagnosis';
 import { VERSION } from '../version';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import { stdoutJson } from '../json/stdout-json';
 
 /**
@@ -36,19 +35,24 @@ const STRICT_PROBLEMS: Readonly<Record<DoctorFinding['area'], ReadonlySet<Doctor
  * What an upgrade left to do in the project: the scripts, packages, permissions and git hooks this
  * version writes and it lacks; then what this checkout lacks to run it: Node, dependencies, submodules.
  */
-export const doctorCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, { strict: { type: 'boolean', default: false } });
-  const root = args.projectRoot;
-  const { config } = readConfig(root);
-  const findings = diagnose(root, config);
-  const merge = mergeInProgress(root);
-  const line = merge === undefined ? undefined : inDialect(merge, config.stack.packageManager);
+export const doctorCommand = defineCommand({
+  name: 'doctor',
+  options: { strict: { type: 'boolean' } },
+  run(args, io) {
+    const root = args.projectRoot;
+    const { config } = readConfig(root);
+    const findings = diagnose(root, config);
+    const merge = mergeInProgress(root);
+    const line = merge === undefined ? undefined : inDialect(merge, config.stack.packageManager);
 
-  io.out(
-    args.json
-      ? stdoutJson({ ...(line === undefined ? {} : { mergeInProgress: line }), version: VERSION, findings })
-      : `${line === undefined ? '' : `${line}\n\n`}${formatDiagnosis(findings, VERSION, config.stack.packageManager)}`,
-  );
+    io.out(
+      args.json
+        ? stdoutJson({ ...(line === undefined ? {} : { mergeInProgress: line }), version: VERSION, findings })
+        : `${line === undefined ? '' : `${line}\n\n`}${formatDiagnosis(findings, VERSION, config.stack.packageManager)}`,
+    );
 
-  return args.flag('strict') && findings.some((finding) => STRICT_PROBLEMS[finding.area].has(finding.problem)) ? 1 : 0;
-};
+    return args.flag('strict') && findings.some((finding) => STRICT_PROBLEMS[finding.area].has(finding.problem))
+      ? 1
+      : 0;
+  },
+});

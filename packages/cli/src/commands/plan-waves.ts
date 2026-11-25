@@ -9,8 +9,7 @@ import type { WavePlan } from '../plan/wave-plan';
 import { readSlices, SLICES_FILE } from '../progress/read-slices';
 import type { Slice } from '../progress/slice';
 import { Workspace } from '../workspace';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import { generate } from './generate';
 import type { Io } from './io';
 import { stdoutJson } from '../json/stdout-json';
@@ -24,32 +23,35 @@ import { stdoutJson } from '../json/stdout-json';
  * generator for any other reason. With `--ready`, only the first wave, whose dependencies are all done,
  * and the later ones counted.
  */
-export const planWavesCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, { ready: { type: 'boolean', default: false } });
-  const root = args.projectRoot;
-  const rows = readSlices(new Workspace(root, false));
+export const planWavesCommand = defineCommand({
+  name: 'plan-waves',
+  options: { ready: { type: 'boolean' } },
+  run(args, io) {
+    const root = args.projectRoot;
+    const rows = readSlices(new Workspace(root, false));
 
-  if (rows === undefined) {
-    throw new CliError(
-      `${SLICES_FILE} has no slices table.`,
-      'Plan the slices first (the skill ddd-ts-kit:plan-slices writes the table), then run plan-waves again.',
+    if (rows === undefined) {
+      throw new CliError(
+        `${SLICES_FILE} has no slices table.`,
+        'Plan the slices first (the skill ddd-ts-kit:plan-slices writes the table), then run plan-waves again.',
+      );
+    }
+
+    const context = contextOf(rows, args.positionals[0]);
+
+    const plan = withReplay(
+      root,
+      rows,
+      planWaves(rows, { context, contexts: Object.keys(readConfig(root).config.contexts), trunk: resolvedTrunk(root) }),
     );
-  }
 
-  const context = contextOf(rows, args.positionals[0]);
+    const shown = args.flag('ready') ? readyNow(plan) : plan;
 
-  const plan = withReplay(
-    root,
-    rows,
-    planWaves(rows, { context, contexts: Object.keys(readConfig(root).config.contexts), trunk: resolvedTrunk(root) }),
-  );
+    io.out(args.json ? stdoutJson(shown) : formatPlan(shown));
 
-  const shown = args.flag('ready') ? readyNow(plan) : plan;
-
-  io.out(args.json ? stdoutJson(shown) : formatPlan(shown));
-
-  return plan.problems.length === 0 ? 0 : 1;
-};
+    return plan.problems.length === 0 ? 0 : 1;
+  },
+});
 
 /** The plan, once the rows can be ordered, with what the replay of its commands found: no waves while a worker would be refused. */
 function withReplay(root: string, rows: readonly Slice[], plan: WavePlan): WavePlan {

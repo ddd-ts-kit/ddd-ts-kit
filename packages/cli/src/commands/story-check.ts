@@ -1,8 +1,7 @@
 import { CliError } from '../cli-error';
 import { formatStoryClosing } from '../story/format-story-closing';
 import { readStoryClosing } from '../story/read-story-closing';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import { stdoutJson } from '../json/stdout-json';
 
 /**
@@ -12,20 +11,23 @@ import { stdoutJson } from '../json/stdout-json';
  * without the report listing the compromise; with `--strict`, no marker at all in its contexts.
  * Reads only. Exits 1 while something keeps it open, 2 on a code no row carries or without slices file.
  */
-export const storyCheckCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, { strict: { type: 'boolean', default: false } });
-  const [story] = args.positionals;
+export const storyCheckCommand = defineCommand({
+  name: 'story-check',
+  options: { strict: { type: 'boolean' } },
+  run(args, io) {
+    const [story] = args.positionals;
 
-  if (story === undefined) {
-    throw new CliError(
-      'story-check takes the code of a story or a milestone.',
-      'Name it as the ids of its rows start: `npx ddd-ts-kit story-check M1` for the rows M1.01, M1.02, ...',
-    );
-  }
+    if (story === undefined) {
+      throw new CliError(
+        'story-check takes the code of a story or a milestone.',
+        'Name it as the ids of its rows start: `npx ddd-ts-kit story-check M1` for the rows M1.01, M1.02, ...',
+      );
+    }
 
-  const closing = readStoryClosing(args.projectRoot, story, args.flag('strict'));
+    const closing = readStoryClosing(args.projectRoot, story, args.flag('strict'));
 
-  io.out(args.json ? stdoutJson(closing) : formatStoryClosing(closing));
+    io.out(args.json ? stdoutJson(closing) : formatStoryClosing(closing));
 
-  return closing.canClose ? 0 : 1;
-};
+    return closing.canClose ? 0 : 1;
+  },
+});

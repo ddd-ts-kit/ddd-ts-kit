@@ -8,8 +8,7 @@ import type { StoryAcceptance } from '../acceptance/story-acceptance';
 import { CliError } from '../cli-error';
 import { readSlices } from '../progress/read-slices';
 import { exitCodeOf, tellUnwritable, Workspace } from '../workspace';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import type { Io } from './io';
 import { stdoutJson } from '../json/stdout-json';
 
@@ -23,34 +22,37 @@ import { stdoutJson } from '../json/stdout-json';
  * exits 1 while something keeps a story from the gate asked, or, without one, while a scenario is
  * inconsistent or drifted from its lock.
  */
-export const acceptanceCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
+export const acceptanceCommand = defineCommand({
+  name: 'acceptance',
+  options: {
     gate: { type: 'string' },
-    lock: { type: 'boolean', default: false },
-  });
+    lock: { type: 'boolean' },
+  },
+  takesTheLock: { onlyWith: 'lock' },
+  run(args, io) {
+    const ws = new Workspace(args.projectRoot, false);
+    const gate = gateOf(args.text('gate'));
+    const [asked] = args.positionals;
+    const stories = readAcceptance(ws, readSlices(ws) ?? [], asked);
 
-  const ws = new Workspace(args.projectRoot, false);
-  const gate = gateOf(args.text('gate'));
-  const [asked] = args.positionals;
-  const stories = readAcceptance(ws, readSlices(ws) ?? [], asked);
+    if (asked !== undefined && stories.length === 0) {
+      throw new CliError(
+        `${asked} is neither a story of docs/architecture/slices.md, nor the name of a spec of test/acceptance/, nor a fix whose docs/architecture/stories/${asked}.md lists its specs under \`## Regression\`.`,
+        'Pass the code of a story as its rows start (`US5` for `US5.03`); `npx ddd-ts-kit status` lists the rows.',
+      );
+    }
 
-  if (asked !== undefined && stories.length === 0) {
-    throw new CliError(
-      `${asked} is neither a story of docs/architecture/slices.md, nor the name of a spec of test/acceptance/, nor a fix whose docs/architecture/stories/${asked}.md lists its specs under \`## Regression\`.`,
-      'Pass the code of a story as its rows start (`US5` for `US5.03`); `npx ddd-ts-kit status` lists the rows.',
-    );
-  }
+    if (args.flag('lock')) {
+      return lock(ws, { asked, story: stories[0], json: args.json }, io);
+    }
 
-  if (args.flag('lock')) {
-    return lock(ws, { asked, story: stories[0], json: args.json }, io);
-  }
+    const failing = stories.some((story) => story.problems.some((problem) => countsFor(problem, gate)));
 
-  const failing = stories.some((story) => story.problems.some((problem) => countsFor(problem, gate)));
+    io.out(args.json ? stdoutJson({ gate: gate ?? null, met: !failing, stories }) : formatAcceptance(stories, gate));
 
-  io.out(args.json ? stdoutJson({ gate: gate ?? null, met: !failing, stories }) : formatAcceptance(stories, gate));
-
-  return failing ? 1 : 0;
-};
+    return failing ? 1 : 0;
+  },
+});
 
 interface LockRequest {
   readonly asked: string | undefined;

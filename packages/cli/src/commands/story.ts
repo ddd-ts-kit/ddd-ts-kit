@@ -5,8 +5,7 @@ import { readStoryPhases } from '../stories/read-story-phases';
 import { readStoryPlace } from '../stories/read-story-place';
 import { STORY_GATES, type StoryGate } from '../stories/story-gate';
 import { Workspace } from '../workspace';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import { stdoutJson } from '../json/stdout-json';
 
 /**
@@ -15,22 +14,25 @@ import { stdoutJson } from '../json/stdout-json';
  * the story is the one it takes. `--gate build` exits 1 until the code of the story may start,
  * `--gate close` until it may go to its pull request. Reads, never writes.
  */
-export const storyCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, { gate: { type: 'string' } });
-  const root = args.projectRoot;
-  const story = storyAsked(root, args.positionals[0]);
-  const gate = gateOf(args.text('gate'));
-  const phases = readStoryPhases(new Workspace(root, false), story, readSlices(new Workspace(root, false)) ?? []);
-  const met = phases.filter((phase) => gate === 'close' || phase.gate === 'build').every((phase) => phase.met);
+export const storyCommand = defineCommand({
+  name: 'story',
+  options: { gate: { type: 'string' } },
+  run(args, io) {
+    const root = args.projectRoot;
+    const story = storyAsked(root, args.positionals[0]);
+    const gate = gateOf(args.text('gate'));
+    const phases = readStoryPhases(new Workspace(root, false), story, readSlices(new Workspace(root, false)) ?? []);
+    const met = phases.filter((phase) => gate === 'close' || phase.gate === 'build').every((phase) => phase.met);
 
-  io.out(
-    args.json
-      ? stdoutJson({ story, gate: gate ?? null, met, next: phases.find((phase) => !phase.met)?.next ?? null, phases })
-      : formatStoryPhases(story, phases, gate),
-  );
+    io.out(
+      args.json
+        ? stdoutJson({ story, gate: gate ?? null, met, next: phases.find((phase) => !phase.met)?.next ?? null, phases })
+        : formatStoryPhases(story, phases, gate),
+    );
 
-  return gate !== undefined && !met ? 1 : 0;
-};
+    return gate !== undefined && !met ? 1 : 0;
+  },
+});
 
 /** The story named, or the one of the worktree. */
 function storyAsked(root: string, named: string | undefined): string {
