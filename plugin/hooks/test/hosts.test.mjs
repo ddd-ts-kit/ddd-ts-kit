@@ -4,7 +4,20 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { decision, directory, guard, patch, project, put, reason, run, runFrom, worker, write } from './support.mjs';
+import {
+  decision,
+  directory,
+  guard,
+  patch,
+  project,
+  put,
+  reason,
+  rule,
+  run,
+  runFrom,
+  worker,
+  write,
+} from './support.mjs';
 
 test('outside a ddd-ts-kit project every mode stays silent', () => {
   const elsewhere = directory('none');
@@ -149,6 +162,7 @@ test('Copilot: its own hook format is read, a relative path included, and answer
     }),
   });
   assert.equal(result.output.permissionDecision, 'deny');
+  assert.equal(rule(result), 'hand-written-role');
   assert.match(result.output.permissionDecisionReason, /generate aggregate/);
   const skipped = run('pre-write', {
     tool_name: 'Edit',
@@ -533,7 +547,8 @@ test('Codex: every patch of a line is judged, a delete and a move included, and 
   const argument = `apply_patch '${[begin, ...generated, end].join('\n')}'`;
   assert.match(reason(run('pre-bash', codexShell(root, argument))), /openapi\/openapi\.yaml is generated/);
   for (const command of ['apply_patch < /tmp/change.patch', 'cat /tmp/change.patch | apply_patch']) {
-    assert.match(reason(run('pre-bash', codexShell(root, command))), /holds the patch/, command);
+    const unheld = /^ddd-ts-kit \[patch-in-the-command\]: .*holds the patch/;
+    assert.match(reason(run('pre-bash', codexShell(root, command))), unheld, command);
   }
   for (const sections of [
     ['*** Delete File: ddd-ts-kit-baseline.json'],

@@ -107,7 +107,7 @@ export function workerScope(project, input) {
 // starts in another project, as long as no other checkout of the repository holds a scope: where
 // several workers have a worktree, the one a session happens to stand in may be a sibling's, and
 // only a call that names its worktree pins it. Until then the worker has no scope: it reads, and
-// what it writes is refused with the shape that names a worktree (`builderStrayReason`).
+// what it writes is refused with the shape that names a worktree (`builderStrayRefusal`).
 function pinnedScope(project, input) {
   const current = namedContext(project);
   const read = readPin(project, input);

@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { bash, conductorWithWorker, decision, guardTemp, project, reason, run, worker } from './support.mjs';
+import { bash, conductorWithWorker, decision, guardTemp, project, reason, rule, run, worker } from './support.mjs';
 
 // Each runs `rm` on a file outside the scope of the worker, or writes one, however it is written.
 const HIDDEN_WRITES = [
@@ -60,6 +60,7 @@ test('commands nested five deep are read, and a deeper one is refused rather tha
   assert.equal(decision(run('pre-bash', bash(root, `${'eval '.repeat(5)}rm src/main.ts`, agent))), 'deny');
   const deeper = run('pre-bash', bash(root, `${'eval '.repeat(6)}rm src/main.ts`, agent));
   assert.equal(decision(deeper), 'deny');
+  assert.equal(rule(deeper), 'unread');
   assert.match(reason(deeper), /nested deeper than the guard reads/);
 });
 
@@ -480,6 +481,7 @@ test('a worker sets none of the variables by which the shell or git find their p
   ]) {
     const refused = run('pre-bash', bash(root, command, agent));
     assert.equal(decision(refused), 'deny', command);
+    assert.equal(rule(refused), 'place-variable', command);
     assert.match(reason(refused), /sets no/, command);
   }
   assert.equal(run('pre-bash', bash(root, 'NODE_ENV=test ls', agent)).output, undefined);

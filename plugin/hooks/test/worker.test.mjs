@@ -27,6 +27,7 @@ import {
   project,
   put,
   reason,
+  rule,
   run,
   worker,
   write,
@@ -46,6 +47,7 @@ test('a context worker writes inside its bounded context and its end-to-end spec
   assert.equal(run('pre-write', write(join(root, '.ddd-ts-kit/report.md'), agent)).output, undefined);
   const neighbour = run('pre-write', write(join(root, 'src/contexts/billing/CONTEXT.md'), agent));
   assert.equal(decision(neighbour), 'deny');
+  assert.equal(rule(neighbour), 'worker-scope');
   assert.match(reason(neighbour), /another bounded context/);
   assert.match(reason(neighbour), /report the need to the conductor/);
 });
@@ -121,6 +123,7 @@ test('a context worker does not run a generator that writes shared files or anot
   ]) {
     const result = run('pre-bash', bash(root, command, agent));
     assert.equal(decision(result), 'deny', command);
+    assert.equal(rule(result), 'shared-generator', command);
     assert.match(reason(result), /conductor runs it on the trunk/, command);
   }
   const neighbour = run('pre-bash', bash(root, 'npx ddd-ts-kit generate value-object billing Money --json', agent));
@@ -205,6 +208,7 @@ test('a context worker changes the Prisma models of its context, and no other fi
   );
   const neighbour = run('pre-write', write(join(root, 'prisma/schema/billing.prisma'), agent));
   assert.equal(decision(neighbour), 'deny');
+  assert.equal(rule(neighbour), 'worker-scope');
   assert.match(reason(neighbour), /another bounded context/);
   for (const path of ['prisma/schema/schema.prisma', 'prisma/schema.prisma', 'prisma/schema/ordering/extra.prisma']) {
     const shared = run('pre-write', write(join(root, path), agent));
@@ -226,6 +230,7 @@ test('a context worker generates a working migration only', () => {
   }
   const real = run('pre-bash', bash(root, 'npm run db:generate add-orders', agent));
   assert.equal(decision(real), 'deny');
+  assert.equal(rule(real), 'working-migration');
   assert.match(reason(real), /db:generate working-add-orders/);
   assert.equal(run('pre-bash', bash(root, 'npm run db:generate add-orders')).output, undefined);
 });
@@ -271,6 +276,7 @@ test('a context worker does not change the dependencies, wherever the flags stan
   for (const command of DEPENDENCY_CHANGES) {
     const result = run('pre-bash', bash(root, command, agent));
     assert.equal(decision(result), 'deny', command);
+    assert.equal(rule(result), 'dependency-change', command);
     assert.match(reason(result), /lockfile/, command);
   }
 });
@@ -586,9 +592,12 @@ test('inline code of a worker runs, and what it changed outside the scope stops 
   put(root, 'src/platform/extra.ts', 'export const extra = 1;\n');
   const stopped = run('pre-bash', bash(root, 'npm test', agent));
   assert.equal(decision(stopped), 'deny');
+  assert.equal(rule(stopped), 'held-changes');
   assert.match(reason(stopped), /changed files outside your scope: package\.json, src\/platform\/extra\.ts/);
   assert.match(reason(stopped), /`git checkout HEAD -- package\.json`, then `rm src\/platform\/extra\.ts`/);
-  assert.equal(decision(run('pre-write', write(join(root, 'src/contexts/ordering/CONTEXT.md'), agent))), 'deny');
+  const writing = run('pre-write', write(join(root, 'src/contexts/ordering/CONTEXT.md'), agent));
+  assert.equal(decision(writing), 'deny');
+  assert.equal(rule(writing), 'held-changes');
 
   // Putting back exactly those files is allowed; anything else stays refused until it is done.
   assert.equal(run('pre-bash', bash(root, 'git restore -- package.json', agent)).output, undefined);
@@ -1141,10 +1150,13 @@ test('a context-builder is held to run every command as cd <worktree> && ..., no
   for (const command of stray) {
     assert.equal(decision(run('pre-bash', bash(conductor, command, agent))), 'deny', command);
   }
-  assert.match(reason(run('pre-bash', bash(conductor, stray[0], agent))), /cd <worktree> && /);
+  const strayed = run('pre-bash', bash(conductor, stray[0], agent));
+  assert.equal(rule(strayed), 'stray-command');
+  assert.match(reason(strayed), /cd <worktree> && /);
   // The reference shape reaches the scope of the worktree, which refuses the write by its context.
   const reference = run('pre-bash', bash(conductor, `cd ${worktree} && echo x > src/main.ts`, agent));
   assert.equal(decision(reference), 'deny');
+  assert.equal(rule(reference), 'file-change');
   assert.match(reason(reference), /You build the context "billing"/);
   // A read from the conductor, moving into no worktree, is left alone.
   const read = bash(conductor, `cat ${worktree}/src/contexts/billing/CONTEXT.md`, agent);

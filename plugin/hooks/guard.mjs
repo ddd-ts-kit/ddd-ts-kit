@@ -61,11 +61,11 @@ import {
   RUNNING_PROGRAMS,
 } from './shell-reads.mjs';
 import {
-  builderStrayReason,
+  builderStrayRefusal,
   isHeldToAWorktree,
-  preparingReason,
-  sessionShellReason,
-  workerCommandReason,
+  preparingRefusal,
+  sessionShellRefusal,
+  workerCommandRefusal,
 } from './shell-rules.mjs';
 import {
   ACCESS_COMMANDS,
@@ -219,7 +219,7 @@ async function preWrite(input) {
     noteCrossings(input);
   }
   if (verdict) {
-    decide(input, verdict.decision, verdict.reason);
+    decide(input, verdict);
   }
 }
 
@@ -238,6 +238,7 @@ function strayFileVerdict(input) {
   const where = pinned ? `your worktree ${pinned.worktree}` : 'the worktree of your briefing';
   return {
     decision: decisionOf(home),
+    id: 'stray-file',
     reason: `${stray.file} is outside every project: a worker writes in ${where}, and in the temp directory. ${REPORT_TO_CONDUCTOR}`,
   };
 }
@@ -265,7 +266,7 @@ function pendingOfWriter(input) {
     return undefined;
   }
   const pending = pendingChangeReason(project, input, []);
-  return pending?.reason ? { decision: decisionOf(project), reason: pending.reason } : undefined;
+  return pending?.reason ? { decision: decisionOf(project), id: 'held-changes', reason: pending.reason } : undefined;
 }
 
 // The writes of a call in a project the guard judges, each with its project.
@@ -291,11 +292,11 @@ function writesVerdict(writes, input, pending) {
 function refusalOf(writes, input, check) {
   let asked;
   for (const written of writes) {
-    const reason = check(written, input);
-    if (reason && written.project.mode !== 'advise') {
-      return { decision: 'deny', reason };
+    const refusal = check(written, input);
+    if (refusal && written.project.mode !== 'advise') {
+      return { decision: 'deny', ...refusal };
     }
-    asked ??= reason ? { decision: 'ask', reason } : undefined;
+    asked ??= refusal ? { decision: 'ask', ...refusal } : undefined;
   }
   return asked;
 }
@@ -315,16 +316,16 @@ function cliVerdict(writes, input) {
 }
 
 function quickRefusal(written, input) {
-  return firstRefusal(written.deleted ? REMOVAL_RULES : WRITE_RULES, { ...written, input })?.reason;
+  return firstRefusal(written.deleted ? REMOVAL_RULES : WRITE_RULES, { ...written, input });
 }
 
 function cliRefusal(written, input) {
-  return firstRefusal(CLI_RULES, { ...written, input })?.reason;
+  return firstRefusal(CLI_RULES, { ...written, input });
 }
 
 function deviationOf(written, input) {
   const deviation = written.deleted ? undefined : firstRefusal(DEVIATION_RULES, { ...written, input });
-  return deviation ? { decision: 'ask', reason: deviation.reason } : undefined;
+  return deviation ? { decision: 'ask', ...deviation } : undefined;
 }
 
 // A refusal of the patch Codex applies through its shell wins; else the command line is read, and a
@@ -338,7 +339,7 @@ async function preBash(input) {
   const patched = await codexPatchVerdict(input, command, cwd);
   const verdict = patched?.decision === 'deny' ? patched : ((await shellVerdict(input, command, cwd)) ?? patched);
   if (verdict) {
-    decide(input, verdict.decision, verdict.reason);
+    decide(input, verdict);
   }
 }
 
@@ -357,17 +358,19 @@ async function shellVerdict(input, command, cwd) {
   const decision = decisionOf(project);
   const commands = readCommands(project, command, cwd);
   if (!commands) {
-    return isHeldToAWorktree(project, input) ? { decision, reason: UNREADABLE_COMMAND } : undefined;
+    return isHeldToAWorktree(project, input)
+      ? { decision, id: 'unreadable-command', reason: UNREADABLE_COMMAND }
+      : undefined;
   }
-  const preparing = preparingReason(project, input, { command, commands });
+  const preparing = preparingRefusal(project, input, { command, commands });
   if (preparing) {
-    return { decision, reason: preparing };
+    return { decision, ...preparing };
   }
   const context = workerContext(project, input);
   const refusal = context
-    ? workerCommandReason(project, input, { context, command, commands })
-    : (builderStrayReason(project, input, commands) ?? sessionShellReason(input, commands));
-  return refusal ? { decision, reason: refusal } : undefined;
+    ? workerCommandRefusal(project, input, { context, command, commands })
+    : (builderStrayRefusal(project, input, commands) ?? sessionShellRefusal(input, commands));
+  return refusal ? { decision, ...refusal } : undefined;
 }
 
 // The reader of the shell, told once the programs the guard judges by a table of its own: a first
@@ -442,6 +445,7 @@ async function codexPatchVerdict(input, command, cwd) {
       ? undefined
       : {
           decision: decisionOf(project),
+          id: 'patch-in-the-command',
           reason:
             "apply_patch is judged when the command holds the patch: give it as a here-document (`apply_patch <<'EOF'` ... `EOF`), not from a file or a pipe.",
         };
