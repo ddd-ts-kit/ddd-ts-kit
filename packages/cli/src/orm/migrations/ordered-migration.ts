@@ -1,8 +1,5 @@
 import type { Migration } from '../../check/migrations/migration-folder';
 
-/** The ORM whose migrations are files or folders the tool orders itself. */
-export type NamedOrm = 'knex' | 'prisma' | 'typeorm';
-
 /** A migration with what its tool orders it by. */
 export interface OrderedMigration extends Migration {
   /**

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:1a6cb9b2862dbe39 -->
+<!-- translation-of: README.md sha256:a779e3dbc5a865ff -->
 
 # @ddd-ts-kit/kernel
 
@@ -1314,19 +1314,19 @@ enfants. Interrogez-le avant de construire des champs coûteux ; le kit le fait,
 `loggingMiddleware` et le planificateur. `NoopLogger` répond `false`.
 
 **`flush()`** se résout une fois que chaque entrée journalisée jusque-là, par le *logger* ou un
-enfant, a été remise à sa destination, et ne rejette jamais. On l'appelle une fois, à l'arrêt du
-processus, après la dernière entrée : l'application de `@ddd-ts-kit/di` l'appelle à la fin de
-`stop()`. Ce qui est journalisé après un *flush* n'est pas spécifié, et ne lève jamais : pino et
-`StdoutLogger` l'écrivent encore, winston, dont le *flush* termine le *logger*, l'abandonne. Un
-second appel se résout aussi.
+enfant, a été remise à sa destination, et ne rejette jamais. Il ne clôt rien : une entrée
+journalisée ensuite est écrite comme les autres, par chaque *logger* du kit, et un appel
+ultérieur la vide à son tour. L'application de `@ddd-ts-kit/di` l'appelle à la fin de `stop()`,
+après la dernière entrée de ses modules.
 
 `InMemoryLogger` prend `{ level?, fields?, base?, scrubMessages? }` comme un vrai adaptateur : un
 seuil (par défaut `debug`, chaque entrée), des champs lus à chaque entrée, des champs ajoutés à
 chaque entrée. Ses `entries` contiennent ce qu'écrit un *logger* : une erreur passée en champ est
 enregistrée sous forme de sa description. `CREDENTIAL_KEYS` et `REDACTED` sont les noms de champs
 et le marqueur avec lesquels `StdoutLogger` et les adaptateurs pino et winston masquent, et
-`isCredentialKey(name)` la comparaison qu'ils partagent, sans tenir compte de la casse ;
-`InMemoryLogger` ne masque rien.
+`hiddenKeys(added)` la seule question qu'ils posent à un nom de champ : est-il l'une des
+`CREDENTIAL_KEYS` (`isCredentialKey(name)`) ou l'un des noms qu'un projet ajoute par `redact`,
+sans tenir compte de la casse. `InMemoryLogger` ne masque rien.
 
 ### Metrics
 

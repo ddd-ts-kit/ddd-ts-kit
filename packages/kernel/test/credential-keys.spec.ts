@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CREDENTIAL_KEYS, isCredentialKey } from '../src';
+import { CREDENTIAL_KEYS, hiddenKeys, isCredentialKey } from '../src';
 
 describe('isCredentialKey', () => {
   it('names every key of CREDENTIAL_KEYS, whatever its case', () => {
@@ -35,5 +35,27 @@ describe('isCredentialKey', () => {
       false,
       false,
     ]);
+  });
+});
+
+describe('hiddenKeys', () => {
+  it('names the keys a project adds, whatever their case, and the credential keys with them', () => {
+    const isHidden = hiddenKeys(['iban', 'SSN']);
+
+    expect(['iban', 'IBAN', 'Iban', 'ssn', 'Ssn', 'Authorization', 'password'].map(isHidden)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
+
+    expect(['ibanCountry', 'userId', ''].map(isHidden)).toEqual([false, false, false]);
+  });
+
+  it('names the credential keys alone when a project adds none', () => {
+    expect(['Authorization', 'iban'].map(hiddenKeys())).toEqual([true, false]);
   });
 });

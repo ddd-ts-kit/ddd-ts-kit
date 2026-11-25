@@ -3,6 +3,7 @@ export * from './describe-error';
 export * from './describe-error-fields';
 export * from './error-description';
 export * from './error-identity';
+export * from './hidden-keys';
 export * from './identify-error';
 export * from './is-credential-key';
 export * from './log-fields';

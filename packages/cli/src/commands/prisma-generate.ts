@@ -9,6 +9,7 @@ import {
   requiredMigrationName,
   runOrmTool,
 } from '../migration';
+import { namedFolders } from '../orm/migrations/named-folders';
 import type { Command } from './command';
 import type { Io } from './io';
 import { parseMigrationArguments } from './parse-migration-arguments';
@@ -26,7 +27,7 @@ export const prismaGenerateCommand: Command = (argv, io) => {
 
   const name = requiredMigrationName(args.text('name'));
 
-  refuseTakenMigrationName(root, 'prisma', name);
+  refuseTakenMigrationName(root, namedFolders, name);
   ensureDatabaseReachable();
 
   const offline = !hasDatabaseUrl();

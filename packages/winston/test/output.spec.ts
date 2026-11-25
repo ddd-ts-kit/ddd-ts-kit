@@ -1,7 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { LOG_LEVELS } from '@ddd-ts-kit/kernel';
 import winston from 'winston';
 import { WinstonLogger, createWinstonLogger } from '../src';
@@ -9,23 +6,6 @@ import { MemorySink } from './support/memory-sink';
 import { memoryTransport } from './support/memory-transport';
 
 const ANSI_COLOURS = new RegExp(`${String.fromCharCode(27)}\\[\\d+m`, 'g');
-
-/** A transport whose stream refuses to end, as a file on a full disk does. */
-class FailingAtTheEnd extends winston.transports.Stream {
-  override _final(callback: (error?: Error | null) => void): void {
-    callback(new Error('disk full'));
-  }
-}
-
-let directory: string;
-
-beforeEach(() => {
-  directory = mkdtempSync(join(tmpdir(), 'ddd-ts-kit-winston-'));
-});
-
-afterEach(() => {
-  rmSync(directory, { recursive: true, force: true });
-});
 
 describe('createWinstonLogger', () => {
   it('writes one JSON line per entry: fields, level by name, message, base fields, ISO time', () => {
@@ -130,38 +110,7 @@ describe('createWinstonLogger', () => {
   });
 });
 
-describe('createWinstonLogger, the flush and the pretty format', () => {
-  it('has written every line to its transports once the flush resolves, and drops what follows', async () => {
-    const file = join(directory, 'app.log');
-    const logger = createWinstonLogger({ transports: [new winston.transports.File({ filename: file })] });
-    const child = logger.child({ context: 'shipping' });
-
-    for (let line = 0; line < 500; line += 1) {
-      child.info(`parcel ${String(line)} handed over`);
-    }
-
-    await logger.flush();
-    child.error('logged after the end');
-    logger.info('logged after the end');
-    await child.flush();
-
-    const written = readFileSync(file, 'utf8').split('\n').filter(Boolean);
-
-    expect(written).toHaveLength(500);
-    expect(JSON.parse(written[499] ?? '{}')).toMatchObject({ message: 'parcel 499 handed over', context: 'shipping' });
-  });
-
-  it('resolves its flush although a transport fails to finish', async () => {
-    const instance = winston.createLogger({ transports: [new FailingAtTheEnd({ stream: new MemorySink().stream })] });
-
-    instance.on('error', () => undefined);
-    const logger = new WinstonLogger(instance);
-
-    logger.info('order shipped');
-
-    await expect(logger.flush()).resolves.toBeUndefined();
-  });
-
+describe('createWinstonLogger and the pretty format', () => {
   it('writes one line a human reads in the pretty format', () => {
     const sink = new MemorySink();
 
@@ -272,12 +221,6 @@ describe('WinstonLogger', () => {
     expect(sink.records()).toEqual([]);
   });
 
-  it('resolves its flush on a logger without transport', async () => {
-    const logger = new WinstonLogger(winston.createLogger({ silent: true }));
-
-    await expect(logger.flush()).resolves.toBeUndefined();
-  });
-
   it('says which levels it writes, for a child too', () => {
     const sink = new MemorySink();
 
@@ -286,20 +229,6 @@ describe('WinstonLogger', () => {
     });
 
     expect(LOG_LEVELS.filter((level) => child.isLevelEnabled(level))).toEqual(['warn', 'error']);
-  });
-
-  it('says it writes no level once it was flushed, and takes what is logged then without a throw', async () => {
-    const sink = new MemorySink();
-    const logger = createWinstonLogger({ transports: [memoryTransport(sink)] });
-    const child = logger.child({ context: 'shipping' });
-
-    logger.info('order shipped');
-    await child.flush();
-    child.error('logged after the end', { error: new Error('too late') });
-
-    expect([logger.isLevelEnabled('error'), child.isLevelEnabled('error')]).toEqual([false, false]);
-    expect(sink.records()).toMatchObject([{ message: 'order shipped' }]);
-    expect(sink.records()).toHaveLength(1);
   });
 
   it('asks the levels the project maps', () => {

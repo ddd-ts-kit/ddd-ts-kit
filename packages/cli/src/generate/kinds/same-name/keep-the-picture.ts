@@ -1,19 +1,23 @@
 import type { Config } from '../../../config';
+import { ORM_MEMBERS } from '../../../orm/orm-members';
+import { fileOfTable } from '../../../orm/tables/file-of-table';
+import type { IndexNames, LostName } from '../../../orm/tables/index-names';
+import type { IndexPicture } from '../../../orm/tables/index-picture';
 import { workspaceSources } from './workspace-sources';
 import { Workspace } from '../../../workspace';
 import { contextOfSource } from './context-of-source';
-import { type IndexPicture, indexPicture } from './index-picture';
+import { indexPicture } from './index-picture';
 import { readTablesFile } from './read-tables-file';
 import type { Sources } from './sources-of';
 
 /** What a region of the kit holds, between its markers. */
 const REGION = /\/\/ ddd-ts-kit:[\w-]+\n([\s\S]*?)\/\/ \/ddd-ts-kit:[\w-]+/g;
 
-/** The two pictures of a command, and the command. */
+/** The two pictures of a command, and the names of the index they are compared by. */
 interface Compared {
   readonly before: IndexPicture;
   readonly after: IndexPicture;
-  readonly command: 'generate' | 'init';
+  readonly names: IndexNames;
 }
 
 /**
@@ -33,6 +37,7 @@ export function keepThePicture(ws: Workspace, config: Config, command: 'generate
   const index = `${config.platformDir}/database/schema.ts`;
   const before = indexPicture(new Workspace(ws.root, false), config);
   const after = indexPicture(ws, config);
+  const names = ORM_MEMBERS[config.stack.orm].tables?.indexNames;
 
   if (before.text === undefined || after.text === undefined) {
     return;
@@ -45,7 +50,12 @@ export function keepThePicture(ws: Workspace, config: Config, command: 'generate
     return;
   }
 
-  const { rewritten, why, hedged } = whatChanged(ws, config, { before, after, command });
+  // An index that gives its tables no name two contexts can share has nothing to lose.
+  if (names === undefined) {
+    return;
+  }
+
+  const { rewritten, why, hedged } = whatChanged(ws, config, { before, after, names });
 
   // A table the command wrote out of its tables file is not kept by leaving the index: it is said, and the command goes
   // on. What hangs on a module not read is said hedged, when nothing certain leaves the index.
@@ -65,7 +75,7 @@ export function keepThePicture(ws: Workspace, config: Config, command: 'generate
   ws.leave(index, before.text);
 
   ws.note(
-    `${index} is left as it stood before the command: ${why.join('; ')}.${toDo(ws, config, { command, lines, names: why.length })}`,
+    `${index} is left as it stood before the command: ${why.join('; ')}.${toDo(ws, config, { command, lines, where: names.toMoveInside(why.length) })}`,
   );
 }
 
@@ -82,13 +92,6 @@ interface Changes {
   readonly hedged: string[];
 }
 
-/** A name the index exported before the command, on TypeORM an entry of `entities`: the table it named, and the module the index took it from. */
-interface Named {
-  readonly name: string;
-  readonly was: string;
-  readonly from: string;
-}
-
 /** What is not read with certainty: what the index still names after the command, and what it named before and names no more. */
 interface Unread {
   readonly still: readonly string[];
@@ -96,12 +99,9 @@ interface Unread {
 }
 
 /** A name that exported one value before the command and another by the lines the kit reads after it. */
-interface Move extends Named {
+interface Move extends LostName {
   readonly is: string;
 }
-
-/** What a name lost, said once after the last one: the comparison is of names, not of the tables behind them. */
-const NAMES_ONLY = ' (a table still exported under another name is not seen: the kit compares names)';
 
 /**
  * What the command would change: the names the index exports, compared, not the tables behind
@@ -109,55 +109,29 @@ const NAMES_ONLY = ' (a table still exported under another name is not seen: the
  * certain. While one is not, before the command or after it, what the index exports after it is
  * not known: each is said hedged, and the index is not left.
  */
-function whatChanged(ws: Workspace, config: Config, { before, after }: Compared): Changes {
+function whatChanged(ws: Workspace, config: Config, { before, after, names }: Compared): Changes {
   const sources = workspaceSources(ws, config);
-  const lost = namesLost(config, { before, after });
-  const isRewritten = ({ was }: Named): boolean => isWrittenOut(ws, sources, was);
+  const lost = names.lost(before, after);
+  const isRewritten = ({ was }: LostName): boolean => isWrittenOut(ws, sources, was);
   const losses = lost.filter((named) => !isRewritten(named) && !after.toTheSettle.has(named.name));
 
   const moves = [...before.names].flatMap(([name, was]): Move[] => {
     const is = after.names.get(name);
 
-    return is === undefined || is === was ? [] : [{ name, was, is, from: before.givers.get(name) ?? fileOf(was) }];
+    return is === undefined || is === was ? [] : [{ name, was, is, from: before.givers.get(name) ?? fileOfTable(was) }];
   });
 
   const unread = { still: after.unread, gone: before.unread.filter((file) => !after.unread.includes(file)) };
 
   const rewritten = [...new Set(lost.filter(isRewritten).map(({ was }) => was))].map((table) =>
-    rewrittenOut(config, table),
+    rewrittenOut(names, table),
   );
 
   if (unread.still.length + unread.gone.length > 0) {
     return { rewritten, why: [], hedged: [...losses.map(hedgedLoss(unread)), ...moves.map(hedgedMove(unread))] };
   }
 
-  return { rewritten, why: [...moves.map(movedName), ...lossesSaid(config, losses)], hedged: [] };
-}
-
-/** The names the index exported before the command and exports no more; on TypeORM the entries `entities` lists no more. */
-function namesLost(config: Config, { before, after }: Pick<Compared, 'before' | 'after'>): Named[] {
-  if (config.stack.orm === 'typeorm') {
-    return [...before.reachable]
-      .filter((table) => !after.reachable.has(table))
-      .map((table) => ({ name: table.slice(table.lastIndexOf('#') + 1), was: table, from: fileOf(table) }));
-  }
-
-  return [...before.names]
-    .filter(([name]) => !after.names.has(name))
-    .map(([name, was]) => ({ name, was, from: before.givers.get(name) ?? fileOf(was) }));
-}
-
-function lossesSaid(config: Config, losses: readonly Named[]): string[] {
-  if (config.stack.orm === 'typeorm') {
-    return losses.map(
-      ({ name, from }) => `the entity \`${name}\`, which '${from}' gives \`entities\`, would be listed no more`,
-    );
-  }
-
-  return losses.map(
-    ({ name, from }, at) =>
-      `the name \`${name}\`, which '${from}' gives the index, would be exported by no line after it${at === losses.length - 1 ? NAMES_ONLY : ''}`,
-  );
+  return { rewritten, why: [...moves.map(movedName), ...names.lossesSaid(losses)], hedged: [] };
 }
 
 function movedName({ name, was, is }: Move): string {
@@ -165,7 +139,7 @@ function movedName({ name, was, is }: Move): string {
 }
 
 /** A name lost while something is not read: it may still come through what the index still names; plainly lost when the index names none of it any more. */
-function hedgedLoss({ still, gone }: Unread): (lost: Named) => string {
+function hedgedLoss({ still, gone }: Unread): (lost: LostName) => string {
   return ({ name, from }) => {
     if (still.length === 0) {
       return `the name \`${name}\`, which '${from}' gave the index, is exported by no line after the command (${noMoreNamed(gone)})`;
@@ -190,11 +164,7 @@ function noMoreNamed(gone: readonly string[]): string {
 
 /** A table by the name its file gives it and its file: the \`orders\` of '<file>'. */
 function named(table: string): string {
-  return `the \`${table.slice(table.lastIndexOf('#') + 1)}\` of '${fileOf(table)}'`;
-}
-
-function fileOf(table: string): string {
-  return table.slice(0, Math.max(table.lastIndexOf('#'), 0));
+  return `the \`${table.slice(table.lastIndexOf('#') + 1)}\` of '${fileOfTable(table)}'`;
 }
 
 function quotedFiles(files: readonly string[]): string {
@@ -202,10 +172,10 @@ function quotedFiles(files: readonly string[]): string {
 }
 
 /** A table the command wrote out of its tables file, and what restores it. */
-function rewrittenOut(config: Config, table: string): string {
+function rewrittenOut(names: IndexNames, table: string): string {
   const [file = '', name = ''] = table.split('#');
 
-  return `\`${name}\` is no more in ${file}, which the command wrote again without it: restore its declaration there, as git holds it${config.stack.orm === 'typeorm' ? ', or the index, which still imports it, does not compile' : ''}`;
+  return `\`${name}\` is no more in ${file}, which the command wrote again without it: restore its declaration there, as git holds it${names.withoutItsTable}`;
 }
 
 /** With --force a tables file is written again whole: a table it held and the command does not declare is gone from it, the file read with certainty. */
@@ -222,14 +192,9 @@ function isWrittenOut(ws: Workspace, sources: Sources, table: string): boolean {
 function toDo(
   ws: Workspace,
   config: Config,
-  { command, lines, names }: { command: string; lines: readonly string[]; names: number },
+  { command, lines, where }: { command: string; lines: readonly string[]; where: string },
 ): string {
   if (command === 'init') {
-    const where =
-      config.stack.orm === 'typeorm'
-        ? 'its import inside the `// ddd-ts-kit:imports` region and its entry inside the `// ddd-ts-kit:schemas` region of `entities`, which the rewrite keeps,'
-        : `${names === 1 ? 'the line that keeps this name' : 'what keeps these names'} inside the \`// ddd-ts-kit:schemas\` region, which the rewrite keeps,`;
-
     return ` \`init --force\` writes the index again from its template, and a line written outside the regions of the kit goes with it: move ${where} and run the command again. Until then every \`init --force\` leaves the index as it stood and exits 3.`;
   }
 

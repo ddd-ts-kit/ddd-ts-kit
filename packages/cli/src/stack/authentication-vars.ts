@@ -1,4 +1,4 @@
-import type { Config } from '../config';
+import { AUTHN_STACKS, type Config } from '../config';
 import type { RenderContext } from '../templating';
 import { one } from './one';
 
@@ -8,7 +8,8 @@ export function authenticationVars(config: Config): RenderContext {
   const tokens = authn === 'jwt' || authn === 'keycloak' || authn === 'passport';
 
   return {
-    ...one(authn, ['jwt', 'keycloak', 'passport', 'none']),
+    // Without an HTTP boundary none of them is chosen, `none` included.
+    ...one<string>(authn, AUTHN_STACKS),
     tokens,
     // Tokens verified against the issuer, its audience and its key set, by the kit or by a strategy of Passport.
     jwks: authn === 'jwt' || authn === 'passport',

@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { scan } from '../check/scan/scan';
+import { scan } from '../../check/scan/scan';
 
 const STAMPED_CLASS = /(?<![\w$.])class\s+([A-Za-z_$][\w$]*?)(\d{13})(?![\w$])/;
 const NAME_PROPERTY = /(?<![\w$.])name\s*(?::[^=;{}]*)?=\s*$/;
@@ -14,7 +14,7 @@ const NAME_PROPERTY = /(?<![\w$.])name\s*(?::[^=;{}]*)?=\s*$/;
 export function restampClass(file: string, stamp: string): void {
   const text = fs.readFileSync(file, 'utf8');
   const { code, strings } = scan(text);
-  // The file is a migration because it declares such a class: `migrationsOfTree` reads it the same way.
+  // The file is a migration because it declares such a class: `stampedClasses` reads it the same way.
   const [, base = '', old = ''] = STAMPED_CLASS.exec(code) ?? [];
   const named = `${base}${old}`;
   const renamed = `${base.replace(/^Working(?=[A-Z])/, '')}${stamp}`;

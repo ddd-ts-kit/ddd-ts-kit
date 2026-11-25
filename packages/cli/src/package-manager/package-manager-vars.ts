@@ -1,4 +1,4 @@
-import type { Config } from '../config';
+import { PACKAGE_MANAGERS, type Config } from '../config';
 import { one } from '../stack/one';
 import type { RenderContext } from '../templating';
 import { LOCKFILES } from './lockfiles';
@@ -8,7 +8,7 @@ export function packageManagerVars(config: Config): RenderContext {
   const { packageManager } = config.stack;
 
   return {
-    ...one(packageManager, ['npm', 'pnpm']),
+    ...one(packageManager, PACKAGE_MANAGERS),
     name: packageManager,
     pinned: packageManager !== 'npm',
     lockfile: LOCKFILES[packageManager],
