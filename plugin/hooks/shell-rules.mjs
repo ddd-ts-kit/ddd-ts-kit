@@ -15,7 +15,6 @@ import {
   workerGitReason,
   workerPlaceReason,
 } from './git-rules.mjs';
-import { noteBeforeCode, pendingChangeReason } from './held-changes.mjs';
 import { isReadOnlyAgent, isSubAgent, isTestWriter, isWorkerAgent } from './hook-input.mjs';
 import { CONFIG, describePlace, findProject, projectPath } from './project.mjs';
 import {
@@ -267,24 +266,9 @@ export function preparingRefusal(project, input, { command, commands }) {
   return firstRefusal(PREPARING_RULES, { project, input, command, commands });
 }
 
-// What a worker may not run: anything once its scope file changed, a file it must put back first,
-// then what the command itself would do (`WORKER_COMMAND_RULES`); a command allowed to run code the
-// guard cannot read has the state outside the scope noted before it.
-export function workerCommandRefusal(project, input, { context, command, commands }) {
-  const { changed } = workerScope(project, input);
-  if (changed) {
-    return { id: 'scope-changed', reason: changed };
-  }
-  const pending = pendingChangeReason(project, input, commands);
-  if (pending?.reason) {
-    return { id: 'held-changes', reason: pending.reason };
-  }
-  const undoing = pending?.undoing === true;
-  const refusal = firstRefusal(WORKER_COMMAND_RULES, { project, input, context, command, commands, undoing });
-  if (!refusal && !undoing) {
-    noteBeforeCode(project, input, commands);
-  }
-  return refusal;
+// What the command of a worker would do: `undoing` when it puts back the files it holds outside its scope.
+export function workerCommandRefusal(project, input, { context, command, commands, undoing }) {
+  return firstRefusal(WORKER_COMMAND_RULES, { project, input, context, command, commands, undoing });
 }
 
 // A command that a `cd` further down the line, or an option of a package runner (`pnpm -C <dir> exec`,
@@ -526,7 +510,7 @@ function formatRunsBiome(project) {
 // A worker never writes outside its scope, whatever the tool. A file the shell writes by name (a
 // redirection, `sed -i`, `perl -i`, `tee`) is held to the checks of a write with the editor tools;
 // copies, moves, deletions and restores outside the scope are refused; inline code, whose writes
-// cannot be read in advance, is checked after it ran (`pendingChangeReason`).
+// cannot be read in advance, is checked after it ran (`settle` of held-changes.mjs).
 function fileChangeReason(project, input, commands) {
   for (const command of commands) {
     for (const target of writtenTargets(command)) {

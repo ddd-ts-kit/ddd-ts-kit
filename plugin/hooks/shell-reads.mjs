@@ -90,7 +90,7 @@ export const CODE_RUNNERS = new Set([
 ]);
 // The programs that only read, whatever their arguments (not `rg --pre`, `sort -o`, `tree -o`): a
 // worker's command made of them alone is not noted before it runs. Every other program may run code
-// of the project (`noteBeforeCode`).
+// of the project (`note` of held-changes.mjs).
 export const PURE_READERS = new Set([
   '',
   'cat',

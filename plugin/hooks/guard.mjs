@@ -11,8 +11,8 @@ import { planPointer, projectBriefing } from './briefing.mjs';
 import { call } from './call.mjs';
 import { isRecord, readJson } from './disk.mjs';
 import { git, unreadRepositoryNotice } from './git.mjs';
-import { pruneGuardState, saidOnce, sharedStateFile, stateFile } from './guard-state.mjs';
-import { branchOutsideReason, heldChangeReason, pendingChangeReason, settleNote } from './held-changes.mjs';
+import { pruneGuardState, saidOnce, sharedStateFile } from './guard-state.mjs';
+import { branchOutsideReason, note, release, settle } from './held-changes.mjs';
 import {
   decide,
   emit,
@@ -24,7 +24,6 @@ import {
   toolInput,
   writesOf,
 } from './hook-input.mjs';
-import { removeKitFile } from './kit-files.mjs';
 import {
   baselineFileRule,
   generatedFileRule,
@@ -253,8 +252,13 @@ function noteCrossings(input) {
         : undefined;
     return said ? [said] : [];
   });
-  if (crossings.length > 0) {
-    call.notice = [call.notice, ...crossings].filter(Boolean).join('\n');
+  tell(crossings);
+}
+
+// What a call says besides its decision, said with it or alone.
+function tell(notices) {
+  if (notices.length > 0) {
+    call.notice = [call.notice, ...notices].filter(Boolean).join('\n');
   }
 }
 
@@ -265,8 +269,16 @@ function pendingOfWriter(input) {
   if (!project || project.mode === 'off' || !workerContext(project, input)) {
     return undefined;
   }
-  const pending = pendingChangeReason(project, input, []);
-  return pending?.reason ? { decision: decisionOf(project), id: 'held-changes', reason: pending.reason } : undefined;
+  const { reason } = settleHeld({ project, input });
+  return reason ? { decision: decisionOf(project), id: 'held-changes', reason } : undefined;
+}
+
+// What a worker holds outside its scope, settled at this call (held-changes.mjs): what it says of
+// them goes with the decision of the call.
+function settleHeld(worker) {
+  const held = settle(worker);
+  tell(held.notices);
+  return held;
 }
 
 // The writes of a call in a project the guard judges, each with its project.
@@ -368,9 +380,33 @@ async function shellVerdict(input, command, cwd) {
   }
   const context = workerContext(project, input);
   const refusal = context
-    ? workerCommandRefusal(project, input, { context, command, commands })
+    ? workerRefusal(project, input, { context, command, commands })
     : (builderStrayRefusal(project, input, commands) ?? sessionShellRefusal(input, commands));
   return refusal ? { decision, ...refusal } : undefined;
+}
+
+// What a worker may not run: anything once its scope file changed, a file it must put back first,
+// then what the command itself would do; a command allowed to run code the guard cannot read has the
+// state outside the scope noted before it, unless it puts back what is held.
+function workerRefusal(project, input, { context, command, commands }) {
+  const { changed } = workerScope(project, input);
+  if (changed) {
+    return { id: 'scope-changed', reason: changed };
+  }
+  const held = settleHeld({ project, input, commands });
+  if (held.reason) {
+    return { id: 'held-changes', reason: held.reason };
+  }
+  const refusal = workerCommandRefusal(project, input, {
+    context,
+    command,
+    commands,
+    undoing: held.state === 'held',
+  });
+  if (!refusal && held.state === 'clear') {
+    note({ project, input, commands });
+  }
+  return refusal;
 }
 
 // The reader of the shell, told once the programs the guard judges by a table of its own: a first
@@ -538,9 +574,7 @@ function builderPlaces(input, project) {
   };
 }
 
-// A new run of a builder: the note its last run left before inline code is dropped, since what
-// changed outside its scope since then is the conductor's as much as its own; what that code changed
-// and was not put back stays recorded.
+// A new run of a builder releases the note its last run left before inline code (held-changes.mjs).
 async function subagentStart(input) {
   const places = isBuilder(input) ? builderPlaces(input, undefined) : undefined;
   if (!places) {
@@ -548,7 +582,7 @@ async function subagentStart(input) {
   }
   const worker = readJson(places.state)?.worker;
   if (typeof worker === 'string') {
-    removeKitFile(stateFile('before-run', { root: worker }, input));
+    release({ project: { root: worker }, input });
     pruneGuardState(worker);
   }
   (await import('./builder-runs.mjs')).startRun(input, places);
@@ -584,7 +618,7 @@ function changedAtStop(places, input) {
     return undefined;
   }
   const { changed } = workerScope(project, input);
-  const told = settleNote(project, input, false) ?? heldChangeReason(project, input, [])?.reason;
+  const told = settleHeld({ project, input, last: true }).reason;
   const said = [call.notice, changed, told, branchOutsideReason(project, input)].filter(Boolean).join('\n');
   call.notice = undefined;
   return said || undefined;
