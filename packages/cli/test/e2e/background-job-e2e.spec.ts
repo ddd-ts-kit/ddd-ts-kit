@@ -79,7 +79,7 @@ function enqueueOnRequest(root: string, wiring: Wiring): void {
   edit(
     root,
     REQUEST,
-    /( {2}async execute\()command(: RequestCancellationCommand\): Promise<void> \{\n)[^\n]*\n/,
+    /( {2}async execute\()command(: RequestCancellationCommand\): Promise<void> \{\n)[^\n]*\n[^\n]*throw undecided\([^\n]*\n/,
     '  constructor(private readonly jobs: JobQueue) {}\n\n$1_command$2    await this.jobs.enqueue(VoidInvoiceBackgroundJob, {});\n',
   );
 
@@ -162,6 +162,8 @@ describe.runIf(SLOW).each(JOB_STACKS)('the end-to-end spec of a background job (
   it('passes once the request that enqueues is sent: the job runs on the worker of the application, and its use case with it', () => {
     enqueueOnRequest(root, wiring);
     arrangeThroughTheApi(root);
+    // What the job starts is decided: the refusal the generator left in its handler goes.
+    edit(root, CANCEL, /^ {4}throw undecided\([^\n]*\n/m, '');
 
     const run = runIn(root, { command: bin('vitest'), args: E2E });
 

@@ -3,7 +3,7 @@ import { classesOf } from '../declarations/classes-of';
 import { DECLARATIONS_ENTRY } from '../declarations/declarations-entry';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import type { ClassShape } from '../structure/class-shape';
 import { importedFrom } from '../support/imported-from';
@@ -35,12 +35,26 @@ interface Implementation {
   readonly repository: boolean;
 }
 
-export const declarationsPortAdapterWired: Rule = {
+export const declarationsPortAdapterWired: ProjectRule = {
   id: RULE_ID,
   description:
     'A class of infrastructure/ that implements a port some class needs is wired: declared with @Repository, @Gateway or @Adapter in the declared style, or imported by the composition root (<context>.module.ts or the <module>/<module>.module.ts of a module of its model, main.ts, apps/, the platform directory). One kept unwired on purpose says so with a suppression that points to a decision record. A file that still carries a TODO(domain) or TODO(platform) of the generator, or whose port no class needs yet, is not judged yet.',
+  severity: 'warn',
+  doc: {
+    why: 'A port is resolved by its class at start-up, so an adapter that nothing binds compiles, passes the contract suite its spec runs, and is only missed when the application starts without it, or keeps an older adapter bound. declarations/role-declared reads a role file by its suffix; a class of infrastructure/ that implements a port in a file without one, with no declaration and no binding in the composition root, is reported by no other rule. An adapter can be kept unwired on purpose (a provider being replaced, one kept for a fallback): a suppression that names a decision record says so, and tells it from a forgotten declaration. A port no class needs yet is not judged: no file outside the infrastructure and the tests names it but the one that declares it, so nothing misses its adapter at run time; a context wired by hand creates the repository of an aggregate with the first command that needs it, since a constant nothing reads is refused by the lint.',
+    bad: `// infrastructure/external/stripe-payment-gateway.ts, imported by no module file and by no file of the platform
+export class StripePaymentGateway implements PaymentGateway {}`,
+    good: `// declared style: infrastructure/external/stripe-payment.gateway.ts
+@Gateway(PaymentGateway)
+export class StripePaymentGateway implements PaymentGateway {}
+// explicit style: billing.module.ts
+builder.bind(PaymentGateway).toClass(StripePaymentGateway, [PaymentsSettings]);
+// kept on purpose
+// ddd-ts-kit-disable-next-line declarations/port-adapter-wired -- ADR-0007: kept until the switch back is decided
+export class StripePaymentGateway implements PaymentGateway {}`,
+  },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const composed = composedClasses(project);
     const needed = neededPorts(project);
     const roots = project.files.filter((file) => isCompositionRoot(file, project));

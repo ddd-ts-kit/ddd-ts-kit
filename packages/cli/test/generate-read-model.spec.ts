@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { checkJsonOf } from './check-support';
 import { cli, read, write } from './helpers';
 import { report } from './reports';
+import { expectOk } from './support/expect-ok';
 import { jsonAt } from './support/json-at';
 import {
   BILLING,
   billingProject,
   CONTRACT,
   FAKE,
+  generateReadModel,
   PERSISTENCE,
   PORT,
   withInvoiceSummaries,
@@ -55,6 +57,19 @@ describe.each(STORES)('generate read-model, on %s', (orm, file, adapter, store) 
     expect(cli(root, 'describe', 'billing').stdout).toContain(`InvoiceSummaries [repository], by ${adapter}`);
     expect(read(root, `${BILLING}/CONTEXT.md`)).toContain(`| \`InvoiceSummaries\` | repository | \`${adapter}\` |`);
     expect(cli(root, 'docs', '--check').code).toBe(0);
+  });
+});
+
+describe.each(['drizzle', 'knex', 'typeorm'])('generate read-model, a second table of a context on %s', (orm) => {
+  it('reports the file of its tables as updated, and never the same file as kept too', () => {
+    const root = billingProject('--orm', orm);
+
+    withInvoiceSummaries(root);
+
+    const second = report(expectOk(generateReadModel(root, 'DueInvoices', '--term', 'Due=Waiting for its payment')));
+
+    expect(second.updated.filter((file) => file.endsWith('.schema.ts'))).toHaveLength(1);
+    expect(second.skipped.filter((file) => second.updated.includes(file))).toEqual([]);
   });
 });
 

@@ -9,7 +9,6 @@ import { parseGlossary, type Glossary } from './parse-glossary';
 export class Glossaries {
   private readonly read = new Map<string, Glossary>();
   private readonly texts = new Map<string, string>();
-  private readonly reportedEmpty = new Set<string>();
 
   constructor(
     private readonly root: string,
@@ -42,17 +41,6 @@ export class Glossaries {
     this.read.set(doc, glossary);
 
     return glossary;
-  }
-
-  /** True the first time only: an empty glossary is one finding, not one per class. */
-  reportsEmptyOnce(doc: string): boolean {
-    if (this.reportedEmpty.has(doc)) {
-      return false;
-    }
-
-    this.reportedEmpty.add(doc);
-
-    return true;
   }
 
   private textAt(doc: string): string {

@@ -1,14 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SEVERITIES } from '../src/check/catalogue/default-severities';
+import { defaultSeverity } from '../src/check/catalogue/default-severity';
 import { ESLINT_ONLY_RULES } from '../src/check/catalogue/eslint-only-rules';
 import { KNOWN_RULE_IDS } from '../src/check/catalogue/known-rule-ids';
 import { RULE_IDS } from '../src/check/catalogue/rule-ids';
 import { RULES } from '../src/check/catalogue/rules';
 import { DELEGATED_RULES } from '../src/check/catalogue/delegated-rules';
 import { DELEGATED_DOCS } from '../src/check/explain/delegated-docs';
-import { RULE_DOCS } from '../src/check/explain/rule-docs';
 import { FIXTURES } from '../src/check/fixtures/fixtures';
 import { runFixture } from '../src/check/fixtures/run-fixture';
 import { REPO_ROOT } from './helpers';
@@ -31,7 +30,7 @@ describe('rule fixtures', () => {
 
         expect(violation?.fix.length).toBeGreaterThan(20);
         expect(violation?.line).toBeGreaterThan(0);
-        expect(violation?.severity).toBe(fixture.severity ?? DEFAULT_SEVERITIES[fixture.ruleId] ?? 'error');
+        expect(violation?.severity).toBe(fixture.severity ?? defaultSeverity(fixture.ruleId));
       }
     });
   }
@@ -65,12 +64,10 @@ describe('rule catalogue', () => {
   });
 
   it('explains every rule with a reason and both examples', () => {
-    for (const id of RULE_IDS) {
-      const doc = RULE_DOCS[id];
-
-      expect(doc?.why.split('. ').length, id).toBeGreaterThanOrEqual(2);
-      expect(doc?.bad, id).toBeTruthy();
-      expect(doc?.good, id).toBeTruthy();
+    for (const { id, doc } of RULES) {
+      expect(doc.why.split('. ').length, id).toBeGreaterThanOrEqual(2);
+      expect(doc.bad, id).toBeTruthy();
+      expect(doc.good, id).toBeTruthy();
     }
   });
 
@@ -98,9 +95,9 @@ describe('rule catalogue', () => {
 
     const refusing = ['ports/no-token-constant', 'ports/abstract-class'];
 
-    const shown = Object.entries({ ...RULE_DOCS, ...DELEGATED_DOCS }).flatMap(([id, doc]) =>
-      refusing.includes(id) ? [doc.good] : [doc.why, doc.bad, doc.good],
-    );
+    const docs = [...RULES.map(({ id, doc }) => [id, doc] as const), ...Object.entries(DELEGATED_DOCS)];
+
+    const shown = docs.flatMap(([id, doc]) => (refusing.includes(id) ? [doc.good] : [doc.why, doc.bad, doc.good]));
 
     const written = FIXTURES.filter((fixture) => !refusing.includes(fixture.ruleId)).flatMap((fixture) =>
       Object.values(fixture.files),

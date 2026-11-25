@@ -1,4 +1,13 @@
-import type { Clock, JobOutcome, JobRun, LogFields, LogLevel, Logger, Metrics } from '@ddd-ts-kit/kernel';
+import {
+  safely,
+  type Clock,
+  type JobOutcome,
+  type JobRun,
+  type LogFields,
+  type LogLevel,
+  type Logger,
+  type Metrics,
+} from '@ddd-ts-kit/kernel';
 import { errorCodeOf } from './errors/error-code-of';
 import type { JobRunObserver } from './job-run-observer';
 import { DURATION_HISTOGRAM, RUNS_COUNTER } from './metric-names';
@@ -60,7 +69,7 @@ export class JobRecorder {
       errorCode: errorCodeOf(error),
     };
 
-    quietly(() => {
+    safely(() => {
       this.options.logger.error('Scheduled job could not be followed', fields);
     });
   }
@@ -77,15 +86,15 @@ export class JobRecorder {
 
     job.lastRun = run;
 
-    quietly(() => {
+    safely(() => {
       this.measure(run);
     });
 
-    quietly(() => {
+    safely(() => {
       this.log(run, detail);
     });
 
-    quietly(() => {
+    safely(() => {
       this.options.onRun?.(run, detail.failure?.error, correlationId === undefined ? {} : { correlationId });
     });
 
@@ -131,15 +140,6 @@ function contextOf(job: string): string {
 
 function typeOf(error: unknown): string {
   return error instanceof Error ? error.constructor.name : typeof error;
-}
-
-/** What records a run must not break it: a logger, a meter or an observer that throws is left alone. */
-function quietly(tell: () => void): void {
-  try {
-    tell();
-  } catch {
-    return;
-  }
 }
 
 const LEVELS: Readonly<Record<JobOutcome, LogLevel>> = {

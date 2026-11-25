@@ -51,11 +51,14 @@ export const projectionKind: Kind = {
       throw undeclaredEvent(publisher, { type: eventType, version });
     }
 
+    const readModel = readModelOf(scope, name);
+
     const context = vars(scope, {
       name: named(name),
       publisher: named(publisher),
       event: eventVars(eventType, declaration),
       consumer: subscriptionVars(scope, true),
+      readModel,
     });
 
     // Without a container to include a declared class in (a hand-wired platform), the class is plain and subscribed by hand.
@@ -68,12 +71,28 @@ export const projectionKind: Kind = {
     ]);
 
     wire(scope, 'projection', context);
-
-    scope.ws.note(
-      `${name.pascal}Projection keeps a read model: \`ddd-ts-kit generate read-model ${scope.context.kebab} <Name> --field <name>:<type>\` writes its port, its table, its store adapter and its fake, which the projection then receives in its constructor.`,
-    );
+    noteTheReadModel(scope, name, readModel.known);
   },
 };
+
+/**
+ * The read model of the same name, when `generate read-model <context> <Name>` wrote its port already.
+ * A declared class says its dependencies by its constructor: there it is received at once.
+ */
+function readModelOf(scope: Scope, name: Name): { known: boolean; injected: boolean } {
+  const port = scope.ws.read(`${scope.dir}/application/ports/${name.kebab}.port.ts`);
+  const known = port?.includes('ReadModelStore<') === true;
+
+  return { known, injected: known && wiringFamily(scope.config) === 'declared' };
+}
+
+function noteTheReadModel(scope: Scope, name: Name, known: boolean): void {
+  scope.ws.note(
+    known
+      ? `${name.pascal}Projection keeps the read model ${name.pascal} (application/ports/${name.kebab}.port.ts): the line each event writes is left to decide.`
+      : `${name.pascal}Projection keeps a read model: \`ddd-ts-kit generate read-model ${scope.context.kebab} <Name> --field <name>:<type>\` writes its port, its table, its store adapter and its fake, which the projection then receives in its constructor.`,
+  );
+}
 
 /** The context that publishes the event: this one, or one of its declared upstreams. */
 function publisherOf(scope: Scope, eventType: string, input: string): Name {

@@ -1,5 +1,5 @@
 [English](token-economy.md) · **Français**
-<!-- translation-of: token-economy.md sha256:dce4ff286178b429 -->
+<!-- translation-of: token-economy.md sha256:acfc65ed234e08ff -->
 
 # Économie de tokens : dépenser moins avec les agents de code
 
@@ -127,7 +127,7 @@ fichier, donne aussi son `text` entier :
     {
       "file": "contexts/ordering/application/commands/place-order/place-order.handler.ts",
       "line": 12,
-      "gist": "\"place order\" changes Orders that exist and writes nothing until you decide..."
+      "gist": "\"place order\" changes Orders that exist and refuses until you decide how"
     },
     {
       "file": "contexts/ordering/test/unit/place-order.handler.spec.ts",
@@ -189,7 +189,7 @@ consommés, les politiques, les *jobs* et les contrats. `todo --brief` répond u
 marqueur, ses premiers mots (sans `--brief`, son genre et son texte entier) :
 
 ```text
-src/contexts/ordering/application/commands/place-order/place-order.handler.ts:12  "place order" changes Orders that exist and writes nothing until you decide...
+src/contexts/ordering/application/commands/place-order/place-order.handler.ts:12  "place order" changes Orders that exist and refuses until you decide how
 src/contexts/ordering/test/unit/place-order.handler.spec.ts:37  applies the business decision to the order
 ```
 

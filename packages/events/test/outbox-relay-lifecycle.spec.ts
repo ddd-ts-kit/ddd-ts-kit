@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FixedClock } from '@ddd-ts-kit/kernel';
 import { InMemoryOutboxStore, OutboxRelay, type OutboxRelayFailure } from '../src';
+import { CountingStore } from './support/counting-store';
 import { at } from './support/events';
 import { eventually } from './support/eventually';
 import { FlakyPublisher } from './support/flaky-publisher';
@@ -48,6 +49,48 @@ describe('OutboxRelay.start and stop', () => {
     await stopping;
     expect(slow.delivered).toEqual(['evt-1']);
     expect(store.records()[0]?.status).toBe('published');
+  });
+
+  it('started again before a stop resolved, waits for the tick in progress, then runs one more', async () => {
+    const store = new CountingStore();
+    const slow = new GatedPublisher();
+    const relay = new OutboxRelay({ store, publisher: slow, clock: new FixedClock(at) });
+
+    await store.append([event('evt-1')]);
+
+    relay.start({ intervalMs: 60_000 });
+    await slow.entered;
+    void relay.stop();
+    relay.start({ intervalMs: 60_000 });
+    expect(store.claims).toBe(1);
+
+    slow.open();
+    await eventually(() => store.claims === 2);
+    await relay.stop();
+    expect(store.claims).toBe(2);
+  });
+
+  it('started again before a stop resolved, keeps one loop', async () => {
+    const store = new CountingStore();
+    const slow = new GatedPublisher();
+    const relay = new OutboxRelay({ store, publisher: slow, clock: new FixedClock(at) });
+
+    await store.append([event('evt-1')]);
+
+    relay.start({ intervalMs: 50 });
+    await slow.entered;
+    void relay.stop();
+    relay.start({ intervalMs: 50 });
+    slow.open();
+    await eventually(() => store.claims >= 2);
+
+    const before = store.claims;
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await relay.stop();
+
+    // One loop claims ten times in that time, two loops twenty.
+    expect(store.claims - before).toBeLessThan(15);
   });
 
   it('survives a store failure and reports its code', async () => {
