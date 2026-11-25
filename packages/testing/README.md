@@ -351,7 +351,9 @@ it('refuses to pay an order twice', () => {
 
 `given` takes an aggregate or its builder and discards the events of the arrangement
 (`pullEvents()`), so only the events of `when` are asserted. `scenario(() => aggregate)` is
-the same with the arrangement as a function, replayed from a fresh aggregate at each `when`.
+the same with the arrangement as a function, replayed from a fresh aggregate at each `when`, as
+`given(builder)` is. An aggregate already built is given to one `when`: a second `when` on the same
+`given(aggregate)` would act on what the first one left, and throws a `TypeError` that says so.
 
 | Assertion | Passes when |
 |---|---|

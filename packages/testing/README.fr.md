@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:c8ef7ffac170146a -->
+<!-- translation-of: README.md sha256:515c5051faa6a28a -->
 
 # @ddd-ts-kit/testing
 
@@ -355,7 +355,9 @@ it('refuses to pay an order twice', () => {
 
 `given` prend un agrégat ou son *builder* et écarte les événements de la mise en place
 (`pullEvents()`), si bien que seuls les événements de `when` sont vérifiés. `scenario(() => aggregate)` fait
-de même avec la mise en place sous forme de fonction, rejouée à partir d'un agrégat neuf à chaque `when`.
+de même avec la mise en place sous forme de fonction, rejouée à partir d'un agrégat neuf à chaque `when`,
+comme l'est `given(builder)`. Un agrégat déjà construit est donné à un seul `when` : un second `when` sur
+le même `given(aggregate)` agirait sur ce que le premier a laissé, et lève une `TypeError` qui le dit.
 
 | Assertion | Passe quand |
 |---|---|

@@ -82,6 +82,27 @@ describe('given / when / then', () => {
   });
 });
 
+describe('an aggregate already built, given once', () => {
+  it('refuses a second when, which would act on what the first one left', () => {
+    const placed = given(anOrder().build());
+
+    placed.when((order) => order.pay(at)).thenEventNames(['ordering.order.paid']);
+
+    expect(() => placed.when((order) => order.pay(at))).toThrow(
+      new TypeError(
+        'given(aggregate) runs one when: this one would act on the aggregate the first one changed. Give its builder, or scenario(() => aggregate), to start each when from a fresh one.',
+      ),
+    );
+  });
+
+  it('replays from a fresh aggregate when it is given the builder', () => {
+    const placed = given(anOrder());
+
+    placed.when((order) => order.pay(at)).thenEventNames(['ordering.order.paid']);
+    placed.when((order) => order.pay(at)).thenEventNames(['ordering.order.paid']);
+  });
+});
+
 describe('what a refused action left behind', () => {
   const payingTwice = () =>
     given(anOrder()).when((order) => {
