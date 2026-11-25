@@ -81,9 +81,10 @@ function formatOf(args: Arguments): CheckFormat {
 function checkCleanliness(args: Arguments, rules: readonly string[]): CheckResult {
   const directories = args.positionals.length > 0 ? args.positionals : ['.'];
 
+  refuseWhatNeedsAProject(args, rules);
   refuseMissingPaths(args);
 
-  const selected = rules.length > 0 ? rules.filter((id) => CLEAN_RULE_IDS.includes(id)) : CLEAN_RULE_IDS;
+  const selected = rules.length > 0 ? rules : CLEAN_RULE_IDS;
 
   const project = loadLooseProject(
     args.workingDirectory,
@@ -91,6 +92,25 @@ function checkCleanliness(args: Arguments, rules: readonly string[]): CheckResul
   );
 
   return runCheck(project, { rules: selected });
+}
+
+/** Directories read as they are have no history to compare with, and no project for a rule that asks about one. */
+function refuseWhatNeedsAProject(args: Arguments, rules: readonly string[]): void {
+  if (args.text('changed-since') !== undefined) {
+    throw new CliError(
+      '--clean-only compares with no ref.',
+      'Run it without --changed-since: it judges the directories given as they are, outside a project and its history.',
+    );
+  }
+
+  const needing = rules.filter((id) => !CLEAN_RULE_IDS.includes(id));
+
+  if (needing.length > 0) {
+    throw new CliError(
+      `--clean-only does not run ${needing.join(', ')}.`,
+      `It holds the rules that judge a file on its own: ${CLEAN_RULE_IDS.join(', ')}.`,
+    );
+  }
 }
 
 function checkProject(args: Arguments, rules: readonly string[]): CheckResult {
@@ -169,10 +189,10 @@ function rewriteBaseline(args: Arguments, io: Io, mode: string): number {
     throw new CliError(`Unknown --baseline "${mode}".`, 'Use --baseline write or --baseline prune.');
   }
 
-  if (args.many('rule').length > 0 || args.positionals.length > 0 || args.text('changed-since') !== undefined) {
+  if (narrowsOrDecorates(args)) {
     throw new CliError(
       `--baseline ${mode} judges every rule on every file.`,
-      'Run it without --rule, a path or --changed-since.',
+      'Run it without --rule, a path, --changed-since, --clean-only or --explain.',
     );
   }
 
@@ -189,6 +209,17 @@ function rewriteBaseline(args: Arguments, io: Io, mode: string): number {
   io.out(baselineSummary(baseline));
 
   return 0;
+}
+
+/** What `--baseline` would not honour: fewer rules or files than all of them, and a report of the findings. */
+function narrowsOrDecorates(args: Arguments): boolean {
+  return (
+    args.many('rule').length > 0 ||
+    args.positionals.length > 0 ||
+    args.text('changed-since') !== undefined ||
+    args.flag('clean-only') ||
+    args.flag('explain')
+  );
 }
 
 function baselineSummary(baseline: ReturnType<typeof recordedBaseline>): string {
