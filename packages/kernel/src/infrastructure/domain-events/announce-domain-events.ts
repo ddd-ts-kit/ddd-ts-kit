@@ -13,7 +13,7 @@ import { unitOfWorkScope, type QueuedDomainEvent, type UnitOfWorkScope, type Wit
  * Hands over the events a save pulled from its aggregates.
  *
  * Inside a unit of work they only join its queue, behind what earlier saves recorded: the unit
- * of work dispatches them at its end, before the commit (`withinUnitOfWork`), and the promise
+ * of work dispatches them at its end, before the commit (`unitOfWorkOver`), and the promise
  * resolves at once.
  *
  * Outside of any, the save is all there is to wait for: they are dispatched now, `before-commit`

@@ -12,6 +12,7 @@ import {
   Query,
   QueryBus,
   UnitOfWork,
+  unitOfWorkOver,
 } from '@ddd-ts-kit/kernel';
 import { defineContextModule, kernelModule, overrideForTests, type BindingInfo } from '../src';
 import { createApplication } from './support/on-container';
@@ -61,9 +62,7 @@ describe('kernelModule', () => {
       abstract readonly transactions: string[];
     }
     class DatabaseUnitOfWork implements UnitOfWork {
-      constructor(private readonly database: Database) {}
-
-      async run<T>(work: () => Promise<T>): Promise<T> {
+      private readonly unitOfWork = unitOfWorkOver(async (work) => {
         this.database.transactions.push('begin');
 
         const result = await work();
@@ -71,6 +70,12 @@ describe('kernelModule', () => {
         this.database.transactions.push('commit');
 
         return result;
+      });
+
+      constructor(private readonly database: Database) {}
+
+      run<T>(work: () => Promise<T>): Promise<T> {
+        return this.unitOfWork.run(work);
       }
     }
 

@@ -1,4 +1,4 @@
-import { NoSuchKey, NotFound, S3ServiceException } from '@aws-sdk/client-s3';
+import { NoSuchBucket, NoSuchKey, NotFound, S3ServiceException } from '@aws-sdk/client-s3';
 import { describe, expect, it } from 'vitest';
 import { BucketKeys } from '../src/bucket-keys';
 import { isMissing } from '../src/is-missing';
@@ -24,17 +24,17 @@ describe('the helpers of the S3 connector, without a server', () => {
       $metadata: { httpStatusCode: 403 },
     });
 
+    const noBucket = new NoSuchBucket({ message: 'no such bucket', $metadata: { httpStatusCode: 404 } });
     const gone = new S3ServiceException({ name: 'Gone', $fault: 'client', $metadata: { httpStatusCode: 404 } });
 
     expect(
-      [
-        new NoSuchKey({ message: 'no such key', ...METADATA }),
-        new NotFound({ message: 'not found', ...METADATA }),
-        gone,
-      ].map(isMissing),
-    ).toEqual([true, true, true]);
+      [new NoSuchKey({ message: 'no such key', ...METADATA }), new NotFound({ message: 'not found', ...METADATA })].map(
+        isMissing,
+      ),
+    ).toEqual([true, true]);
 
-    expect([forbidden, new Error('NoSuchKey')].map(isMissing)).toEqual([false, false]);
+    // A bucket that does not exist, or any other 404, is a deployment to fix, never an absent file.
+    expect([noBucket, gone, forbidden, new Error('NoSuchKey')].map(isMissing)).toEqual([false, false, false, false]);
   });
 
   it('addresses buckets by path for an endpoint of its own, unless told otherwise', async () => {

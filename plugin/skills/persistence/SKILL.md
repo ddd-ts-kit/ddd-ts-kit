@@ -47,7 +47,7 @@ not `port` then `adapter`.
 - **Transactions belong to the application.** The unit of work is a middleware of the command
   bus; a repository picks up the ambient transaction, never receives one, never commits.
   Domain events are dispatched at its end, before the commit. A unit of work of your own
-  builds `run` on `withinUnitOfWork` of the kernel and passes `unitOfWorkContract`.
+  is built on `unitOfWorkOver` of the kernel and passes `unitOfWorkContract`.
 - **Optimistic concurrency** on the aggregate's `version`: a conflicting save raises
   `ConcurrencyError`; so does a deadlock or a serialization failure
   (`TransactionConflictError`): retry the command, never map the driver error. A taken unique

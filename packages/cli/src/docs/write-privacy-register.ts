@@ -20,7 +20,7 @@ export function writePrivacyRegister(ws: Workspace, config: Config, contexts: re
   const existing = ws.read(REGISTER);
 
   const next = replaceRegion(
-    existing ?? readTemplate('docs/privacy-register.md.tpl'),
+    existing ?? ws.spoken(readTemplate('docs/privacy-register.md.tpl')),
     'personal-data-register',
     privacyRegisterLines(contexts),
   );

@@ -21,7 +21,8 @@ export abstract class JobStore {
 
   /**
    * Adds the job, in the transaction of the caller when the store is transactional. A job of the
-   * same name, tenant and idempotency key already kept is answered instead, `duplicate: true`.
+   * same name, tenant and idempotency key already kept is answered instead, `duplicate: true`;
+   * so is a job already kept under the same id, which stays as it was added. Neither raises.
    * A store that writes after the commit checks the key before: two jobs of one key staged
    * before either committed both answer their own id, and only the first is kept.
    */

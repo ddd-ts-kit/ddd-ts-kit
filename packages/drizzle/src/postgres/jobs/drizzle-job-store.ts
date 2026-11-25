@@ -47,17 +47,23 @@ export class DrizzleJobStore<
     const inserted = await executor
       .insert(jobs)
       .values({ ...job, tenantId, idempotencyKey: job.idempotencyKey ?? null, subject: job.subject ?? null })
-      .onConflictDoNothing({ target: [jobs.name, jobs.tenantId, jobs.idempotencyKey] })
+      // Any conflict, the key as the id: a job already kept is answered, never raised into the transaction of the command.
+      .onConflictDoNothing()
       .returning({ id: jobs.id });
 
-    if (inserted.length === 1 || job.idempotencyKey === undefined) {
+    if (inserted.length === 1) {
       return { id: job.id, duplicate: false };
     }
 
-    const [kept] = await executor
-      .select({ id: jobs.id })
-      .from(jobs)
-      .where(and(eq(jobs.name, job.name), eq(jobs.tenantId, tenantId), eq(jobs.idempotencyKey, job.idempotencyKey)));
+    const [kept] =
+      job.idempotencyKey === undefined
+        ? []
+        : await executor
+            .select({ id: jobs.id })
+            .from(jobs)
+            .where(
+              and(eq(jobs.name, job.name), eq(jobs.tenantId, tenantId), eq(jobs.idempotencyKey, job.idempotencyKey)),
+            );
 
     return { id: kept?.id ?? job.id, duplicate: true };
   }

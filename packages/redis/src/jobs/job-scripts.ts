@@ -12,7 +12,7 @@ if ARGV[3] ~= '' then
   local kept = redis.call('HGET', KEYS[3], ARGV[3])
   if kept then return {kept, 1} end
 end
-if redis.call('HEXISTS', KEYS[1], ARGV[1]) == 1 then return {ARGV[1], 0} end
+if redis.call('HEXISTS', KEYS[1], ARGV[1]) == 1 then return {ARGV[1], 1} end
 local record = cjson.decode(ARGV[2])
 record.seq = redis.call('HINCRBY', KEYS[1], '#sequence', 1)
 redis.call('HSET', KEYS[1], ARGV[1], cjson.encode(record))

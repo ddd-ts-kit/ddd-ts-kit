@@ -2,7 +2,6 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CliError } from '../cli-error';
 import { readConfig } from '../config';
-import { withGeneratorLock } from '../generator-lock';
 import { drizzleOutFolder } from '../check/migrations/drizzle-out-folder';
 import { readDrizzleMigrations } from '../check/migrations/read-drizzle-migrations';
 import {
@@ -40,10 +39,7 @@ export const drizzleGenerateCommand: Command = (argv, io) => {
     base: { type: 'string' },
   });
 
-  // drizzle-kit numbers the migration and writes the journal from what it finds: one generator at a time does.
-  return withGeneratorLock({ root: args.projectRoot, command: `ddd-ts-kit drizzle-generate ${argv.join(' ')}` }, () =>
-    generateMigration(args, io),
-  );
+  return generateMigration(args, io);
 };
 
 function generateMigration(args: Arguments, io: Io): number {

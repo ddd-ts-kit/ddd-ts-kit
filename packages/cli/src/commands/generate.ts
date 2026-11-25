@@ -15,7 +15,6 @@ import { MODULE_OPTION, usageOf } from '../generate/usage-of';
 import { contextArgument } from '../generate/context-argument';
 import { keepThePicture } from '../generate/kinds/same-name/keep-the-picture';
 import { Workspace } from '../workspace';
-import { withGeneratorLock } from '../generator-lock';
 import type { Arguments } from './arguments';
 import type { Io } from './io';
 import type { Command } from './command';
@@ -32,15 +31,8 @@ export function generate(argv: readonly string[], io: Io, probe?: GeneratorProbe
   const args = generateArguments(argv);
   const [kindName, ...rest] = args.positionals;
   const kind = requestedKind(kindName, rest);
-  const asked: Asked = { argv, io, probe, args, kind, rest };
 
-  // A kind reads the shared files and the pages of its context and writes them back, whatever it may write outside the
-  // context: one generator at a time does.
-  return !args.flag('dry-run')
-    ? withGeneratorLock({ root: args.projectRoot, command: `ddd-ts-kit generate ${argv.join(' ')}` }, () =>
-        generateKind(asked),
-      )
-    : generateKind(asked);
+  return generateKind({ argv, io, probe, args, kind, rest });
 }
 
 /** What `generate` was asked: the command line, read, with the kind it names and the arguments of the kind. */

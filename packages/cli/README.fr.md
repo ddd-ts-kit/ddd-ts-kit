@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:9ee08e760b5c9608 -->
+<!-- translation-of: README.md sha256:1b47fa72e96132da -->
 
 # ddd-ts-kit
 
@@ -119,14 +119,19 @@ autre endroit), fait refuser la commande avec le code de sortie 2 et le chemin n
 fichiers, où son `.claude/settings.json` serait le réglage de toutes les sessions : lancez-le dans
 le répertoire du projet.
 
-Chaque fichier est écrit en entier ou pas du tout : dans `<name>.<random>.tmp` à côté de lui, puis
-renommé à sa place. Une commande arrêtée à mi-chemin ne laisse que des fichiers complets (un
-processus tué à ce moment peut laisser son fichier `.tmp`, qu'on peut supprimer), et la même
-commande relancée écrit ceux qui manquent. `init` sur un projet déjà initialisé, chaque
-`generate` qui n'est pas un essai à blanc et `drizzle-generate` tiennent le verrou du projet, `.ddd-ts-kit/lock`, que git ignore : une deuxième commande
-attend jusqu'à cinq secondes, puis sort avec le code 2 en nommant la commande qui le tient et le
-correctif, lancer les générateurs l'un après l'autre :
-``Another generator holds the lock of this project: `ddd-ts-kit generate context billing` (pid 1234, started 12 seconds ago).``
+Ce qu'écrit une commande arrive en entier ou pas du tout : chaque fichier est écrit dans
+`<name>.<random>.tmp` à côté de sa place, et les fichiers ne sont renommés à leur place qu'une fois
+tous écrits. Une écriture qui échoue (un disque plein) laisse le projet tel qu'il était, et la même
+commande relancée l'écrit ; un processus tué à mi-chemin peut laisser des fichiers `.tmp`, qu'on
+peut supprimer, et, s'il a été tué pendant les renommages, les fichiers déjà en place, que la même
+commande complète. Toute commande qui lit les fichiers partagés du projet et les réécrit tient le verrou du projet
+tant qu'elle tourne, `.ddd-ts-kit/lock`, que git ignore : `init` sur un projet déjà initialisé,
+`generate`, `docs`, `sdk`, `drizzle-generate`, `move-to-module`, `context-layout`,
+`platform-folders`, `controllers`, `value-objects`, `error-factories`, `acceptance --lock` et
+`depcruise-config --write`. Aucune ne le prend pour dire ce qu'elle écrirait (`--dry-run`,
+`--check`). Une deuxième commande attend jusqu'à cinq secondes, puis sort avec le code 2 en nommant
+la commande qui le tient et le correctif, les lancer l'une après l'autre :
+``Another command holds the lock of this project: `ddd-ts-kit generate context billing` (pid 1234, started 12 seconds ago).``
 Un verrou pris sur cette machine est gardé tant que sa commande tourne, et repris une fois qu'elle
 est terminée ; un verrou pris sur une autre machine, ou dont le détenteur ne se lit pas, est repris
 une minute après avoir été pris.
@@ -1007,7 +1012,7 @@ Next, in this order: the language of the context first, then the business decisi
   métier l'emporte. `--allow-name` passe outre les trois vérifications ; `check` signalera tout de même ce
   que le glossaire ne définit pas. Un nom que Windows réserve à un périphérique (`CON`,
   `PRN`, `AUX`, `NUL`, `COM1` à `COM9`, `LPT1` à `LPT9`, quelle que soit la casse) est refusé pour un contexte et
-  pour un concept, car ses fichiers ne s'y extraient pas ; `--allow-name` laisse passer un concept. Seuls les genres dont l'usage montre `--term` le prennent
+  pour un concept, car ses fichiers ne s'y extraient pas ; `--allow-name` laisse passer un concept. Un concept nommé d'après un mot réservé du langage (`Return`, `Case`, `Default`, `Package`) ou d'après un global que le code généré utilise (`Date`, `Error`, `Record`, `Map`) est refusé avec la raison, quels que soient les drapeaux, car son code ne compilerait pas : nommez-le en deux mots (`ReturnOrder`, `SupportCase`, `DueDate`). Seuls les genres dont l'usage montre `--term` le prennent
   (`heldToGlossary` dans `generate --help --json`, une ligne de `generate <kind> --help`) ; les
   autres (`port`, `adapter`, `repository`, `route`, `representation`...) nomment ce qu'une
   commande antérieure a nommé ou le nom du concept qu'ils servent, et refusent `--term`, en

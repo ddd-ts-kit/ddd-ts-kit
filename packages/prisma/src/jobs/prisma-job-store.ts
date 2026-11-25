@@ -72,13 +72,15 @@ export class PrismaJobStore<Tx extends PrismaRawQueries> implements JobStore {
       skipDuplicates: true,
     });
 
-    if (count === 1 || job.idempotencyKey === undefined) {
+    if (count === 1) {
       return { id: job.id, duplicate: false };
     }
 
-    const kept = await this.jobs().findFirst({
-      where: { name: job.name, tenantId, idempotencyKey: job.idempotencyKey },
-    });
+    // Skipped for the key, or for the id alone: a job already kept either way.
+    const kept =
+      job.idempotencyKey === undefined
+        ? undefined
+        : await this.jobs().findFirst({ where: { name: job.name, tenantId, idempotencyKey: job.idempotencyKey } });
 
     return { id: kept?.id ?? job.id, duplicate: true };
   }

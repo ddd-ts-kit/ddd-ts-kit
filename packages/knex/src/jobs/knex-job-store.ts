@@ -42,19 +42,19 @@ export class KnexJobStore implements JobStore {
   async add(job: NewJob): Promise<EnqueuedJob> {
     const executor = this.context.executor();
 
-    const inserted: unknown[] = await this.rows(executor)
-      .insert(rowOf(job))
-      .onConflict(['name', 'tenant_id', 'idempotency_key'])
-      .ignore()
-      .returning('id');
+    // Any conflict, the key as the id: a job already kept is answered, never raised into the transaction of the command.
+    const inserted: unknown[] = await this.rows(executor).insert(rowOf(job)).onConflict().ignore().returning('id');
 
-    if (inserted.length === 1 || job.idempotencyKey === undefined) {
+    if (inserted.length === 1) {
       return { id: job.id, duplicate: false };
     }
 
-    const kept = await this.rows(executor)
-      .where({ name: job.name, tenant_id: tenantKeyOf(job.enqueuedBy), idempotency_key: job.idempotencyKey })
-      .first('id');
+    const kept =
+      job.idempotencyKey === undefined
+        ? undefined
+        : await this.rows(executor)
+            .where({ name: job.name, tenant_id: tenantKeyOf(job.enqueuedBy), idempotency_key: job.idempotencyKey })
+            .first('id');
 
     return { id: kept?.id ?? job.id, duplicate: true };
   }
