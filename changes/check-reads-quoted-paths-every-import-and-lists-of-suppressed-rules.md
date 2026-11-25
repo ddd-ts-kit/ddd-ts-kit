@@ -13,3 +13,7 @@ To move: run `ddd-ts-kit check`. Remove each directive `config/unused-suppressio
 **`check --clean-only` and `check --baseline` refuse the options they would not honour.** `check --clean-only --changed-since nope src` exited 0: the mode read the directories as they are and ignored the ref, known or not. It is now refused, as is a `--rule` that needs a project (the mode used to run every rule in its place). `--baseline write` and `--baseline prune` refuse `--explain` and `--clean-only` as they refused `--rule`, a path and `--changed-since`.
 
 To move: a script that passes `--changed-since` or a rule outside the `clean/*` ones the mode holds to `check --clean-only`, or `--explain` to `check --baseline`, drops the option.
+
+**`--json` and `--format json` are one thing in `check`, `affected` and `measures`.** Beside another format, `--json` won in `check` and `affected` and lost in `measures`. The three now refuse `--json` with a `--format` other than `json`, and answer a format they do not print with the same sentence and the list of those they do.
+
+To move: a script that passes both `--json` and `--format <other>` keeps the one it reads.

@@ -5,7 +5,6 @@ import { Arguments } from '../../commands/arguments';
 import { findRoot } from '../../commands/find-root';
 import { type Command } from '../../commands/command';
 import type { Io } from '../../commands/io';
-import { isOneOf } from '../../config';
 import { applyBaseline } from '../baseline/apply-baseline';
 import { BASELINE_FILE, readBaseline } from '../baseline/read-baseline';
 import { writeBaseline } from '../baseline/write-baseline';
@@ -56,7 +55,7 @@ export const checkCommand: Command = (argv, io) => {
     return rewriteBaseline(args, io, baseline);
   }
 
-  const format = formatOf(args);
+  const format = args.format(FORMATS, 'text');
   const rules = knownRules(args.many('rule'));
   const result = args.flag('clean-only') ? checkCleanliness(args, rules) : checkProject(args, rules);
 
@@ -66,16 +65,6 @@ export const checkCommand: Command = (argv, io) => {
 
   return result.errorCount > 0 ? 1 : 0;
 };
-
-function formatOf(args: Arguments): CheckFormat {
-  const format = args.json ? 'json' : (args.text('format') ?? 'text');
-
-  if (isOneOf(FORMATS, format)) {
-    return format;
-  }
-
-  throw new CliError(`Unknown format "${format}".`, `Use one of: ${FORMATS.join(', ')}.`);
-}
 
 /** The rules that judge a file on its own, on any directories: no project, no config. */
 function checkCleanliness(args: Arguments, rules: readonly string[]): CheckResult {
