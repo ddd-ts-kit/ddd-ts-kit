@@ -6,7 +6,7 @@ import type { BackgroundJobRun } from './background-job-run';
 import { ClaimedJobRunner } from './claimed-job-runner';
 import { AttemptsExhaustedError } from './errors/attempts-exhausted-error';
 import { UnknownBackgroundJobError } from './errors/unknown-background-job-error';
-import type { QueueState } from './queue-state';
+import { FollowedQueue } from './followed-queue';
 import type { QueueWorkerOptions } from './queue-worker-options';
 import { RegisteredBackgroundJob } from './registered-background-job';
 import type { ClaimedJob } from './store/claimed-job';
@@ -22,7 +22,7 @@ const unread: BackgroundJobPayloadSchema<unknown> = { parse: (input) => ok(input
 export class QueueWorker {
   private readonly jobs = new Map<string, RegisteredBackgroundJob>();
 
-  private readonly queues = new Map<string, QueueState>();
+  private readonly queues = new Map<string, FollowedQueue>();
 
   private readonly recorder: BackgroundJobRecorder;
 
@@ -78,7 +78,7 @@ export class QueueWorker {
     this.running = false;
 
     for (const queue of this.queues.values()) {
-      queue.cancelSleep?.();
+      queue.stopSleeping();
     }
 
     const timers = this.options.timers ?? systemJobTimers;
@@ -87,10 +87,7 @@ export class QueueWorker {
       this.stopping.abort();
     });
 
-    const queues = [...this.queues.values()];
-
-    await Promise.all(queues.flatMap((queue) => (queue.filling === undefined ? [] : [queue.filling])));
-    await Promise.all(queues.flatMap((queue) => [...queue.active]));
+    await Promise.all([...this.queues.values()].map((queue) => queue.settled()));
     cancelAbort();
   }
 
@@ -115,15 +112,7 @@ export class QueueWorker {
       return;
     }
 
-    this.queues.set(name, {
-      name,
-      concurrency: this.concurrencyOf(name),
-      active: new Set<Promise<BackgroundJobRun>>(),
-      filling: undefined,
-      wokenWhileFilling: false,
-      cancelSleep: undefined,
-      measuredAt: Number.NEGATIVE_INFINITY,
-    });
+    this.queues.set(name, new FollowedQueue(name, this.concurrencyOf(name)));
   }
 
   private concurrencyOf(queue: string): number {
@@ -136,43 +125,15 @@ export class QueueWorker {
     return concurrency[queue] ?? concurrency['default'] ?? 1;
   }
 
-  /**
-   * Claims while there is room and work; an idle queue sleeps, a full one waits for an attempt to end.
-   * A wake-up that comes while the queue fills is kept: the queue fills once more after.
-   */
-  private async pump(queue: QueueState): Promise<void> {
-    if (!this.running) {
-      return;
+  /** Claims while there is room and work; an idle queue sleeps, a full one waits for an attempt to end. */
+  private async pump(queue: FollowedQueue): Promise<void> {
+    if (this.running) {
+      await queue.fill(() => this.fillOrSleep(queue));
     }
-
-    if (queue.filling !== undefined) {
-      queue.wokenWhileFilling = true;
-
-      return;
-    }
-
-    queue.filling = this.fillWhileWoken(queue);
-    await queue.filling;
-  }
-
-  private async fillWhileWoken(queue: QueueState): Promise<void> {
-    try {
-      do {
-        queue.wokenWhileFilling = false;
-        await this.fillOrSleep(queue);
-      } while (this.wokenWhileFilling(queue));
-    } finally {
-      queue.filling = undefined;
-    }
-  }
-
-  /** Read anew after an await: an attempt may have ended, or `stop()` been called, while the queue filled. */
-  private wokenWhileFilling(queue: QueueState): boolean {
-    return queue.wokenWhileFilling && this.running;
   }
 
   /** Never rejects: a fault of the store is recorded, and the queue asks again after a poll. */
-  private async fillOrSleep(queue: QueueState): Promise<void> {
+  private async fillOrSleep(queue: FollowedQueue): Promise<void> {
     try {
       await this.fill(queue);
       await this.measure(queue);
@@ -182,9 +143,9 @@ export class QueueWorker {
     }
   }
 
-  private async fill(queue: QueueState): Promise<void> {
+  private async fill(queue: FollowedQueue): Promise<void> {
     while (this.running) {
-      const room = queue.concurrency - queue.active.size;
+      const { room } = queue;
 
       if (room <= 0) {
         return;
@@ -211,15 +172,12 @@ export class QueueWorker {
   }
 
   /** The depth of the queue as gauges, when the worker has metrics, at most once per poll interval. */
-  private async measure(queue: QueueState): Promise<void> {
+  private async measure(queue: FollowedQueue): Promise<void> {
     const { metrics, store, clock, pollIntervalMs = 1_000 } = this.options;
-    const now = clock.now().getTime();
 
-    if (metrics === undefined || now - queue.measuredAt < pollIntervalMs) {
+    if (metrics === undefined || !queue.measuresAt(clock.now().getTime(), pollIntervalMs)) {
       return;
     }
-
-    queue.measuredAt = now;
 
     const { waiting, running, dead } = await store.stats(queue.name);
     const labels = { queue: queue.name };
@@ -229,7 +187,7 @@ export class QueueWorker {
     metrics.gauge('jobs_dead').set(dead, labels);
   }
 
-  private claimed(queue: QueueState, limit = queue.concurrency): Promise<ClaimedJob[]> {
+  private claimed(queue: FollowedQueue, limit = queue.concurrency): Promise<ClaimedJob[]> {
     const leases = [...this.jobs.values()].filter((job) => job.queue === queue.name).map((job) => job.policy.leaseMs);
 
     return this.options.store.claim({
@@ -252,13 +210,10 @@ export class QueueWorker {
     await Promise.all(claimed.map((job) => this.options.store.release(job.lease, now)));
   }
 
-  private launch(queue: QueueState, job: ClaimedJob): void {
-    const active = this.attempt(job).finally(() => {
-      queue.active.delete(active);
+  private launch(queue: FollowedQueue, job: ClaimedJob): void {
+    queue.run(this.attempt(job), () => {
       void this.pump(queue);
     });
-
-    queue.active.add(active);
   }
 
   private attempt(job: ClaimedJob): Promise<BackgroundJobRun> {
@@ -282,17 +237,17 @@ export class QueueWorker {
     return this.runner.run(job, registered, this.stopping.signal);
   }
 
-  private sleep(queue: QueueState): void {
+  private sleep(queue: FollowedQueue): void {
     if (!this.running) {
       return;
     }
 
     const timers = this.options.timers ?? systemJobTimers;
 
-    queue.cancelSleep?.();
-
-    queue.cancelSleep = timers.schedule(this.options.pollIntervalMs ?? 1_000, () => {
-      void this.pump(queue);
-    });
+    queue.sleep(
+      timers.schedule(this.options.pollIntervalMs ?? 1_000, () => {
+        void this.pump(queue);
+      }),
+    );
   }
 }
