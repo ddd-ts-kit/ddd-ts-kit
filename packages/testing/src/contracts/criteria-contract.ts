@@ -73,7 +73,10 @@ class CriteriaSuite extends ContractSuite<ReadModelUnderContract> {
         const empty = scoped(Criteria.of<CriteriaContractRow>().where('title', operator, ''), { kind: 'all' });
         const refusal = await failureOf(() => this.subject.search(empty));
 
-        this.expect(refusal instanceof InvalidCriteriaError).toBe(true);
+        this.holds(
+          refusal instanceof InvalidCriteriaError,
+          `an empty text given to ${operator} was not refused with InvalidCriteriaError: got ${String(refusal)}`,
+        );
       }
     });
   }

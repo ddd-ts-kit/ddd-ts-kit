@@ -75,7 +75,8 @@ describe('the arguments of every git the CLI runs', () => {
       }));
     });
 
-    expect(spawns.length).toBeGreaterThanOrEqual(9);
+    // One fewer since the files a branch changed are listed by `commit/changed-files.ts`, through `runGit`.
+    expect(spawns.length).toBeGreaterThanOrEqual(8);
     expect(spawns.filter((spawn) => !spawn.throughTheHelper)).toEqual([]);
   });
 });

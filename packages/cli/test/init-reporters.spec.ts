@@ -20,3 +20,28 @@ describe('init test reporters', () => {
     expect(config).toContain("reporters: [agent ? 'summary' : 'default', '@ddd-ts-kit/testing/budget/jest'],");
   });
 });
+
+describe('init test setup', () => {
+  const RESTARTS =
+    '// Before each test the sequences of the builders start again at 1 and the data generator at its seed: no value depends on the order of the tests of a file.';
+
+  it('lists the setup entry that restarts the test data in every runner config of Vitest', () => {
+    const project = initProject();
+
+    for (const config of ['vitest.config.ts', 'vitest.e2e.config.ts', 'vitest.mutation.config.ts']) {
+      expect(read(project, config), config).toContain(
+        `    ${RESTARTS}\n    setupFiles: ['@ddd-ts-kit/testing/setup/vitest'],`,
+      );
+    }
+  });
+
+  it('lists it in every runner config of Jest, where beforeEach is a global', () => {
+    const project = initProject('--tests', 'jest');
+
+    for (const config of ['jest.config.js', 'jest.e2e.config.js', 'jest.mutation.config.js']) {
+      expect(read(project, config), config).toContain(
+        `  ${RESTARTS}\n  setupFilesAfterEnv: ['@ddd-ts-kit/testing/setup/jest'],`,
+      );
+    }
+  });
+});

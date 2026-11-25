@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:2540a29a4f5aeadd -->
+<!-- translation-of: README.md sha256:08c1b1e9397cd058 -->
 
 # @ddd-ts-kit/kernel
 
@@ -35,7 +35,7 @@ avec une bibliothèque.
 | Domaine | `Entity`, `AggregateRoot` (version, événements enregistrés), `ValueObject`, `DomainEvent`, `DomainError` avec un `code` stable, `ConceptError` (les erreurs d'un concept, chacune construite par une fabrique statique : voir « Erreurs du domaine »), `DomainRefusal` (une classe par refus, construite par des fabriques statiques), `FactualRefusal`, `isRefusal`, `CodeOf`, `RefusalOf`, `Refusal`, `RefusalFacts`, le générique `InvariantViolation`, `NotFoundError`, `ConflictError` (et `UniqueViolationError`, une valeur qu'une contrainte d'unicité garde déjà détenue), `ConcurrencyError`, `PreconditionFailedError`, `Result` avec `ok`, `err`, `unwrap` |
 | Ports | `Clock`, `IdGenerator`, `UnitOfWork`, `Repository` (classes abstraites : chacune est son propre jeton d'injection), `UseCase`, `DependencyKind` (les rôles que déclare une liaison, lus par di, le traçage et les aspects : `repository`, `gateway`, `external`, `use-case`, `publisher`, `consumer`, `domain-event-handler`, `job`) |
 | Bus | `Command`, `Query`, `CommandBus`, `QueryBus`, `BusMiddleware`, les `InMemoryCommandBus` et `InMemoryQueryBus` en processus (`register(type, handler, { context })` nomme le contexte délimité dans `MessageInfo`), `unitOfWorkMiddleware` |
-| Événements | `IntegrationEvent`, `IntegrationEventPublisher`, `IntegrationEventSubscriber`, `EventBus` (les deux à la fois), `EventSubscribers` (l'abonné de chaque contexte délimité), `ProcessedEventStore`, `idempotent`, `InMemoryEventBus` (exécute chaque gestionnaire d'un événement, puis rejette avec l'échec d'un seul gestionnaire tel quel, avec son `code`, et avec une `AggregateError` de plusieurs), `DomainEventDispatcher`, `IntegrationEventCallback` et `DomainEventCallback` (les fonctions que reçoivent un abonné et un distributeur), `executionContextOfEvent`, `inEventScope`, `scopedPublisher`, `EventDelivery` (ce qu'un fournisseur dit d'une livraison : tentative, dernière tentative, transport, source, consommateur), `messagingSystemOf` |
+| Événements | `IntegrationEvent`, `IntegrationEventPublisher`, `IntegrationEventSubscriber`, `EventBus` (les deux à la fois), `EventSubscribers` (l'abonné de chaque contexte délimité), `ProcessedEventStore`, `idempotent`, `InMemoryEventBus` (exécute chaque gestionnaire d'un événement, puis rejette avec l'échec d'un seul gestionnaire tel quel, avec son `code`, et avec une `AggregateError` de plusieurs ; un événement est livré et consigné dans `published` tel qu'un *broker* le porte, en JSON : une copie, une `Date` sous forme de texte, un événement que JSON ne peut pas porter refusé), `DomainEventDispatcher`, `IntegrationEventCallback` et `DomainEventCallback` (les fonctions que reçoivent un abonné et un distributeur), `executionContextOfEvent`, `inEventScope`, `scopedPublisher`, `EventDelivery` (ce qu'un fournisseur dit d'une livraison : tentative, dernière tentative, transport, source, consommateur), `messagingSystemOf` |
 | Événements du domaine et unité de travail | `dispatchingOnSave` (l'enveloppe qui fait remettre par un *repository* ce qu'ont enregistré les agrégats qu'on lui confie), `announceDomainEvents`, `withinUnitOfWork` (ce sur quoi repose chaque `UnitOfWork.run` : file, distribution avant la validation, phase `after-commit`), `unitOfWorkStage` et `UnitOfWorkStage`, `DomainEventPhase`, `DomainEventSubscription`, `SaveAfterCommitError`, `AfterCommitFailure`, `reportAfterCommitFailures`, `InMemoryDomainEventDispatcher` |
 | Machines à états | `defineStateMachine`, `StateMachine`, `TransitionError`, `InvalidStateMachineError`, `mermaidOfStateMachine` (voir « Machines à états ») |
 | Acteur | `Actor`, `AuthorizedCommand`, `AuthorizedQuery`, `ActorContext`, `systemActor` |
@@ -1385,7 +1385,9 @@ await cache.get(quoteKey('EUR-USD')); // undefined : expirée, selon l'horloge
 ```
 
 La clé porte le type de sa valeur. `InMemoryCache(clock, { maxEntries? })` expire selon le
-`Clock` et est borné. `tenantCacheKey<Quote>(scope, 'quote', pair)` est la même clé confinée au
+`Clock` et est borné ; il garde et rend une valeur comme le fait un cache partagé, telle que JSON la
+porte : une copie à chaque écriture et à chaque lecture, une `Date` sous forme de texte, une valeur que
+JSON ne peut pas porter (un bigint, un cycle) refusée à l'écriture. `tenantCacheKey<Quote>(scope, 'quote', pair)` est la même clé confinée au
 *tenant* du travail en cours : ce qu'un *tenant* a mis en cache n'est jamais servi à un autre.
 
 ### Purger les caches HTTP

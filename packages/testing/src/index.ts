@@ -8,11 +8,13 @@ export { lazy } from './builders/lazy';
 export type { Resolvable } from './builders/resolvable';
 export { resolve } from './builders/resolve';
 export { resetSequences, sequence } from './builders/sequence';
+export { restartTestData } from './builders/restart-test-data';
 export { aSession } from './execution/a-session';
 export { anExecutionContext } from './execution/an-execution-context';
 export { ExecutionContextBuilder } from './execution/execution-context-builder';
 export { scoped } from './execution/scoped';
 export { asTenant } from './execution/as-tenant';
+export { oneTenantScope } from './execution/one-tenant-scope';
 export { SessionBuilder } from './execution/session-builder';
 export { createTestBuses, type TestBuses, type TestBusesOptions } from './harness/create-test-buses';
 export { earlierVersionOf } from './jobs/earlier-version-of';
@@ -24,7 +26,11 @@ export { givenEvents } from './event-sourcing/given-events';
 export type { SnapshotEquivalence } from './event-sourcing/snapshot-equivalence';
 export { expectRefusal } from './refusals/expect-refusal';
 export type { ExpectedFacts } from './refusals/expected-facts';
-export { InMemoryRepository, type InMemoryRepositoryOptions } from './repositories/in-memory-repository';
+export {
+  InMemoryRepository,
+  type InMemoryRepositoryOptions,
+  type InMemoryRepositoryTenancy,
+} from './repositories/in-memory-repository';
 export { snapshots } from './repositories/snapshots';
 export { expectNoSecret } from './secrecy/expect-no-secret';
 export type { AsyncOutcome } from './scenarios/async-outcome';

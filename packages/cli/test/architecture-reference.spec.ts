@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { rules as ESLINT_RULES } from '../../eslint-plugin/src/rules/rules';
 import { docsOf } from '../../eslint-plugin/src/support/rule/docs-of';
 import { ROLES } from '../src/check/canonical/roles';
+import { ESLINT_JUDGED_RULES } from '../src/check/catalogue/eslint-judged-rules';
 import { KNOWN_RULE_IDS } from '../src/check/catalogue/known-rule-ids';
+import { RULE_IDS } from '../src/check/catalogue/rule-ids';
 import { CONTEXT_FILES } from '../src/context-files';
 import { barrelFile, dependenciesFile } from '../src/declared';
 import { controllersFile } from '../src/nest-controllers/controllers-file';
@@ -73,6 +75,10 @@ describe('docs/ARCHITECTURE.md against the checker', () => {
     const row = analyzerRow('@ddd-ts-kit/eslint-plugin');
 
     expect(ESLINT_RULE_IDS.filter((id) => !namedIn(row, id))).toEqual([]);
+  });
+
+  it('lists as judged by ESLint too exactly the rules of the checker the plugin holds, whose idle suppression it never reports', () => {
+    expect([...ESLINT_JUDGED_RULES].sort()).toEqual(RULE_IDS.filter((id) => ESLINT_RULE_IDS.includes(id)).sort());
   });
 
   it('names, where a row of "Who checks what" gives a whole family, each rule of it the analyzer does not hold', () => {

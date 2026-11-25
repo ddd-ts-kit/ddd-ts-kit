@@ -21,11 +21,12 @@ export function generateRepository(scope: Scope, aggregate: Name): RenderContext
   }
 
   const adapter = REPOSITORY_ADAPTERS[scope.config.stack.orm];
+  const tenant = tenantVars(scope);
 
   const context = vars(scope, {
     aggregate: named(aggregate),
     adapter: repositoryPrefix(scope.config.stack.orm),
-    tenant: tenantVars(scope),
+    tenant,
     personal: personalVars(scope),
   });
 
@@ -44,7 +45,16 @@ export function generateRepository(scope: Scope, aggregate: Name): RenderContext
     `Fake${aggregate.pascal}Repository (test/fakes) and ${adapter.prefix}${aggregate.pascal}Repository pass the same repositoryContract (test/integration): handlers are tested with the fake.`,
   );
 
+  if (tenant['scoped'] === true) {
+    scope.ws.note(confinedFakeNote(aggregate));
+  }
+
   return context;
+}
+
+/** What the fake of a tenant-scoped aggregate does that a spec has to know: it is confined, and to which tenant when built alone. */
+function confinedFakeNote(aggregate: Name): string {
+  return `Both pass tenantIsolationContract too: Fake${aggregate.pascal}Repository is confined to the tenant of the scope it is given, \`acme\` when it is built alone. A spec about several tenants hands it the executionScope of its harness.`;
 }
 
 const TENANT_AWARE: readonly OrmStack[] = ['drizzle', 'knex', 'prisma', 'typeorm'];
