@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import type { NewJob } from '@ddd-ts-kit/scheduling';
+import { JobLease, type NewJob } from '@ddd-ts-kit/scheduling';
 import { jobStoreContract } from '@ddd-ts-kit/testing/contracts';
 import { TypeOrmJobStore, createTypeOrmUnitOfWork, jobEntity } from '../src';
 import { createDatabase, type TestDatabase } from './support/database';
@@ -99,8 +99,8 @@ describe('TypeOrmJobStore', () => {
 
     await jobs.add(aJob('job-1', {}));
     await claim(jobs);
-    await jobs.update({ id: 'job-1', attempt: 1 }, { checkpoint: { after: 'c-1' } }, NOW);
-    await jobs.update({ id: 'job-1', attempt: 1 }, { checkpoint: undefined }, NOW);
+    await jobs.update(JobLease.ofClaim('job-1', 1), { checkpoint: { after: 'c-1' } }, NOW);
+    await jobs.update(JobLease.ofClaim('job-1', 1), { checkpoint: undefined }, NOW);
 
     const [next] = await claim(jobs);
 

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:2a21a83f1d408547 -->
+<!-- translation-of: README.md sha256:ca2cb37be3c390f4 -->
 
 # @ddd-ts-kit/scheduling
 
@@ -629,7 +629,7 @@ le kernel ; ce *package* les exécute. Pourquoi et quand, avec les garanties :
 | Pièce | |
 |---|---|
 | `StoredJobQueue` | la `JobQueue` du kernel sur un `JobStore` : nomme le *job*, capture la corrélation, l'acteur (son id, son type, son *tenant*, ses rôles et `tenants`, jamais son profil ; `actorAttributes` nomme un attribut dont une exécution a besoin), le *tenant* et le `traceparent` du travail qui met en file, l'ajoute au store ; `find` et `cancel` n'atteignent que les *jobs* du *tenant* du travail en cours (des *tenants* de son élévation). Sans `tenant`, un projet sans multitenance, le travail qui n'en nomme aucun atteint tous les *jobs* ; avec `tenant: true`, un projet multitenant, il est refusé (`NoCurrentTenantError`) avant toute lecture du store |
-| `JobStore` | le port des stores : `add`, `claim` (un bail), `heartbeat`, `update` (progression, point de reprise), `complete`, `fail`, `release`, `cancel`, `find`, `retryDead`, `purgeFinished`, `eraseSubject`, `stats` ; chaque compte rendu nomme sa tentative (`JobLease`) |
+| `JobStore` | le port des stores : `add`, `claim` (un bail), `heartbeat`, `update` (progression, point de reprise), `complete`, `fail`, `release`, `cancel`, `find`, `retryDead`, `purgeFinished`, `eraseSubject`, `stats` ; chaque compte rendu nomme le bail de sa prise (`JobLease`, remis avec chaque `ClaimedJob` et jamais détenu par deux prises d'un *job*) |
 | `InMemoryJobStore` | le store des tests et d'un processus sans base de données : `add`, `cancel` et `retryDead` attendent la validation (commit) de l'unité de travail ; `list()` pour les assertions |
 | `jobsOfSubject(store)` | les *jobs* mis en file avec une personne pour `subject`, comme une copie de cette personne, pour `shared` de `eraseDataSubject` : `eraseSubject` les retire quel que soit leur statut |
 | `tenantKeyOf(enqueuedBy)` | la partie *tenant* de la clé d'idempotence, pour un store qui la garde dans un index unique : le *tenant*, ou le texte vide |

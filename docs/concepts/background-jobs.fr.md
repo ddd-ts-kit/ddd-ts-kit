@@ -1,5 +1,5 @@
 [English](background-jobs.md) · **Français**
-<!-- translation-of: background-jobs.md sha256:209e9581845fb462 -->
+<!-- translation-of: background-jobs.md sha256:76bc3502e5cd6566 -->
 
 # Jobs en arrière-plan
 
@@ -406,9 +406,13 @@ interrogation (une seconde par défaut) quand la file est inactive.
   donc exécuté deux fois quand son *worker* meurt après le travail et avant de l'avoir signalé : le
   travail est idempotent, déduit de l'état ou protégé par une contrainte d'unicité, comme pour un
   [événement consommé](delivery-and-idempotency.fr.md).
-- **Seule la tentative qui détient le *job* est entendue.** Chaque rapport nomme sa tentative : une
-  fois le *job* repris ou annulé, le store répond non, et le *worker* interrompt le signal de
-  l'exécution (`JobInterruptedError`).
+- **Seule la prise qui détient le *job* est entendue.** Chaque rapport nomme le bail que sa prise a
+  reçu (`JobLease`), et deux prises d'un *job* ne détiennent jamais le même : le store compte les
+  prises d'un *job* (la colonne `claims` de sa table) et n'en rend jamais une, là où un *job* rendu
+  ou relancé retrouve sa tentative. Une fois le *job* repris ou annulé, le store répond non, et le
+  *worker* interrompt le signal de l'exécution (`JobInterruptedError`) : une exécution laissée
+  derrière par un *worker* qui s'est arrêté n'enregistre aucun point de reprise par-dessus celui de
+  l'exécution qui a pris sa place.
 - **Nouvelles tentatives.** Une tentative en échec attend son délai ; après `maxAttempts`, le *job*
   est mort et reste dans la table jusqu'à ce qu'un opérateur le relance (`retryDead`). Un *job*
   repris après sa dernière tentative (son *worker* est mort pendant celle-ci) meurt aussitôt

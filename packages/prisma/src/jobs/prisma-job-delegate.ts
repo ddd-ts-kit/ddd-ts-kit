@@ -26,6 +26,8 @@ export interface PrismaJobRow {
   readonly subject: string | null;
   readonly status: string;
   readonly attempts: number;
+  /** How many times it was claimed: the lease of the claim that holds it. */
+  readonly claims: number;
   readonly runAt: Date;
   readonly leaseUntil: Date | null;
   readonly progress: unknown;
@@ -57,13 +59,14 @@ export interface PrismaJobWhere {
   idempotencyKey?: string;
   subject?: string;
   status?: QueuedJobStatus | { in: QueuedJobStatus[] };
-  attempts?: number;
+  claims?: number;
   finishedAt?: { lt: Date };
 }
 
 export interface PrismaJobUpdate {
   status?: QueuedJobStatus;
   attempts?: number | { increment: number } | { decrement: number };
+  claims?: { increment: number };
   runAt?: Date;
   leaseUntil?: Date | null;
   finishedAt?: Date | null;

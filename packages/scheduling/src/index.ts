@@ -37,7 +37,7 @@ export { jobsOfSubject } from './queue/store/jobs-of-subject';
 export type { ClaimRequest } from './queue/store/claim-request';
 export type { ClaimedJob } from './queue/store/claimed-job';
 export type { JobFailure } from './queue/store/job-failure';
-export type { JobLease } from './queue/store/job-lease';
+export { JobLease } from './queue/store/job-lease';
 export type { JobStoreStats } from './queue/store/job-store-stats';
 export type { JobUpdate } from './queue/store/job-update';
 export type { NewJob } from './queue/store/new-job';

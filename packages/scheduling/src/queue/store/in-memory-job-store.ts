@@ -2,7 +2,7 @@ import { whenCommitted, type EnqueuedJob, type QueuedJob } from '@ddd-ts-kit/ker
 import type { ClaimRequest } from './claim-request';
 import type { ClaimedJob } from './claimed-job';
 import type { JobFailure } from './job-failure';
-import type { JobLease } from './job-lease';
+import { JobLease } from './job-lease';
 import type { JobStoreStats } from './job-store-stats';
 import type { JobStore } from './job-store';
 import type { JobUpdate } from './job-update';
@@ -47,6 +47,7 @@ export class InMemoryJobStore implements JobStore {
     for (const job of due) {
       job.status = 'running';
       job.attempts += 1;
+      job.claims += 1;
       job.leaseUntil = new Date(now.getTime() + leaseMs);
     }
 
@@ -208,6 +209,7 @@ export class InMemoryJobStore implements JobStore {
       sequence: this.sequence,
       status: 'waiting',
       attempts: 0,
+      claims: 0,
       leaseUntil: undefined,
       progress: undefined,
       checkpoint: undefined,
@@ -219,7 +221,7 @@ export class InMemoryJobStore implements JobStore {
   private holding(lease: JobLease, change: (job: StoredJob) => void): boolean {
     const job = this.jobs.get(lease.id);
 
-    if (job?.status !== 'running' || job.attempts !== lease.attempt) {
+    if (job?.status !== 'running' || job.claims !== lease.claim) {
       return false;
     }
 
@@ -256,6 +258,7 @@ function claimedOf(job: StoredJob): ClaimedJob {
     enqueuedBy: structuredClone(job.enqueuedBy),
     enqueuedAt: job.enqueuedAt,
     attempt: job.attempts,
+    lease: JobLease.ofClaim(job.id, job.claims),
     ...(job.checkpoint === undefined ? {} : { checkpoint: plainJson(job.checkpoint) }),
   };
 }

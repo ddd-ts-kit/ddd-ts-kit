@@ -135,6 +135,7 @@ describe('init --queue database on the packages of Prisma and TypeORM', () => {
     const schema = read(root, 'prisma/schema/schema.prisma');
 
     expect(schema).toContain('model BackgroundJob {');
+    expect(schema).toContain('claims         Int       @default(0)');
     expect(schema).toContain('model ProcessInstance {');
     expect(schema).toContain('  @@map("background_jobs")\n  @@schema("messaging")');
 

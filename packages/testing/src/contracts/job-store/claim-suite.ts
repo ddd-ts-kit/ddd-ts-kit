@@ -22,26 +22,30 @@ export class ClaimSuite extends ContractSuite<JobStoreUnderContract> {
       this.expect(await this.subject.find('unknown')).toBe(undefined);
     });
 
-    this.it('hands out the job exactly as added, the attempt counted, and shows it running', async () => {
-      const added = await this.subject.add(aJob('job-1'));
-      const [claimed] = await this.claim(10, NOW);
-      const { enqueuedBy, payload, name } = aJob('job-1');
+    this.it(
+      'hands out the job exactly as added, the attempt counted, under its first lease, and shows it running',
+      async () => {
+        const added = await this.subject.add(aJob('job-1'));
+        const [claimed] = await this.claim(10, NOW);
+        const { enqueuedBy, payload, name } = aJob('job-1');
 
-      this.expect(added).toEqual({ id: 'job-1', duplicate: false });
+        this.expect(added).toEqual({ id: 'job-1', duplicate: false });
 
-      this.expect(claimed).toEqual({
-        id: 'job-1',
-        name,
-        queue: QUEUE,
-        payload,
-        enqueuedBy,
-        enqueuedAt: NOW,
-        attempt: 1,
-      });
+        this.expect(claimed).toEqual({
+          id: 'job-1',
+          name,
+          queue: QUEUE,
+          payload,
+          enqueuedBy,
+          enqueuedAt: NOW,
+          attempt: 1,
+          lease: { id: 'job-1', claim: 1 },
+        });
 
-      this.expect((await this.subject.find('job-1'))?.status).toBe('running');
-      this.expect(await this.subject.stats(QUEUE)).toEqual({ waiting: 0, running: 1, dead: 0 });
-    });
+        this.expect((await this.subject.find('job-1'))?.status).toBe('running');
+        this.expect(await this.subject.stats(QUEUE)).toEqual({ waiting: 0, running: 1, dead: 0 });
+      },
+    );
 
     this.it('hands out the earliest first and only the jobs of the queue asked', async () => {
       await this.subject.add(aJob('job-1', { runAt: later(-1_000) }));
@@ -140,7 +144,7 @@ export class ClaimSuite extends ContractSuite<JobStoreUnderContract> {
       this.expect(await this.claimedIds(10, later(LEASE_MS - 1))).toEqual([]);
       const [again] = await this.claim(10, later(LEASE_MS));
 
-      this.expect(again?.attempt).toBe(2);
+      this.expect([again?.attempt, again?.lease]).toEqual([2, { id: 'job-1', claim: 2 }]);
     });
 
     this.it('keeps a job hidden while its heartbeats extend the lease', async () => {
@@ -148,21 +152,21 @@ export class ClaimSuite extends ContractSuite<JobStoreUnderContract> {
       await this.claim(10, NOW);
 
       this.holds(
-        await this.subject.heartbeat({ id: 'job-1', attempt: 1 }, later(LEASE_MS * 2)),
+        await this.subject.heartbeat({ id: 'job-1', claim: 1 }, later(LEASE_MS * 2)),
         'the heartbeat of the attempt that holds the job was refused',
       );
 
       this.expect(await this.claimedIds(10, later(LEASE_MS))).toEqual([]);
 
       this.holds(
-        !(await this.subject.heartbeat({ id: 'job-1', attempt: 2 }, later(LEASE_MS * 3))),
-        'the heartbeat of an attempt that never claimed the job was accepted',
+        !(await this.subject.heartbeat({ id: 'job-1', claim: 2 }, later(LEASE_MS * 3))),
+        'the heartbeat of a claim that never took the job was accepted',
       );
     });
 
     this.it('answers false to the heartbeat of a job it does not hold', async () => {
       this.holds(
-        !(await this.subject.heartbeat({ id: 'unknown', attempt: 1 }, later(LEASE_MS))),
+        !(await this.subject.heartbeat({ id: 'unknown', claim: 1 }, later(LEASE_MS))),
         'the heartbeat of an unknown job was accepted',
       );
     });

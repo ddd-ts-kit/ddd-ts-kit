@@ -2,7 +2,8 @@ import type { EnqueuedBy, EnqueuedJob, JobProgress, QueuedJob } from '@ddd-ts-ki
 
 interface Lease {
   readonly id: string;
-  readonly attempt: number;
+  /** The claim it is of: the claims of a job are counted from 1 and never given back. */
+  readonly claim: number;
 }
 
 interface Claimed {
@@ -13,6 +14,7 @@ interface Claimed {
   readonly enqueuedBy: EnqueuedBy;
   readonly enqueuedAt: Date;
   readonly attempt: number;
+  readonly lease: Lease;
   readonly checkpoint?: unknown;
 }
 

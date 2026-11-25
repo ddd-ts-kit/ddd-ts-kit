@@ -4,6 +4,7 @@ import {
   BACKGROUND_RUNS_COUNTER,
   JobAbortedError,
   JobInterruptedError,
+  JobLease,
   JobTimeoutError,
   reportFailedBackgroundJobs,
 } from '../src';
@@ -139,5 +140,34 @@ describe('a started worker', () => {
     expect(reporter.reports).toMatchObject([
       { report: { origin: 'queue', operation: 'billing.compile-statements', context: 'billing' } },
     ]);
+  });
+});
+
+describe('a worker that stopped', () => {
+  it('does not hear the run it left behind once the job it gave back was claimed again', async () => {
+    const { queue, worker, timers, store, clock } = aQueueBench({ graceMs: 20_000 });
+    const job = new CompileStatementsJob();
+    const leftBehind = () => job.runs[0]?.execution.saveCheckpoint({ after: 'row 10' });
+
+    worker.register(job.definition());
+    await queue.enqueue(CompileStatementsJob, FEBRUARY);
+    job.hold();
+    await worker.start();
+
+    const stopping = worker.stop();
+
+    await timers.advance(20_000);
+    await stopping;
+
+    const claim = { queue: 'billing', limit: 1, now: clock.now(), leaseMs: 30_000 };
+    const [claimedAgain] = await store.claim(claim);
+    const second = JobLease.ofClaim('job-1', 2);
+
+    expect([claimedAgain?.attempt, claimedAgain?.lease]).toEqual([1, second]);
+    await store.update(second, { checkpoint: { after: 'row 500' } }, clock.now());
+
+    await expect(leftBehind()).rejects.toBeInstanceOf(JobInterruptedError);
+    expect((await store.claim(claim))[0]?.checkpoint).toEqual({ after: 'row 500' });
+    job.release();
   });
 });

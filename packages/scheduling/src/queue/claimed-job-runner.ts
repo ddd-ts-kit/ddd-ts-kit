@@ -77,7 +77,6 @@ export class ClaimedJobRunner {
     return {
       job,
       registered,
-      lease: { id: job.id, attempt: job.attempt },
       controller: new AbortController(),
       startedAt: this.options.clock.now(),
       stopBeating: nothing,
@@ -123,7 +122,7 @@ export class ClaimedJobRunner {
   }
 
   private async write(running: RunningJob, update: JobUpdate): Promise<void> {
-    const held = await this.options.store.update(running.lease, update, this.leaseEnd(running));
+    const held = await this.options.store.update(running.job.lease, update, this.leaseEnd(running));
 
     if (!held) {
       const interrupted = new JobInterruptedError(running.job.name);
@@ -144,7 +143,7 @@ export class ClaimedJobRunner {
 
   /** A heartbeat the store cannot take keeps the run going: if the lease ends, the report of the run is refused. */
   private async beat(running: RunningJob): Promise<void> {
-    const held = await this.options.store.heartbeat(running.lease, this.leaseEnd(running)).catch(() => true);
+    const held = await this.options.store.heartbeat(running.job.lease, this.leaseEnd(running)).catch(() => true);
 
     if (held) {
       this.beatLater(running);
@@ -166,7 +165,7 @@ export class ClaimedJobRunner {
   }
 
   private async succeeded(running: RunningJob): Promise<BackgroundJobRun> {
-    const held = await this.options.store.complete(running.lease, this.options.clock.now());
+    const held = await this.options.store.complete(running.job.lease, this.options.clock.now());
 
     return this.recorded(running, held ? 'succeeded' : 'interrupted');
   }
@@ -182,7 +181,7 @@ export class ClaimedJobRunner {
     }
 
     if (error instanceof JobAbortedError) {
-      const released = await this.options.store.release(running.lease, this.options.clock.now());
+      const released = await this.options.store.release(running.job.lease, this.options.clock.now());
 
       return this.recorded(running, released ? 'released' : 'interrupted', error);
     }
@@ -192,7 +191,7 @@ export class ClaimedJobRunner {
 
   private async settled(running: RunningJob, error: unknown, retryAt: Date | null): Promise<BackgroundJobRun> {
     const failure = { errorCode: errorCodeOf(error), retryAt, at: this.options.clock.now() };
-    const held = await this.options.store.fail(running.lease, failure);
+    const held = await this.options.store.fail(running.job.lease, failure);
     const outcome: BackgroundJobOutcome = !held ? 'interrupted' : retryAt === null ? 'dead' : 'retried';
 
     return this.recorded(running, outcome, error);
