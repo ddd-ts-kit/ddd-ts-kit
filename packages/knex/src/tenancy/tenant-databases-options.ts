@@ -12,4 +12,9 @@ export interface TenantDatabasesOptions {
   readonly maxTenants?: number;
   /** Builds a knex instance; default `knex(config)`. */
   readonly open?: (config: Knex.Config) => Knex;
+  /**
+   * Told of an idle instance that could not be closed to make room: its place is given to the
+   * next tenant all the same, and the failure goes no further. Default: dropped.
+   */
+  readonly onCloseFailure?: (error: unknown, tenantId: string) => void;
 }

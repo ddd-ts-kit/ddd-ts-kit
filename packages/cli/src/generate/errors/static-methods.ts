@@ -1,5 +1,5 @@
 import { matchingBracket } from '../../check/text/matching-bracket';
-import type { ClassBody } from './class-body';
+import { blockAfter, type ClassBody } from '../../source-text';
 
 const STATIC_METHOD = /^[ \t]*(?:public\s+)?static\s+(?:async\s+)?([A-Za-z_$][\w$]*)\s*(?:<[^(]*>)?\(/gm;
 
@@ -16,8 +16,8 @@ export function staticMethods(code: string, body: ClassBody): StaticMethod[] {
     .filter((match) => match.index > body.open && match.index < body.close)
     .flatMap((match) => {
       const parameters = match.index + match[0].length - 1;
-      const open = code.indexOf('{', matchingBracket(code, parameters));
+      const open = blockAfter(code, matchingBracket(code, parameters) + 1);
 
-      return open === -1 ? [] : [{ name: match[1] ?? '', open, end: matchingBracket(code, open) }];
+      return open === undefined ? [] : [{ name: match[1] ?? '', open, end: matchingBracket(code, open) }];
     });
 }

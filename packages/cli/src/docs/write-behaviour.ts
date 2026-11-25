@@ -144,7 +144,9 @@ function deleteStalePages(ws: Workspace, kept: ReadonlySet<string>): void {
   }
 }
 
-function write(ws: Workspace, file: string, content: string): void {
+function write(ws: Workspace, file: string, page: string): void {
+  const content = ws.spoken(page);
+
   if (ws.exists(file)) {
     ws.update(file, content);
   } else {

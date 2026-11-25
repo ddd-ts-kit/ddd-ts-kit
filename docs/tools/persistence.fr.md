@@ -1,5 +1,5 @@
 [English](persistence.md) · **Français**
-<!-- translation-of: persistence.md sha256:dd86eca40e56fc1c -->
+<!-- translation-of: persistence.md sha256:e7e5178e1b6a585a -->
 
 # Persistance : Drizzle, Knex, Prisma, TypeORM, et quelle base de données
 
@@ -524,7 +524,7 @@ D'après [`packages/cli/README.fr.md`](../../packages/cli/README.fr.md) et
 | PostgreSQL | la base par défaut, et la seule des suites automatisées de chaque adaptateur | rien |
 | MySQL 8 | registres essayés à la main une fois (Knex, Prisma, TypeORM) | pas de persistance générée, pas de journal d'audit SQL ; `DATETIME` sans fuseau horaire sous Knex ; pas de `SKIP LOCKED` sur la 5.7 ; un schéma par contexte devient une base de données ou un préfixe de table |
 | SQLite | registres de Knex automatisés dans l'exécution unitaire, les autres essayés à la main une fois | pas de schémas, prise en charge par comparaison et échange (compare-and-set), un seul écrivain : pour les tests et les outils, pas pour plusieurs instances |
-| MongoDB, autres | pas d'adaptateur | `stack.orm: custom` : votre propre unité de travail (son `run` construit sur `withinUnitOfWork` du noyau), votre registre d'outbox et votre registre des événements traités, chacun passant les suites de contrat ; sans transactions multidocuments, la garantie de l'outbox n'est pas disponible |
+| MongoDB, autres | pas d'adaptateur | `stack.orm: custom` : votre propre unité de travail (construite sur `unitOfWorkOver` du noyau), votre registre d'outbox et votre registre des événements traités, chacun passant les suites de contrat ; sans transactions multidocuments, la garantie de l'outbox n'est pas disponible |
 
 `stack.database` accepte `postgres`, `mysql`, `sqlite`, `mongodb` et `none`
 ([CONFIG.md](../CONFIG.fr.md)). `init` refuse toute autre valeur que `postgres` avec l'un des

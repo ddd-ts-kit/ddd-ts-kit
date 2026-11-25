@@ -53,7 +53,7 @@ const TAKEN = new Set([
 /**
  * The business words of a search, for the bindings that hold its lines: `invoice` and `invoices`
  * for `SearchInvoices`, never `item` and `items`. A name the template already uses is prefixed:
- * `foundPage`, `foundPages`.
+ * `foundPage`, `foundPages`; a word that is the same in both numbers names one of them `oneNews`.
  */
 export function searchedElements(name: Name): SearchedElements {
   const words = name.words.split(' ');
@@ -63,6 +63,11 @@ export function searchedElements(name: Name): SearchedElements {
   const lead = things.slice(0, -1);
   const element = toName([...lead, one ?? last].join(' ')).camel;
   const elements = toName([...lead, one === undefined ? plural(last) : last].join(' ')).camel;
+
+  // A word that is the same in both numbers would name the line and the lines alike.
+  if (element === elements) {
+    return { element: `one${toName(element).pascal}`, elements };
+  }
 
   if (TAKEN.has(element) || TAKEN.has(elements)) {
     return { element: `found${toName(element).pascal}`, elements: `found${toName(elements).pascal}` };
