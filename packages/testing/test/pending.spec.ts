@@ -1,7 +1,7 @@
 import { AssertionError, strictEqual } from 'node:assert';
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
-import { eventually, pending } from '../src/e2e';
+import { eventually, pending, settled, until } from '../src/e2e';
 
 /**
  * An error built in another realm, as Jest shows an `AssertionError` of `node:assert` to a spec
@@ -67,7 +67,7 @@ describe('pending', () => {
       pending(async () => {
         throw undefined;
       })(),
-    ).rejects.toThrow(/stops on Error: A scenario threw nothing\./);
+    ).rejects.toThrow(/stops on Error: failed without a reason/);
   });
 
   it('treats an AssertionError of node:assert built by hand as an assertion', async () => {
@@ -135,5 +135,23 @@ describe('pending', () => {
         throw first;
       })(),
     ).rejects.toThrow(/stops on Error: first/);
+  });
+});
+
+describe('pending, on a scenario that waits', () => {
+  it('passes on a wait that until gives up: the projection it waits for is not built', async () => {
+    const scenario = pending(async () => {
+      await until(() => false, { timeoutMs: 30, intervalMs: 10 });
+    });
+
+    await expect(scenario()).resolves.toBeUndefined();
+  });
+
+  it('passes on work that settled still counts: the handler that drains it is not built', async () => {
+    const scenario = pending(async () => {
+      await settled({ outbox: () => 1 }, { timeoutMs: 30, intervalMs: 10 });
+    });
+
+    await expect(scenario()).resolves.toBeUndefined();
   });
 });
