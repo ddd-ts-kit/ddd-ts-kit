@@ -24,6 +24,8 @@ model BackgroundJob {
   subject        String?
   status         String    @default("waiting")
   attempts       Int       @default(0)
+  /// The lease of the claim that holds the job: counted at each claim, never given back.
+  claims         Int       @default(0)
   runAt          DateTime  @map("run_at") @db.Timestamptz(3)
   leaseUntil     DateTime? @map("lease_until") @db.Timestamptz(3)
   progress       Json?

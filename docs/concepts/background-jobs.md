@@ -389,9 +389,13 @@ queue is idle.
   again when the lease ends, one attempt more. A job is therefore run twice when its worker
   dies after the work and before it said so: the work is idempotent, derived from state or
   keyed behind a unique constraint, as for a [consumed event](delivery-and-idempotency.md).
-- **Only the attempt that holds the job is heard.** Every report names its attempt: once the
-  job was claimed again or cancelled, the store answers no, and the worker aborts the signal
-  of the run (`JobInterruptedError`).
+- **Only the claim that holds the job is heard.** Every report names the lease its claim was
+  handed (`JobLease`), and no two claims of a job ever hold the same one: the store counts the
+  claims of a job (the `claims` column of its table) and never gives one back, where a job
+  released or revived gets its attempt back. Once the job was claimed again or cancelled, the
+  store answers no, and the worker aborts the signal of the run (`JobInterruptedError`): a run
+  left behind by a worker that stopped saves no checkpoint over the one of the run that took
+  its place.
 - **Retries.** A failed attempt waits for its backoff; after `maxAttempts` the job is dead and
   stays in the table until an operator revives it (`retryDead`). A job claimed again after its
   last attempt (its worker died during it) dies at once (`ATTEMPTS_EXHAUSTED`).

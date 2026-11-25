@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import type { NewJob } from '@ddd-ts-kit/scheduling';
+import { JobLease, type NewJob } from '@ddd-ts-kit/scheduling';
 import { jobStoreContract } from '@ddd-ts-kit/testing/contracts';
 import { PrismaJobStore, createPrismaUnitOfWork } from '../../src';
 import { createDatabase, type TestDatabase } from '../support/database';
@@ -125,8 +125,8 @@ describe('the JSON of a job', () => {
 
     await store.add(aJob('job-1'));
     await claim(store);
-    await store.update({ id: 'job-1', attempt: 1 }, { checkpoint: { after: 'c-1' } }, NOW);
-    await store.update({ id: 'job-1', attempt: 1 }, { checkpoint: undefined }, NOW);
+    await store.update(JobLease.ofClaim('job-1', 1), { checkpoint: { after: 'c-1' } }, NOW);
+    await store.update(JobLease.ofClaim('job-1', 1), { checkpoint: undefined }, NOW);
 
     const [next] = await claim(store);
 
@@ -138,7 +138,7 @@ describe('the JSON of a job', () => {
 
     await store.add(aJob('job-1'));
     await claim(store);
-    await store.update({ id: 'job-1', attempt: 1 }, { progress: { done: 3 } }, NOW);
+    await store.update(JobLease.ofClaim('job-1', 1), { progress: { done: 3 } }, NOW);
 
     expect((await store.find('job-1'))?.progress).toEqual({ done: 3 });
   });

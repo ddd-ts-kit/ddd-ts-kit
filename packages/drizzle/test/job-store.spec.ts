@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { JobLease } from '@ddd-ts-kit/scheduling';
 import { jobStoreContract } from '@ddd-ts-kit/testing/contracts';
 import { DrizzleJobStore, createDrizzleUnitOfWork, jobsTable } from '../src/postgres';
 import { createStoreDatabase, type StoreDatabase } from './support/store-database';
@@ -47,6 +48,7 @@ describe('DrizzleJobStore, past the contract', () => {
 
     const store = new DrizzleJobStore(context(), jobs);
     const at = new Date('2026-03-01T10:00:00.000Z');
+    const first = JobLease.ofClaim('job-1', 1);
     const actor = { id: 'a', type: 'user' as const, roles: [], attributes: {} };
 
     await store.add({
@@ -60,9 +62,9 @@ describe('DrizzleJobStore, past the contract', () => {
     });
 
     await store.claim({ queue: 'billing', limit: 1, now: at, leaseMs: 1_000 });
-    await store.update({ id: 'job-1', attempt: 1 }, { checkpoint: 'half' }, at);
-    await store.update({ id: 'job-1', attempt: 1 }, { checkpoint: undefined }, at);
-    await store.release({ id: 'job-1', attempt: 1 }, at);
+    await store.update(first, { checkpoint: 'half' }, at);
+    await store.update(first, { checkpoint: undefined }, at);
+    await store.release(first, at);
 
     const [claimed] = await store.claim({ queue: 'billing', limit: 1, now: at, leaseMs: 1_000 });
 

@@ -1,4 +1,4 @@
-import type { ClaimedJob } from '@ddd-ts-kit/scheduling';
+import { JobLease, type ClaimedJob } from '@ddd-ts-kit/scheduling';
 import { parseEnqueuedBy } from './parse-enqueued-by';
 import type { RedisJobRecord } from './redis-job-record';
 
@@ -14,6 +14,7 @@ export function claimedJobOfRecord(record: RedisJobRecord): ClaimedJob {
     enqueuedBy: parseEnqueuedBy(record.enqueuedBy),
     enqueuedAt: new Date(record.enqueuedAt),
     attempt: record.attempts,
+    lease: JobLease.ofClaim(record.id, record.claims ?? 0),
     ...checkpointOf(record),
   };
 }
