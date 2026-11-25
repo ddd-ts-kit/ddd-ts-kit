@@ -8,9 +8,7 @@ import type { Organisation } from '{{alias.context}}/domain/aggregates/organisat
 import { OrganisationRepository } from '{{alias.context}}/domain/repositories/organisation.repository{{alias.ext}}';
 {{/if}}
 {{#unless style.declared}}
-import type {
-  OrganisationRepository,
-} from '{{alias.context}}/domain/repositories/organisation.repository{{alias.ext}}';
+import type { OrganisationRepository } from '{{alias.context}}/domain/repositories/organisation.repository{{alias.ext}}';
 {{/unless}}
 import type { Database } from '{{alias.platform}}/database/database{{alias.ext}}';
 import { OrganisationMapper } from '{{alias.context}}/infrastructure/persistence/organisation.mapper{{alias.ext}}';

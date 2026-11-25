@@ -9,15 +9,11 @@ import type { Organisation } from '{{alias.context}}/domain/aggregates/organisat
 import { OrganisationRepository } from '{{alias.context}}/domain/repositories/organisation.repository{{alias.ext}}';
 {{/if}}
 {{#unless style.declared}}
-import type {
-  OrganisationRepository,
-} from '{{alias.context}}/domain/repositories/organisation.repository{{alias.ext}}';
+import type { OrganisationRepository } from '{{alias.context}}/domain/repositories/organisation.repository{{alias.ext}}';
 {{/unless}}
 import { {{context.constant}}_SCHEMA } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
 import { OrganisationMapper } from '{{alias.context}}/infrastructure/persistence/organisation.mapper{{alias.ext}}';
-import type {
-  OrganisationRow,
-} from '{{alias.context}}/infrastructure/persistence/organisation-row.schema{{alias.ext}}';
+import type { OrganisationRow } from '{{alias.context}}/infrastructure/persistence/organisation-row.schema{{alias.ext}}';
 
 const TABLE = { schema: {{context.constant}}_SCHEMA, table: 'organisations' };
 
