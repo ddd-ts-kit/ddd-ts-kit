@@ -10,6 +10,7 @@ import type {
 import { ATTEMPT_HEADER } from './codec/headers';
 import { republication } from './codec/republication';
 import { BrokerLink } from './connection/broker-link';
+import { within } from './connection/within';
 import { Consumption } from './consumption/consumption';
 import { ConsumerNameRequiredError } from './errors/consumer-name-required-error';
 import { MESSAGING_SYSTEM } from './messaging-system';
@@ -19,7 +20,7 @@ import type { Settings } from './options/settings';
 import { settingsOf } from './options/settings-of';
 import { Publications } from './publication/publications';
 import { conceal } from './secrecy/conceal';
-import { sendConfirmed } from './publication/send-confirmed';
+import { Confirmations } from './publication/confirmations';
 import type { ConsumerBinding } from './topology/consumer-binding';
 import { declareTopology } from './topology/declare-topology';
 import { queueNamesOf } from './topology/queue-names-of';
@@ -143,11 +144,13 @@ export class RabbitMqEventBus implements EventBus {
 
   /**
    * Moves up to `limit` messages from the dead queue of a consumer back to its work queue,
-   * with a fresh attempt budget. Returns how many were moved.
+   * with a fresh attempt budget. Returns how many were moved. A copy the broker does not
+   * confirm within `publishTimeoutMs` rejects the replay, and its message stays dead.
    */
   async replayDead(binding: ConsumerBinding, limit = 100): Promise<number> {
     const { work, dead } = queueNamesOf(binding);
     const channel = await (await this.link.opened()).createConfirmChannel();
+    const confirmations = new Confirmations(this.settings.publishTimeoutMs);
 
     channel.on('error', () => undefined);
     let replayed = 0;
@@ -160,11 +163,15 @@ export class RabbitMqEventBus implements EventBus {
           break;
         }
 
-        await sendConfirmed(channel, work, republication(message, { [ATTEMPT_HEADER]: 1 }));
+        await confirmations.ofCopy(channel, work, republication(message, { [ATTEMPT_HEADER]: 1 }));
         channel.ack(message);
       }
     } finally {
-      await channel.close().catch(() => undefined);
+      // Closing hands back a message whose copy was not confirmed: it stays dead.
+      await within(
+        this.settings.publishTimeoutMs,
+        channel.close().catch(() => undefined),
+      );
     }
 
     return replayed;

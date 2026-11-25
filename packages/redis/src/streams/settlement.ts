@@ -32,6 +32,11 @@ export interface SettlementSettings {
   readonly onDelivery: (delivery: RedisStreamsDelivery) => void;
 }
 
+/** The handlers of an event type; nothing for a type the consumer never subscribed to. */
+export interface HandlersByType {
+  handlersOf(type: string): ReadonlySet<IntegrationEventCallback> | undefined;
+}
+
 export const POISON_ENTRY = 'POISON_ENTRY';
 
 /** The code of an entry that used its deliveries up without a handler answering: its consumers crashed on it. */
@@ -40,24 +45,26 @@ export const ATTEMPTS_EXHAUSTED = 'ATTEMPTS_EXHAUSTED';
 /**
  * What becomes of a delivered entry: acknowledged once every handler resolved; left pending
  * after a failure, to be claimed again after the delay; copied to the dead stream when its
- * attempts are spent or when it does not hold an envelope.
+ * attempts are spent or when it does not hold an envelope; kept for the next handler, counted
+ * as no attempt, when every handler of its type left.
  */
 export class Settlement {
   constructor(
     private readonly client: Redis,
     private readonly settings: SettlementSettings,
+    private readonly subscriptions: HandlersByType,
   ) {}
 
   /** Never rejects: an entry that could not be settled stays pending and is delivered again. */
-  async settle(delivery: Delivery, handlers: ReadonlySet<IntegrationEventCallback>): Promise<void> {
+  async settle(delivery: Delivery): Promise<void> {
     try {
-      await this.decide(delivery, handlers);
+      await this.decide(delivery);
     } catch {
       return;
     }
   }
 
-  private async decide(delivery: Delivery, handlers: ReadonlySet<IntegrationEventCallback>): Promise<void> {
+  private async decide(delivery: Delivery): Promise<void> {
     if (this.isForAnotherConsumer(delivery.entry)) {
       await this.acknowledge(delivery);
 
@@ -68,9 +75,20 @@ export class Settlement {
 
     if (event === undefined) {
       await this.buryPoison(delivery);
+
+      return;
+    }
+
+    const handlers = this.subscriptions.handlersOf(event.type);
+
+    if (handlers === undefined) {
+      // A type this consumer never subscribed to, on a stream that carries several.
+      await this.acknowledge(delivery);
     } else if (delivery.attempt > this.settings.retry.maxAttempts) {
       await this.fail(delivery, event, ATTEMPTS_EXHAUSTED);
-    } else if (handlers.size > 0) {
+    } else if (handlers.size === 0) {
+      await this.leave(delivery);
+    } else {
       await this.handle(delivery, event, handlers);
     }
   }
@@ -162,6 +180,17 @@ export class Settlement {
       entry,
       annotations,
     });
+  }
+
+  /**
+   * Every handler of the type left: the entry waits for the next one. It stays pending and
+   * comes back after the retry delay, as after a failure, with this delivery taken off its
+   * counter (`RETRYCOUNT`): finding nobody is no attempt, and never sends an entry to the dead stream.
+   */
+  private async leave({ stream, entry, attempt }: Delivery): Promise<void> {
+    const { consumer, instance } = this.settings;
+
+    await this.client.xclaim(stream, consumer, instance, 0, entry.id, 'RETRYCOUNT', attempt - 1, 'JUSTID');
   }
 
   /**

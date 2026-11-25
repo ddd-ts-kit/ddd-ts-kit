@@ -64,8 +64,9 @@ interface Delivery {
 /**
  * The consuming side: one durable pull consumer per consumer and event type, an explicit
  * acknowledgement once every handler resolved, and for a failure a refusal with a delay,
- * then a copy to the dead-letter stream when the attempts are spent. A message is never
- * delivered again at once: no hot loop.
+ * then a copy to the dead-letter stream when the attempts are spent. A message whose handlers
+ * all left is refused with the same delay, for the next one. A message is never delivered
+ * again at once: no hot loop.
  */
 export class Consumption {
   private readonly subscriptions = new Map<string, DurableSubscription>();
@@ -181,7 +182,7 @@ export class Consumption {
     const messages = await consumer.consume({ max_messages: prefetch });
 
     // The subscription left while its consumer was being reached: nothing would handle a message,
-    // and each one would come back at once. Not awaited: `close` waits for a reader of the messages.
+    // and each one would wait a retry delay. Not awaited: `close` waits for a reader of the messages.
     if (this.subscriptions.get(subscription.names.durable) !== subscription) {
       void messages.close().catch(ignore);
 
@@ -232,7 +233,8 @@ export class Consumption {
     if (event === undefined) {
       await this.buryPoison(delivery);
     } else if (subscription.handlers.size === 0) {
-      message.nak();
+      // Every handler left while the message was on its way: it waits for the next one.
+      message.nak(this.settings.retry.delayMs);
     } else {
       await this.handle(delivery, event);
     }

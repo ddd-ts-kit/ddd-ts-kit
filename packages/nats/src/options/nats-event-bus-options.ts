@@ -30,7 +30,7 @@ export interface NatsEventBusOptions {
   readonly duplicateWindowMs?: number;
   /** Time a handler has before the server delivers its message to someone else. Default 30000. */
   readonly ackWaitMs?: number;
-  /** Time the stream has to acknowledge a publication before `publish` rejects. Default 5000. */
+  /** Time the stream has to acknowledge a publication before `publish` rejects. Default 30000. */
   readonly publishTimeoutMs?: number;
   readonly retry?: RetryOptions;
   readonly reconnect?: ReconnectOptions;

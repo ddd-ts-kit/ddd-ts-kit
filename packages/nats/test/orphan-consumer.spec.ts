@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Broker } from './support/broker';
 import { BROKERS } from './support/brokers';
+import { RETRY_DELAY_MS } from './support/environment';
 import { PLACED, anEvent } from './support/events';
 import { gate } from './support/gate';
 import { recorder } from './support/recorder';
@@ -34,7 +35,7 @@ describe.each(BROKERS)('NatsEventBus: a subscription that leaves, %s', { timeout
     await eventually(() => billing.ids().includes('evt-1'));
   });
 
-  it('hands back a message it had already received when its last handler leaves: the next handler gets it', async () => {
+  it('hands back a message it had already received when its last handler leaves: the next handler gets it, after the retry delay', async () => {
     const bus = broker.bus({ prefetch: 2 });
     const finish = gate();
     const billing = recorder();
@@ -53,11 +54,15 @@ describe.each(BROKERS)('NatsEventBus: a subscription that leaves, %s', { timeout
     await bus.assertTopology();
 
     first.unsubscribe();
+    const left = Date.now();
+
     finish.open();
     bus.subscribe(PLACED, billing.handler);
 
     await eventually(() => billing.ids().includes('evt-3'));
 
     expect(billing.ids()).toEqual(['evt-3']);
+    // Not at once: the message waited the retry delay, as one whose handler failed.
+    expect(Date.now() - left).toBeGreaterThanOrEqual(RETRY_DELAY_MS / 2);
   });
 });

@@ -155,6 +155,78 @@ export interface PrismaProcessStoreOptions<Tx> {
   );
 });
 
+test('an option two members name alike and give other words fails, and names the words of each', () => {
+  const problems = problemsOf(
+    family(),
+    startingAlike(["'earliest' | 'latest'", "'earliest'"], ["'new' | 'beginning'", "'beginning'"]),
+  );
+
+  assert.deepEqual(problems, [
+    "ORM, process store: `startFrom` takes 'earliest' | 'latest' on knex and takes 'beginning' | 'new' on prisma. Give it one meaning, or say in families.mjs (wordsApart) why a member differs.",
+    "ORM, process store: `startFrom` defaults to 'earliest' on knex and defaults to 'beginning' on prisma. Give it one meaning, or say in families.mjs (defaultsApart) why a member differs.",
+  ]);
+});
+
+test('an option with the same words and another default fails, whatever the order the words are written in', () => {
+  const problems = problemsOf(
+    family(),
+    startingAlike(["'beginning' | 'end'", "'beginning'"], ["'end' | 'beginning'", "'end'"]),
+  );
+
+  assert.deepEqual(problems, [
+    "ORM, process store: `startFrom` defaults to 'beginning' on knex and defaults to 'end' on prisma. Give it one meaning, or say in families.mjs (defaultsApart) why a member differs.",
+  ]);
+});
+
+test('other words or another default written with a reason pass, and fail once the members agree', () => {
+  const apart = { wordsApart: { startFrom: { prisma: REASON } }, defaultsApart: { startFrom: { prisma: REASON } } };
+  const differing = startingAlike(["'beginning' | 'end'", "'beginning'"], ["'new' | 'beginning'", "'new'"]);
+  const alike = startingAlike(["'beginning' | 'end'", "'beginning'"], ["'beginning' | 'end'", "'beginning'"]);
+
+  assert.deepEqual(problemsOf(family(apart), differing), []);
+  assert.deepEqual(problemsOf(family(), alike), []);
+
+  assert.deepEqual(problemsOf(family(apart), alike), [
+    "ORM, process store: `startFrom` takes 'beginning' | 'end' on prisma as on the others: remove its exception from families.mjs (wordsApart).",
+    "ORM, process store: `startFrom` defaults to 'beginning' on prisma as on the others: remove its exception from families.mjs (defaultsApart).",
+  ]);
+
+  assert.deepEqual(problemsOf(family({ defaultsApart: { startFrom: { prisma: 'later' } } }), differing).slice(0, 1), [
+    'ORM, process store: the reason given for prisma says too little ("later"): say what the member does instead, or fill the gap.',
+  ]);
+});
+
+test('an option of the place, a type that is no list of words and a default that is no literal are not compared', () => {
+  const knex = `
+export interface KnexProcessStoreOptions extends Pick<Started, 'startFrom'> {
+  readonly schema?: 'public' | 'tenant';
+  readonly clock?: Clock;
+}
+export interface Started {
+  readonly startFrom?: 'beginning' | 'end';
+}
+const schema = options.schema ?? 'public';
+const clock = options.clock ?? new SystemClock();`;
+  const prisma = `
+export interface PrismaProcessStoreOptions {
+  readonly schema?: 'main' | 'other';
+  readonly clock?: OtherClock;
+  readonly startFrom?: 'beginning' | 'end';
+}
+const schema = options.schema ?? 'main';
+const clock = options.clock ?? systemClock();`;
+
+  assert.deepEqual(problemsOf(family(), source({ knex, prisma, knexSpec: RUN, prismaSpec: RUN })), []);
+
+  assert.equal(
+    problemsOf(
+      family(),
+      source({ knex, prisma: prisma.replace("'beginning' | 'end'", "'new' | 'end'"), knexSpec: RUN, prismaSpec: RUN }),
+    ).length,
+    1,
+  );
+});
+
 test('an options interface that is not in the package is reported', () => {
   const problems = problemsOf(family(), source({ knex: '', prisma: PRISMA, knexSpec: RUN, prismaSpec: RUN }));
 
@@ -189,4 +261,20 @@ function family(port = {}) {
       ],
     },
   ];
+}
+
+/** Two ORM whose process stores take `startFrom`, each with its `[words, default]`. */
+function startingAlike(knex, prisma) {
+  return source({ knex: starting('Knex', knex), prisma: starting('Prisma', prisma), knexSpec: RUN, prismaSpec: RUN });
+}
+
+/** A process store that takes `startFrom` with these words and gives it this default. */
+function starting(orm, [words, fallback]) {
+  return `
+export interface ${orm}ProcessStoreOptions {
+  readonly startFrom?: ${words};
+  readonly leaseMs?: number;
+}
+const startFrom = options.startFrom ?? ${fallback};
+const leaseMs = options.leaseMs ?? 30_000;`;
 }
