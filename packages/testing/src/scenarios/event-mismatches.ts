@@ -17,5 +17,8 @@ export function eventMismatches(event: DomainEvent, matcher: EventMatcher, where
       : [`${where}: expected an instance of ${matcher.name}, recorded ${describeEvent(event)}`];
   }
 
-  return subsetDifferences(event, namingAProperty(matcher, 'event', 'the name or the class'), where);
+  return subsetDifferences(event, namingAProperty(matcher, 'event', 'the name or the class'), {
+    path: where,
+    verb: 'recorded',
+  });
 }

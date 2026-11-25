@@ -1,7 +1,7 @@
-import { AssertionError } from 'node:assert';
 import { codeOf } from '../scenarios/code-of';
 import { describeError } from '../scenarios/describe-error';
 import { isPromiseLike } from '../scenarios/is-promise-like';
+import { mismatch } from '../scenarios/mismatch';
 import type { ExpectedFacts } from './expected-facts';
 import { factMismatches } from './fact-mismatches';
 
@@ -78,25 +78,32 @@ function outcomeOf(value: unknown, { ran = false } = {}): Attempt {
 
 function refusalOf(attempt: Attempt, code: string, facts: ExpectedFacts): unknown {
   if (!attempt.refused) {
-    throw failure(`Expected a refusal with code ${code}, but nothing was refused.`, undefined, code);
+    throw mismatch(`Expected a refusal with code ${code}, but nothing was refused.`, { ...REFUSAL, expected: code });
   }
 
   const { error } = attempt;
   const actual = codeOf(error);
 
   if (actual !== code) {
-    throw failure(`Expected a refusal with code ${code}, but got ${describeError(error)}.`, actual, code);
+    throw mismatch(`Expected a refusal with code ${code}, but got ${describeError(error)}.`, {
+      ...REFUSAL,
+      expected: code,
+      actual,
+    });
   }
 
-  const mismatches = factMismatches(error, facts);
+  const differences = factMismatches(error, facts);
 
-  if (mismatches.length > 0) {
-    throw failure([`The refusal ${code} does not carry the expected facts.`, ...mismatches].join('\n  '), error, facts);
+  if (differences.length > 0) {
+    throw mismatch(`The refusal ${code} does not carry the expected facts.`, {
+      ...REFUSAL,
+      expected: facts,
+      actual: error,
+      sections: { Difference: differences },
+    });
   }
 
   return error;
 }
 
-function failure(message: string, actual: unknown, expected: unknown): AssertionError {
-  return new AssertionError({ message, actual, expected, operator: 'expectRefusal' });
-}
+const REFUSAL = { operator: 'expectRefusal' };

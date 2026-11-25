@@ -1,16 +1,17 @@
-import { AssertionError } from 'node:assert';
 import { isDeepStrictEqual } from 'node:util';
 import type { ExpectedFacts } from '../refusals/expected-facts';
 import { factMismatches } from '../refusals/fact-mismatches';
 import { codeOf } from './code-of';
 import { describeError } from './describe-error';
 import { describeEvent } from './describe-event';
+import { describeMatcher } from './describe-matcher';
 import type { ErrorClass } from './error-class';
 import type { EventMatcher } from './event-matcher';
 import { eventMismatches } from './event-mismatches';
+import { mismatch } from './mismatch';
+import { orderedDifferences } from './ordered-differences';
 import type { Outcome } from './outcome';
 import type { Recorded } from './recorded';
-import { show } from './show';
 
 /** The assertions about an action that already ran: each one throws at once. */
 export class ImmediateOutcome<A> implements Outcome<A> {
@@ -23,28 +24,18 @@ export class ImmediateOutcome<A> implements Outcome<A> {
   thenEvents(expected: readonly EventMatcher[]): this {
     this.assertNoUnseenError('events');
     const { events } = this.recorded;
-
-    const differences = expected.flatMap((matcher, index) => {
-      const event = events[index];
-
-      return event === undefined ? [] : eventMismatches(event, matcher, `event ${index + 1}`);
-    });
-
-    if (events.length !== expected.length) {
-      differences.unshift(`expected ${count(expected.length)}, recorded ${count(events.length)}`);
-    }
+    const differences = orderedDifferences(events, expected, EVENTS);
 
     if (differences.length > 0) {
-      throw new AssertionError({
-        message: [
-          'The recorded events are not the expected ones.',
-          ...section('Expected', expected.map(describeMatcher)),
-          ...section('Recorded', events.map(describeEvent)),
-          ...section('Difference', differences),
-        ].join('\n'),
-        actual: events.map(describeEvent),
-        expected: expected.map(describeMatcher),
+      throw mismatch('The recorded events are not the expected ones.', {
         operator: 'thenEvents',
+        expected: expected.map(describeMatcher),
+        actual: events.map(describeEvent),
+        sections: {
+          Expected: expected.map(describeMatcher),
+          Recorded: events.map(describeEvent),
+          Difference: differences,
+        },
       });
     }
 
@@ -56,15 +47,11 @@ export class ImmediateOutcome<A> implements Outcome<A> {
     const actual = this.recorded.events.map((event) => event.name);
 
     if (!isDeepStrictEqual(actual, [...expected])) {
-      throw new AssertionError({
-        message: [
-          'The recorded event names are not the expected ones.',
-          ...section('Expected', [...expected]),
-          ...section('Recorded', actual),
-        ].join('\n'),
-        actual,
-        expected,
+      throw mismatch('The recorded event names are not the expected ones.', {
         operator: 'thenEventNames',
+        expected,
+        actual,
+        sections: { Expected: expected, Recorded: actual },
       });
     }
 
@@ -73,14 +60,14 @@ export class ImmediateOutcome<A> implements Outcome<A> {
 
   thenNoEvent(): this {
     this.assertNoUnseenError('no event');
-    const { events } = this.recorded;
+    const recorded = this.recorded.events.map(describeEvent);
 
-    if (events.length > 0) {
-      throw new AssertionError({
-        message: ['Expected no event.', ...section('Recorded', events.map(describeEvent))].join('\n'),
-        actual: events.map(describeEvent),
-        expected: [],
+    if (recorded.length > 0) {
+      throw mismatch('Expected no event.', {
         operator: 'thenNoEvent',
+        expected: [],
+        actual: recorded,
+        sections: { Recorded: recorded },
       });
     }
 
@@ -100,11 +87,10 @@ export class ImmediateOutcome<A> implements Outcome<A> {
     const wrongCode = expectedCode !== undefined && codeOf(error) !== expectedCode;
 
     if (wrongType || wrongCode) {
-      throw new AssertionError({
-        message: `Expected the action to fail with ${expected}, but it failed with ${describeError(error)}.`,
-        actual: describeError(error),
-        expected,
+      throw mismatch(`Expected the action to fail with ${expected}, but it failed with ${describeError(error)}.`, {
         operator: 'thenError',
+        expected,
+        actual: describeError(error),
       });
     }
 
@@ -126,14 +112,11 @@ export class ImmediateOutcome<A> implements Outcome<A> {
     const { thrown, events } = this.recorded;
 
     if (thrown === undefined) {
-      throw new AssertionError({
-        message: [
-          `Expected the action to fail with ${expected}, but it succeeded.`,
-          ...section('Recorded', events.map(describeEvent)),
-        ].join('\n'),
-        actual: undefined,
-        expected,
+      throw mismatch(`Expected the action to fail with ${expected}, but it succeeded.`, {
         operator: 'thenError',
+        expected,
+        actual: undefined,
+        sections: { Recorded: events.map(describeEvent) },
       });
     }
 
@@ -144,45 +127,30 @@ export class ImmediateOutcome<A> implements Outcome<A> {
     const { thrown } = this.recorded;
 
     if (thrown !== undefined && !this.errorAsserted) {
-      throw new AssertionError({
-        message: `Expected ${expectation}, but the action failed with ${describeError(thrown.error)}.`,
-        actual: thrown.error,
-        expected: undefined,
+      throw mismatch(`Expected ${expectation}, but the action failed with ${describeError(thrown.error)}.`, {
         operator: 'when',
+        expected: undefined,
+        actual: thrown.error,
       });
     }
   }
 }
 
-function count(n: number): string {
-  return `${n} event${n === 1 ? '' : 's'}`;
-}
-
-function section(title: string, lines: readonly string[]): string[] {
-  return [`${title}:`, ...(lines.length === 0 ? ['  (none)'] : lines.map((line, index) => `  ${index + 1}. ${line}`))];
-}
-
-function describeMatcher(matcher: EventMatcher): string {
-  if (typeof matcher === 'string') {
-    return matcher;
-  }
-
-  return typeof matcher === 'function' ? `instance of ${matcher.name}` : show(matcher);
-}
+const EVENTS = { noun: 'event', verb: 'recorded', mismatches: eventMismatches };
 
 function codeIn(detail: string | ExpectedFacts | undefined): string | undefined {
   return typeof detail === 'string' ? detail : undefined;
 }
 
 function assertFacts(error: unknown, expected: ExpectedFacts): void {
-  const mismatches = factMismatches(error, expected);
+  const differences = factMismatches(error, expected);
 
-  if (mismatches.length > 0) {
-    throw new AssertionError({
-      message: ['The error does not carry the expected facts.', ...section('Difference', mismatches)].join('\n'),
-      actual: error,
-      expected,
+  if (differences.length > 0) {
+    throw mismatch('The error does not carry the expected facts.', {
       operator: 'thenError',
+      expected,
+      actual: error,
+      sections: { Difference: differences },
     });
   }
 }

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:7c2836bd4ae71a3a -->
+<!-- translation-of: README.md sha256:a310737df32e3cda -->
 
 # @ddd-ts-kit/testing
 
@@ -407,8 +407,10 @@ Une étape d'un gestionnaire de processus est une fonction de son état et de ce
 `givenProcess(state)` (ou `undefined` pour une instance qui n'existe pas) l'exécute et vérifie sa
 décision sans stockage, sans file d'attente ni bus. `thenIgnored()`, `thenState(state)`,
 `thenCommands([...])` (chacune par sa classe ou par les propriétés qui comptent), `thenTimeouts([...])`,
-`thenCancelled([...])` et `thenEnded()` s'enchaînent ; un échec est une `AssertionError` qui dit ce qui
-diffère.
+`thenCancelled([...])` et `thenEnded()` s'enchaînent ; un échec est une `AssertionError` qui se lit comme
+celle d'un scénario : une phrase, puis les commandes ou les échéances attendues et décidées côte à côte,
+et ce qui diffère, les positions comptées à partir de 1
+(`command 1.invoiceId: expected 'invoice-2', decided 'invoice-1'`).
 
 ## Refus
 

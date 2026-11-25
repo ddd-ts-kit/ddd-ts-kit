@@ -403,7 +403,9 @@ A step of a process manager is a function of its state and of what happened: `gi
 (or `undefined` for an instance that does not exist) runs it and asserts its decision without a
 store, a queue or a bus. `thenIgnored()`, `thenState(state)`, `thenCommands([...])` (each by its
 class or by the properties that matter), `thenTimeouts([...])`, `thenCancelled([...])` and
-`thenEnded()` chain; a failure is an `AssertionError` that says what differs.
+`thenEnded()` chain; a failure is an `AssertionError` that reads as the one of a scenario does: a
+sentence, then the commands or the timeouts expected and decided side by side, and where they
+differ, positions counted from 1 (`command 1.invoiceId: expected 'invoice-2', decided 'invoice-1'`).
 
 ## Refusals
 
