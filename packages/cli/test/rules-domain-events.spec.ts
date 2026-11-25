@@ -108,6 +108,11 @@ describe('domain-events/dispatched-on-save, what it does not judge and what it s
       '// takeRecordedEvents(invoice) used to be here, with a DomainEventDispatcher',
       "const hint = 'takeRecordedEvents(aggregate)';",
       'function takeRecordedEvents(): void {}',
+      'class Outbox {',
+      '  takeRecordedEvents(batch: number): readonly string[] {',
+      '    return [];',
+      '  }',
+      '}',
       'outbox.takeRecordedEvents();',
     );
 

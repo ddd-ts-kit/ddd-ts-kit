@@ -3,7 +3,8 @@ import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 
 const DISPATCHER = 'DomainEventDispatcher';
-const PULL = /(?<![\w$.])(?<!function\s+)takeRecordedEvents\s*\(/g;
+// A call of the function of the kernel: not a method of another object, nor a function or a method declared under that name.
+const PULL = /(?<![\w$.])(?<!function\s+)takeRecordedEvents\s*\((?![^()]*\)\s*(?::[^;{=]*)?\{)/g;
 const IMPORTED = /(?<![\w$.])import\b[\w\s{},*$]*?(?<![\w$])DomainEventDispatcher(?![\w$])/g;
 const TYPED = /:\s*(?:[\w$]+\s*\.\s*)*DomainEventDispatcher(?![\w$])/;
 
