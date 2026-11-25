@@ -61,7 +61,7 @@ export function trpcRouter(routes: readonly Route[], options: ExecuteOptions = {
   );
 }
 
-/** tRPC writes the answer: no representation is negotiated, and a list read as it comes stays the body, closed when refused. */
+/** tRPC writes the answer: no representation is negotiated, and a list read as it comes is written as JSON, closed when refused. */
 function withoutRepresentations({ representations, ...options }: ExecuteOptions): ExecuteOptions {
   return options;
 }

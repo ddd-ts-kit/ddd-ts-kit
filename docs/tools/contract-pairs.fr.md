@@ -1,5 +1,5 @@
 [English](contract-pairs.md) · **Français**
-<!-- translation-of: contract-pairs.md sha256:77514e2af5637ca7 -->
+<!-- translation-of: contract-pairs.md sha256:0b8c2d08077d719f -->
 
 # Paires de contrat : un framework HTTP et une bibliothèque de validation
 
@@ -79,8 +79,7 @@ export async function listen(framework: 'express' | 'fastify' | 'hono'): Promise
   if (framework === 'express') {
     const app = express();
 
-    app.use(express.json()); // l'adaptateur ne lit pas les corps
-    mountExpress(app, routes, options);
+    mountExpress(app, routes, options); // lit lui-même le corps de chaque route
     app.listen(3000);
   } else if (framework === 'fastify') {
     const app = Fastify();
@@ -238,7 +237,7 @@ laquelle les exécutions s'accordent.
 
 ## Limites de chaque paire
 
-- **Express + zod.** `express.json()` doit être installé ; un corps qu'Express refuse (JSON mal
+- **Express + zod.** L'adaptateur lit lui-même les corps ; un corps qu'il refuse (JSON mal
   formé) reçoit un *problem* seulement avec `problemErrorHandler` de `@ddd-ts-kit/http/express`
   monté en dernier, comme le fait le serveur généré ; sans lui, la réponse du gestionnaire
   d'erreurs propre à Express. zod

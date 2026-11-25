@@ -208,7 +208,10 @@ default: an undeclared property is an issue. Override with
 `classSchema(Dto, { validator: { forbidNonWhitelisted: false }, transform: { ... } })`.
 Nested errors are flattened (`items.0.quantity`), one issue per failed constraint, the
 constraint name as `code`. The JSON Schema is draft 2020-12 and carries the nested classes
-reachable from the class under `$defs`.
+reachable from the class under `$defs`. Each class is described from its own constraints, as it
+is validated: two classes of one name, one per bounded context, never share a field. One class
+that nests two classes of one name is refused (`DeclarationError`) when its schema is asked, a
+contract naming a schema after its class.
 
 Requires `experimentalDecorators` in the project's `tsconfig.json`.
 

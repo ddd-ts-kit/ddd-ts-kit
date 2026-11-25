@@ -107,4 +107,41 @@ export const PURITY_FIXTURES: readonly Fixture[] = [
     expect: { file: AGGREGATE },
     files: project(aggregate('const { random } = Math;\nexport class Invoice {\n  readonly draw = random();\n}\n')),
   },
+  {
+    ruleId: 'purity/no-environment',
+    name: 'a port method, a parameter and a property named like a global',
+    expect: 'pass',
+    files: project(
+      aggregate(
+        'export abstract class Invoice {\n  abstract fetch(id: string): Promise<string>;\n  describe(console: { title: string }, process: { env: string }): string {\n    return console.title + process.env;\n  }\n}\n',
+      ),
+    ),
+  },
+  {
+    ruleId: 'purity/no-environment',
+    name: 'fetch called through the global object',
+    expect: { file: HANDLER },
+    files: project(
+      handler("export class IssueInvoiceHandler {\n  readonly page = globalThis.fetch('https://example.org');\n}\n"),
+    ),
+  },
+  {
+    ruleId: 'purity/no-system-clock',
+    name: 'Date called as a function and read through the global object',
+    expect: { file: AGGREGATE },
+    files: project(
+      aggregate('export class Invoice {\n  readonly stamp = Date();\n  readonly at = globalThis.Date.now();\n}\n'),
+    ),
+  },
+  {
+    ruleId: 'purity/no-ambient-randomness',
+    name: 'randomBytes imported by name from node:crypto',
+    expect: { file: HANDLER },
+    also: ['layer/application-inward'],
+    files: project(
+      handler(
+        "import { randomBytes } from 'node:crypto';\nexport class IssueInvoiceHandler {\n  readonly salt = randomBytes(8);\n}\n",
+      ),
+    ),
+  },
 ];
