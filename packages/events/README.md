@@ -359,7 +359,7 @@ not fail its neighbours. With the defaults (`baseMs: 1000`, `factor: 2`, `maxMs:
 The delay is `min(maxMs, baseMs * factor ** (attempts - 1))`; pass `backoff: { baseMs, factor, maxMs }`
 to change it. `code` is the `code` of the error when it is shaped like an identifier, else its
 class name: never its message, which may quote the payload, so `onFailure` can be logged as it
-is.
+is. What `onFailure` throws is dropped: a hook that fails never aborts a tick nor stops the relay.
 
 **Tracing across the outbox.** The envelope carries `traceparent`, and every outbox store
 persists and restores it exactly (the contract suite checks it). With
@@ -415,20 +415,20 @@ key is still pending or failed. The price is head-of-line blocking: one event th
 published holds back every later event of its key (and only of its key) until it goes out or
 is dead. Events for which `keyOf` gives `undefined` are not ordered.
 
-![Five records in the outbox, in the order they were appended: A1, A2, B1, A3, B2, where A is the key order-1 and B the key order-2, and the publication of A1 fails. With the default ordering, A2, B1, A3 and B2 are published in the same tick and A1 is retried later, so A2 and A3 overtake A1. With ordering per-key, B1 and B2 are published, A2 and A3 are held with the code OUTBOX_HELD_FOR_ORDER, and once A1 goes out on its retry, A2 then A3 follow in order](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/events-package-per-key-ordering.svg)
+![Five records in the outbox, in the order they were appended: A1, A2, B1, A3, B2, where A is the key order-1 and B the key order-2, and the publication of A1 fails. With the default ordering, A2, B1, A3 and B2 are published in the same tick and A1 is retried later, so A2 and A3 overtake A1. With ordering per-key, B1 and B2 are published, A2 and A3 are held, postponed with A1, and once A1 goes out on its retry, A2 then A3 follow in order](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/events-package-per-key-ordering.svg)
 
 What it relies on, and what it does not give:
 
 - **Run a single relay.** The memory of which record blocks which key lives in the relay, not
-  in the store: the `OutboxStore` port is unchanged, and `claimBatch` alone cannot tell that an
+  in the store: the `OutboxStore` port keeps no key, and `claimBatch` alone cannot tell that an
   earlier record is waiting for its retry. Two relays side by side publish concurrently.
 - **A restart forgets it.** If the process restarts while a record is in backoff or leased,
   a later record of the same key that becomes due first is published first, once. Strict
   ordering across restarts needs the key stored with the record and a claim that skips keys
   with an earlier unpublished row: a change of the port and of the table, not done here.
-- A record held back is rescheduled with the head of its key and shows in `stats().failed`
-  with the code `OUTBOX_HELD_FOR_ORDER`; the claims it spends waiting are not counted as
-  delivery attempts by this relay.
+- A record held back is postponed with the head of its key (`store.postpone(id, until)`): it
+  waits, it did not fail. The claims it spends waiting are not attempts, and it does not show in
+  `stats().failed` unless one of its own publications failed before.
 - A **dead** record stops blocking its key (`onFailure` reports it with `dead: true`). Set
   `maxAttempts: Infinity` if a key must rather stay blocked than skip an event.
 - The broker and the consumer must keep the order too: one partition or one queue with a
@@ -701,7 +701,7 @@ const relay = new OutboxRelay({ store, publisher: broker, clock, metrics });
 | Signal | Meaning | Reaction |
 |---|---|---|
 | `dead > 0` | records gave up after `maxAttempts` | alert; fix the cause, then `retryDead` |
-| `failed > 0` for long | the provider refuses or is down; under `per-key`, held records count here too (`OUTBOX_HELD_FOR_ORDER`) | look at the codes given to `onFailure` |
+| `failed > 0` for long | the provider refuses or is down; a record held for order behind a failed one does not count here | look at the codes given to `onFailure` |
 | `pending` growing | the relay is slower than the producers, or stopped | check that it runs; raise `batchSize` |
 | age of the oldest pending record | the real delivery delay | alert above your tolerance; it is one query on the table (`min(created_at) where status = 'pending'`), `stats()` does not carry it |
 | `onFailure({ kind: 'tick' })` | the store itself failed | database health |

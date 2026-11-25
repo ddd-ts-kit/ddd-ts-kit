@@ -29,6 +29,13 @@ export abstract class OutboxStore {
   /** Schedules the retry at `nextAttemptAt`, or declares the record dead when it is `null`. */
   abstract markFailed(id: string, error: { readonly code: string }, nextAttemptAt: Date | null): Promise<void>;
 
+  /**
+   * Puts a claimed record back until `until`, untried: the claim that handed it out is not counted
+   * as an attempt, and the code of its last failure stays. A record that is published, dead or
+   * was never claimed is left alone.
+   */
+  abstract postpone(id: string, until: Date): Promise<void>;
+
   /** Puts dead records back in the queue with a fresh attempt budget. Returns how many. */
   abstract retryDead(ids: readonly string[], now: Date): Promise<number>;
 

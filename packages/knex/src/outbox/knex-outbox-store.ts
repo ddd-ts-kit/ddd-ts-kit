@@ -154,6 +154,15 @@ export class KnexOutboxStore implements OutboxStore {
       );
   }
 
+  async postpone(id: string, until: Date): Promise<void> {
+    const executor = this.context.executor();
+
+    await this.rows(executor)
+      .where({ id, status: 'pending' })
+      .where('attempts', '>', 0)
+      .update({ attempts: executor.raw('?? - 1', ['attempts']), next_attempt_at: until });
+  }
+
   async retryDead(ids: readonly string[], now: Date): Promise<number> {
     if (ids.length === 0) {
       return 0;

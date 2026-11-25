@@ -1,4 +1,10 @@
-import type { Clock, IntegrationEvent, IntegrationEventPublisher, Metrics } from '@ddd-ts-kit/kernel';
+import {
+  safely,
+  type Clock,
+  type IntegrationEvent,
+  type IntegrationEventPublisher,
+  type Metrics,
+} from '@ddd-ts-kit/kernel';
 import type { OutboxRecord } from '../outbox/outbox-record';
 import type { OutboxStore } from '../outbox/outbox-store';
 import type { ClaimWindow } from './claim-window';
@@ -22,7 +28,7 @@ export interface OutboxRelayOptions {
   /** Attempts after which a record is dead. Default 8. */
   readonly maxAttempts?: number;
   readonly backoff?: OutboxBackoff;
-  /** Observability hook. It receives codes only, so it is safe to log as is. */
+  /** Observability hook. It receives codes only, so it is safe to log as is. What it throws is dropped. */
   readonly onFailure?: (failure: OutboxRelayFailure) => void;
   /**
    * Makes a started relay tick as soon as the store says something was appended, so
@@ -45,9 +51,6 @@ export interface OutboxTickResult {
   readonly published: number;
   readonly failed: number;
 }
-
-/** Code stored on a record that waits for an earlier record of its key. It is not a failure. */
-export const HELD_FOR_ORDER = 'OUTBOX_HELD_FOR_ORDER';
 
 interface Tick extends ClaimWindow {
   readonly groups: readonly RecordGroup<OutboxRecord>[];
@@ -109,7 +112,8 @@ export class OutboxRelay {
     this.batchSize = options.batchSize ?? 100;
     this.maxAttempts = options.maxAttempts ?? 8;
     this.backoff = backoffOf(options.backoff);
-    this.onFailure = options.onFailure ?? (() => undefined);
+    // A hook that throws must not abort a tick or stop the relay.
+    this.onFailure = (failure) => safely(() => options.onFailure?.(failure));
     this.wakeOn = options.wakeOn;
     this.order = new KeyOrder(orderingKeyOf(options));
     this.metrics = options.metrics;
@@ -125,20 +129,25 @@ export class OutboxRelay {
     } catch (error) {
       this.order.suspend(tick.groups, tick.settled);
 
+      // The store failed mid-batch: what did go out must not go out twice for that. A store that
+      // cannot mark it either is reported, and the tick still fails with its first error.
+      await this.markPublished(tick).catch((unmarked: unknown) => {
+        this.onFailure({ kind: 'tick', code: errorCode(unmarked) });
+      });
+
       throw error;
-    } finally {
-      // Also when the store fails mid-batch: what did go out must not go out twice for that.
-      if (tick.published.length > 0) {
-        await this.store.markPublished(tick.published, this.clock.now());
-      }
     }
 
+    await this.markPublished(tick);
     await this.measure();
 
     return { published: tick.published.length, failed: tick.failed };
   }
 
-  /** Runs a tick, waits `intervalMs` or a wake-up, runs the next: ticks never overlap. */
+  /**
+   * Runs a tick, waits `intervalMs` or a wake-up, runs the next: ticks never overlap. Started
+   * again while the last tick of a `stop()` is still in progress, it runs its first tick after it.
+   */
   start(options: { readonly intervalMs: number }): void {
     if (this.started) {
       return;
@@ -151,7 +160,7 @@ export class OutboxRelay {
       this.wake();
     });
 
-    this.loop();
+    this.wake();
   }
 
   /** Stops scheduling and resolves once the tick in progress, if any, has finished. */
@@ -163,6 +172,12 @@ export class OutboxRelay {
     clearTimeout(this.timer);
     this.timer = undefined;
     await this.running;
+  }
+
+  private async markPublished(tick: Tick): Promise<void> {
+    if (tick.published.length > 0) {
+      await this.store.markPublished(tick.published, this.clock.now());
+    }
   }
 
   private async measure(): Promise<void> {
@@ -221,7 +236,7 @@ export class OutboxRelay {
   }
 
   private async recordFailure(record: OutboxRecord, key: string | undefined, code: string): Promise<Date | undefined> {
-    const attempts = this.order.attemptsOf(record);
+    const { attempts } = record;
     const dead = attempts >= this.maxAttempts;
 
     const nextAttemptAt = dead ? null : new Date(this.clock.now().getTime() + this.delayAfter(attempts));
@@ -247,13 +262,10 @@ export class OutboxRelay {
     return Math.min(maxMs, baseMs * factor ** Math.max(0, attempts - 1));
   }
 
-  /** Reschedules a record with the head of its key; the claim it cost is not an attempt. */
+  /** Puts a record back behind the head of its key, untried: it waits, it did not fail. */
   private async holdBack(record: OutboxRecord, hold: HoldUntil): Promise<HoldUntil> {
-    this.order.countHold(record.event.id);
-
-    if (hold !== 'lease-expiry') {
-      await this.store.markFailed(record.event.id, { code: HELD_FOR_ORDER }, hold);
-    }
+    // The lease of the head, which the relay cannot know, ends no later than the one this claim gave.
+    await this.store.postpone(record.event.id, hold === 'lease-expiry' ? record.nextAttemptAt : hold);
 
     return hold;
   }

@@ -36,6 +36,10 @@ export class UnstableStore implements OutboxStore {
     return this.inner.markFailed(id, error, nextAttemptAt);
   }
 
+  postpone(id: string, until: Date): Promise<void> {
+    return this.inner.postpone(id, until);
+  }
+
   retryDead(ids: readonly string[], now: Date): Promise<number> {
     return this.inner.retryDead(ids, now);
   }
