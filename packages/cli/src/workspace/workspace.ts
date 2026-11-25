@@ -26,8 +26,9 @@ interface Pending {
 /**
  * Every generator writes through this overlay, so a command either lands as a whole
  * plan or (with --dry-run) not at all, and later steps see the files of earlier ones.
- * What it writes and notes is said in the dialect of the package manager the config
- * file of the project names: the templates are written for npm.
+ * A file is written as it is given: the dialect of the package manager is spoken where the kit
+ * renders its own text (`renderTemplate`, `spoken`), never over a file, which holds the words of
+ * the team beside it. The notes of a command are said in that dialect.
  */
 export class Workspace {
   readonly notes: string[] = [];
@@ -162,7 +163,7 @@ export class Workspace {
     }
 
     this.removed.delete(file);
-    this.pending.set(file, { content: this.spoken(this.withImports(file, content)), existed: onDisk });
+    this.pending.set(file, { content: this.withImports(file, content), existed: onDisk });
 
     return true;
   }
@@ -179,7 +180,7 @@ export class Workspace {
 
   update(asked: string, written: string): void {
     const file = this.placed(asked, true);
-    const content = this.spoken(this.withImports(file, written));
+    const content = this.withImports(file, written);
     const pending = this.pending.get(file);
 
     if (pending !== undefined) {
@@ -208,8 +209,8 @@ export class Workspace {
   }
 
   /**
-   * Writes a file as it is, no dialect of the package manager and no import rewrite applied:
-   * what a move carries from one place to another, which must lose nothing of the text.
+   * Writes a file as it is, no import rewrite applied: what a move carries from one place to
+   * another, which must lose nothing of the text.
    */
   writeAsIs(asked: string, content: string): void {
     const file = this.placed(asked, true);
@@ -275,7 +276,7 @@ export class Workspace {
     this.pruning = true;
   }
 
-  /** A text written for npm, as the package manager of the project says it: what is compared with a file is compared in its dialect. */
+  /** A text the kit wrote for npm in its code, as the package manager of the project says it: a template is rendered in it already. */
   spoken(text: string): string {
     return inDialect(text, packageManagerOf(this.read(CONFIG_FILE)));
   }
