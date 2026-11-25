@@ -1,4 +1,4 @@
-import type { UnitOfWork } from '@ddd-ts-kit/kernel';
+import { unitOfWorkOver, type UnitOfWork } from '@ddd-ts-kit/kernel';
 
 /**
  * The fake of a transactional store: what is written during `run` is staged and only applied
@@ -9,11 +9,13 @@ export class StagingUnitOfWork implements UnitOfWork {
 
   private staged: (() => Promise<void>)[] | undefined;
 
-  async run<T>(work: () => Promise<T>): Promise<T> {
-    if (this.staged !== undefined) {
-      return work();
-    }
+  private readonly unitOfWork = unitOfWorkOver((work) => this.transaction(work));
 
+  run<T>(work: () => Promise<T>): Promise<T> {
+    return this.unitOfWork.run(work);
+  }
+
+  private async transaction<T>(work: () => Promise<T>): Promise<T> {
     const staged: (() => Promise<void>)[] = [];
 
     this.staged = staged;

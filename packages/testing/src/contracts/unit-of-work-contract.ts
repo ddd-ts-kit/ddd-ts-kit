@@ -18,7 +18,7 @@ export interface UnitOfWorkContractOptions {
  * save and what they write commits or rolls back with it; a failure in a save, in the work, in
  * a handler or in the commit leaves nothing behind; `after-commit` handlers run once the rows
  * are committed, never otherwise. `run` is called directly, without a command bus: an adapter
- * that does not build on `withinUnitOfWork` fails here.
+ * that does not build on `unitOfWorkOver` fails here.
  */
 export function unitOfWorkContract(runner: ContractRunner, options: UnitOfWorkContractOptions): void {
   const create = (): Awaitable<UnitOfWorkUnderContract> => options.createUnitOfWork();

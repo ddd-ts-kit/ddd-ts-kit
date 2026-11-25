@@ -498,7 +498,7 @@ From [`packages/cli/README.md`](../../packages/cli/README.md) and
 | PostgreSQL | the default, and the only one in the automated suites of every adapter | nothing |
 | MySQL 8 | stores run by hand once (Knex, Prisma, TypeORM) | no generated persistence, no SQL audit trail; `DATETIME` without time zone under Knex; no `SKIP LOCKED` on 5.7; one schema per context becomes one database or a table prefix |
 | SQLite | Knex stores automated in the unit run, the others run by hand once | no schemas, compare-and-set claim, single writer: tests and tools, not several instances |
-| MongoDB, others | no adapter | `stack.orm: custom`: your own unit of work (its `run` built on `withinUnitOfWork` of the kernel), outbox store and processed-event store, each passing the contract suites; without multi-document transactions the outbox guarantee is not available |
+| MongoDB, others | no adapter | `stack.orm: custom`: your own unit of work (built on `unitOfWorkOver` of the kernel), outbox store and processed-event store, each passing the contract suites; without multi-document transactions the outbox guarantee is not available |
 
 `stack.database` accepts `postgres`, `mysql`, `sqlite`, `mongodb` and `none`
 ([CONFIG.md](../CONFIG.md)). `init` refuses anything but `postgres` with one of the four

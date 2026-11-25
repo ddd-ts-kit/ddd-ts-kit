@@ -32,7 +32,7 @@ export function insertInRegion(content: string, region: string, block: string): 
 
   const merged = LINEWISE.has(region)
     ? mergeImports(
-        inside.map((line) => line.trim()),
+        inside.map((line) => (line.startsWith(indent) ? line.slice(indent.length) : line.trim())),
         written,
       ).map(indented)
     : [...inside, ...added(inside, additionTo(region, written, indent), lines.slice(0, open)).map(indented)];

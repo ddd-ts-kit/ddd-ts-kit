@@ -111,13 +111,19 @@ anything is written; a link that stays inside the project is written through. `i
 `.claude/settings.json` would be the settings of every session: run it in the directory of the
 project.
 
-Each file is written whole or not at all: to `<name>.<random>.tmp` beside it, then renamed into
-place. A command stopped half way leaves complete files only (a process killed there may leave
-its `.tmp` file, which can be removed), and the same command run again writes the ones missing.
-`init` on a project already initialised, each `generate` that is not a dry run and `drizzle-generate`
-hold the lock of the project, `.ddd-ts-kit/lock`, which git ignores: a second one waits up to five seconds, then exits 2 naming the command that
-holds it and the fix, run the generators one after the other:
-``Another generator holds the lock of this project: `ddd-ts-kit generate context billing` (pid 1234, started 12 seconds ago).``
+What a command writes lands whole or not at all: each file is written to `<name>.<random>.tmp`
+beside its place, and the files are renamed into place only once every one of them is written. A
+write that fails (a full disk) leaves the project as it stood, and the same command run again
+writes it; a process killed half way may leave `.tmp` files, which can be removed, and, when it was
+killed while renaming, the files already in place, which the same command completes.
+Every command that reads the shared files of the project and writes them back holds the lock of
+the project while it runs, `.ddd-ts-kit/lock`, which git ignores: `init` on a project already
+initialised, `generate`, `docs`, `sdk`, `drizzle-generate`, `move-to-module`, `context-layout`,
+`platform-folders`, `controllers`, `value-objects`, `error-factories`, `acceptance --lock` and
+`depcruise-config --write`. None takes it to say what it would write (`--dry-run`, `--check`). A
+second one waits up to five seconds, then exits 2 naming the command that holds it and the fix,
+run them one after the other:
+``Another command holds the lock of this project: `ddd-ts-kit generate context billing` (pid 1234, started 12 seconds ago).``
 A lock taken on this machine is kept while its command runs and taken over once it has ended; one
 taken on another machine, or whose holder cannot be read, is taken over a minute after it was taken.
 
@@ -957,7 +963,7 @@ Next, in this order: the language of the context first, then the business decisi
   of the business wins. `--allow-name` overrides the three checks; `check`
   will still report what the glossary does not define. A name Windows reserves for a device (`CON`,
   `PRN`, `AUX`, `NUL`, `COM1` to `COM9`, `LPT1` to `LPT9`, whatever the case) is refused for a context and
-  for a concept, since its files cannot be checked out there; `--allow-name` lets a concept through. Only the kinds whose usage shows `--term`
+  for a concept, since its files cannot be checked out there; `--allow-name` lets a concept through. A concept named after a reserved word of the language (`Return`, `Case`, `Default`, `Package`) or after a global the generated code uses (`Date`, `Error`, `Record`, `Map`) is refused with the reason, whatever the flags, since its code would not compile: name it in two words (`ReturnOrder`, `SupportCase`, `DueDate`). Only the kinds whose usage shows `--term`
   take it (`heldToGlossary` in `generate --help --json`, a line of `generate <kind> --help`); the
   others (`port`, `adapter`, `repository`, `route`, `representation`...) name what an earlier
   command named or what the concept they serve is called, and refuse `--term`, naming the kinds
