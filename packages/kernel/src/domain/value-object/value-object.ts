@@ -1,6 +1,5 @@
 import { frozenCopy } from './frozen-copy';
 import { sameValue } from './same-value';
-import type { ValueObjectProps } from './value-object-props';
 
 /**
  * Immutable, compared by value, valid at construction. Subclass with a private constructor and
@@ -26,3 +25,23 @@ export abstract class ValueObject<Props extends ValueObjectProps> {
     return this.props;
   }
 }
+
+/**
+ * What a value object may hold, because it can be copied, frozen and compared: a primitive, a
+ * date, another value object, a list or a plain record of those. A `Map`, a `Set`, an entity or
+ * an instance of any other class does not compile: hold its content as plain data.
+ */
+export type PropValue =
+  | string
+  | number
+  | boolean
+  | bigint
+  | null
+  | undefined
+  | Date
+  | ValueObject<ValueObjectProps>
+  | readonly PropValue[]
+  | { readonly [name: string]: PropValue };
+
+/** The props of a value object: a `type` naming each value it holds. */
+export type ValueObjectProps = { readonly [name: string]: PropValue };
