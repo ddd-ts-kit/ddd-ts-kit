@@ -26,7 +26,7 @@ export interface CreateWinstonLoggerOptions extends Pick<WinstonLoggerOptions, '
    * `traceLogFields` of the tracing package or `logFieldsOf` of the current execution context.
    */
   readonly fields?: () => LogFields;
-  /** Field names hidden in addition to `CREDENTIAL_KEYS`, at the top of a line and one level below. */
+  /** Field names hidden in addition to `CREDENTIAL_KEYS`, at the top of a line and one level below, whatever their case. */
   readonly redact?: readonly string[];
   /** Where the lines go. Default: the console transport, on the standard output. */
   readonly transports?: NonNullable<winston.LoggerOptions['transports']>;

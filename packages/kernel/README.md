@@ -1272,8 +1272,9 @@ winston, whose flush ends the logger, drops it. A second call resolves too.
 threshold (default `debug`, every entry), fields read at each entry, fields added to every
 entry. Its `entries` hold what a logger writes: an error passed as a field is recorded as its
 description. `CREDENTIAL_KEYS` and `REDACTED` are the field names and the marker `StdoutLogger`
-and the pino and winston adapters redact with, and `isCredentialKey(name)` the comparison they
-share, without case; `InMemoryLogger` redacts nothing.
+and the pino and winston adapters redact with. `hiddenKeys(added)` is the one question they
+ask of a field name: whether it is one of `CREDENTIAL_KEYS` (`isCredentialKey(name)`) or of the
+names a project adds through `redact`, without case. `InMemoryLogger` redacts nothing.
 
 ### Metrics
 

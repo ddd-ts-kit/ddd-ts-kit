@@ -106,13 +106,18 @@ import { traceLogFields } from '@ddd-ts-kit/tracing';
 
 declare const scope: ExecutionScope; // the one the composition root creates
 
+const redact = [...CREDENTIAL_KEYS, 'iban'];
+
 const instance = pino({
-  mixin: correlationMixin(() => traceLogFields(scope)),
-  redact: credentialRedaction([...CREDENTIAL_KEYS, 'iban']),
+  mixin: correlationMixin(() => traceLogFields(scope), redact),
+  redact: credentialRedaction(redact),
 });
 
-export const logger = new PinoLogger(instance);
+export const logger = new PinoLogger(instance, { redact });
 ```
+
+The three take the same list: pino hides a key at the top of a line as the list writes it, and
+the adapter and the mixin hide it there in any other case.
 
 `createPinoLogger` writes `level` by its name and the message under `message`, like the
 `StdoutLogger` of the aspects package and like `@ddd-ts-kit/winston`: one dashboard reads the
@@ -226,11 +231,11 @@ one level below (`headers.authorization`, `body.password`):
 `refreshToken`, `idToken`, `client_secret`, `clientSecret`, `client-secret`, `private_key`,
 `privateKey`
 
-These names are matched whatever their case (`Authorization`, `X-Api-Key`), by
-`isCredentialKey` of the kernel. `redact: ['iban', 'ssn']` adds to the list: an added name is
-matched as it is written at the top of a line, whatever its case one level below, since pino
-names a key at the top by its path. Nothing is looked for deeper than one level, nor inside a
-list: log the part you mean, not a whole request.
+`redact: ['iban', 'ssn']` adds to the list. Every name, of the list or added, is matched
+whatever its case (`Authorization`, `X-Api-Key`, `IBAN`), at the top of a line and one level
+below, by `hiddenKeys` of the kernel: `@ddd-ts-kit/winston` and `StdoutLogger` ask the same
+function. Nothing is looked for deeper than one level, nor inside a list: log the part you
+mean, not a whole request.
 
 **An error passed as a field** (`logger.error('payment failed', { error })`: the `LogValue` of
 the port admits an `Error`) is written as `describeError` of the kernel describes it, the same

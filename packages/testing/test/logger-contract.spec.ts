@@ -22,6 +22,7 @@ loggerContract(runner, {
 
 loggerContract(runner, {
   name: 'StdoutLogger',
+  redacts: true,
   createLogger: (setup) => {
     const written: string[] = [];
 

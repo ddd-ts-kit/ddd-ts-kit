@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:db0dfa2f49b8977b -->
+<!-- translation-of: README.md sha256:ab0d16cc6b267a83 -->
 
 # @ddd-ts-kit/winston
 
@@ -178,7 +178,7 @@ ligne, d'un enfant et de `fields` de la même façon. La valeur de ces clés est
 `privateKey`
 
 `redact: ['iban', 'ssn']` complète la liste. Les noms sont comparés quelle que soit leur casse
-(`Authorization`, `X-Api-Key`), comme le fait `isCredentialKey` du noyau, et rien n'est cherché
+(`Authorization`, `X-Api-Key`, `IBAN`), par `hiddenKeys` du noyau, et rien n'est cherché
 plus profond qu'un niveau, ni dans une liste : journalisez la partie que vous visez, pas une
 requête HTTP entière. Les objets que vous passez ne sont jamais modifiés : un objet imbriqué est
 copié quand une clé doit être masquée.

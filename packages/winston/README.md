@@ -170,7 +170,7 @@ one level below (`headers.authorization`, `body.password`):
 `privateKey`
 
 `redact: ['iban', 'ssn']` adds to the list. Names are matched whatever their case
-(`Authorization`, `X-Api-Key`), as `isCredentialKey` of the kernel does, and nothing is looked
+(`Authorization`, `X-Api-Key`, `IBAN`), by `hiddenKeys` of the kernel, and nothing is looked
 for deeper than one level, nor inside a list: log the part you mean, not a whole request. The
 objects you pass are never written to: a nested one is copied when a key has to be hidden.
 

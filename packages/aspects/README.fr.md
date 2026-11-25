@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:01ace5a43b25842c -->
+<!-- translation-of: README.md sha256:e74981d7e661935d -->
 
 # @ddd-ts-kit/aspects
 
@@ -503,6 +503,9 @@ Il implémente tout le port, tenu par `loggerContract` comme les adaptateurs pin
   `[message removed]` pour le message de toute erreur qui n'est pas une `DomainError` : activez-le
   quand les journaux quittent vos mains. `logged` et `loggingMiddleware` ne sont pas concernés :
   ils ne passent jamais d'erreur, seulement `errorType` et `errorCode`.
+- **Secrets d'authentification.** La valeur de chaque clé de `CREDENTIAL_KEYS` est écrite
+  `[redacted]`, au premier niveau d'une entrée et un niveau en dessous, quelle que soit sa
+  casse. `redact: ['iban', 'ssn']` ajoute des noms à la liste, comparés de la même façon.
 - **`isLevelEnabled(level)`** répond selon le seuil (`level`, `info` par défaut). `logged` et
   `loggingMiddleware` l'interrogent d'abord : sous le seuil, aucun champ n'est construit et la
   fonction `fields` de `logged` n'est pas appelée.

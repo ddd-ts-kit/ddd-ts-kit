@@ -23,8 +23,6 @@ export interface CreatePinoLoggerOptions extends PinoLoggerOptions {
    * `traceLogFields` of the tracing package or `logFieldsOf` of the current execution context.
    */
   readonly fields?: () => LogFields;
-  /** Field names hidden in addition to `CREDENTIAL_KEYS`, at the top of a line and one level below. */
-  readonly redact?: readonly string[];
   /**
    * Buffers the lines and writes them off the hot path. Default `false`: every line is
    * written before the call returns. See "Performance" in the README for what a crash loses.
@@ -50,7 +48,10 @@ export function createPinoLogger(options: CreatePinoLoggerOptions = {}): PinoLog
     options.format === 'pretty' ? prettyTransport(options) : destinationOf(options),
   );
 
-  return new PinoLogger(instance, options.scrubMessages === undefined ? {} : { scrubMessages: options.scrubMessages });
+  return new PinoLogger(instance, {
+    ...(options.scrubMessages === undefined ? {} : { scrubMessages: options.scrubMessages }),
+    ...(options.redact === undefined ? {} : { redact: options.redact }),
+  });
 }
 
 function pinoOptions(options: CreatePinoLoggerOptions): LoggerOptions {
@@ -61,7 +62,7 @@ function pinoOptions(options: CreatePinoLoggerOptions): LoggerOptions {
     base: baseFields(options),
     formatters: { level: (label) => ({ level: label }) },
     redact: credentialRedaction([...CREDENTIAL_KEYS, ...(options.redact ?? [])]),
-    ...(options.fields === undefined ? {} : { mixin: correlationMixin(options.fields) }),
+    ...(options.fields === undefined ? {} : { mixin: correlationMixin(options.fields, options.redact) }),
   };
 }
 

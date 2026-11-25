@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CREDENTIAL_KEYS, REDACTED, SCRUBBED_MESSAGE } from '@ddd-ts-kit/kernel';
 import { pino } from 'pino';
-import { PinoLogger, createPinoLogger, credentialRedaction } from '../src';
+import { PinoLogger, correlationMixin, createPinoLogger, credentialRedaction } from '../src';
 import { MemorySink } from './support/memory-sink';
 import { OrderAlreadyPaid } from './support/order-already-paid';
 
@@ -101,18 +101,29 @@ describe('redaction', () => {
     expect(sink.records()).toMatchObject([{ iban: REDACTED, owner: { password: REDACTED } }]);
   });
 
-  it('hides a key the project adds whatever its case one level below, and as it is written at the top', () => {
+  it('hides a key added to an instance of the project whatever its case, once the adapter and the mixin know it', () => {
+    const sink = new MemorySink();
+    const redact = ['iban'];
+
+    const instance = pino(
+      { mixin: correlationMixin(() => ({ Iban: 'FR76' }), redact), redact: credentialRedaction(redact) },
+      sink.stream,
+    );
+
+    new PinoLogger(instance, { redact }).child({ iBan: 'FR76' }).info('transfer', { IBAN: 'FR76' });
+
+    expect(sink.records()).toMatchObject([{ Iban: REDACTED, iBan: REDACTED, IBAN: REDACTED }]);
+  });
+
+  it('hides a key the project adds whatever its case', () => {
     const sink = new MemorySink();
 
     createPinoLogger({ destination: sink.stream, redact: ['iban'] }).info('transfer', {
-      iban: 'FR76',
-      IBAN: 'written',
-      bank: { IBAN: 'FR76', Iban: 'FR76' },
+      IBAN: 'FR76',
+      bank: { Iban: 'FR76' },
     });
 
-    expect(sink.records()).toMatchObject([
-      { iban: REDACTED, IBAN: 'written', bank: { IBAN: REDACTED, Iban: REDACTED } },
-    ]);
+    expect(sink.records()).toMatchObject([{ IBAN: REDACTED, bank: { Iban: REDACTED } }]);
   });
 });
 

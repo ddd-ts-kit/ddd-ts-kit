@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:916ccdfd8999eb2c -->
+<!-- translation-of: README.md sha256:009547507059aa2a -->
 
 # @ddd-ts-kit/pino
 
@@ -111,13 +111,18 @@ import { traceLogFields } from '@ddd-ts-kit/tracing';
 
 declare const scope: ExecutionScope; // celle que crée la racine de composition
 
+const redact = [...CREDENTIAL_KEYS, 'iban'];
+
 const instance = pino({
-  mixin: correlationMixin(() => traceLogFields(scope)),
-  redact: credentialRedaction([...CREDENTIAL_KEYS, 'iban']),
+  mixin: correlationMixin(() => traceLogFields(scope), redact),
+  redact: credentialRedaction(redact),
 });
 
-export const logger = new PinoLogger(instance);
+export const logger = new PinoLogger(instance, { redact });
 ```
+
+Les trois prennent la même liste : pino masque une clé du premier niveau d'une ligne telle que
+la liste l'écrit, l'adaptateur et le *mixin* l'y masquent dans toute autre casse.
 
 `createPinoLogger` écrit `level` par son nom et le message sous `message`, comme le
 `StdoutLogger` du *package* des aspects et comme `@ddd-ts-kit/winston` : un même tableau de bord
@@ -235,12 +240,11 @@ d'une ligne, d'un enfant et de `fields` de la même façon. La valeur de ces cl�
 `refreshToken`, `idToken`, `client_secret`, `clientSecret`, `client-secret`, `private_key`,
 `privateKey`
 
-Ces noms sont comparés quelle que soit leur casse (`Authorization`, `X-Api-Key`), par
-`isCredentialKey` du noyau. `redact: ['iban', 'ssn']` complète la liste : un nom ajouté est
-comparé tel qu'il est écrit au premier niveau d'une ligne, quelle que soit sa casse un niveau en
-dessous, car pino désigne une clé du premier niveau par son chemin. Rien n'est cherché plus
-profond qu'un niveau, ni dans une liste : journalisez la partie que vous visez, pas une
-requête HTTP entière.
+`redact: ['iban', 'ssn']` complète la liste. Chaque nom, de la liste ou ajouté, est comparé
+quelle que soit sa casse (`Authorization`, `X-Api-Key`, `IBAN`), au premier niveau d'une ligne
+et un niveau en dessous, par `hiddenKeys` du noyau : `@ddd-ts-kit/winston` et `StdoutLogger`
+interrogent la même fonction. Rien n'est cherché plus profond qu'un niveau, ni dans une liste :
+journalisez la partie que vous visez, pas une requête HTTP entière.
 
 **Une erreur passée en champ** (`logger.error('payment failed', { error })` : la `LogValue` du
 port admet une `Error`) est écrite telle que la décrit `describeError` du noyau, de la même façon

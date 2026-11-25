@@ -487,6 +487,9 @@ It implements the whole port, held by `loggerContract` like the pino and winston
   `[message removed]` for the message of every error that is not a `DomainError`: turn it on
   when the logs leave your hands. `logged` and `loggingMiddleware` are not concerned: they
   never pass an error, only `errorType` and `errorCode`.
+- **Credentials.** The value of every key of `CREDENTIAL_KEYS` is written `[redacted]`, at the
+  top of an entry and one level below, whatever its case. `redact: ['iban', 'ssn']` adds names
+  to the list, matched the same way.
 - **`isLevelEnabled(level)`** answers the threshold (`level`, default `info`). `logged` and
   `loggingMiddleware` ask it first: below the threshold no field is built and the `fields`
   function of `logged` is not called.

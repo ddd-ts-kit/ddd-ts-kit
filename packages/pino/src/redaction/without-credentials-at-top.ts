@@ -1,12 +1,12 @@
-import { REDACTED, isCredentialKey } from '@ddd-ts-kit/kernel';
+import { REDACTED, type IsHiddenKey } from '@ddd-ts-kit/kernel';
 
 /**
- * Hides, in fields the adapter owns, the value of every key `isCredentialKey` names, whatever
- * its case: the paths of pino name each key at the top as it is written.
+ * Hides, in fields the adapter owns, the value of every key that is hidden, whatever its case:
+ * the paths of pino name each key at the top as it is written.
  */
-export function withoutCredentialsAtTop<Fields extends object>(fields: Fields): Fields {
+export function withoutCredentialsAtTop<Fields extends object>(fields: Fields, isHidden: IsHiddenKey): Fields {
   for (const key of Object.keys(fields)) {
-    if (isCredentialKey(key)) {
+    if (isHidden(key)) {
       Object.assign(fields, { [key]: REDACTED });
     }
   }
