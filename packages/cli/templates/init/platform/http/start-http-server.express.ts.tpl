@@ -76,7 +76,7 @@ export async function startHttpServer(served: Served, config: AppConfig): Promis
   // Instead of the final handler of Express, which answers HTML: a path no route serves, then an error, the
   // one written to stderr with the body it quotes.
   app.use(problemNotFoundHandler({ logger: served.logger }));
-  app.use(problemErrorHandler({ logger: served.logger }));
+  app.use(problemErrorHandler({ logger: served.logger, errorMapper: served.boundary.errorMapper }));
 
   const server = await listen(app, config.port);
 

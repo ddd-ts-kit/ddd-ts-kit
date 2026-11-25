@@ -96,7 +96,12 @@ export async function startHttpServer(served: Served, config: AppConfig): Promis
   // TRUST_PROXY: which proxies name the caller in X-Forwarded-For, for `request.ip`; none by default.
   app.set('trust proxy', config.trustProxy);
   // A body Nest refuses, a path no route serves and a failed middleware are answered as problems, not with a message.
-  app.useGlobalFilters(new ProblemExceptionFilter(app.getHttpAdapter(), { logger: served.logger }));
+  app.useGlobalFilters(
+    new ProblemExceptionFilter(app.getHttpAdapter(), {
+      logger: served.logger,
+      errorMapper: served.boundary.errorMapper,
+    }),
+  );
 
 {{#if cache.rateLimit}}
   app.use(answeringReadiness(served));

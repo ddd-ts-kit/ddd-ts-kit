@@ -1,11 +1,14 @@
-import { identifyError, type Logger } from '@ddd-ts-kit/kernel';
+import { DomainError, identifyError, type Logger } from '@ddd-ts-kit/kernel';
 import type { RawHeaders } from '../route/raw-headers';
 import { codeOfStatus } from './code-of-status';
+import { createErrorMapper } from './create-error-mapper';
 import { type EdgeAnswer, edgeAnswer } from './edge-answer';
 import { bodyTooLarge, type EdgeRefusal, MALFORMED_BODY } from './edge-refusal';
+import type { ErrorMapper } from './error-mapper';
 import { INTERNAL_ERROR_CODE } from './internal-error-code';
 import { refusalHeaders } from './refusal-headers';
 import { statusTitle } from './status-title';
+import { toProblem } from './to-problem';
 
 export interface EdgeErrorOptions {
   /**
@@ -16,6 +19,12 @@ export interface EdgeErrorOptions {
    * Left out, nothing is written.
    */
   readonly logger?: Logger;
+  /**
+   * The mapper the routes are mounted with: an error of the domain a middleware in front of them
+   * raises (`UnauthorizedError`, `ForbiddenError`, one of the project) is answered under the
+   * status it gives its code, as a route answers it. Left out, the default mapping.
+   */
+  readonly errorMapper?: ErrorMapper;
 }
 
 /** What reached the framework, and the request it came with. */
@@ -36,12 +45,15 @@ const CONTENT_TOO_LARGE = 413;
 const FIRST_REFUSAL = 400;
 const LAST_FAILURE = 599;
 
+const defaultErrorMapper = createErrorMapper();
+
 const INTERNAL: EdgeRefusal = { status: 500, title: statusTitle(500), code: INTERNAL_ERROR_CODE };
 
 /**
  * The answer to an error the framework raised before a route of the kit ran, or a middleware
- * passed on: a body refused by its parser, the failure of a middleware. A body that is not JSON
- * is `MALFORMED_BODY` (400), an error with the status 413 `BODY_TOO_LARGE`, another error that
+ * passed on: a body refused by its parser, the failure of a middleware. An error of the domain
+ * (`DomainError`) is the problem a route answers for it, under the status the error mapper gives
+ * its code. A body that is not JSON is `MALFORMED_BODY` (400), an error with the status 413 `BODY_TOO_LARGE`, another error that
  * carries a status of a refusal or of a failure (`status` or `statusCode`, 4xx or 5xx) that
  * status, its code the one the kit gives it (`NOT_FOUND`, `VALIDATION_FAILED` for 422,
  * `SERVICE_UNAVAILABLE` for the 503 of a store down), anything else `INTERNAL_ERROR` (500). The
@@ -49,7 +61,7 @@ const INTERNAL: EdgeRefusal = { status: 500, title: statusTitle(500), code: INTE
  * a status carries for its client (`WWW-Authenticate`, `Allow`, `Retry-After`) are kept.
  */
 export function answeredEdgeError({ error, headers, refusal }: EdgeError, options: EdgeErrorOptions): EdgeAnswer {
-  const refused = edgeAnswer(headers, refusal ?? refusalOf(error));
+  const refused = edgeAnswer(headers, refusal ?? refusalOf(error, options.errorMapper ?? defaultErrorMapper));
   // The headers of the refusal under those of the problem: a challenge kept, the media type and the identifiers the problem's.
   const kept = statusOf(error) === undefined ? {} : refusalHeaders(error);
   const answer = { ...refused, headers: { ...kept, ...refused.headers } };
@@ -67,7 +79,11 @@ export function answeredEdgeError({ error, headers, refusal }: EdgeError, option
   return answer;
 }
 
-function refusalOf(error: unknown): EdgeRefusal {
+function refusalOf(error: unknown, mapper: ErrorMapper): EdgeRefusal {
+  if (error instanceof DomainError) {
+    return domainRefusal(error, mapper);
+  }
+
   const kind = kindOf(error);
 
   if (kind !== undefined && MALFORMED_KINDS.has(kind)) {
@@ -85,6 +101,13 @@ function refusalOf(error: unknown): EdgeRefusal {
   }
 
   return { status, title: statusTitle(status), code: codeOfStatus(status) };
+}
+
+/** A refusal in the vocabulary of the kit, as the pipeline answers it: its type, its detail, its issues. */
+function domainRefusal(error: DomainError, mapper: ErrorMapper): EdgeRefusal {
+  const { requestId, ...refusal } = toProblem(error, mapper, '');
+
+  return refusal;
 }
 
 /** The status the error carries (`status`, else `statusCode`), when it is one of a refusal or of a failure. */
