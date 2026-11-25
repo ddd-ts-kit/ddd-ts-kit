@@ -50,9 +50,9 @@ function wordsOf({ options }: Declaration, option: string | undefined): string[]
 
 /** The options the usage lines name, each once, without its dashes. */
 function optionsIn(usage: readonly string[]): string[] {
-  const named = usage.flatMap((line) => [...line.matchAll(/--([a-z][a-z-]*)/g)].map(([, name]) => name));
+  const named = usage.flatMap((line) => [...line.matchAll(/--([a-z][a-z-]*)/g)].flatMap(([, name]) => name ?? []));
 
-  return [...new Set(named)].filter((name) => name !== undefined && !OF_EVERY_COMMAND.includes(name)).sort();
+  return [...new Set(named)].filter((name) => !OF_EVERY_COMMAND.includes(name)).sort();
 }
 
 describe('the commands of the CLI, as they declare themselves', () => {
