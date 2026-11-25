@@ -1,5 +1,5 @@
 [English](authentication-and-authorization.md) · **Français**
-<!-- translation-of: authentication-and-authorization.md sha256:fbc9faa1126cab21 -->
+<!-- translation-of: authentication-and-authorization.md sha256:d87c64b8fdf0414d -->
 
 # Authentification et autorisation
 
@@ -337,10 +337,10 @@ l'évaluation part dans un service dédié qui a son propre modèle de cohérenc
 
 | | RBAC | ABAC | ReBAC |
 |---|---|---|---|
-| Granularité | l'action (plus une vérification du *tenant*) | l'élément, par les attributs que vous fournissez | l'élément, par construction |
+| Granularité | l'action | l'élément, par les attributs que vous fournissez | l'élément, par construction |
 | Données à entretenir | une table des rôles, les rôles dans le jeton | les attributs des ressources | les tuples de relation |
 | Coût d'une vérification | constant, aucune entrée-sortie | une lecture d'attributs | plusieurs lectures de tuples |
-| Liste des éléments accessibles | tous, aucun ou un filtre par *tenant* | non disponible | des identifiants, par expansion inverse |
+| Liste des éléments accessibles | tous ou aucun | non disponible | des identifiants, par expansion inverse |
 | Expliquer une décision | quel rôle | quelle règle s'est appliquée | quel chemin de tuples |
 | Échec typique | l'explosion des rôles | des règles dispersées et non testées | des tuples désynchronisés |
 
@@ -348,7 +348,9 @@ Ces chiffres sont ceux des trois autorisateurs en processus du kit, tels que les
 [`@ddd-ts-kit/auth`](../../packages/auth/README.fr.md) ; un service dédié change les coûts, pas
 la forme. Voir [Moteurs d'autorisation](../tools/authorization-engines.fr.md). La dernière ligne
 est ce que répond `explain` sur chacun d'eux : la même décision qu'un contrôle, avec une ligne
-par question posée, pour le débogage.
+par question posée, pour le débogage. Le *tenant* ne fait partie d'aucun modèle :
+`TenantBoundAuthorizer` tient chacun des trois aux *tenants* de l'acteur, et une liste de tout
+devient un filtre sur le *tenant*.
 
 ## Table de décision
 
@@ -358,7 +360,7 @@ par question posée, pour le débogage.
 | Une poignée de règles par élément (« seulement celui qui a réservé ») en plus des rôles | RBAC plus des politiques | aucun stockage de tuples nécessaire |
 | Les droits dépendent de propriétés : clinique, montant, statut, heure de la journée, refus explicites | ABAC | les règles lisent des attributs |
 | Les utilisateurs partagent des éléments entre eux, délégation, groupes ou dossiers imbriqués | ReBAC | la relation est la donnée |
-| Produit multitenant où le *tenant* est la seule frontière | RBAC avec la vérification du *tenant* | une relation par ligne serait du gaspillage |
+| Produit multitenant où le *tenant* est la seule frontière | RBAC tenu aux *tenants* (`TenantBoundAuthorizer`) | une relation par ligne serait du gaspillage |
 | Les listes doivent être restreintes par acteur sur de nombreux éléments | ReBAC, ou RBAC avec un filtre par *tenant* | ABAC ne sait pas répondre à une liste |
 | Contexte réglementé qui exige des règles de refus explicites | ABAC par-dessus les rôles | un *forbid* qui l'emporte |
 
