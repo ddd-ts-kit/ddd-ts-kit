@@ -40,7 +40,6 @@ export async function aNotificationWorld({ modules = [nobody], given, ...setting
 
   const application = createTestApplication({
     ...settings,
-    eventBusFailures: 'as-thrown',
     modules: [platformTestModule, context, ...modules],
     fakes: overridden(settings.fakes, [
       fake(Contacts, fakes.contacts),

@@ -1,5 +1,5 @@
 [English](when-to-extract-microservices.md) · **Français**
-<!-- translation-of: when-to-extract-microservices.md sha256:8288522fd4a2d8ca -->
+<!-- translation-of: when-to-extract-microservices.md sha256:909fbf644a26d894 -->
 
 # Quand extraire un microservice, et quand ne pas le faire
 
@@ -185,7 +185,7 @@ export abstract class PersonDirectoryGateway {
 // scheduling/infrastructure/external/in-process-person-directory.gateway.ts : identity dans le même processus
 @Gateway(PersonDirectoryGateway)
 export class InProcessPersonDirectoryGateway implements PersonDirectoryGateway {
-  constructor(readonly upstream: PersonDirectoryContract) {}
+  constructor(private readonly upstream: PersonDirectoryContract) {}
 
   async namesOf(personIds: readonly string[]): Promise<ReadonlyMap<string, { readonly displayName: string }>> {
     const cards = await this.upstream.byIds(personIds);

@@ -12,6 +12,7 @@ import {
   PRECONDITION_FAILED,
   SERVICE_UNAVAILABLE,
 } from '../src';
+import { refusalCodesOfSources } from './support/refusal-codes-of-sources';
 
 describe('the code list of the kit', () => {
   it('names each code by its words, one key per code', () => {
@@ -37,6 +38,14 @@ describe('the code list of the kit', () => {
       KitCodes.PreconditionFailed,
       KitCodes.ServiceUnavailable,
     ]);
+  });
+
+  it('holds the code of every refusal the kernel raises, read in its sources', () => {
+    const raised = refusalCodesOfSources();
+    const known: readonly string[] = Object.values(KitCodes);
+
+    expect(raised).toEqual(expect.arrayContaining(['CONCURRENCY_CONFLICT', 'FILE_NOT_FOUND', 'NOT_FOUND']));
+    expect(raised.filter((code) => !known.includes(code))).toEqual([]);
   });
 
   it('types a code as one of them', () => {

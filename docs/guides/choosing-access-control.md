@@ -37,7 +37,7 @@ the transaction of the command, nothing else to run) until listing or checks out
 | Booking tool where "only the patient who booked may cancel" | RBAC plus one policy |
 | Expense approval by amount and department, with a four-eyes rule | ABAC over roles |
 | Documents, folders, sharing, teams, delegation | ReBAC |
-| SaaS for many companies, each with its admins and members | RBAC with the tenant check, shared tables; ReBAC inside a tenant if users share |
+| SaaS for many companies, each with its admins and members | RBAC bound to tenants (`TenantBoundAuthorizer`), shared tables; ReBAC inside a tenant if users share |
 | Public API for partners | any of the above, plus scopes |
 
 ## What every preset shares
@@ -104,7 +104,7 @@ await commandBus.execute(new VoidInvoice(actorOf(context.principal), params.invo
 A search never loads then filters: the handler asks the scope of the actor and the read port turns
 it into the query. `scoped` of the kernel joins the scope to the criteria by AND, on the fields
 the read port names (`ids: 'id'` for a list of identifiers, `filter: { tenantId: 'tenantId' }`
-for the tenant check), and a criteria a caller refines afterwards keeps the restriction.
+for the tenant of a model bound to tenants), and a criteria a caller refines afterwards keeps the restriction.
 
 <!-- checked sample -->
 ```ts
@@ -158,8 +158,8 @@ const visible = (await this.invoices.all()).filter((invoice) => canRead(query.ac
 
 | `AccessScope` | Given by | What the read port adds |
 |---|---|---|
-| `{ kind: 'all' }` | a role that grants the permission, without tenant check | nothing |
-| `{ kind: 'filter', filter: { tenantId } }` | a role, with the tenant check | `tenant_id = :tenantId` |
+| `{ kind: 'all' }` | a role that grants the permission | nothing |
+| `{ kind: 'filter', filter: { tenantId } }` | the same, under `TenantBoundAuthorizer` | `tenant_id = :tenantId` |
 | `{ kind: 'ids', ids }` | the relationships | `id IN (...)` |
 | `{ kind: 'none' }` | any model, and always for the anonymous actor | an empty page, without querying |
 
@@ -171,7 +171,7 @@ and a cycle in the hierarchy.
 
 <!-- checked sample -->
 ```ts
-import { RoleBasedAuthorizer, tenantOfContext, type Grant, type PermissionSet } from '@ddd-ts-kit/auth';
+import { RoleBasedAuthorizer, TenantBoundAuthorizer, type Grant, type PermissionSet } from '@ddd-ts-kit/auth';
 
 declare const billingPermissions: PermissionSet<'billing', 'invoice.read' | 'invoice.issue' | 'invoice.void'>;
 
@@ -186,12 +186,16 @@ export const roles: Readonly<Record<Role, readonly Grant[]>> = {
   system: [billingPermissions['invoice.issue']], // the jobs and consumers that send the command
 };
 
-export const authorizer = new RoleBasedAuthorizer({
+const byRoles = new RoleBasedAuthorizer({
   roles,
   inherits: { accountant: ['clerk'] }, // an accountant has all a clerk has
-  tenantOf: tenantOfContext, // turns the tenant check on
-  crossTenantRoles: ['admin'], // may act in every tenant
   systemRole: 'system', // the role of systemActor(...) and of no other actor, none by default
+});
+
+// Whatever the model: what it allows is held to the tenants of the actor
+export const authorizer = new TenantBoundAuthorizer({
+  model: byRoles,
+  crossTenantRoles: ['admin'], // may act in every tenant
 });
 ```
 
@@ -264,8 +268,10 @@ The spec of the policy needs nothing but the policy: `new OnlyIssuerVoidsPolicy(
 invoice)` answers `true` when the invoice was issued by that actor, without an authorizer, a
 container or a database.
 
-Lists: a role that grants the permission reads `all`, narrowed to the tenant by the tenant check
-(`{ kind: 'filter', filter: { tenantId } }`).
+Lists: a role that grants the permission reads `all`, which `TenantBoundAuthorizer` narrows to
+the tenant (`{ kind: 'filter', filter: { tenantId } }`). In a project of `init --tenancy
+shared-table` the repositories confine every statement to the tenant of the work: `init` binds
+the authorizer with `rowsConfinedBy: 'stores'`, and the scope stays `all`.
 
 ## Preset 2: attribute policies over roles
 
@@ -468,8 +474,8 @@ gives one element of one tenant. The context, the resource of a use case on no e
 same object in every tenant: with tenants, the operator of the context in one tenant operates it
 in all of them, and so does a person who belongs to two tenants with a different standing in each.
 With tenants, keep the relationships for the elements, and decide what a use case on no element
-allows tenant by tenant: by roles with the tenant check (preset 1, layered first as in the
-combined model below), or on an object that names the tenant (a type `tenant` with its
+allows tenant by tenant: by a requirement that names its tenant, which `TenantBoundAuthorizer`
+refuses to who does not belong to it whatever the model (preset 1), or on an object that names the tenant (a type `tenant` with its
 `operator`, the elements reaching it by a `parent` relation), never on the context.
 
 Lists come by construction: `listAccessible` answers the ids the actor reaches, which the read

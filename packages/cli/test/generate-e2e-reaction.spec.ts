@@ -28,7 +28,7 @@ function sendsShipParcel(file: string): void {
     root,
     file,
     read(root, file).replace(
-      /async handle\(event: (\w+)\): Promise<void> \{\n.*\n {2}\}/,
+      /async handle\(event: (\w+)\): Promise<void> \{\n.*\n.*\n {2}\}/,
       'async handle(event: $1): Promise<void> {\n    await this.commands.execute(new ShipParcelCommand(this.actor, { parcelId: event.id }));\n  }',
     ),
   );
@@ -112,8 +112,11 @@ describe('generate e2e for a use case an integration event starts', () => {
     expect(spec).toContain("import { invoiceIssuedV1 } from '@/contexts/billing/published-language';");
     expect(spec).toContain("const event = invoiceIssuedV1.create({ invoiceId: 'invoice-1' }, meta);");
 
+    // The command the handler sends still refuses: `pending(...)` holds the scenario until it is written.
+    expect(spec).toContain("import { pending } from '@ddd-ts-kit/testing/e2e';");
+
     expect(spec).toContain(
-      'await expect(application.publish([event])).resolves.toBeUndefined();\n    await application.settled();',
+      '      await expect(application.publish([event])).resolves.toBeUndefined();\n      await application.settled();\n    }),\n  );',
     );
 
     expect(spec).toContain(
@@ -164,7 +167,18 @@ describe('generate e2e for a use case an integration event starts', () => {
     const unhandled = failure(generate('e2e', 'shipping', 'ShipParcel', '--event', 'billing.invoice.paid'));
 
     expect(unhandled.message).toBe('No integration event handler of "shipping" receives billing.invoice.paid.');
+    expect(unhandled.fix).toContain('No context of the project receives billing.invoice.paid yet.');
     expect(unhandled.fix).toContain('ddd-ts-kit generate integration-handler shipping billing billing.invoice.paid');
+
+    // The publisher asked for the spec of an event of its own: the context that receives it is named, never a handler of itself.
+    expect(generate('command', 'billing', 'IssueInvoice', '--permission', 'invoice.issue').code).toBe(0);
+
+    const own = failure(generate('e2e', 'billing', 'IssueInvoice', '--event', 'billing.invoice.issued'));
+
+    expect(own.fix).toContain('billing publishes billing.invoice.issued');
+    expect(own.fix).toContain('is received by shipping');
+    expect(own.fix).toContain('`ddd-ts-kit generate e2e shipping <UseCaseName> --event billing.invoice.issued`');
+    expect(own.fix).not.toContain('generate integration-handler billing billing');
 
     const commandless = failure(generate('e2e', 'shipping', 'ReturnParcel', '--event', 'billing.invoice.issued'));
 

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:e74981d7e661935d -->
+<!-- translation-of: README.md sha256:d859d4d0ee4c0920 -->
 
 # @ddd-ts-kit/aspects
 
@@ -66,7 +66,7 @@ export class HttpRates implements ExchangeRates {
   }
 }
 
-// ...et la racine de composition pose la politique autour de lui : le même objet, toujours un HttpRates.
+// ...et la racine de composition pose la politique autour de lui : une enveloppe, toujours un HttpRates, et `new HttpRates()` reste tel qu'il était.
 export const rates: ExchangeRates = compose(retry({ attempts: 3 }), timeout(2000))(new HttpRates(), { kind: 'external' });
 ```
 
@@ -252,8 +252,8 @@ dans le *runtime* des aspects au moment d'un appel.
 | `timed({ name?, metrics?, clock? })` | histogramme `<name>_duration_ms`, compteur `<name>_total` | `name` vaut `dependency_call` ; libellés `class`, `method`, `kind`, `context`, `outcome`, `error_code` | les arguments, les résultats, les messages d'erreur, les identifiants |
 | `retry({ attempts, backoff?, retryOn?, sleep? })` | rappelle après un échec | jamais après une `DomainError`, un circuit ouvert ou une cloison pleine (`isTransient`) ; 100 ms doublés jusqu'à 30 s avec gigue complète | rien : il n'enregistre rien |
 | `timeout(ms, { signal?, scheduler?, statedBy? })` | rejette avec `TimeoutError` (`TIMEOUT`) | l'appel sous-jacent continue de s'exécuter, sauf avec `signal: true` | le message ne nomme que la classe et la méthode, puis qui a déclaré le délai quand `statedBy` le dit |
-| `circuitBreaker({ failureThreshold, resetAfterMs, halfOpenMax?, scope?, isFailure?, onStateChange?, clock? })` | refuse les appels avec `CircuitOpenError` (`CIRCUIT_OPEN`) après des échecs consécutifs, puis laisse passer des appels d'essai | un circuit par instance et par méthode ; une `DomainError` n'est pas un échec ; un appel d'essai | `onStateChange` reçoit la classe, la méthode, le contexte et les deux états |
-| `cached({ key, ttlMs, cache?, shared?, allowKinds? })` | répond à une lecture répétée depuis le port `Cache` | refuse les genres `repository` et `use-case` ; demande `scope` dans le *runtime* ou `shared: true` et lève l'erreur à l'appel sans l'un ni l'autre ; une entrée appartient au *tenant* du travail sauf avec `shared: true`, le travail qui ne nomme aucun *tenant* garde la clé telle qu'elle est écrite, et le travail sous une élévation (`acrossTenants`) ne lit ni n'écrit le cache ; un appel dont la clé est `undefined` n'est pas mis en cache ; les échecs ne sont pas mis en cache ; des appels identiques simultanés d'un même *tenant* partagent un seul appel ; un cache défaillant vaut un défaut de cache | la clé est construite par le projet à partir des arguments et ne va qu'au cache |
+| `circuitBreaker({ failureThreshold, resetAfterMs, halfOpenMax?, scope?, isFailure?, onStateChange?, clock? })` | refuse les appels avec `CircuitOpenError` (`CIRCUIT_OPEN`) après des échecs consécutifs, puis laisse passer des appels d'essai | un circuit par instance et par méthode ; une `DomainError` n'est pas un échec ; un appel d'essai ; un état n'écoute que les appels qu'il a laissé passer : l'issue tardive d'un appel admis dans un état antérieur ne décide de rien | `onStateChange` reçoit la classe, la méthode, le contexte et les deux états |
+| `cached({ key, ttlMs, cache?, metrics?, shared?, allowKinds? })` | répond à une lecture répétée depuis le port `Cache` | refuse les genres `repository` et `use-case` ; demande `scope` dans le *runtime* ou `shared: true` et lève l'erreur à l'appel sans l'un ni l'autre ; une entrée appartient au *tenant* du travail sauf avec `shared: true`, le travail qui ne nomme aucun *tenant* garde la clé telle qu'elle est écrite, et le travail sous une élévation (`acrossTenants`) ne lit ni n'écrit le cache ; un appel dont la clé est `undefined` n'est pas mis en cache ; les échecs ne sont pas mis en cache ; des appels identiques simultanés d'un même *tenant* partagent un seul appel ; une entrée appartient à un port d'un contexte : sa clé contient le contexte, le port auquel l'instance est liée (le nom de sa classe à défaut), la méthode et la clé de l'appel, et un objet qui n'a ni port ni nom de classe est refusé ; un cache défaillant vaut un défaut de cache, compté dans `cache_errors_total` (étiquettes `operation`, `context`, `class`, `method`) sur `metrics` ou sur les métriques du *runtime* | la clé est construite par le projet à partir des arguments et ne va qu'au cache |
 | `bulkhead({ maxConcurrent, maxQueued?, scope? })` | borne les appels qui s'exécutent en même temps, refuse au-delà avec `BulkheadFullError` (`BULKHEAD_FULL`) | pas de file d'attente ; un compartiment par instance et par méthode | rien |
 
 **Confidentialité.** La règle est celle du traçage : une entrée, un libellé ou une erreur levée
@@ -354,7 +354,7 @@ export function warnWhenSlow(thresholdMs: number, logger: Logger, clock: Clock):
 import { allOf, cached, forKinds, forMethods, when } from '@ddd-ts-kit/aspects';
 
 // Le seul endroit où les arguments sont lus : construire la clé à partir d'un identifiant, jamais de données personnelles.
-// `undefined` laisse l'appel hors du cache. La clé de cache contient aussi la classe et la méthode, et le
+// `undefined` laisse l'appel hors du cache. La clé de cache contient aussi le contexte, le port et la méthode, et le
 // tenant du travail, ce qui demande `scope` dans le runtime des aspects : `shared: true` garde une seule
 // entrée pour une lecture dont la réponse ne dépend d'aucun tenant, sans demander de scope.
 const key = (_method: string, [id]: readonly unknown[]): string | undefined => (typeof id === 'string' ? id : undefined);
@@ -526,9 +526,16 @@ Rien de plus profond, ni dans une liste. Les objets passés ne sont jamais modif
 
 ## Ce que garantit l'enveloppement
 
-- L'instance est enveloppée sur place : même objet, `instanceof`, `this` et membres `private`
-  intacts. Une instance gelée est placée derrière un proxy du même type, et ses méthodes
-  s'exécutent avec ce proxy comme `this`.
+- Un aspect rend une enveloppe et laisse l'instance qu'il reçoit telle qu'elle était : rien ne
+  lui est ajouté, et qui appelle l'instance elle-même n'est pas intercepté. L'enveloppe est un
+  proxy de la même classe : `instanceof` et les membres `private` fonctionnent toujours, ses
+  méthodes s'exécutent avec l'enveloppe comme `this`, et un champ lu ou affecté à travers elle
+  est le champ de l'instance. Deux aspects posés autour d'une même instance sont deux
+  enveloppes, chacune avec son propre *advice*. Un aspect qui n'intercepte aucune méthode rend
+  l'instance elle-même.
+- Une classe qui garde son état dans des membres privés stricts (`#`) ne peut pas être
+  enveloppée : un tel membre ne s'atteint que sur l'objet qui le déclare, jamais à travers un
+  proxy. Écrivez `private`.
 - **Un aspect appliqué à une instance intercepte les appels qui lui parviennent de l'extérieur.**
   `private` est effacé par le compilateur, et un nom ne dit pas si une méthode est publique (un
   tiret bas est une habitude, pas une règle) : l'API publique ne peut donc pas être distinguée
@@ -555,7 +562,7 @@ Rien de plus profond, ni dans une liste. Les objets passés ne sont jamais modif
 - Une instance gelée reste gelée : ses champs, y compris les champs `private`, ne peuvent pas
   être affectés. L'état qu'elle doit changer vit dans un objet qu'elle détient (une `Map`, un
   tableau).
-- Appliquer deux fois le même aspect à une instance est sans effet.
+- Appliquer un aspect à sa propre enveloppe est sans effet.
 - Les accesseurs, les symboles, les générateurs, les méthodes synchrones et les *hooks* de cycle
   de vie (`LIFECYCLE_HOOKS`) sont laissés tranquilles.
 - Une méthode déclarée `async` est interceptée dès son premier appel. Une méthode qui se contente

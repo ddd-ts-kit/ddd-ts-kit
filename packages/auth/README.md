@@ -274,6 +274,11 @@ accepts. The anonymous actor is refused before any policy is asked, with `Unauth
 (401), as on the bus. A policy is a plain object: its spec calls
 `onlyIssuerVoidsSameDay.allows(actor, invoice, { now })` and needs nothing else.
 
+`allows` is synchronous and answers `true`, `false` or a decision (`{ allowed: false, reason }`),
+on what the handler loaded. An answer that is neither, the promise of an `allows` written
+`async` included, allows nobody: `Access` raises `AuthorizationSetupError` with the name of the
+policy, a defect to fix rather than a refusal of the actor.
+
 A protected use case meets two checkpoints. The guard of the bus decides on the action, before
 the handler and before any transaction; `Access` decides on the element, once the handler has
 loaded it. Each refusal has its error, its code and its HTTP status:
@@ -631,6 +636,7 @@ It fails closed:
 | The strategy | The call |
 |---|---|
 | succeeds | goes on as the actor `actorOf` answers |
+| succeeds, and `actorOf` answers something that is not an actor | is refused, the error reported as any other: a mapper that forgot `attributes`, or answered nothing, never makes the caller anonymous |
 | fails a request that presents a credential | is refused, 401 (`InvalidCredentialError`) |
 | fails a request that presents none | goes on anonymous, for the guards of the route to decide |
 | passes | goes on anonymous |
@@ -638,7 +644,9 @@ It fails closed:
 | redirects (an OAuth sign-in) | is refused: a sign-in flow is served by the platform, not by the authentication of a call |
 | answers nothing within `timeoutMs` (10 s) | is refused |
 
-A credential is presented when the request carries an `Authorization` header; a strategy that
+A credential is presented when the request carries an `Authorization` header, an empty one
+included: like every authenticator of the kit, the bridge refuses an empty credential and reads
+only an absent one as anonymous. A strategy that
 reads a cookie says where with `presented: (raw) => ...`. The `InvalidCredentialError` of a
 refusal carries the reason the strategy failed with when it is a code (`fail({ message:
 'NO_EXPIRY' })`, in upper snake case), and `refused-by-strategy` otherwise: the message of a
@@ -646,7 +654,9 @@ library (`invalid signature`) is not a code.
 
 `passportAuthenticator(strategy, { actorOf })` is the same strategy behind the `Authenticator`
 port: the bearer credential is handed to the strategy as `Authorization: Bearer <credential>`,
-so that the procedures, the scripts and the end-to-end tests authenticate through it too.
+so that the procedures, the scripts and the end-to-end tests authenticate through it too; an
+empty credential is refused before the strategy runs (`MALFORMED_TOKEN`), as `JwtAuthenticator`
+refuses it.
 `actorOfClaims(claims)` reads the claims of a token as `JwtAuthenticator` does, for the
 `actorOf` of a strategy that hands its payload on. `ddd-ts-kit init --authn passport` writes
 that platform: a strategy of `passport-jwt` on the key set of the issuer (`jwks-rsa`), its
@@ -669,12 +679,12 @@ The three authorizers implement the same `Authorizer` port and pass the same con
 | Class | `RoleBasedAuthorizer` | `PolicyBasedAuthorizer` | `RelationBasedAuthorizer` (`/rebac`) |
 | The question it answers | does one of the actor's roles grant this action? | do the attributes of the actor, the resource and the moment satisfy a rule? | is there a path of stored relationships from this element to the actor? |
 | Choose it when | rights follow job functions and bear on actions, the same for every element | rights depend on properties: department, amount, status, time of day, with explicit refusals | rights are per element and shared: ownership, teams, folders, "whoever can edit the parent" |
-| Granularity | action, plus a tenant check | element, through attributes you supply | element, by construction |
+| Granularity | action | element, through attributes you supply | element, by construction |
 | Data to maintain | a role table in code, roles in the token | a `ResourceAttributes` port (projection or cache) | relation tuples, written when aggregates are created or shared |
 | Cost of a check | constant, no I/O | one attribute read | several tuple reads, bounded by a depth limit |
-| Listing (`listAccessible`) | `all`, `none`, or a tenant `filter`: constant | not available: a predicate is not a query | `ids`, by reverse expansion: grows with what the actor can reach |
-| Typical denial reasons | `NO_MATCHING_ROLE`, `TENANT_MISMATCH` | `NO_MATCHING_POLICY`, `EXPLICIT_DENY` | `NO_RELATION`, `RESOURCE_REQUIRED`, `UNMAPPED_PERMISSION`, `DEPTH_EXCEEDED` |
-| Why, in words (`explain`) | the roles of the actor and what each one grants, then where the request may act | what is known of the element, then each policy that bears on the permission and whether it held | every question asked of the tuples, every way visited |
+| Listing (`listAccessible`) | `all` or `none`: constant | not available: a predicate is not a query | `ids`, by reverse expansion: grows with what the actor can reach |
+| Typical denial reasons | `NO_MATCHING_ROLE` | `NO_MATCHING_POLICY`, `EXPLICIT_DENY` | `NO_RELATION`, `RESOURCE_REQUIRED`, `UNMAPPED_PERMISSION`, `DEPTH_EXCEEDED` |
+| Why, in words (`explain`) | the roles of the actor and what each one grants | what is known of the element, then each policy that bears on the permission and whether it held | every question asked of the tuples, every way visited |
 
 **What changes when you switch.** The adapter given to `authorizationModule`, and the data it
 needs. From RBAC to ReBAC: add `resource:` to the `requires` of the use cases that did not name
@@ -687,7 +697,9 @@ then the authorizer, so "roles for actions, policies for the few per-element rul
 tuple store at all, and is the place to start.
 
 Every authorizer refuses the anonymous actor (`ANONYMOUS`), and an actor of type `system` has no
-right unless the model gives it one.
+right unless the model gives it one. No model knows a tenant: `TenantBoundAuthorizer` holds
+whichever one the project chose to the tenants of the actor (`TENANT_MISMATCH`), see
+[Tenants](#tenants).
 
 **Why was it refused.** Every authorizer of the kit answers `explain` with the same decision as
 `check` and a trace in words, one line per question it asked on the way; `traceText` lays the
@@ -722,20 +734,22 @@ new SignedInGrantsAuthorizer({
 ```
 
 Only an actor of type `user` holds these grants: a system, a service and the anonymous actor go
-to the model. What they cover lists `all`; another listing is the model's, and a model that
-cannot list makes it fail with `ListingNotSupportedError`. The identity preset of the CLI writes
+to the model. What they cover lists `all` (one tenant of it under `TenantBoundAuthorizer`);
+another listing is the model's, and a model that cannot list makes it fail with
+`ListingNotSupportedError`. The identity preset of the CLI writes
 this wrapper in `createAuthorizer` and its grant in `signed-in-grants.ts`.
 
 A permission in these grants lists `all` whatever the model, before the model is asked: every
-signed-in person reads every element. It is never the way to let a search past the bus when the
-model refuses it: grant there the permission of running the search (`document.search`), and
-narrow the search by the scope of another one (`document.view`), which the model decides.
+signed-in person reads every element, of its tenant when the authorizer is bound to tenants. It
+is never the way to let a search past the bus when the model refuses it: grant there the
+permission of running the search (`document.search`), and narrow the search by the scope of
+another one (`document.view`), which the model decides.
 
 ### Roles
 
 <!-- checked sample -->
 ```ts
-import { RoleBasedAuthorizer, tenantOfContext, type PermissionSet } from '@ddd-ts-kit/auth';
+import { RoleBasedAuthorizer, type PermissionSet } from '@ddd-ts-kit/auth';
 
 declare const billingPermissions: PermissionSet<'billing', 'invoice.read' | 'invoice.void'>;
 
@@ -747,8 +761,6 @@ export const authorizer = new RoleBasedAuthorizer({
     automation: [billingPermissions['invoice.read']],
   },
   inherits: { controller: ['clerk'] },          // a controller has all a clerk has
-  tenantOf: tenantOfContext,                    // turns the tenant check on
-  crossTenantRoles: ['admin'],                  // may act in every tenant
   systemRole: 'automation',                     // the role of systemActor(...), none by default
 });
 ```
@@ -761,27 +773,13 @@ refused at construction: through it, a user would hold what the system holds. Th
 may inherit other roles.
 
 A grant is a permission, its id, `<context>:*` or `*`. A grant that could never match, an
-unknown inherited role and a cycle in the hierarchy are refused at construction, and so are a
-cross-tenant role or a system role that no role declares and `crossTenantRoles` without
-`tenantOf`: each would silently do nothing.
+unknown inherited role and a cycle in the hierarchy are refused at construction, and so is a
+system role that no role declares: it would silently do nothing. So are `tenantOf` and
+`crossTenantRoles`, which are options of `TenantBoundAuthorizer` ([Tenants](#tenants)): given
+here, they would hold nobody to a tenant.
 
-With `tenantOf`, the tenant a request targets is read from the `context` of the requirement:
-`requires(X, permission, { context: (command) => ({ tenantId: command.tenantId }) })`. It is
-refused when the actor does not belong to it (its `tenantId`, or its `tenants` for an actor of
-several), when it is not a tenant id at all, and when it is another tenant than the one the work
-runs in. The guard of the bus and `Access` give the authorizer that tenant of the work
-(`workTenantId`) from the execution scope, which `authorizationModule` wires on its own. A system
-actor belongs to the tenant its work runs in (a per-tenant job, the event of a tenant) and to
-none outside of one. A request that targets no tenant passes: the repositories keep it to the
-tenant of the work (see [Multitenancy](../../docs/concepts/multitenancy.md)).
-
-A list is filtered on the tenant of the work, when the actor belongs to it, else on the one
-tenant of an actor that has one; an actor of several tenants outside of a tenant's work lists
-nothing.
-
-`explain` says which role grants, and through which included role, then where the request may
-act. Why a clerk who also carries a role nobody declared may not void an invoice, and why a
-controller may read one in the tenant acme:
+`explain` says which role grants, and through which included role. Why a clerk who also carries
+a role nobody declared may not void an invoice, and why a controller may read one:
 
 ```text
   billing:invoice.void asked of the roles clerk, intern
@@ -792,7 +790,6 @@ x   intern is not a declared role
 ```text
   billing:invoice.read asked of the roles controller
     controller grants billing:*, which covers billing:invoice.read
-  the actor belongs to acme, the tenant the request targets
 ```
 
 ### Attribute policies
@@ -1068,6 +1065,63 @@ step, which must then be idempotent (writing a tuple twice changes nothing) and 
 through the outbox. `test/relationship-sync.spec.ts` is the tested version of the write from
 the handler, with the rollback case; hold your SQL store to `relationTupleStoreContract`.
 
+## Tenants
+
+Who may do what is the model's; in which tenant is the same rule for every model, written once:
+`TenantBoundAuthorizer` holds an authorizer to the tenants of the actor. It goes around
+everything, a `SignedInGrantsAuthorizer` included, so that nothing answers before the tenant is
+asked.
+
+<!-- checked sample -->
+```ts
+import { TenantBoundAuthorizer, type Authorizer } from '@ddd-ts-kit/auth';
+
+// Roles, attribute policies, relationships, a service that decides, with or without signed-in grants:
+declare const model: Authorizer;
+
+export const authorizer = new TenantBoundAuthorizer({
+  model,                          // decides first: its refusal stands as it is
+  crossTenantRoles: ['operator'], // may act in every tenant
+});
+```
+
+The tenant a request targets is read from the `context` of the requirement:
+`requires(X, permission, { context: (command) => ({ tenantId: command.tenantId }) })`
+(`tenantOfContext`, the default of `tenantOf`). What the model allows is refused with
+`TENANT_MISMATCH` when the actor does not belong to that tenant (its `tenantId`, or its `tenants`
+for an actor of several), when what names it is not a tenant id at all (another type than a
+text included), and when it is another tenant than the one the work runs in. The guard of the
+bus and `Access` give the authorizer that tenant of the work (`workTenantId`) from the execution
+scope, which `authorizationModule` wires on its own. A system actor belongs to the tenant its
+work runs in (a per-tenant job, the event of a tenant) and to none outside of one. A request
+that targets no tenant passes: the repositories keep it to the tenant of the work (see
+[Multitenancy](../../docs/concepts/multitenancy.md)).
+
+A role of `crossTenantRoles` is read from the roles of the actor as its credential states them.
+A system actor carries none, the `systemRole` of the roles is not one of them: the system acts
+in the tenant of its work.
+
+What the model lists is kept to one tenant, the tenant of the work when the actor belongs to it,
+else the one tenant of an actor that has one: `all` becomes `filter { tenantId }`, a filter of
+the model gains `tenantId`, identifiers stay as the model listed them. An actor of several
+tenants outside of a tenant's work, and an actor of none, list nothing. That is
+`rowsConfinedBy: 'read-port'`, the default: the read port turns the filter into its `WHERE`
+clause. Where the stores confine every statement to the tenant of the work (the tenant helpers
+of the ORM packages, `init --tenancy shared-table`), `rowsConfinedBy: 'stores'` leaves the scope
+of the model as it is, and empties it for an actor that does not belong to the tenant of the
+work; `init` writes that one, around `createAuthorizer()`, in a project with tenants.
+
+`explain` gives the lines of the model, then where the request may act:
+
+```text
+  billing:invoice.read asked of the roles controller
+    controller grants billing:*, which covers billing:invoice.read
+  the actor belongs to acme, the tenant the request targets
+```
+
+`authorizerContract` proves it of any authorizer: bound to tenants, what it allows is refused in
+the tenant of somebody else, and it never lists everything.
+
 ## The current actor
 
 **Use cases get it explicitly.** It is data of the command or query (`command.actor`), put
@@ -1169,9 +1223,9 @@ function whereOf(scope: AccessScope): SQL | undefined {
 
 | `AccessScope` | Given by | The read port |
 |---|---|---|
-| `{ kind: 'all' }` | RBAC when the role grants the permission; `SignedInGrantsAuthorizer` for what its grants cover, whatever the model | adds nothing |
+| `{ kind: 'all' }` | RBAC when the role grants the permission; `SignedInGrantsAuthorizer` for what its grants cover, whatever the model; never under `TenantBoundAuthorizer` unless the stores confine the rows | adds nothing |
 | `{ kind: 'none' }` | any model, and always for the anonymous actor | returns an empty page without querying |
-| `{ kind: 'filter', filter }` | RBAC with the tenant check: `{ tenantId }` | adds one equality per entry, on columns it chooses to map |
+| `{ kind: 'filter', filter }` | `TenantBoundAuthorizer`, around a model that lists `all`: `{ tenantId }` | adds one equality per entry, on columns it chooses to map |
 | `{ kind: 'ids', ids }` | ReBAC | adds `id IN (...)`, or joins a temporary table when the list is long |
 
 `Access.scope` throws `ListingNotSupportedError` when the authorizer has no `listAccessible`

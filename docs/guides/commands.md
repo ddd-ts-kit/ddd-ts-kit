@@ -43,8 +43,11 @@ it runs write these files, each in its layer:
 None of these files holds business code yet. Most of them hold `TODO(domain)` markers where a
 decision is left to you; three come wired and hold none (the route group `orders.routes.ts`, the
 permissions `ordering.permissions.ts` and the adapter `drizzle-order.repository.ts`). The
-generated specs hold `it.todo` entries. Line 6 lists them, one
-line each, in the order of the files:
+generated specs hold `it.todo` entries. What is left to decide refuses until it is written: the
+handler of a command that changes an aggregate, the reader of a query, a reaction and a translator
+throw `undecided(...)` of the kernel, which a route answers 501 `NOT_IMPLEMENTED`, a policy and a
+guard refuse everybody, and the one running test of their spec says so until the first real test
+replaces it. Line 6 lists the markers, one line each, in the order of the files:
 
 ```text
 $ npx ddd-ts-kit todo ordering

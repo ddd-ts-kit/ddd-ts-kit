@@ -16,4 +16,6 @@ export const DEFAULT_ERROR_MAPPING: ErrorMapping = {
   UNSUPPORTED_MEDIA_TYPE: 415,
   // A unit of work the database could not serve in time (`TransactionTimeoutError`): try again later.
   SERVICE_UNAVAILABLE: 503,
+  // What was generated and is not written yet (`UndecidedError`): the route exists, its behaviour does not.
+  NOT_IMPLEMENTED: 501,
 };

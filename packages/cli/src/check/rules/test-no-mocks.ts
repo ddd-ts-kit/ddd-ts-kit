@@ -1,6 +1,5 @@
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import { inContext } from '../support/in-context';
-import { perFile } from '../support/per-file';
 
 const MOCK_CALL = /(?<![\w$.])([A-Za-z_$][\w$]*)\s*\.\s*(mock|doMock|unstable_mockModule|fn|spyOn|mocked)(?![\w$])/g;
 
@@ -25,37 +24,43 @@ const MOCKING_LIBRARIES = new Set([
 const FIX =
   'Use the fake of the port from test/fakes (a working in-memory implementation) and assert its state, the events on the in-memory bus or the returned value instead of calls.';
 
-export const testNoMocks: Rule = {
+export const testNoMocks: FileRule = {
   id: 'test/no-mocks',
   description:
     "No vi.mock, jest.mock, vi.fn, jest.fn, vi.spyOn, jest.spyOn or mocking library in a context's tests: use the fake of the port.",
+  severity: 'warn',
+  doc: {
+    why: 'A mock asserts that a call was made, not that the outcome is right, so it breaks on every refactoring and passes on wrong behaviour. A fake is a working in-memory implementation held to the same contract suite as the real adapter. Tests assert its state, the published events or the returned value.',
+    bad: `const repository = { save: vi.fn() };
+expect(repository.save).toHaveBeenCalledOnce();`,
+    good: `const repository = new FakeInvoiceRepository();
+expect(await repository.findById(id)).toBeDefined();`,
+  },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (!inContext(file.location) || !file.isTest) {
+  judge(file) {
+    if (!inContext(file.location) || !file.isTest) {
+      return [];
+    }
+
+    const runners = runnersOf(file.scan.code);
+
+    const calls = [...file.scan.code.matchAll(MOCK_CALL)].flatMap((match) => {
+      const runner = runners.get(match[1] ?? '');
+
+      return runner === undefined
+        ? []
+        : [{ line: file.scan.lineAt(match.index), message: `The test uses ${runner}.${match[2] ?? ''}.`, fix: FIX }];
+    });
+
+    const libraries = file.imports.flatMap(({ target, line }) => {
+      if (target.kind !== 'package' || !MOCKING_LIBRARIES.has(target.name)) {
         return [];
       }
 
-      const runners = runnersOf(file.scan.code);
-
-      const calls = [...file.scan.code.matchAll(MOCK_CALL)].flatMap((match) => {
-        const runner = runners.get(match[1] ?? '');
-
-        return runner === undefined
-          ? []
-          : [{ line: file.scan.lineAt(match.index), message: `The test uses ${runner}.${match[2] ?? ''}.`, fix: FIX }];
-      });
-
-      const libraries = file.imports.flatMap(({ target, line }) => {
-        if (target.kind !== 'package' || !MOCKING_LIBRARIES.has(target.name)) {
-          return [];
-        }
-
-        return [{ line, message: `The test imports the mocking library "${target.name}".`, fix: FIX }];
-      });
-
-      return [...calls, ...libraries];
+      return [{ line, message: `The test imports the mocking library "${target.name}".`, fix: FIX }];
     });
+
+    return [...calls, ...libraries];
   },
 };
 

@@ -11,7 +11,7 @@ import {
   WITHOUT_MODULE,
 } from '../../model-modules';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { pathInContext } from '../support/path-in-context';
 import { reporter } from '../support/reporter';
@@ -19,12 +19,28 @@ import { reporter } from '../support/reporter';
 /** How many files a finding names before it counts the rest. */
 const NAMED = 5;
 
-export const moduleComplete: Rule = {
+export const moduleComplete: ProjectRule = {
   id: 'module/complete',
   description:
     'Once a context declares modules of its model, every file of its layers sits in one of them (<module>/domain/, <module>/application/, <module>/infrastructure/, <module>/presentation/) with its specs, fakes and builders (<module>/test/), what belongs to no module aside: the code list and the permission set at the root of the context, and in shared/ the schema and tables of its database, its route groups, guards and shared shapes, its worlds, and the generated declarations. A file of a layer left at the level of the context, or a file of a module left in shared/, is a warning, one finding per folder, so that a context moves into its modules one commit at a time. A layout of an earlier version is an error whatever the severity of the rule, and `context-layout` moves it: test/ at the level of the context, or a layer folder there that holds nothing but what shared/ holds now.',
+  severity: 'warn',
+  doc: {
+    why: 'A context half divided into modules is read two ways at once: a concept may be in its module or still at the level of the context, and the reader has to look in both. Once a context declares modules, no layer folder stays at its root beside them: each module is one folder of the context holding its four layers and its tests (<module>/test/, with unit/, integration/, builders/ and fakes/), so that a part of the model is opened, moved and reviewed as one folder. A builder or a fake follows its subject, the aggregate or the port it is named after. What belongs to no module has one place: the closed list of its error codes (<context>.codes.ts) and its permission set (<context>.permissions.ts) at the root of the context, and in shared/ the schema and tables of its database (shared/infrastructure/persistence/), its route groups, guards and shared shapes (shared/presentation/http/), its worlds and the fakes, builders and specs of no module (shared/test/). shared/ holds no domain and no application: a concept two modules need belongs to one of them, or is a module. A file of a layer left at the level of the context, or a file of a module left in shared/, is a warning, so that a large context moves into its modules one cluster per commit with `ddd-ts-kit move-to-module`, which rewrites the imports and takes the specs of a moved file with it. The layout of an earlier version is an error whatever the severity of the rule: test/ at the level of the context, or a layer folder there that holds nothing but what shared/ holds now; `ddd-ts-kit context-layout` moves them.',
+    bad: `contexts/scheduling/calendars/domain/aggregates/calendar.aggregate.ts
+contexts/scheduling/domain/aggregates/waitlist.aggregate.ts                  // still at the level of the context
+contexts/scheduling/shared/infrastructure/persistence/knex-waitlist.repository.ts   // an adapter of the waitlist, in shared/
+contexts/scheduling/test/unit/calendars/calendar.aggregate.spec.ts           // the earlier layout: an error`,
+    good: `contexts/scheduling/calendars/domain/aggregates/calendar.aggregate.ts
+contexts/scheduling/calendars/test/unit/calendar.aggregate.spec.ts
+contexts/scheduling/calendars/test/builders/calendar.builder.ts
+contexts/scheduling/waitlist/domain/aggregates/waitlist.aggregate.ts
+contexts/scheduling/waitlist/infrastructure/persistence/knex-waitlist.repository.ts
+contexts/scheduling/shared/infrastructure/persistence/scheduling.schema.ts   // the database of the context
+contexts/scheduling/shared/test/worlds/scheduling.world.ts
+contexts/scheduling/scheduling.codes.ts                                      // one per context, at its root`,
+  },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const report = reporter(project, this.id);
 
     return Object.keys(project.config.contexts).flatMap((context) => {

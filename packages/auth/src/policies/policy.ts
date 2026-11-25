@@ -14,5 +14,6 @@ export interface Policy<Subject> {
   readonly permission: Permission;
   /** Tells whether a value is a subject of this policy; anything else is refused. */
   appliesTo?(subject: unknown): subject is Subject;
+  /** Synchronous, on what the handler loaded: `Access` refuses an answer that is neither, a promise included. */
   allows(actor: Actor, subject: Subject, context: PolicyContext): boolean | Decision;
 }

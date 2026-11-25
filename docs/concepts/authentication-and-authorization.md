@@ -324,10 +324,10 @@ evaluation moves to a dedicated service with its own consistency model.
 
 | | RBAC | ABAC | ReBAC |
 |---|---|---|---|
-| Granularity | action (plus a tenant check) | element, through attributes you supply | element, by construction |
+| Granularity | action | element, through attributes you supply | element, by construction |
 | Data to maintain | a role table, roles in the token | attributes of resources | relation tuples |
 | Cost of a check | constant, no I/O | one attribute read | several tuple reads |
-| Listing accessible elements | all, none or a tenant filter | not available | ids, by reverse expansion |
+| Listing accessible elements | all or none | not available | ids, by reverse expansion |
 | Explaining a decision | which role | which rule matched | which path of tuples |
 | Typical failure | role explosion | scattered, untested rules | tuples out of sync |
 
@@ -335,7 +335,8 @@ These figures are those of the kit's three in-process authorizers, as stated in
 [`@ddd-ts-kit/auth`](../../packages/auth/README.md); a dedicated service changes the costs, not
 the shape. See [Authorization engines](../tools/authorization-engines.md). The last row is what
 `explain` answers on each of them: the same decision as a check, with one line per question
-asked, for debugging.
+asked, for debugging. The tenant is no part of a model: `TenantBoundAuthorizer` holds any of the
+three to the tenants of the actor, and a list of everything becomes a filter on the tenant.
 
 ## Decision table
 
@@ -345,7 +346,7 @@ asked, for debugging.
 | A handful of per-element rules ("only the one who booked") on top of roles | RBAC plus policies | no tuple store needed |
 | Rights depend on properties: clinic, amount, status, time of day, explicit refusals | ABAC | rules read attributes |
 | Users share elements with each other, delegation, nested groups or folders | ReBAC | the relationship is the data |
-| Multi-tenant product where a tenant is the only boundary | RBAC with the tenant check | a relationship per row would be waste |
+| Multi-tenant product where a tenant is the only boundary | RBAC bound to tenants (`TenantBoundAuthorizer`) | a relationship per row would be waste |
 | Lists must be narrowed per actor over many elements | ReBAC, or RBAC with a tenant filter | ABAC cannot answer a list |
 | Regulated context needing explicit deny rules | ABAC layered over roles | a forbid that wins |
 

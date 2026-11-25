@@ -5,12 +5,11 @@ import type { Layer } from '../model/layer';
 import type { Location } from '../model/location';
 import type { Project } from '../model/project';
 import type { ResolvedImport } from '../model/resolved-import';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import { bindingPlace } from '../support/binding-place';
 import { describeTarget } from '../support/describe-target';
 import { inLayer } from '../support/in-layer';
 import { isDeclaredStyle } from '../support/is-declared-style';
-import { perFile } from '../support/per-file';
 import { isBackgroundJobFile } from '../scheduling/is-background-job-file';
 
 const INWARD: readonly Layer[] = ['domain', 'application', 'published-language'];
@@ -25,30 +24,41 @@ interface Wiring {
   readonly declared: boolean;
 }
 
-export const layerApplicationInward: Rule = {
+export const layerApplicationInward: FileRule = {
   id: 'layer/application-inward',
   description:
     'application/ imports domain/, application/, published languages and the allowed kernel packages: never infrastructure/, presentation/, a framework or a driver. A background job (application/background/*.background-job.ts) also imports @ddd-ts-kit/validation and the validation library of the stack, for the schema of its payload.',
+  severity: 'error',
+  doc: {
+    why: 'A use case orchestrates the domain and talks to the outside through ports. If it imports an adapter, a framework or a driver, the technical choice can no longer be replaced or faked, and the handler cannot be unit tested with plain fakes. Cross-cutting behaviour reaches a use case from outside: @ddd-ts-kit/aspects, audit, redis, scheduling, sentry and tracing are refused whatever `applicationAllowedPackages` says, their place is the composition root, a bus middleware or an adapter. The declarations of the kernel (@ddd-ts-kit/kernel/declarations) are part of the kernel and belong here: a handler, a job or a policy says what it is and names the ports it depends on, which are abstract classes, without knowing a container. A background job (application/background/*.background-job.ts), and no other file of the layer, also imports @ddd-ts-kit/validation and the validation library of the stack, no other, for the schema of its payload: the payload a queue keeps outlives the deploy that enqueued it, like the payload of an integration event, and the worker reads it with that schema before each run. @ddd-ts-kit/auth is allowed for permissions and policies, not its adapters, its wiring or its test doubles (@ddd-ts-kit/auth/jwt, /passport, /rebac, /di, /testing, nor @ddd-ts-kit/kernel/testing): a use case imports one only when `applicationAllowedPackages` names that entry itself.',
+    bad: `// application/commands/issue-invoice/issue-invoice.handler.ts
+import { PgInvoiceRepository } from '@/contexts/billing/infrastructure/persistence/pg-invoice.repository';
+import { RedisCache } from '@ddd-ts-kit/redis';
+import { retry } from '@ddd-ts-kit/aspects';
+import { passportAuthenticator } from '@ddd-ts-kit/auth/passport';`,
+    good: `// application/commands/issue-invoice/issue-invoice.handler.ts
+import { Cache, Clock } from '@ddd-ts-kit/kernel';
+import { CommandHandler } from '@ddd-ts-kit/kernel/declarations';
+import { InvoiceRepository } from '@/contexts/billing/domain/repositories/invoice.repository';`,
+  },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      const here = inLayer(file, 'application');
+  judge(file, project) {
+    const here = inLayer(file, 'application');
 
-      if (here === undefined) {
-        return [];
-      }
+    if (here === undefined) {
+      return [];
+    }
 
-      const wiring: Wiring = {
-        context: here.context,
-        allowed: allowedPackages(file.path, here, project.config),
-        binding: bindingPlace(project, here.context),
-        declared: isDeclaredStyle(project),
-      };
+    const wiring: Wiring = {
+      context: here.context,
+      allowed: allowedPackages(file.path, here, project.config),
+      binding: bindingPlace(project, here.context),
+      declared: isDeclaredStyle(project),
+    };
 
-      return file.imports.flatMap((imported) =>
-        outward(imported, wiring).map((flaw) => ({ line: imported.line, ...flaw })),
-      );
-    });
+    return file.imports.flatMap((imported) =>
+      outward(imported, wiring).map((flaw) => ({ line: imported.line, ...flaw })),
+    );
   },
 };
 

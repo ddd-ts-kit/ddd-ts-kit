@@ -1,4 +1,4 @@
-import { and, eq, inArray, lt, lte, ne, sql, type TablesRelationalConfig } from 'drizzle-orm';
+import { and, eq, gt, inArray, lt, lte, ne, sql, type TablesRelationalConfig } from 'drizzle-orm';
 import type { PgQueryResultHKT } from 'drizzle-orm/pg-core';
 import type { IntegrationEvent } from '@ddd-ts-kit/kernel';
 import {
@@ -130,6 +130,16 @@ export class DrizzleOutboxStore<
           : { nextAttemptAt, lastErrorCode: error.code },
       )
       .where(and(eq(this.outbox.id, id), ne(this.outbox.status, 'published')));
+  }
+
+  async postpone(id: string, until: Date): Promise<void> {
+    const outbox = this.outbox;
+
+    await this.context
+      .executor()
+      .update(outbox)
+      .set({ attempts: sql`${outbox.attempts} - 1`, nextAttemptAt: until })
+      .where(and(eq(outbox.id, id), eq(outbox.status, 'pending'), gt(outbox.attempts, 0)));
   }
 
   async retryDead(ids: readonly string[], now: Date): Promise<number> {

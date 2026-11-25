@@ -144,6 +144,14 @@ describe('Result', () => {
     expect(unwrap(ok(1))).toBe(1);
     expect(() => unwrap(err(new Error('boom')))).toThrow('boom');
   });
+
+  it('throws an Err that is not an error with what it held as the cause', () => {
+    const refused = { code: 'SLOT_TAKEN' };
+
+    expect(() => unwrap(err(refused))).toThrow(
+      expect.objectContaining({ message: 'unwrap() called on an Err result', cause: refused }),
+    );
+  });
 });
 
 describe('InMemoryEventBus', () => {
@@ -183,35 +191,8 @@ describe('InMemoryEventBus', () => {
     expect(bus.published).toEqual([]);
   });
 
-  it('runs every handler even when one fails, then reports all failures', async () => {
+  it('runs every handler even when one fails, then rethrows the one failure as it is, with its code', async () => {
     const bus = new InMemoryEventBus();
-    let ran = false;
-
-    bus.subscribe('shop.cart.checked-out', async () => {
-      throw new Error('first');
-    });
-
-    bus.subscribe('shop.cart.checked-out', async () => void (ran = true));
-    await expect(bus.publish([event('e1')])).rejects.toBeInstanceOf(AggregateError);
-    expect(ran).toBe(true);
-  });
-
-  it('wraps a single failure in an AggregateError by default', async () => {
-    const bus = new InMemoryEventBus();
-    const first = new Error('first');
-
-    bus.subscribe('shop.cart.checked-out', async () => {
-      throw first;
-    });
-
-    await expect(bus.publish([event('e1')])).rejects.toMatchObject({
-      errors: [first],
-      message: '1 event handler(s) failed',
-    });
-  });
-
-  it('rethrows a single failure as it is when its failures are delivered as thrown', async () => {
-    const bus = new InMemoryEventBus({ failures: 'as-thrown' });
     const conflict = Object.assign(new Error('the cart changed meanwhile'), { code: 'CONCURRENCY_CONFLICT' });
     let ran = false;
 
@@ -224,8 +205,8 @@ describe('InMemoryEventBus', () => {
     expect(ran).toBe(true);
   });
 
-  it('still rethrows several failures together, in the order the handlers ran, when delivered as thrown', async () => {
-    const bus = new InMemoryEventBus({ failures: 'as-thrown' });
+  it('rethrows several failures together, in the order the handlers ran', async () => {
+    const bus = new InMemoryEventBus();
     const first = new Error('first');
     const second = new Error('second');
 
@@ -273,5 +254,25 @@ describe('InMemoryEventBus', () => {
     await handler(event('e1'));
 
     expect(attempts).toBe(2);
+  });
+
+  it('says both failures, the one of the handler first, when the mark cannot be given back', async () => {
+    const smtpDown = new Error('smtp down');
+    const storeDown = new Error('store down');
+
+    const handler = idempotent(
+      'mailer',
+      { markProcessed: async () => true, release: () => Promise.reject(storeDown) },
+      () => Promise.reject(smtpDown),
+    );
+
+    await expect(handler(event('e1'))).rejects.toThrow(
+      new AggregateError(
+        [smtpDown, storeDown],
+        'The handler of mailer failed on event e1 and its mark could not be released: a redelivery will be skipped.',
+      ),
+    );
+
+    await expect(handler(event('e1'))).rejects.toMatchObject({ errors: [smtpDown, storeDown], cause: smtpDown });
   });
 });

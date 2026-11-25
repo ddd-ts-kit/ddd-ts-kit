@@ -1,6 +1,6 @@
 import path from 'node:path';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { perFile } from '../support/per-file';
@@ -9,11 +9,18 @@ import { testFolderOf } from '../support/test-folder-of';
 const AGGREGATE_SUFFIX = '.aggregate.ts';
 const BUILDER_SUFFIX = '.builder.ts';
 
-export const testBuilderRequired: Rule = {
+export const testBuilderRequired: ProjectRule = {
   id: 'test/builder-required',
   description: 'An aggregate has a test data builder in test/builders/.',
+  severity: 'warn',
+  doc: {
+    why: 'Tests that build aggregates by hand repeat every mandatory field and break together when one is added. A builder has valid defaults and methods in the ubiquitous language, and goes through the public API of the aggregate, so a test states only what matters to the rule it checks and never starts from an invalid state.',
+    bad: `domain/aggregates/invoice.aggregate.ts with no test/builders/invoice.builder.ts`,
+    good: `// test/builders/invoice.builder.ts
+anInvoice().issued().build();`,
+  },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const builders = buildersOf(project);
 
     return perFile(project, this.id, (file) => {
