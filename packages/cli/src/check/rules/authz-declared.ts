@@ -2,7 +2,7 @@ import { onKitContainer } from '../../config';
 import { declaredRoleOf } from '../../declared';
 import { classesOf } from '../declarations/classes-of';
 import type { Finding } from '../model/finding';
-import type { Project } from '../model/project';
+import type { Project, ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
@@ -68,7 +68,7 @@ export class VoidInvoiceCommand extends AuthorizedCommand<void> {}`,
   },
 };
 
-function undeclaredRegistrations(file: SourceFile, project: Project): Finding[] {
+function undeclaredRegistrations(file: SourceFile, project: ProjectFacts): Finding[] {
   if (!inContext(file.location) || file.location.layer !== 'module') {
     return [];
   }
@@ -111,7 +111,7 @@ function declaresItsAccess(file: SourceFile, name: string): boolean {
 }
 
 /** In the declared style there is no registration to read: the exported class of a command or query file says who may send it. */
-function undeclaredMessages(file: SourceFile, project: Project): Finding[] {
+function undeclaredMessages(file: SourceFile, project: ProjectFacts): Finding[] {
   const role =
     isDeclaredStyle(project) && !file.isTest
       ? declaredRoleOf(pathInContext(project, file) ?? '', WITHOUT_MODULE)

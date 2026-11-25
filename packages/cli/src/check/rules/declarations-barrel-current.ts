@@ -18,7 +18,6 @@ import { declaredModules } from '../../model-modules';
 import type { Flaw } from '../model/flaw';
 import type { Project } from '../model/project';
 import type { ProjectRule } from '../model/rule';
-import { sourceAt } from '../project/source-at';
 import { isDeclaredStyle } from '../support/is-declared-style';
 import { reporter } from '../support/reporter';
 import { ownEntry } from '../../config/values/own-entry';
@@ -82,7 +81,7 @@ function judge(project: Project, context: string): Judged[] {
   const entries = entriesOf(project, context);
   const modules = declaredModules(project.config, context);
   const specifierOfFile = (file: string): string => specifierOf(project.config, file);
-  const sources = (file: string) => sourceAt(project, file);
+  const sources = (file: string) => project.sourceAt(file);
 
   if (project.config.stack.assembly === 'discovery') {
     const injected = renderInjections(contextInjections(sources, { directory, entries, modules }), specifierOfFile);

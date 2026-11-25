@@ -1,6 +1,6 @@
 import type { Finding } from '../model/finding';
 import type { Layer } from '../model/layer';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { nestEquivalentsOf } from '../nest/nest-equivalents-of';
@@ -110,6 +110,6 @@ function reachesUseCase(file: SourceFile): boolean {
   );
 }
 
-function isUnderSources({ path }: SourceFile, { config }: Project): boolean {
+function isUnderSources({ path }: SourceFile, { config }: ProjectFacts): boolean {
   return path.startsWith(`${config.sourceRoot}/`);
 }

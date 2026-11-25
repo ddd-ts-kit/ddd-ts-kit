@@ -3,7 +3,7 @@ import { isDeclarationsFile, routesFile } from '../../declared';
 import { roleOf } from '../canonical/role-of';
 import type { ContextLocation } from '../model/context-location';
 import type { Flaw } from '../model/flaw';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
@@ -49,7 +49,7 @@ presentation/http/invoices/issue-invoice/issue-invoice.controller.ts`,
  * The routes of a context are one list named after it instead of a role, in either style; the
  * generated declarations of a layer are named after the layer.
  */
-function namedByTheKit(project: Project, file: SourceFile, context: string): boolean {
+function namedByTheKit(project: ProjectFacts, file: SourceFile, context: string): boolean {
   const relative = pathInContext(project, file) ?? '';
 
   return (

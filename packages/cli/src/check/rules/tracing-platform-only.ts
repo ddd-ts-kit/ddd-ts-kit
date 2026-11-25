@@ -1,4 +1,4 @@
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { isUnder } from '../project/is-under';
@@ -39,7 +39,7 @@ import { initTracing } from '@ddd-ts-kit/tracing/node';`,
 };
 
 /** Every source under the source root, tests included, but the platform, `main.ts` and the entry points under `apps/`. */
-function isJudged({ location, path }: SourceFile, { config }: Project): boolean {
+function isJudged({ location, path }: SourceFile, { config }: ProjectFacts): boolean {
   const isWiring =
     location.area === 'platform' || location.area === 'main' || isUnder(path, `${config.sourceRoot}/apps`);
 

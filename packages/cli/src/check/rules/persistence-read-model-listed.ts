@@ -14,7 +14,6 @@ import type { Project } from '../model/project';
 import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import type { Violation } from '../model/violation';
-import { sourceAt } from '../project/source-at';
 import { listFindings } from '../read-models/list-findings';
 import { reporter } from '../support/reporter';
 import { toViolations } from '../support/to-violations';
@@ -46,7 +45,7 @@ const LISTED = [
   scope: 'project',
   judge(project) {
     const file = `${project.config.platformDir}/database/read-model-tables.ts`;
-    const source = sourceAt(project, file);
+    const source = project.sourceAt(file);
 
     return source === undefined ? withoutList(project, file) : againstList(project, source);
   },

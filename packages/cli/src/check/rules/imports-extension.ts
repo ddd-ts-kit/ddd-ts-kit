@@ -2,7 +2,7 @@ import { aliasRoots, specifierSuffix } from '../../alias';
 import { CONFIG_FILE } from '../../config';
 import type { Finding } from '../model/finding';
 import type { Flaw } from '../model/flaw';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { besideTheSources } from '../project/beside-the-sources';
@@ -42,7 +42,7 @@ import { InvoiceIssued } from '@/contexts/billing/published-language';`,
   },
 };
 
-function findingsIn(project: Project, file: SourceFile): Finding[] {
+function findingsIn(project: ProjectFacts, file: SourceFile): Finding[] {
   const roots = aliasRoots(project.config);
   const judge = specifierSuffix(project.config.importExtension) === '' ? withoutExtension : withExtension;
 

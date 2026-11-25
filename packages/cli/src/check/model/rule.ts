@@ -1,6 +1,6 @@
 import type { IdleSuppression } from '../suppressions/idle-suppression';
 import type { Finding } from './finding';
-import type { Project } from './project';
+import type { Project, ProjectFacts } from './project';
 import type { RuleDoc } from './rule-doc';
 import type { SourceFile } from './source-file';
 import type { Violation } from './violation';
@@ -25,8 +25,11 @@ interface RuleFacts {
 /** A rule that needs one source at a time: the engine walks the sources, and `check-file` hands it one. */
 export interface FileRule extends RuleFacts {
   readonly scope: 'file';
-  /** What the rule finds in one source. */
-  judge(file: SourceFile, project: Project): readonly Finding[];
+  /**
+   * What the rule finds in one source. The project answers about the config, the place of a file and a
+   * source this one imports, never about the tree: the judgment is the same in `check` and `check-file`.
+   */
+  judge(file: SourceFile, project: ProjectFacts): readonly Finding[];
   /** The part of the judgment that needs the whole tree: `check-file` skips it. */
   acrossProject?(project: Project): readonly Violation[];
 }

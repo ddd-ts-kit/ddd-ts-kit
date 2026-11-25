@@ -2,7 +2,7 @@ import { declaredRoleOf } from '../../declared';
 import { roleOf } from '../canonical/role-of';
 import { classesOf } from '../declarations/classes-of';
 import type { Finding } from '../model/finding';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
@@ -67,7 +67,7 @@ function severalExportedClasses(file: SourceFile): Finding[] {
 }
 
 /** In the declared style a role file is found by its name and read for one class: a second declared class hides behind the first. */
-function severalDeclaredClasses(file: SourceFile, project: Project): Finding[] {
+function severalDeclaredClasses(file: SourceFile, project: ProjectFacts): Finding[] {
   if (!isDeclaredStyle(project) || declaredRoleOf(pathInContext(project, file) ?? '', WITHOUT_MODULE) === undefined) {
     return [];
   }

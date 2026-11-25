@@ -2,7 +2,7 @@ import { classesOf } from '../declarations/classes-of';
 import { dependencyLists } from '../declarations/dependency-lists';
 import type { Finding } from '../model/finding';
 import type { Location } from '../model/location';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { isJobFile } from '../scheduling/is-job-file';
@@ -160,7 +160,7 @@ function reached(location: Location, isDependency: boolean): string | undefined 
 }
 
 /** Outside the declared style nothing else says that a class carrying `@Scheduled` is out of place. */
-function declaredElsewhere(file: SourceFile, project: Project): Finding[] {
+function declaredElsewhere(file: SourceFile, project: ProjectFacts): Finding[] {
   if (isDeclaredStyle(project)) {
     return [];
   }

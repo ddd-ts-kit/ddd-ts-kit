@@ -2,7 +2,7 @@ import { argumentsOf } from '../declarations/arguments-of';
 import { bindingCalls } from '../declarations/binding-calls';
 import { classesOf } from '../declarations/classes-of';
 import type { Finding } from '../model/finding';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { classDeclaring } from '../ports/class-declaring';
@@ -68,7 +68,7 @@ function declaredAdapters(file: SourceFile): Finding[] {
 }
 
 /** `bind(P).toClass(C, ..)` and `rebind(P).toClass(C, ..)`; a class bound to itself is no port and is left alone. */
-function boundClasses(file: SourceFile, project: Project): Finding[] {
+function boundClasses(file: SourceFile, project: ProjectFacts): Finding[] {
   const { code } = file.scan;
 
   const bindings = bindingCalls(file).filter(({ method }) => method === 'bind' || method === 'rebind');

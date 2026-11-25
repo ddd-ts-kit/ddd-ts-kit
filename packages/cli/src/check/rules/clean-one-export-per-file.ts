@@ -5,7 +5,7 @@ import { kebabCaseOf } from '../exports/kebab-case-of';
 import { matchesGlob } from '../exports/matches-glob';
 import { namedAfter } from '../exports/named-after';
 import type { Finding } from '../model/finding';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { isGeneratedContextFile } from '../support/is-generated-context-file';
@@ -57,7 +57,7 @@ export interface IssueInvoiceResult { readonly invoiceId: string }`,
 };
 
 /** Sources under the source root, or under a directory named like it when there is no project around: tests are not judged. */
-function isJudged(file: SourceFile, project: Project): boolean {
+function isJudged(file: SourceFile, project: ProjectFacts): boolean {
   const segments = file.path.split('/');
   const root = project.config.sourceRoot;
 
@@ -96,7 +96,7 @@ function isAllowedInEntry(statement: string): boolean {
   return list !== null && (list[2] !== undefined || (list[1] ?? '').trim() === '');
 }
 
-function judged(file: SourceFile, project: Project): Finding[] {
+function judged(file: SourceFile, project: ProjectFacts): Finding[] {
   const verdict = judgeExports(file);
   const allowed = project.config.onePerFile.allow.some((allowance) => matchesGlob(allowance.file, file.path));
 

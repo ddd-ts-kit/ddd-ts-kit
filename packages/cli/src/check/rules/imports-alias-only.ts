@@ -4,7 +4,7 @@ import { aliasRoots, neighbourSuffix, specifierSuffix, toAlias, type AliasRoot }
 import { CONFIG_FILE } from '../../config';
 import type { Finding } from '../model/finding';
 import type { Flaw } from '../model/flaw';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { besideTheSources } from '../project/beside-the-sources';
@@ -68,7 +68,7 @@ interface Written {
   readonly neighbourSuffix: string;
 }
 
-function writtenBy({ root, config }: Project): Written {
+function writtenBy({ root, config }: ProjectFacts): Written {
   return {
     root,
     roots: aliasRoots(config),

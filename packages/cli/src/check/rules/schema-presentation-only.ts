@@ -1,5 +1,5 @@
 import type { Finding } from '../model/finding';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { holdsSchemas } from '../schemas/holds-schemas';
@@ -54,7 +54,7 @@ function declaredInSharedKernel(file: SourceFile): Finding[] {
     }));
 }
 
-function readOutsidePresentation(project: Project, file: SourceFile): Finding[] {
+function readOutsidePresentation(project: ProjectFacts, file: SourceFile): Finding[] {
   const { location } = file;
 
   const reader =

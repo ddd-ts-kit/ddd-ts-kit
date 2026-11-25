@@ -6,7 +6,7 @@ import type { DeclaredClass } from '../declarations/declared-class';
 import type { Decoration } from '../declarations/decoration';
 import { optionOf, type OptionValue } from '../declarations/option-of';
 import type { Finding } from '../model/finding';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
@@ -73,7 +73,7 @@ function decorated(file: SourceFile): Decorated[] {
   );
 }
 
-function outsideTheDomain(file: SourceFile, project: Project): Finding[] {
+function outsideTheDomain(file: SourceFile, project: ProjectFacts): Finding[] {
   const inside = pathInContext(project, file) ?? '';
   const role = declaredRoleOf(inside, WITHOUT_MODULE);
   const place = role === undefined ? misplaced(file) : undeclaredRole(file, role, inside);

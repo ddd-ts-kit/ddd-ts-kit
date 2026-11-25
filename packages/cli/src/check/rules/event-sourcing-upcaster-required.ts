@@ -1,13 +1,18 @@
-import { eventNameResolver } from '../events/event-name-resolver';
+import { eventNameResolver, type EventNameResolver } from '../events/event-name-resolver';
 import { readStoredEventsLock, type StoredEventsLock } from '../event-sourcing/read-stored-events-lock';
 import type { StoredEventDeclaration } from '../event-sourcing/stored-event-declaration';
 import { storedEventDeclarations } from '../event-sourcing/stored-event-declarations';
 import { STORED_EVENTS_LOCK } from '../event-sourcing/stored-events-lock-file';
 import type { Finding } from '../model/finding';
 import type { FileRule } from '../model/rule';
+import type { SourceFile } from '../model/source-file';
+import { oncePerProject } from '../support/once-per-project';
+import { perFile } from '../support/per-file';
 
 const NEW_VERSION_FIX =
   'A stored event is never rewritten: keep the shape of the stored version as it is, declare the new shape under a new name, raise `version` by one and add the upcaster from the stored version, `upcasters: { <stored>: (data) => ({ ...data, <new field>: <value for the old events> }) }`, then `ddd-ts-kit docs --stored-events` records the new version once it is stored.';
+
+const lockOf = oncePerProject(({ root }) => readStoredEventsLock(root));
 
 export const eventSourcingUpcasterRequired: FileRule = {
   id: 'event-sourcing/upcaster-required',
@@ -29,17 +34,32 @@ interface NoShowNotedData { readonly appointmentId: string; readonly reason: str
   },
   scope: 'file',
   judge(file, project) {
-    const lock = readStoredEventsLock(project.root);
-    const eventNameOf = eventNameResolver(project.files);
-
-    return storedEventDeclarations(file, eventNameOf).flatMap((declaration) => [
+    return storedEventDeclarations(file, eventNameResolver([file])).flatMap((declaration) => [
       ...unnamed(declaration),
       ...unresolved(declaration),
       ...missingUpcasters(declaration),
-      ...changedShape(declaration, lock),
+      ...changedShape(declaration, lockOf(project)),
     ]);
   },
+  /** The stored shape of an event whose class, and so whose name, another file declares. */
+  acrossProject(project) {
+    const eventNameOf = eventNameResolver(project.files);
+    const lock = lockOf(project);
+
+    return perFile(project, this.id, (file) =>
+      namedElsewhere(file, eventNameOf).flatMap((declaration) => changedShape(declaration, lock)),
+    );
+  },
 };
+
+/** The stored events a file names by a class it does not declare, with the name read where the class is. */
+function namedElsewhere(file: SourceFile, eventNameOf: EventNameResolver): StoredEventDeclaration[] {
+  const alone = storedEventDeclarations(file, eventNameResolver([file]));
+
+  return storedEventDeclarations(file, eventNameOf).filter(
+    ({ name }, index) => name !== undefined && alone[index]?.name === undefined,
+  );
+}
 
 function unnamed({ eventClass, payloadType, fingerprint, line }: StoredEventDeclaration): Finding[] {
   if (payloadType === undefined) {

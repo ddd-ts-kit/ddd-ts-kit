@@ -1,5 +1,5 @@
 import type { Finding } from '../model/finding';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { bindingPlace } from '../support/binding-place';
@@ -50,7 +50,7 @@ function isOutsideComposition({ isTest, location }: SourceFile): boolean {
 }
 
 /** `new X` and `.toClass(X, ..)` of a class imported from infrastructure/. */
-function usedAdapters(file: SourceFile, project: Project): Finding[] {
+function usedAdapters(file: SourceFile, project: ProjectFacts): Finding[] {
   return importedAdapters(file).flatMap(({ name, context }) => {
     const use = new RegExp(`(?:(?<![\\w$.])new\\s+|\\.\\s*toClass\\s*\\(\\s*)${escapeRegExp(name)}(?![\\w$])`).exec(
       file.scan.code,
@@ -91,7 +91,7 @@ function isInfrastructureOf({ location }: SourceFile, context: string): boolean 
 }
 
 /** Declared classes are also assembled by the entry point of a context run alone, `apps/<context>/main.ts`. */
-function isOutsideAssembly(file: SourceFile, project: Project): boolean {
+function isOutsideAssembly(file: SourceFile, project: ProjectFacts): boolean {
   const entryPoint = new RegExp(`^${project.config.sourceRoot}/apps/[^/]+/main\\.ts$`);
 
   return isOutsideComposition(file) && !entryPoint.test(file.path);

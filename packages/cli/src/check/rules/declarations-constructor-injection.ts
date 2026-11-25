@@ -2,9 +2,8 @@ import { declaredRoleOf } from '../../declared/declared-role-of';
 import type { ClassInjection } from '../../declared/injection/class-injection';
 import { readInjections } from '../../declared/injection/read-injections';
 import type { Finding } from '../model/finding';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
-import { sourceAt } from '../project/source-at';
 import { inContext } from '../support/in-context';
 import { isDeclaredStyle } from '../support/is-declared-style';
 import { pathInContext } from '../support/path-in-context';
@@ -47,7 +46,7 @@ export class IssueInvoiceHandler {
       return [];
     }
 
-    return readInjections((path) => sourceAt(project, path), file).flatMap((injection) =>
+    return readInjections((path) => project.sourceAt(path), file).flatMap((injection) =>
       injection.listed === undefined ? unstated(project, injection) : listed(project, injection),
     );
   },
@@ -58,12 +57,12 @@ export class IssueInvoiceHandler {
  * decorators wrote its classes before the signature was read: there, a class that inherits a
  * constructor nothing can read and lists nothing takes nothing, as it always did.
  */
-function unstated(project: Project, { problems, readable }: ClassInjection): readonly Finding[] {
+function unstated(project: ProjectFacts, { problems, readable }: ClassInjection): readonly Finding[] {
   return readable || project.config.stack.dependencies === 'signature' ? problems : [];
 }
 
 /** A list in a decorator: the statement of a 0.1 project, a second statement where the constructor is the one. */
-function listed(project: Project, injection: ClassInjection): Finding[] {
+function listed(project: ProjectFacts, injection: ClassInjection): Finding[] {
   const { className, line, listed: names = [], dependencies, readable } = injection;
 
   if (project.config.stack.dependencies !== 'signature' || !readable) {

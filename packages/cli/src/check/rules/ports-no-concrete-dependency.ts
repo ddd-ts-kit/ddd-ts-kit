@@ -3,10 +3,9 @@ import { readInjections } from '../../declared/injection/read-injections';
 import { dependencyLists } from '../declarations/dependency-lists';
 import type { Finding } from '../model/finding';
 import type { Location } from '../model/location';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
-import { sourceAt } from '../project/source-at';
 import { importedFrom } from '../support/imported-from';
 import { isDeclaredStyle } from '../support/is-declared-style';
 import { pathInContext } from '../support/path-in-context';
@@ -67,7 +66,7 @@ function listed(file: SourceFile): Finding[] {
 }
 
 /** A declared class that lists nothing states its dependencies in its constructor: its parameter types are the list. */
-function typed(project: Project, file: SourceFile): Finding[] {
+function typed(project: ProjectFacts, file: SourceFile): Finding[] {
   if (
     !isDeclaredStyle(project) ||
     file.isTest ||
@@ -76,7 +75,7 @@ function typed(project: Project, file: SourceFile): Finding[] {
     return [];
   }
 
-  return readInjections((path) => sourceAt(project, path), file).flatMap(
+  return readInjections((path) => project.sourceAt(path), file).flatMap(
     ({ className, line, listed: list, dependencies = [] }) =>
       (list === undefined ? dependencies : []).flatMap(({ name, from }) => {
         const place = from.kind === 'file' ? concretePlace(project.locate(from.path)) : undefined;
