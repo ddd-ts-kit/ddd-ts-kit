@@ -43,7 +43,7 @@ export const propertyKind: Kind = {
   },
 };
 
-/** fast-check joins the development dependencies with the first property; a project that has it keeps its own range. */
+/** fast-check joins the development dependencies with the first property, and the output says to install it; a project that has it keeps its own range. */
 function addFastCheck(scope: Scope): void {
   const manifest = scope.ws.read('package.json');
 
@@ -57,6 +57,10 @@ function addFastCheck(scope: Scope): void {
       [FAST_CHECK]: VERSIONS[FAST_CHECK],
     });
   });
+
+  scope.ws.note(
+    `${FAST_CHECK} joined the development dependencies of package.json: run \`npm install\` before the typecheck and the specs, which fail until it is installed.`,
+  );
 }
 
 function sortedByName(record: Record<string, unknown>): Record<string, unknown> {

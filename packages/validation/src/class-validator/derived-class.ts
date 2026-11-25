@@ -15,7 +15,7 @@ export function derivedClass<T extends object>(
 ): DtoClass<T> {
   const derived = class {};
 
-  // Two derived classes of one name would merge in class-validator-jsonschema, which groups by name.
+  // The name its schema carries in the contract, until the class that extends it gives its own.
   Object.defineProperty(derived, 'name', { value: name });
 
   const copied = copyClassMetadata(base, derived, keeps);

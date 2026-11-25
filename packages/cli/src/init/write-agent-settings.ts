@@ -28,7 +28,7 @@ export function writeAgentSettings(ws: Workspace, config: Config): void {
       ? { sandbox: regulatedSandbox(gitHostOf(ws.root), config.stack), hooks: mergeHooks(undefined) }
       : {};
 
-    ws.create(AGENT_SETTINGS, serialize({ permissions, ...profile }));
+    ws.create(AGENT_SETTINGS, ws.spoken(serialize({ permissions, ...profile })));
     noteManaged(ws, config);
 
     return;

@@ -13,7 +13,7 @@ describe('the wiring of the clients', () => {
       'ci:build': 'npm run build',
     };
 
-    const wired = sdkScripts(scripts);
+    const wired = sdkScripts(scripts, 'npm');
 
     expect(wired).toEqual({
       'docs:generate': 'ddd-ts-kit docs && ddd-ts-kit sdk',
@@ -24,8 +24,11 @@ describe('the wiring of the clients', () => {
       'sdk:build': 'ddd-ts-kit tsc -b clients',
     });
 
-    expect(sdkScripts(wired)).toEqual(wired);
-    expect(sdkScripts({})).toEqual({ 'sdk:generate': 'ddd-ts-kit sdk', 'sdk:build': wired['sdk:build'] });
+    expect(sdkScripts(wired, 'npm')).toEqual(wired);
+    expect(sdkScripts({}, 'npm')).toEqual({ 'sdk:generate': 'ddd-ts-kit sdk', 'sdk:build': wired['sdk:build'] });
+
+    // The step it adds is said as the package manager says it; the script of the team stays as it wrote it.
+    expect(sdkScripts({ 'ci:build': 'npm run build' }, 'pnpm')['ci:build']).toBe('npm run build && pnpm run sdk:build');
   });
 
   it('names the root as a workspace of knip once, and keeps a config that already lists its workspaces', () => {

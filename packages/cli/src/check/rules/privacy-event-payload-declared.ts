@@ -1,4 +1,5 @@
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
+import { JUDGED_ONLY_WHEN_ON } from '../privacy/judged-only-when-on';
 import { personalTermOf } from '../privacy/personal-term-of';
 import { privacyJudged } from '../privacy/privacy-judged';
 import { type PublishedEventOf, publishedEventsOf } from '../privacy/published-events-of';
@@ -13,12 +14,27 @@ import { reporter } from '../support/reporter';
  * it keeps a copy to erase. Read from the `z.object({...})` of the declaration and from the class or
  * the interface of its `.payload.ts`. Silent with `stack.privacy` off.
  */
-export const privacyEventPayloadDeclared: Rule = {
+export const privacyEventPayloadDeclared: ProjectRule = {
   id: 'privacy/event-payload-declared',
   description:
     'A field of the payload of an integration event named like personal data is listed in the personal option of its declaration.',
+  severity: 'warn',
+  doc: {
+    why: `An integration event that carries personal data hands a copy of the person to every consumer. Its personal option says so: the event catalog prints it, AsyncAPI marks it (x-personal-data), the register lists the event and the contexts downstream, and privacy/erasure-reaches-copies asks those that consume it to erase their copy. A field of the payload whose name holds a word of the vocabulary and that the option does not list is a copy nobody knows of. Judged on the keys of the z.object of the declaration (the objects nested in it included) and on the members of the class or the interface of its .payload.ts; a path of the option is compared by its last name (customer.email lists email). The subject is the field that names the person, an opaque id. Minimisation first: a field no consumer needs leaves the payload. ${JUDGED_ONLY_WHEN_ON}`,
+    bad: `export const customerRegisteredV1 = defineIntegrationEvent({
+  type: 'crm.customer.registered',
+  version: 1,
+  payload: zodSchema(z.object({ customerId: z.string(), email: z.string() })),
+});`,
+    good: `export const customerRegisteredV1 = defineIntegrationEvent({
+  type: 'crm.customer.registered',
+  version: 1,
+  personal: { subject: 'customerId', fields: ['email'] },
+  payload: zodSchema(z.object({ customerId: z.string(), email: z.string() })),
+});`,
+  },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!privacyJudged(project)) {
       return [];
     }

@@ -1,5 +1,6 @@
+import type { ImportKind } from '../check/scan/import-record';
 import type { Scan } from '../check/scan/scan';
-import { statementOf } from '../check/scan/statement-of';
+import { statementsOf } from '../check/scan/statements-of';
 import type { StringRecord } from '../check/scan/string-record';
 import type { SpecifierLiteral } from './specifier-literal';
 
@@ -16,8 +17,10 @@ const NEAR = 80;
  * expressions, so a string that only looks like an import inside one of those is never answered.
  */
 export function specifierLiterals({ code, strings }: Pick<Scan, 'code' | 'strings'>): SpecifierLiteral[] {
+  const statements = new Map(statementsOf(code, strings).map(({ literal, record }) => [literal, record.kind]));
+
   return strings.flatMap((literal) => {
-    const kind = positionOf(code, literal);
+    const kind = positionOf(code, literal, statements.get(literal));
 
     if (kind === undefined) {
       return [];
@@ -27,12 +30,15 @@ export function specifierLiterals({ code, strings }: Pick<Scan, 'code' | 'string
   });
 }
 
-function positionOf(code: string, literal: StringRecord): 'statement' | 'argument' | undefined {
+function positionOf(
+  code: string,
+  literal: StringRecord,
+  statement: ImportKind | undefined,
+): 'statement' | 'argument' | undefined {
   const before = code.slice(Math.max(0, literal.start - NEAR), literal.start);
-  const found = statementOf(code, literal);
 
-  if (found !== undefined) {
-    return found.record.kind === 'dynamic' || found.record.kind === 'require' ? 'argument' : 'statement';
+  if (statement !== undefined) {
+    return statement === 'dynamic' || statement === 'require' ? 'argument' : 'statement';
   }
 
   if (META_RESOLVE.test(before)) {

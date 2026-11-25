@@ -1,5 +1,7 @@
 import path from 'node:path';
 import { parseArgs, type ParseArgsConfig } from 'node:util';
+import { CliError } from '../cli-error';
+import { isOneOf } from '../config/is-one-of';
 import { ArgumentsError } from './arguments-error';
 import { findRoot } from './find-root';
 
@@ -69,6 +71,29 @@ export class Arguments {
 
   get json(): boolean {
     return this.flag('json');
+  }
+
+  /**
+   * The output the caller asks for, among those the command prints: `--json` and `--format json`
+   * are one thing, and `--json` beside another format asks for two outputs.
+   */
+  format<Format extends string>(printed: readonly Format[], otherwise: Format): Format {
+    const named = this.text('format');
+
+    if (this.json && named !== undefined && named !== 'json') {
+      throw new CliError(
+        `--json and --format ${named} ask for two outputs.`,
+        'Give one of them: --json is --format json.',
+      );
+    }
+
+    const asked = this.json ? 'json' : (named ?? otherwise);
+
+    if (!isOneOf(printed, asked)) {
+      throw new CliError(`Unknown value "${asked}" for --format.`, `Use one of: ${printed.join(', ')}.`);
+    }
+
+    return asked;
   }
 
   get workingDirectory(): string {

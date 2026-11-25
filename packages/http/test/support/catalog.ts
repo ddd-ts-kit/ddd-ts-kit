@@ -96,6 +96,19 @@ export const catalogRoutes: readonly Route[] = [
   ),
 ];
 
+/** Every product, read as it comes, by a route that declares no other media type than JSON. */
+export const listedProductsRoute: Route = defineRoute(
+  {
+    method: 'GET',
+    path: '/products/listed',
+    operationId: 'listProductsAsTheyCome',
+    summary: 'List products as they come',
+    responses: { 200: { description: 'Every product.', body: streamSchemaOf(product) } },
+    security: false,
+  },
+  () => ({ status: 200, body: rows(PRODUCTS) }),
+);
+
 /** An export whose cursor fails once it has given `count` products: the status is sent by then. */
 export function failingExportRoute(count: number): Route {
   return defineRoute(

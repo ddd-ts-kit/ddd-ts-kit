@@ -5,7 +5,6 @@ import { Arguments } from '../../commands/arguments';
 import { findRoot } from '../../commands/find-root';
 import { type Command } from '../../commands/command';
 import type { Io } from '../../commands/io';
-import { isOneOf } from '../../config';
 import { applyBaseline } from '../baseline/apply-baseline';
 import { BASELINE_FILE, readBaseline } from '../baseline/read-baseline';
 import { writeBaseline } from '../baseline/write-baseline';
@@ -13,7 +12,7 @@ import { baselineFollowingMoves } from '../baseline/baseline-following-moves';
 import { prunedBaseline } from '../baseline/pruned-baseline';
 import { renamedFiles } from '../baseline/renamed-files';
 import { recordedBaseline } from '../baseline/recorded-baseline';
-import { CLEAN_RULE_IDS } from '../catalogue/clean-rule-ids';
+import { STANDALONE_RULE_IDS } from '../catalogue/standalone-rule-ids';
 import type { CheckResult } from '../engine/check-result';
 import { formatCheck, type CheckFormat } from '../engine/format-check';
 import { runCheck } from '../engine/run-check';
@@ -25,7 +24,7 @@ import { loadLooseProject } from '../project/load-loose-project';
 import { loadProject } from '../project/load-project';
 import { toPosix } from '../project/to-posix';
 import { knownCommit } from '../../commit/known-commit';
-import { changedFiles } from './changed-files';
+import { changedSince } from './changed-since';
 import { isReportedSince } from './is-reported-since';
 import { knownRules } from './known-rules';
 import { selfCheck } from './self-check';
@@ -56,7 +55,7 @@ export const checkCommand: Command = (argv, io) => {
     return rewriteBaseline(args, io, baseline);
   }
 
-  const format = formatOf(args);
+  const format = args.format(FORMATS, 'text');
   const rules = knownRules(args.many('rule'));
   const result = args.flag('clean-only') ? checkCleanliness(args, rules) : checkProject(args, rules);
 
@@ -67,23 +66,14 @@ export const checkCommand: Command = (argv, io) => {
   return result.errorCount > 0 ? 1 : 0;
 };
 
-function formatOf(args: Arguments): CheckFormat {
-  const format = args.json ? 'json' : (args.text('format') ?? 'text');
-
-  if (isOneOf(FORMATS, format)) {
-    return format;
-  }
-
-  throw new CliError(`Unknown format "${format}".`, `Use one of: ${FORMATS.join(', ')}.`);
-}
-
 /** The rules that judge a file on its own, on any directories: no project, no config. */
 function checkCleanliness(args: Arguments, rules: readonly string[]): CheckResult {
   const directories = args.positionals.length > 0 ? args.positionals : ['.'];
 
+  refuseWhatNeedsAProject(args, rules);
   refuseMissingPaths(args);
 
-  const selected = rules.length > 0 ? rules.filter((id) => CLEAN_RULE_IDS.includes(id)) : CLEAN_RULE_IDS;
+  const selected = rules.length > 0 ? rules : STANDALONE_RULE_IDS;
 
   const project = loadLooseProject(
     args.workingDirectory,
@@ -91,6 +81,25 @@ function checkCleanliness(args: Arguments, rules: readonly string[]): CheckResul
   );
 
   return runCheck(project, { rules: selected });
+}
+
+/** Directories read as they are have no history to compare with, and no project for a rule that asks about one. */
+function refuseWhatNeedsAProject(args: Arguments, rules: readonly string[]): void {
+  if (args.text('changed-since') !== undefined) {
+    throw new CliError(
+      '--clean-only compares with no ref.',
+      'Run it without --changed-since: it judges the directories given as they are, outside a project and its history.',
+    );
+  }
+
+  const needing = rules.filter((id) => !STANDALONE_RULE_IDS.includes(id));
+
+  if (needing.length > 0) {
+    throw new CliError(
+      `--clean-only does not run ${needing.join(', ')}.`,
+      `It holds the rules that judge a file on its own: ${STANDALONE_RULE_IDS.join(', ')}.`,
+    );
+  }
 }
 
 function checkProject(args: Arguments, rules: readonly string[]): CheckResult {
@@ -109,7 +118,7 @@ function checkProject(args: Arguments, rules: readonly string[]): CheckResult {
   refuseScopeWithoutSources(project, args.positionals, scopes);
 
   const ref = args.text('changed-since');
-  const changed = ref === undefined ? undefined : changedFiles(root, knownCommit(root, ref, CHANGED_SINCE_FIX));
+  const changed = ref === undefined ? undefined : changedSince(root, knownCommit(root, ref, CHANGED_SINCE_FIX));
 
   const reported = result.violations.filter(
     (violation) => isInScope(violation, scopes) && isReportedSince(violation, changed),
@@ -169,10 +178,10 @@ function rewriteBaseline(args: Arguments, io: Io, mode: string): number {
     throw new CliError(`Unknown --baseline "${mode}".`, 'Use --baseline write or --baseline prune.');
   }
 
-  if (args.many('rule').length > 0 || args.positionals.length > 0 || args.text('changed-since') !== undefined) {
+  if (narrowsOrDecorates(args)) {
     throw new CliError(
       `--baseline ${mode} judges every rule on every file.`,
-      'Run it without --rule, a path or --changed-since.',
+      'Run it without --rule, a path, --changed-since, --clean-only or --explain.',
     );
   }
 
@@ -189,6 +198,17 @@ function rewriteBaseline(args: Arguments, io: Io, mode: string): number {
   io.out(baselineSummary(baseline));
 
   return 0;
+}
+
+/** What `--baseline` would not honour: fewer rules or files than all of them, and a report of the findings. */
+function narrowsOrDecorates(args: Arguments): boolean {
+  return (
+    args.many('rule').length > 0 ||
+    args.positionals.length > 0 ||
+    args.text('changed-since') !== undefined ||
+    args.flag('clean-only') ||
+    args.flag('explain')
+  );
 }
 
 function baselineSummary(baseline: ReturnType<typeof recordedBaseline>): string {

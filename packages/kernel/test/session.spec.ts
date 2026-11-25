@@ -59,6 +59,14 @@ describe('Session', () => {
     expect(anonymousSession()).toBe(session);
   });
 
+  it('never issued: a caller that changes the instant of one session changes no other', () => {
+    anonymousSession().issuedAt.setUTCFullYear(2030);
+    systemSession('reminders').issuedAt.setUTCFullYear(2030);
+
+    expect(anonymousSession().issuedAt.getTime()).toBe(0);
+    expect(systemSession('billing').issuedAt.getTime()).toBe(0);
+  });
+
   it('gives the system a session named after what runs', () => {
     const session = systemSession('invoice-reminder', clock.now());
 

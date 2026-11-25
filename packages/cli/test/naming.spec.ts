@@ -38,6 +38,25 @@ describe('names', () => {
     expect(toName('Address').table).toBe('addresses');
   });
 
+  it('reads one name whatever the separators it was typed with: the words of its PascalCase form', () => {
+    for (const typed of ['credit 2 note', 'credit-2-note', 'Credit2Note', 'credit2Note', 'CREDIT_2_NOTE']) {
+      const name = toName(typed);
+
+      expect([name.pascal, name.kebab, name.constant, name.table], typed).toEqual([
+        'Credit2Note',
+        'credit2-note',
+        'CREDIT2_NOTE',
+        'credit2_notes',
+      ]);
+
+      expect(toName(name.pascal).kebab, typed).toBe(name.kebab);
+    }
+
+    for (const typed of ['b2b order', 'B2BOrder', 'iOS device', 'URLs', 'x-ray 3d']) {
+      expect(toName(toName(typed).pascal), typed).toEqual(toName(typed));
+    }
+  });
+
   it('keeps acronyms together', () => {
     expect(toName('HTTPGateway').kebab).toBe('http-gateway');
   });

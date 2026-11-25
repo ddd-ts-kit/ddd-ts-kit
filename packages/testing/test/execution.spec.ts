@@ -201,7 +201,7 @@ describe('createTestBuses', () => {
       'grace',
     );
 
-    expect(actorContext.require()).toBe(ada);
+    expect(actorContext.require()).toEqual(ada);
   });
 
   it('keeps the actor context and the scope together', () => {

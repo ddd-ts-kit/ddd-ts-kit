@@ -48,19 +48,20 @@ export class InProcessBus {
     }
   }
 
-  protected dispatch<M extends Message>(message: M): Promise<ResultOf<M>> {
+  /** Answers a promise whatever fails: a handler that throws before its first `await` rejects, as one that throws after it. */
+  protected async dispatch<M extends Message>(message: M): Promise<ResultOf<M>> {
     const context = this.contexts.get(message.constructor);
     const name = message.constructor.name;
     const info: MessageInfo = { kind: this.kind, name, ...(context === undefined ? {} : { context }) };
     const handler = this.handlers.get(message.constructor);
 
     if (!handler) {
-      return Promise.reject(new HandlerNotFoundError(info));
+      throw new HandlerNotFoundError(info);
     }
 
     const run = [...this.middlewares, ...this.aroundHandlers].reduceRight<() => Promise<unknown>>(
       (next, middleware) => () => middleware(message, next, info),
-      () => handler.execute(message),
+      async () => handler.execute(message),
     );
 
     // eslint-disable-next-line ddd-ts-kit/clean-no-escape-hatch -- handlers of every message type share one map and middlewares answer unknown: the link between a message and its result is only known to register()

@@ -22,4 +22,6 @@ export const KIT_ERROR_CODES: readonly string[] = [
   'FILE_NOT_FOUND',
   'FILE_REJECTED',
   'INVALID_FILE_KEY',
+  'INVALID_FILE_URL_EXPIRY',
+  'FORBIDDEN_TRANSITION',
 ];

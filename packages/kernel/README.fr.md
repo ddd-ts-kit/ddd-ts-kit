@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:32d9cb44336efff6 -->
+<!-- translation-of: README.md sha256:2ae6407737da0319 -->
 
 # @ddd-ts-kit/kernel
 
@@ -35,11 +35,11 @@ avec une bibliothèque.
 | Domaine | `Entity`, `AggregateRoot` (version, événements enregistrés), `ValueObject`, `DomainEvent`, `DomainError` avec un `code` stable, `ConceptError` (les erreurs d'un concept, chacune construite par une fabrique statique : voir « Erreurs du domaine »), `DomainRefusal` (une classe par refus, construite par des fabriques statiques), `FactualRefusal`, `isRefusal`, `CodeOf`, `RefusalOf`, `Refusal`, `RefusalFacts`, le générique `InvariantViolation`, `NotFoundError`, `ConflictError` (et `UniqueViolationError`, une valeur qu'une contrainte d'unicité garde déjà détenue), `ConcurrencyError`, `PreconditionFailedError`, `Result` avec `ok`, `err`, `unwrap` |
 | Ports | `Clock`, `IdGenerator`, `UnitOfWork`, `Repository` (classes abstraites : chacune est son propre jeton d'injection), `UseCase`, `DependencyKind` (les rôles que déclare une liaison, lus par di, le traçage et les aspects : `repository`, `gateway`, `external`, `use-case`, `publisher`, `consumer`, `domain-event-handler`, `job`) |
 | Bus | `Command`, `Query`, `CommandBus`, `QueryBus`, `BusMiddleware`, les `InMemoryCommandBus` et `InMemoryQueryBus` en processus (`register(type, handler, { context })` nomme le contexte délimité dans `MessageInfo`), `unitOfWorkMiddleware` |
-| Événements | `IntegrationEvent`, `IntegrationEventPublisher`, `IntegrationEventSubscriber`, `EventBus` (les deux à la fois), `EventSubscribers` (l'abonné de chaque contexte délimité), `ProcessedEventStore`, `idempotent`, `InMemoryEventBus` (exécute chaque gestionnaire d'un événement, puis rejette avec une `AggregateError` des échecs ; avec `{ failures: 'as-thrown' }`, la valeur par défaut d'une prochaine version mineure, l'échec d'un seul gestionnaire est relancé tel quel, avec son `code`), `EventBusFailures`, `DomainEventDispatcher`, `IntegrationEventCallback` et `DomainEventCallback` (les fonctions que reçoivent un abonné et un distributeur), `executionContextOfEvent`, `inEventScope`, `scopedPublisher`, `EventDelivery` (ce qu'un fournisseur dit d'une livraison : tentative, dernière tentative, transport, source, consommateur), `messagingSystemOf` |
-| Événements du domaine et unité de travail | `dispatchingOnSave` (l'enveloppe qui fait remettre par un *repository* ce qu'ont enregistré les agrégats qu'on lui confie), `announceDomainEvents`, `withinUnitOfWork` (ce sur quoi repose chaque `UnitOfWork.run` : file, distribution avant la validation, phase `after-commit`), `unitOfWorkStage` et `UnitOfWorkStage`, `DomainEventPhase`, `DomainEventSubscription`, `SaveAfterCommitError`, `AfterCommitFailure`, `reportAfterCommitFailures`, `InMemoryDomainEventDispatcher` |
+| Événements | `IntegrationEvent`, `IntegrationEventPublisher`, `IntegrationEventSubscriber`, `EventBus` (les deux à la fois), `EventSubscribers` (l'abonné de chaque contexte délimité), `ProcessedEventStore`, `idempotent`, `InMemoryEventBus` (exécute chaque gestionnaire d'un événement, puis rejette avec l'échec d'un seul gestionnaire tel quel, avec son `code`, et avec une `AggregateError` de plusieurs ; un événement est livré et consigné dans `published` tel qu'un *broker* le porte, en JSON : une copie, une `Date` sous forme de texte, un événement que JSON ne peut pas porter refusé), `DomainEventDispatcher`, `IntegrationEventCallback` et `DomainEventCallback` (les fonctions que reçoivent un abonné et un distributeur), `executionContextOfEvent`, `inEventScope`, `scopedPublisher`, `EventDelivery` (ce qu'un fournisseur dit d'une livraison : tentative, dernière tentative, transport, source, consommateur), `messagingSystemOf` |
+| Événements du domaine et unité de travail | `dispatchingOnSave` (l'enveloppe qui fait remettre par un *repository* ce qu'ont enregistré les agrégats qu'on lui confie), `announceDomainEvents`, `unitOfWorkOver` (ce sur quoi repose chaque `UnitOfWork` : file, distribution avant la validation, phase `after-commit`), `UnscopedUnitOfWorkError`, `UnitOfWorkAbortedError`, `unitOfWorkStage` et `UnitOfWorkStage`, `DomainEventPhase`, `DomainEventSubscription`, `SaveAfterCommitError`, `AfterCommitFailure`, `reportAfterCommitFailures`, `InMemoryDomainEventDispatcher` |
 | Machines à états | `defineStateMachine`, `StateMachine`, `TransitionError`, `InvalidStateMachineError`, `mermaidOfStateMachine` (voir « Machines à états ») |
 | Acteur | `Actor`, `AuthorizedCommand`, `AuthorizedQuery`, `ActorContext`, `systemActor` |
-| Interfaces standard | `Session`, `ExecutionContext` et `ExecutionScope`, `Logger`, `Metrics`, `ErrorReporter`, `Cache`, `CacheInvalidation` et `CachePurger` (avec `cacheTag`, `tenantCacheTags`, `CachePurgeRequest`, `PublishedCacheInvalidation`, `PurgingPublisher`, `RepeatedCachePurger` : voir « Purger les caches HTTP »), `Lock`, `RateLimiter`, `Page` et `PageRequest`, `AuditStamp`, `TenantScoped`, `AuditTrail`, `AuditReader` et `AuditEntry` |
+| Interfaces standard | `Session`, `ExecutionContext` et `ExecutionScope`, `Logger`, `Metrics`, `ErrorReporter`, `Cache`, `CacheInvalidation` et `CachePurger` (avec `cacheTag`, `tenantCacheTags`, `CachePurgeRequest`, `PublishedCacheInvalidation`, `PurgingPublisher`, `RepeatedCachePurger` : voir « Purger les caches HTTP »), `Lock`, `RateLimiter`, `Page` et `PageRequest`, `AuditStamp`, `TenantScoped`, `AuditTrail`, `AuditReader` et `AuditEntry`, `safely` (exécute un hook, un logger ou une mesure et abandonne ce qu'il lève : observer ne casse jamais ce qui est observé) |
 | *Jobs* planifiés | `JobScheduler`, `ScheduledJob`, `JobExecution`, `JobSchedule`, `JobOptions`, `JobDefinition`, `JobRun`, `JobDescription`, `parseJobSchedule`, `describeJobSchedule`, `jobPolicy`, `executionContextOfJob` |
 | *Jobs* en arrière-plan | `JobQueue`, `BackgroundJob`, `BackgroundJobExecution`, `BackgroundJobPayloadSchema`, `processTimeoutDuePayload`, `EnqueueOptions`, `QueuedJob`, `QueuedJobStatus`, `backgroundJobPolicy`, `retryDelayMs`, `executionContextOfBackgroundJob`, `whenCommitted` (voir « JobQueue ») |
 | Gestionnaires de processus | `ProcessManager`, `ProcessDecision`, `ProcessRunner`, `ProcessStore`, `InMemoryProcessStore`, `UnreadableProcessStateError` (voir « ProcessRunner et ProcessStore ») |
@@ -48,7 +48,7 @@ avec une bibliothèque.
 | *Event sourcing* | `EventSourcedAggregate`, `EventStore`, `defineStoredEvent`, `EventSerializer`, `EventSourcedRepository`, `SnapshotPolicy`, `personalData`, `PersonalDataCipher`, `CatchUpSubscription`, `EventStoreProjectionRebuild`, `InMemoryEventStore`, `PostgresEventStore` (voir « Event sourcing ») |
 | Données personnelles | `personalFields`, `PersonalDataErasure`, `PersonalDataExport`, `eraseDataSubject`, `exportDataSubject`, `PersonalDataExportDocument`, `inEachTenant`, `recordsInEachTenant`, `isDataSubjectId`, `PersonalDataRecord`, `InMemoryPersonalData` (voir « Données personnelles ») |
 | Côté lecture | `Criteria`, `defineCriteria`, `validateCriteria`, `scoped`, `planCriteria`, `evaluateCriteria`, `pageOfPlan`, `hydrate`, `ReadModelStore`, `stampOf`, `TableReadModelStore`, `ProjectionRebuild`, `InMemoryReadModelStore` (voir « Critères », « Hydratation » et « Projections ») |
-| Aides à la persistance | `optimisticUpdate`, `expectVersion` (la version qu'un appelant a lue, `If-Match` en HTTP, est toujours la version courante, sinon `PreconditionFailedError` : 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
+| Aides à la persistance | `optimisticUpdate`, `expectVersion` (la version qu'un appelant a lue, `If-Match` en HTTP, est toujours la version courante, sinon `PreconditionFailedError` : 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `restamped`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
 | Remontée des erreurs | `ErrorReporter`, `ErrorReport`, `errorReportOf`, `reportOnce`, `isUnexpectedError`, `errorReportingMiddleware`, `DeadLetterReports`, `reportProcessFailures`, `NoopErrorReporter` |
 | Doubles | `FixedClock`, `SequentialIdGenerator`, `InMemoryUnitOfWork`, `FixedActorContext`, `FixedExecutionScope`, `InMemoryLogger`, `InMemoryMetrics`, `InMemoryErrorReporter`, `InMemoryCache`, `InMemoryCacheInvalidation`, `InMemoryCachePurger`, `InMemoryLock`, `InMemoryRateLimiter` |
 | Tests (`@ddd-ts-kit/kernel/testing`) | `RecordingCommandBus`, `RecordingQueryBus` : des bus qui gardent chaque message qu'on leur confie, dans l'ordre (`executed`), et répondent ce que la *spec* leur a dit (`answering(type, answer)`), rien sinon (voir « La *spec* d'une réaction ») |
@@ -184,7 +184,7 @@ new OrderLine('p-7', Quantity.create(1)).equals(new OrderLine('p-7', Quantity.cr
 | Bloc | Ce que le noyau lui donne |
 |---|---|
 | `Entity<Id>` | `id` et `equals` : deux entités sont égales quand leur classe et leur id le sont |
-| `ValueObject<Props>` | des `props` gelées, `equals` par valeur (les dates par leur instant, les listes et les enregistrements en profondeur), `toJSON` |
+| `ValueObject<Props>` | une copie de ses `props` gelée en profondeur (`ValueObjectProps` : primitives, dates, objets-valeurs, listes et enregistrements simples de ceux-ci), `equals` par valeur (les dates par leur instant, les listes et les enregistrements en profondeur, un objet-valeur qu'il tient par son propre `equals`), `toJSON` |
 | `AggregateRoot<Id>` | une entité avec `version`, le jeton de concurrence optimiste que gère l'adaptateur de son *repository*, `record(event)` pour ses méthodes et `pullEvents()`. Les événements enregistrés ne sont pas énumérables : décomposer, comparer ou sérialiser un agrégat ne les voit jamais |
 | `DomainEvent` | une interface : `name`, `occurredAt`, `aggregateId` |
 
@@ -288,7 +288,7 @@ Les codes que lèvent les paquets du kit forment eux aussi une liste, `KitCodes`
 `NotFound`, `Conflict`, `InvariantViolation`, `Unauthorized`, `NotAcceptable`, `ConcurrencyConflict`,
 `InvalidCriteria`, `InvalidPageRequest`, `Timeout`, `CircuitOpen`, `BulkheadFull`, `AttemptsExhausted`,
 `ServiceUnavailable`, `PreconditionFailed`, `PreconditionRequired`, `FileTooLarge`, `UnsupportedMediaType`,
-`FileNotFound`, `FileRejected` et `InvalidFileKey`. Une route les nomme dans `errors` et un test les attend
+`FileNotFound`, `FileRejected`, `InvalidFileKey`, `InvalidFileUrlExpiry` et `ForbiddenTransition`. Une route les nomme dans `errors` et un test les attend
 (`rejects.toMatchObject({ code: KitCodes.Forbidden })`) sans écrire la chaîne : l'éditeur complète la clé,
 et une clé mal orthographiée ne compile pas.
 
@@ -650,27 +650,36 @@ export const sent = commands.executed; // [new ScheduleReminderCommand('invoice-
 
 ### Une unité de travail à vous
 
-La file vit dans une portée `AsyncLocalStorage` ouverte par `withinUnitOfWork(work, transaction)`.
-`InMemoryUnitOfWork` et les unités de travail des *packages* ORM reposent dessus, si bien qu'un
-`run` appelé directement (un consommateur, un script) a le déroulement d'une commande.
-`unitOfWorkMiddleware` l'appelle aussi : une commande est couverte même avec un `UnitOfWork` qui
-ne le fait pas. Un `run` imbriqué, ou une commande envoyée depuis une unité de travail, rejoint
-la portée en cours : une seule distribution, à la fin de la plus externe, et la phase
-`after-commit` après la validation la plus externe. Deux commandes concurrentes ne partagent
-jamais une portée.
+La file vit dans une portée `AsyncLocalStorage` ouverte par l'unité de travail que rend
+`unitOfWorkOver(transaction)`. `InMemoryUnitOfWork` et les unités de travail des *packages* ORM
+reposent dessus, si bien qu'un `run` appelé directement (un consommateur, un script) a le
+déroulement d'une commande. `unitOfWorkMiddleware` ne fait qu'appeler `run` : un `UnitOfWork`
+qui n'ouvre aucune portée est refusé avant le gestionnaire (`UnscopedUnitOfWorkError`). Un `run`
+imbriqué, ou une commande envoyée depuis une unité de travail, rejoint la portée en cours : une
+seule distribution, à la fin de la plus externe, et la phase `after-commit` après la validation
+la plus externe. Deux commandes concurrentes ne partagent jamais une portée, et deux bases de
+données non plus : une unité de travail exécutée dans celle d'une autre base de données ouvre sa
+propre transaction et distribue ses événements avant sa propre validation.
 
-Un `UnitOfWork` écrit dans un projet construit `run` dessus. `transaction` commence, appelle ce
-qu'on lui donne, valide quand cela s'est résolu et annule quand cela a été rejeté :
+Une unité de travail est validée ou annulée en entier. Un `run` imbriqué qui échoue l'interrompt :
+quand l'échec remonte, le `run` le plus externe est rejeté avec lui ; quand le travail l'a
+intercepté et a continué (`await unitOfWork.run(step).catch(fallback)`, une nouvelle tentative
+autour d'une commande envoyée depuis un gestionnaire), le `run` le plus externe est rejeté avec
+une `UnitOfWorkAbortedError` dont la `cause` est cet échec, avant toute distribution
+d'événement. Ce que l'étape en échec a écrit n'est jamais validé à part du reste : décidez avant
+l'écriture, ou laissez passer l'échec.
+
+Un `UnitOfWork` écrit dans un projet repose dessus. `transaction` commence, appelle ce qu'on lui
+donne, valide quand cela s'est résolu et annule quand cela a été rejeté ; elle est appelée pour
+ouvrir une transaction, jamais par un `run` qui en rejoint une :
 
 ```ts
-run<T>(work: () => Promise<T>): Promise<T> {
-  return withinUnitOfWork(work, (scoped) => {
-    if (this.current.getStore() !== undefined) { // imbriqué : rejoindre la transaction
-      return scoped();
-    }
+private readonly unitOfWork = unitOfWorkOver((work) =>
+  this.database.transaction((transaction) => this.current.run(transaction, work)),
+);
 
-    return this.database.transaction((transaction) => this.current.run(transaction, scoped));
-  });
+run<T>(work: () => Promise<T>): Promise<T> {
+  return this.unitOfWork.run(work);
 }
 ```
 
@@ -1178,7 +1187,8 @@ lit par-dessus les *tenants*, voir « Multitenance »), `locale?`, `deadline?`, 
 (pour un *job* planifié, l'instant où il était dû), `origin` (`http`, `event`, `schedule`,
 `queue` pour un *job* en arrière-plan, `cli`, ou une chaîne du projet) et `extensions`.
 `executionContext(init)` en construit un et prend le *tenant* de l'acteur ;
-`withActor(context, actor)` est le même travail vu par un autre acteur.
+`withActor(context, actor)` est le même travail vu par un autre acteur, sans la session ni
+l'élévation du précédent.
 
 `ExecutionScope` (`current()`, `require()`, `run(context, work)`) donne le contexte du travail en
 cours au code à qui on ne le passe pas. La frontière le pose une fois :
@@ -1384,7 +1394,9 @@ await cache.get(quoteKey('EUR-USD')); // undefined : expirée, selon l'horloge
 ```
 
 La clé porte le type de sa valeur. `InMemoryCache(clock, { maxEntries? })` expire selon le
-`Clock` et est borné. `tenantCacheKey<Quote>(scope, 'quote', pair)` est la même clé confinée au
+`Clock` et est borné ; il garde et rend une valeur comme le fait un cache partagé, telle que JSON la
+porte : une copie à chaque écriture et à chaque lecture, une `Date` sous forme de texte, une valeur que
+JSON ne peut pas porter (un bigint, un cycle) refusée à l'écriture. `tenantCacheKey<Quote>(scope, 'quote', pair)` est la même clé confinée au
 *tenant* du travail en cours : ce qu'un *tenant* a mis en cache n'est jamais servi à un autre.
 
 ### Purger les caches HTTP
@@ -1737,7 +1749,7 @@ const row = { ...toRow(order), ...tenantScopeOf(scope), ...stampCreation(scope, 
 await update({ ...toRow(order), ...stampUpdate(scope, clock) }, { id: order.id, ...tenantScopeOf(scope) });
 ```
 
-`stampUpdate(stamp, scope, clock)` est la forme pour un adaptateur qui détient le tampon stocké
+`restamped(stamp, scope, clock)` sert à un adaptateur qui détient le tampon stocké
 (un store de documents qui réécrit l'enregistrement entier) : il le renvoie entier, création
 intacte. `tenantScopeOf` lève `NoCurrentTenantError` pour un travail qui ne nomme aucun *tenant*,
 si bien qu'une instruction ne peut jamais s'exécuter sans restriction par oubli. Chaque *package*

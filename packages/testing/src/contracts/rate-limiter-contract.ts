@@ -28,6 +28,7 @@ class RateLimiterSuite extends ContractSuite<RateLimiter> {
 
   protected tests(): void {
     this.limits();
+    this.countsAllowedCallsOnly();
     this.slides();
     this.isolates();
   }
@@ -53,7 +54,9 @@ class RateLimiterSuite extends ContractSuite<RateLimiter> {
 
       this.expect(await this.consume()).toEqual({ allowed: false, remaining: 0, retryAfterMs: 700 });
     });
+  }
 
+  private countsAllowedCallsOnly(): void {
     this.it('does not count a refused call', async () => {
       for (let call = 0; call < 3; call += 1) {
         await this.consume();
@@ -67,7 +70,10 @@ class RateLimiterSuite extends ContractSuite<RateLimiter> {
 
       await this.options.elapse(500);
 
-      this.expect((await this.consume()).allowed).toBe(true);
+      this.holds(
+        (await this.consume()).allowed,
+        'a call was refused once the three allowed calls had left the window: the refused calls were counted',
+      );
     });
   }
 
@@ -78,7 +84,11 @@ class RateLimiterSuite extends ContractSuite<RateLimiter> {
       await this.consume();
       await this.consume();
       await this.options.elapse(599);
-      this.expect((await this.consume()).allowed).toBe(false);
+
+      this.holds(
+        !(await this.consume()).allowed,
+        'a call beyond the limit was allowed while the oldest call was still in the window',
+      );
 
       await this.options.elapse(1);
 
@@ -103,7 +113,7 @@ class RateLimiterSuite extends ContractSuite<RateLimiter> {
         await this.consume('client-a');
       }
 
-      this.expect((await this.consume('client-a')).allowed).toBe(false);
+      this.holds(!(await this.consume('client-a')).allowed, 'a call beyond the limit of its key was allowed');
       this.expect(await this.consume('client-b')).toEqual({ allowed: true, remaining: 2, retryAfterMs: 0 });
     });
 
@@ -112,9 +122,10 @@ class RateLimiterSuite extends ContractSuite<RateLimiter> {
 
       this.expect(decisions.filter((decision) => decision.allowed).length).toBe(3);
 
-      this.expect(
+      this.holds(
         decisions.filter((decision) => !decision.allowed).every((decision) => decision.retryAfterMs === 1_000),
-      ).toBe(true);
+        'a call refused among those made at the same time was not told to come back once the whole window has passed (1000 ms)',
+      );
     });
   }
 

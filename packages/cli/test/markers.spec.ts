@@ -38,6 +38,17 @@ describe('marker regions', () => {
     expect(list).toContain('    // ddd-ts-kit:routes\n    first(),\n    second(),\n    // /ddd-ts-kit:routes');
   });
 
+  it('sets a statement on several lines that opens a region apart from the statement right above the region', () => {
+    const under = file.replace('function wire() {', 'function wire() {\n  prepare();\n  // why the region follows');
+    const refusal = "// TODO(platform): bind it.\nbind(Contract).toFactory(() => {\n  throw undecided('it');\n});";
+    const bound = '  // TODO(platform): bind it.\n  bind(Contract).toFactory(() => {';
+    const opened = `  // ddd-ts-kit:registrations\n${bound}`;
+
+    expect(insertInRegion(under, 'registrations', refusal)).toContain(`  // ddd-ts-kit:registrations\n\n${bound}`);
+    expect(insertInRegion(under, 'registrations', 'first();')).toContain('  // ddd-ts-kit:registrations\n  first();');
+    expect(insertInRegion(file, 'registrations', refusal)).toContain(opened);
+  });
+
   it('adds an import line once, and merges the names imported from one module', () => {
     const once = insertInRegion(file, 'imports', "import a from './a.js';\nimport { b } from './b.js';") ?? '';
 

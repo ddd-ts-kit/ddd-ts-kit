@@ -106,6 +106,17 @@ export class InMemoryOutboxStore implements OutboxStore {
     }
   }
 
+  async postpone(id: string, until: Date): Promise<void> {
+    const record = this.storedRecords.get(id);
+
+    if (record?.status !== 'pending' || record.attempts === 0) {
+      return;
+    }
+
+    record.attempts -= 1;
+    record.nextAttemptAt = until;
+  }
+
   async retryDead(ids: readonly string[], now: Date): Promise<number> {
     let revived = 0;
 

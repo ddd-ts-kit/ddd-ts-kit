@@ -11,8 +11,11 @@ export class RedeliveringBus extends EventBus {
 
   async publish(events: readonly IntegrationEvent[]): Promise<void> {
     for (const event of events) {
+      // As a broker carries it.
+      const carried = JSON.parse(JSON.stringify(event)) as IntegrationEvent;
+
       for (const handler of this.handlers.get(event.type) ?? []) {
-        this.deliveries.push(this.deliver(handler, event));
+        this.deliveries.push(this.deliver(handler, carried));
       }
     }
   }

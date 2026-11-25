@@ -1,3 +1,4 @@
+import { writtenText } from '../src/testing';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { AsyncLocalStorageExecutionScope, type Actor } from '@ddd-ts-kit/kernel';
@@ -13,9 +14,7 @@ import {
   type FieldAccessDecisions,
   type FieldDecider,
   type FieldPolicy,
-  serializeBody,
   type RawRequest,
-  type RouteResponse,
 } from '../src';
 import { generateOpenApi } from '../src/openapi';
 
@@ -120,17 +119,7 @@ function options(access = new RoleAccess(grants)): Parameters<typeof executeRout
   };
 }
 
-async function text(response: RouteResponse): Promise<string> {
-  // The JSON of the kit stays a value, which the adapter writes as JSON; another representation is bytes or chunks.
-  const serialized = serializeBody(response);
-  let written = serialized instanceof Uint8Array ? new TextDecoder().decode(serialized) : (serialized ?? '');
-
-  for await (const chunk of response.stream ?? []) {
-    written += chunk;
-  }
-
-  return written;
-}
+const text = writtenText;
 
 describe('a field reserved to some callers, in an answer', () => {
   it('is left out for an actor who may not read it, and kept for one who may', async () => {

@@ -2,6 +2,7 @@ import type { AfterCommitFailure } from '../../application/events/after-commit-f
 import type { DomainEventCallback } from '../../application/events/domain-event-callback';
 import type { DomainEventPhase } from '../../application/events/domain-event-phase';
 import type { DomainEventSubscription } from '../../application/events/domain-event-subscription';
+import { safely } from '../../application/observation/safely';
 import type { DomainEventDispatcher } from '../../application/ports/domain-event-dispatcher';
 import type { DomainEvent } from '../../domain/domain-event';
 
@@ -46,15 +47,7 @@ export class InMemoryDomainEventDispatcher implements DomainEventDispatcher {
         this.afterCommitFailures.shift();
       }
 
-      this.tell(error, event);
-    }
-  }
-
-  private tell(error: unknown, event: DomainEvent): void {
-    try {
-      this.failed?.(error, event);
-    } catch {
-      return;
+      safely(() => this.failed?.(error, event));
     }
   }
 }

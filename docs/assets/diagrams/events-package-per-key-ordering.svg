@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 500" width="960" height="500" role="img" aria-labelledby="title desc" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
   <title id="title">Ordering per key: one failure holds back its own key only</title>
-  <desc id="desc">Five records in the outbox, in the order they were appended: A1, A2, B1, A3 and B2, where A is the key order-1 and B the key order-2. The publication of A1 fails. With the default ordering, A2, B1, A3 and B2 are published in the same tick and A1 is retried a second later, so A2 and A3 overtake A1. With ordering per-key, B1 and B2 are published, while A2 and A3 are held with the code OUTBOX_HELD_FOR_ORDER. At the tick after the backoff of A1, A1 is published, then A2, then A3.</desc>
+  <desc id="desc">Five records in the outbox, in the order they were appended: A1, A2, B1, A3 and B2, where A is the key order-1 and B the key order-2. The publication of A1 fails. With the default ordering, A2, B1, A3 and B2 are published in the same tick and A1 is retried a second later, so A2 and A3 overtake A1. With ordering per-key, B1 and B2 are published, while A2 and A3 are held: postponed with A1, they did not fail. At the tick after the backoff of A1, A1 is published, then A2, then A3.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#3d4449"/>
@@ -70,7 +70,7 @@
   <rect x="814" y="268" width="120" height="56" rx="10" fill="#f1ebf5" stroke="#7a4f9a" stroke-width="2"/>
   <text x="874" y="292" font-size="14" font-weight="700" fill="#7a4f9a" text-anchor="middle">B2 out</text>
   <text x="874" y="312" font-size="13" fill="#1f2328" text-anchor="middle">published</text>
-  <text x="270" y="348" font-size="13" fill="#1f2328">A2 and A3 are rescheduled with A1, code OUTBOX_HELD_FOR_ORDER; the key order-2 is not slowed.</text>
+  <text x="270" y="348" font-size="13" fill="#1f2328">A2 and A3 are postponed with A1: they wait, they did not fail; the key order-2 is not slowed.</text>
 
   <!-- later -->
   <line x1="100" y1="334" x2="100" y2="384" stroke="#3d4449" stroke-width="2" marker-end="url(#arrow)"/>

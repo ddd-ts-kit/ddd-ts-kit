@@ -207,6 +207,58 @@ describe('raw text on a statement of a tenant helper is one conjunct', () => {
     });
   });
 
+  // Where the types of knex ask for a name or a value: what plain JavaScript, or a cast, gives all the same.
+  const untyped = (sql: string, bindings: Knex.RawBinding[] = []) => raw(sql, bindings) as never;
+  const whether = () => untyped('amount = ? or id = ?', [1, 'globex-2']);
+
+  it.each([
+    ['the column of a whereIn', () => reads().whereIn(whether(), [true])],
+    ['the column of a whereNotIn', () => reads().whereNotIn(whether(), [false])],
+    ['the column of a whereBetween', () => reads().whereBetween(whether(), [true, true])],
+    ['the column of an andWhereBetween', () => reads().andWhereBetween(whether(), [true, true])],
+  ])('given as %s', async (_form, statement) => {
+    const found = await asTenant(scope, 'acme', statement);
+
+    expect(idsOf(found)).toEqual(['acme-1']);
+  });
+
+  it.each([
+    ['the column of a whereNull', () => reads().whereNull(untyped('amount or version')), '(amount or version) is null'],
+    [
+      'the column of a whereNotNull',
+      () => reads().whereNotNull(untyped('amount or version')),
+      '(amount or version) is not null',
+    ],
+    ['the column of a whereLike', () => reads().whereLike(untyped('id or amount'), 'a%'), '(id or amount) like ?'],
+    ['the value of a whereLike', () => reads().whereLike('id', untyped('? or true', ['a%'])), '"id" like (? or true)'],
+    [
+      'the value of a whereILike',
+      () => reads().whereILike('id', untyped('? or true', ['a%'])),
+      '"id" ilike (? or true)',
+    ],
+    [
+      'a bound of a whereBetween',
+      () => reads().whereBetween('amount', [untyped('1 and 2 or true'), 3]),
+      '"amount" between (1 and 2 or true) and ?',
+    ],
+    ['a value of a whereIn', () => reads().whereIn('amount', [untyped('1 or 2'), 3]), '"amount" in ((1 or 2), ?)'],
+  ])('given as %s', async (_form, statement, conjunct) => {
+    await asTenant(scope, 'acme', async () => {
+      expect(statement().toSQL().sql).toContain(`and ${conjunct}`);
+    });
+  });
+
+  it('given as the subquery of a whereIn or of a whereExists, which knex writes in parentheses itself', async () => {
+    const lines = () => untyped('select id from lines where amount > ?', [0]);
+    const any = () => untyped('select 1 from lines where amount = ?', [2]);
+
+    await asTenant(scope, 'acme', async () => {
+      expect(reads().whereIn('id', lines()).toSQL().sql).toContain('"id" in (select id from lines where amount > ?)');
+      expect(reads().whereExists(any()).toSQL().sql).toContain('and exists (select 1 from lines where amount = ?)');
+      expect(idsOf(await reads().whereIn('id', lines()).whereExists(any()))).toEqual(['acme-1', 'acme-2']);
+    });
+  });
+
   it('negated as a whole by whereNot', async () => {
     const found = await asTenant(scope, 'acme', () => reads().whereNot(raw('amount = ? or id = ?', [2, 'globex-1'])));
 

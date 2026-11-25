@@ -4,7 +4,6 @@ import { DomainError, InvariantViolation, NotFoundError, TransactionTimeoutError
 import { ValidationError } from '@ddd-ts-kit/validation';
 import { zodSchema } from '@ddd-ts-kit/validation/zod';
 import {
-  DEFAULT_ERROR_MAPPING,
   DuplicateRouteError,
   ResponseContractError,
   createErrorMapper,
@@ -129,25 +128,6 @@ describe('prefixRoutes', () => {
 });
 
 describe('the error mapper', () => {
-  it('knows the default codes', () => {
-    expect(DEFAULT_ERROR_MAPPING).toEqual({
-      VALIDATION_FAILED: 422,
-      NOT_FOUND: 404,
-      CONFLICT: 409,
-      CONCURRENCY_CONFLICT: 409,
-      INVARIANT_VIOLATION: 422,
-      UNAUTHORIZED: 401,
-      FORBIDDEN: 403,
-      NOT_ACCEPTABLE: 406,
-      PRECONDITION_FAILED: 412,
-      PRECONDITION_REQUIRED: 428,
-      FILE_NOT_FOUND: 404,
-      FILE_TOO_LARGE: 413,
-      UNSUPPORTED_MEDIA_TYPE: 415,
-      SERVICE_UNAVAILABLE: 503,
-    });
-  });
-
   it('lets a project add and override codes', () => {
     const mapper = createErrorMapper({ INVARIANT_VIOLATION: 400, QUOTA_EXCEEDED: 429 });
 

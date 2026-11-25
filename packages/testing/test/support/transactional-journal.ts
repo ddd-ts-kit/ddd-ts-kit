@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import {
   ConcurrencyError,
-  withinUnitOfWork,
+  unitOfWorkOver,
   type Appended,
   type EventStore,
   type EventToAppend,
@@ -10,6 +10,7 @@ import {
   type UnitOfWork,
 } from '@ddd-ts-kit/kernel';
 import type { EventStoreUnderContract } from '../../src/contracts';
+import { claimed } from './claimed';
 
 interface Written {
   readonly events: StoredEvent[];
@@ -18,7 +19,7 @@ interface Written {
 
 /** An event store and an outbox in memory with real transactions: what a unit of work writes is forgotten when it fails. */
 export class TransactionalJournal implements EventStoreUnderContract {
-  readonly unitOfWork: UnitOfWork = { run: (work) => withinUnitOfWork(work, (scoped) => this.atomically(scoped)) };
+  readonly unitOfWork: UnitOfWork = unitOfWorkOver((work) => this.atomically(work));
 
   private readonly committed: Written = { events: [], published: [] };
 
@@ -34,7 +35,7 @@ export class TransactionalJournal implements EventStoreUnderContract {
 
   readonly outbox: EventStoreUnderContract['outbox'] = {
     append: async (events) => void this.target().published.push(...events),
-    claimBatch: async () => this.committed.published.map((event) => ({ event, status: 'pending', attempts: 1 })),
+    claimBatch: async () => this.committed.published.map((event) => claimed(event)),
     stats: async () => ({ pending: this.committed.published.length, failed: 0, dead: 0 }),
   };
 
@@ -69,10 +70,6 @@ export class TransactionalJournal implements EventStoreUnderContract {
   }
 
   private async atomically<T>(work: () => Promise<T>): Promise<T> {
-    if (this.current.getStore() !== undefined) {
-      return work();
-    }
-
     const written: Written = { events: [], published: [] };
     const result = await this.current.run(written, work);
 

@@ -75,8 +75,7 @@ export async function listen(framework: 'express' | 'fastify' | 'hono'): Promise
   if (framework === 'express') {
     const app = express();
 
-    app.use(express.json()); // the adapter does not parse bodies
-    mountExpress(app, routes, options);
+    mountExpress(app, routes, options); // reads the body of each route itself
     app.listen(3000);
   } else if (framework === 'fastify') {
     const app = Fastify();
@@ -230,7 +229,7 @@ pays for its container, is the one framework difference the runs agree on.
 
 ## Limits of each pair
 
-- **Express + zod.** `express.json()` must be installed; a body Express refuses (malformed JSON)
+- **Express + zod.** The adapter reads the bodies itself; a body it refuses (malformed JSON)
   is answered as a problem only with `problemErrorHandler` of `@ddd-ts-kit/http/express` mounted
   last, as the generated server does; without it, by Express's own error handler. zod
   describes the input side by default: a schema with defaults used as a response gets a second

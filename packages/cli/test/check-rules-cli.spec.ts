@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { CLEAN_RULE_IDS } from '../src/check/catalogue/clean-rule-ids';
 import { ESLINT_ONLY_RULES } from '../src/check/catalogue/eslint-only-rules';
 import { KNOWN_RULE_IDS } from '../src/check/catalogue/known-rule-ids';
+import { STANDALONE_RULE_IDS } from '../src/check/catalogue/standalone-rule-ids';
 import { changeConfig, checkJsonOf, errorFixOf, isRecord } from './check-support';
 import { cli, scaffoldEverything, tempDir, write, type CliResult } from './helpers';
+import { failure } from './reports';
 
 interface Listed {
   readonly id: string;
@@ -135,6 +136,21 @@ describe('check --clean-only', () => {
     expect(cli(root, 'check', '--clean-only', 'other').code).toBe(0);
   });
 
+  it('refuses a ref to compare with and a rule that needs a project, which it would not honour', () => {
+    const root = tempDir('clean-refusals');
+
+    write(root, 'src/a.ts', 'export const fine = 1;\n');
+
+    const since = cli(root, 'check', '--clean-only', '--changed-since', 'nope', 'src', '--json');
+    const rule = cli(root, 'check', '--clean-only', '--rule', 'layer/domain-purity', '--rule', 'clean/braces', 'src');
+
+    expect(since.code).toBe(2);
+    expect(failure(since).message).toBe('--clean-only compares with no ref.');
+    expect(rule.code).toBe(2);
+    expect(rule.stderr).toContain('--clean-only does not run layer/domain-purity.');
+    expect(rule.stderr).toContain('clean/stepdown, clean/function-size');
+  });
+
   it('holds the layout, the private members, the exports and the sizes of a file alone', () => {
     const root = tempDir('clean-layout');
     const long = `export function longest(): number {\n${Array.from({ length: 101 }, (_, index) => `  const step${index} = ${index};`).join('\n')}\n\n  return step0;\n}\n`;
@@ -170,7 +186,7 @@ describe('check --clean-only', () => {
       message: 'longest is 102 lines long: no function is longer than 100 lines.',
     });
 
-    expect(CLEAN_RULE_IDS).toEqual(
+    expect(STANDALONE_RULE_IDS).toEqual(
       expect.arrayContaining([
         'clean/no-hash-private',
         'clean/blank-lines',

@@ -1,6 +1,9 @@
 import { CliError } from '../cli-error';
 import type { RenderContext, RenderValue } from './render-context';
 
+/** What reads as a tag and is none the renderer knows; `${{ ... }}` is an expression of a GitHub workflow. */
+const LEFTOVER = /(?<!\$)\{\{[^}]*\}\}/;
+
 /** One rendering in progress: the text kept so far and the blocks that are open. */
 export class Rendering {
   private output = '';
@@ -13,10 +16,23 @@ export class Rendering {
     private readonly origin: string,
   ) {}
 
+  /**
+   * The text of the template between two tags. What looks like a tag there is one the template
+   * leaves unread: it is refused here, in what the template wrote, never in a value it was given,
+   * which may hold braces of its own (the title of a decision record, the purpose of a context).
+   */
   text(text: string): void {
-    if (this.emitting()) {
-      this.output += text;
+    if (!this.emitting()) {
+      return;
     }
+
+    const leftover = LEFTOVER.exec(text);
+
+    if (leftover !== null) {
+      throw this.failure(`leftover placeholder "${leftover[0]}"`);
+    }
+
+    this.output += text;
   }
 
   tag(block: string | undefined, path: string): void {
@@ -34,12 +50,6 @@ export class Rendering {
   result(): string {
     if (this.open.length > 0) {
       throw this.failure('an "{{#if}}" block is never closed');
-    }
-
-    const leftover = /(?<!\$)\{\{[^}]*\}\}/.exec(this.output);
-
-    if (leftover !== null) {
-      throw this.failure(`leftover placeholder "${leftover[0]}"`);
     }
 
     return this.output;

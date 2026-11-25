@@ -1,34 +1,8 @@
 import { definePurityRule } from '../purity/define-purity-rule';
+import { PURITY_TABLES } from '../purity/reference/purity-tables';
 
-export const purityNoAmbientRandomness = definePurityRule({
-  id: 'purity/no-ambient-randomness',
-  description:
-    'No Math.random, crypto.randomUUID or id library in domain/ or application/: identifiers come from the IdGenerator port.',
-  code: [
-    { pattern: /(?<![\w$.])Math\s*\.\s*random(?![\w$])/g, what: 'Math.random' },
-    {
-      pattern: /(?<![\w$])crypto\s*\.\s*(?:randomUUID|getRandomValues|randomBytes|randomInt)(?![\w$])/g,
-      what: 'The random source of crypto',
-    },
-    { pattern: /(?<![\w$.])randomUUID\s*\(/g, what: 'randomUUID()' },
-    {
-      pattern:
-        /\{[^{}]*\b(?:random|randomUUID|getRandomValues|randomBytes|randomInt)\b[^{}]*\}\s*=\s*(?:Math|crypto)(?![\w$.])/g,
-      what: 'A random source, destructured',
-    },
-  ],
-  modules: [
-    'uuid',
-    'nanoid',
-    'ulid',
-    'ulidx',
-    'cuid',
-    '@paralleldrive/cuid2',
-    'ksuid',
-    'shortid',
-    'uuidv7',
-    'hyperid',
-    'bson',
-  ],
-  fix: 'Receive the identifier as a parameter in the domain, and take it from the IdGenerator port (`this.ids.next()`) in a handler, so that a test gets predictable identifiers.',
+export const purityNoAmbientRandomness = definePurityRule(PURITY_TABLES['purity/no-ambient-randomness'], {
+  why: 'An identifier drawn inside the domain cannot be predicted by a test nor chosen by the caller (idempotent retries, imports of existing data). The IdGenerator port keeps the choice of the scheme in the composition root and gives tests readable, sequential identifiers.',
+  bad: `static create(): Invoice { return new Invoice(crypto.randomUUID()); }`,
+  good: `static create(id: string): Invoice { return new Invoice(id); }`,
 });

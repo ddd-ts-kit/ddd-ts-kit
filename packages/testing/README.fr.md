@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:7cf3310adf8540a8 -->
+<!-- translation-of: README.md sha256:2f58caefaf570d35 -->
 
 # @ddd-ts-kit/testing
 
@@ -22,6 +22,7 @@ npm i -D @ddd-ts-kit/testing
 | `@ddd-ts-kit/testing/vitest` | `decorators()`, le *plugin* Vite qui permet à Vitest d'exécuter les décorateurs standard, et `decoratorCoverage()` | Node seulement ; exécute le `tsc` du projet |
 | `@ddd-ts-kit/testing/coverage` | `governedCoverage()`, `governedJestCoverage()`, `unaffectedContexts()` : la couverture que mesure le runner et son plancher, lus dans `ddd-ts-kit.config.json` | Node seulement |
 | `@ddd-ts-kit/testing/budget`, `/budget/vitest`, `/budget/jest` | le budget de temps de chaque niveau de *specs*, lu dans `ddd-ts-kit.config.json`, et les reporters qui y tiennent chaque fichier de *spec* | Node seulement ; le runner |
+| `@ddd-ts-kit/testing/setup/vitest`, `/setup/jest` | le fichier de *setup* du runner : avant chaque test, les séquences repartent de 1 et le générateur de données de sa graine | le runner (`vitest`, pair optionnel ; le `beforeEach` que Jest rend global) |
 | `@ddd-ts-kit/testing/mutation` | `governedMutation()` : ce que Stryker mute, l'*ignorer* du kit qui écarte les textes des refus, les mutants statiques ignorés et le plancher, lus dans `ddd-ts-kit.config.json` | Node seulement |
 
 L'entrée principale, `/contracts` et `/e2e` suivent les
@@ -224,7 +225,18 @@ aLine().with('quantity', 3).build(); // { sku: 'sku-1', quantity: 3 }
   et dans les tableaux : `.with('lines', [aLine(), { sku: 'pen', quantity: 2 }])`.
 - `sequence('order')` donne `order-1`, `order-2`... à chaque construction ; `lazy(() => new Date())`
   calcule une valeur par défaut à chaque construction. Une valeur donnée par `with` ne consomme rien.
-- Appelez `resetSequences()` dans `beforeEach`, pour qu'un test ne dépende pas de ceux qui le précèdent.
+- Une donnée simple (un objet littéral, une liste) est copiée à chaque construction, dans les valeurs
+  par défaut comme dans ce que `with` a reçu : modifier une valeur construite ne change jamais la
+  suivante. Une instance de classe (une `Date`, un objet-valeur, un agrégat) est remise telle quelle.
+- Un test ne dépend pas de ceux qui le précèdent : la configuration du runner qu'écrit `init` liste
+  l'entrée de *setup* du *package*, `setupFiles: ['@ddd-ts-kit/testing/setup/vitest']` ou
+  `setupFilesAfterEnv: ['@ddd-ts-kit/testing/setup/jest']`, qui appelle `restartTestData()` avant chaque
+  test : chaque séquence repart de 1 et le générateur de données de `/faker` de sa graine. Sans cette
+  entrée, appelez `resetSequences()` dans `beforeEach`, comme le fait l'exemple ci-dessus.
+- Ce dont une construction a besoin est une propriété des *props* du *builder*. Une étape copie le
+  *builder* sans exécuter son constructeur : un champ déclaré `private` ou `readonly` suit la copie, un
+  champ `#private` de JavaScript ne la suit pas et lève une `TypeError` quand la copie le lit ; une
+  classe de *builder* n'en déclare donc aucun.
 - La forme en classe garde `with`, `withMany` et `adding` protégées à dessein : la surface publique
   d'un *builder* d'agrégat est le langage du domaine, pas les noms de ses propriétés.
 
@@ -341,17 +353,20 @@ it('refuses to pay an order twice', () => {
   given(anOrder().paid())
     .when((order) => order.pay())
     .thenError('ORDER_ALREADY_PAID')
+    .thenNoEvent()
     .thenState((order) => expect(order.status).toBe('paid'));
 });
 ```
 
 `given` prend un agrégat ou son *builder* et écarte les événements de la mise en place
 (`pullEvents()`), si bien que seuls les événements de `when` sont vérifiés. `scenario(() => aggregate)` fait
-de même avec la mise en place sous forme de fonction, rejouée à partir d'un agrégat neuf à chaque `when`.
+de même avec la mise en place sous forme de fonction, rejouée à partir d'un agrégat neuf à chaque `when`,
+comme l'est `given(builder)`. Un agrégat déjà construit est donné à un seul `when` : un second `when` sur
+le même `given(aggregate)` agirait sur ce que le premier a laissé, et lève une `TypeError` qui le dit.
 
 | Assertion | Passe quand |
 |---|---|
-| `thenEvents([...])` | exactement ces événements, dans l'ordre ; chacun décrit par son nom, sa classe, ou les propriétés qui comptent |
+| `thenEvents([...])` | exactement ces événements, dans l'ordre ; chacun décrit par son nom, sa classe, ou les propriétés qui comptent : un sous-ensemble à toute profondeur, objet d'une liste compris (une liste se lit position par position et a le nombre d'éléments attendu). Un *matcher* nomme au moins une propriété : `{}` est refusé, puisque tout événement lui correspondrait |
 | `thenEventNames([...])` | exactement ces noms, dans l'ordre |
 | `thenNoEvent()` | rien n'a été enregistré |
 | `thenError(code)`, `thenError(code, facts)` | l'action a refusé avec ce code, quelle que soit la classe de l'erreur, en portant ces faits s'ils sont donnés (elle peut en porter d'autres) |
@@ -360,7 +375,9 @@ de même avec la mise en place sous forme de fonction, rejouée à partir d'un a
 
 Les échecs sont des `AssertionError` de `node:assert`, avec les événements attendus et enregistrés côte à
 côte, si bien qu'ils se lisent bien sous n'importe quel runner. Une erreur levée par `when` n'est jamais
-avalée : toute assertion sauf `thenError` échoue sur elle. Quand `when` (ou la mise en place) est
+avalée : toute assertion sauf `thenError` échoue sur elle. Une fois que `thenError` l'a vérifiée, les
+autres lisent ce que l'action a laissé, événements enregistrés avant la levée compris :
+`.thenError('ORDER_ALREADY_PAID').thenNoEvent()` est un refus qui n'a rien enregistré. Quand `when` (ou la mise en place) est
 asynchrone, la chaîne est une promesse : `await given(order).when(async (o) => ...).thenEventNames([...])`.
 
 ### Un agrégat en event sourcing
@@ -395,8 +412,10 @@ Une étape d'un gestionnaire de processus est une fonction de son état et de ce
 `givenProcess(state)` (ou `undefined` pour une instance qui n'existe pas) l'exécute et vérifie sa
 décision sans stockage, sans file d'attente ni bus. `thenIgnored()`, `thenState(state)`,
 `thenCommands([...])` (chacune par sa classe ou par les propriétés qui comptent), `thenTimeouts([...])`,
-`thenCancelled([...])` et `thenEnded()` s'enchaînent ; un échec est une `AssertionError` qui dit ce qui
-diffère.
+`thenCancelled([...])` et `thenEnded()` s'enchaînent ; un échec est une `AssertionError` qui se lit comme
+celle d'un scénario : une phrase, puis les commandes ou les échéances attendues et décidées côte à côte,
+et ce qui diffère, les positions comptées à partir de 1
+(`command 1.invoiceId: expected 'invoice-2', decided 'invoice-1'`).
 
 ## Refus
 
@@ -412,7 +431,9 @@ await expectRefusal(() => commands.execute(command), 'SLOT_TAKEN', { calendarId:
 ```
 
 `expectRefusal(subject, code, facts?)` lit une action, qu'elle exécute, un `Result`, ou une erreur déjà
-attrapée. Une action qui rend une promesse donne une promesse à attendre. Elle rend l'erreur, et échoue
+attrapée. Une promesse, celle qu'une action rend ou celle donnée à sa place
+(`await expectRefusal(commands.execute(command), 'SLOT_TAKEN')`), est attendue et ce qu'elle répond est lu
+de la même façon, un `Result` compris : l'assertion est alors une promesse à attendre. Elle rend l'erreur, et échoue
 avec une `AssertionError` qui nomme ce qui a été refusé à la place, ou les faits qui diffèrent, un par
 ligne. Les faits donnés doivent être portés avec ces valeurs ; le refus peut en porter d'autres.
 
@@ -520,6 +541,16 @@ sa propre copie de ce qui est sauvegardé (par `snapshots({ toSnapshot, fromSnap
 applique la concurrence optimiste sur `version`, en levant `ConcurrencyError` (code
 `CONCURRENCY_CONFLICT`). Vérifiez son état avec `all()` et `count()`.
 
+Le *fake* d'un agrégat rattaché à un *tenant* est confiné comme l'est son adaptateur :
+`super(snapshots({ ... }), { confinedTo: scope })` tient chaque lecture et chaque écriture dans le *tenant*
+du travail en cours dans `scope`. Un *tenant* ne trouve, ne liste et ne compte que ce qu'il a enregistré,
+un enregistrement sous un id que détient un autre *tenant* est refusé par `ConcurrencyError`, une élévation
+élargit les lectures et aucune écriture, et un travail qui ne nomme aucun *tenant* est refusé
+(`NoCurrentTenantError`). Il passe `tenantIsolationContract`, et `generate repository` l'écrit ainsi pour
+un agrégat rattaché à un *tenant*, avec une portée qui vaut par défaut `oneTenantScope()`, le travail d'un
+membre d'`acme` : une spec sur un seul *tenant* construit le *fake* seul, une spec sur une fuite entre
+*tenants* lui donne l'`executionScope` de son harnais et change de *tenant* avec `asTenant`.
+
 ### Un fake, pas un mock
 
 Au lieu d'un *mock*, qui vérifie les appels qu'a faits le gestionnaire et rien de leur effet :
@@ -604,13 +635,10 @@ semblables dans les tests d'un contexte.
 
 ### Quand un gestionnaire d'un événement échoue
 
-`eventBus.publish` exécute chaque gestionnaire de l'événement, puis rejette avec une
-`AggregateError` des échecs. `createTestBuses({ eventBusFailures: 'as-thrown' })` rejette avec
-l'échec d'un seul gestionnaire tel quel, si bien qu'une spec affirme sa classe ou son `code`
-(`rejects.toMatchObject({ code: 'CONCURRENCY_CONFLICT' })`) ; plusieurs échecs arrivent toujours
-ensemble dans une `AggregateError`. Un projet créé par `ddd-ts-kit init` le règle dans ses
-*worlds*, comme son application le fait sur son bus en processus ; ce sera la valeur par défaut
-d'une prochaine version mineure.
+`eventBus.publish` exécute chaque gestionnaire de l'événement, puis rejette avec l'échec d'un
+seul gestionnaire tel quel, si bien qu'une spec affirme sa classe ou son `code`
+(`rejects.toMatchObject({ code: 'CONCURRENCY_CONFLICT' })`) ; plusieurs échecs arrivent ensemble
+dans une `AggregateError`.
 
 ### Un job en arrière-plan mis en file par une version antérieure
 
@@ -647,7 +675,8 @@ Ce sont deux classes sur `Builder`, immuables comme tout *builder*, et elles acc
 où l'on attend un acteur ou une session (`aSession().of(anActor().withRole('accountant'))` avec le
 *builder* d'acteur de `@ddd-ts-kit/auth/testing`). `scoped(scope, context, work)` exécute un bloc dans un
 contexte donné comme valeur ou comme *builder*, avec n'importe quel `ExecutionScope` ; `asTenant(scope,
-'acme', work)` l'exécute comme membre d'un *tenant*, et `elevatedOver('all')` construit le contexte du
+'acme', work)` l'exécute comme membre d'un *tenant*, `oneTenantScope()` est une portée fixée sur le travail
+d'un membre d'un seul *tenant* (`acme` sauf mention contraire), et `elevatedOver('all')` construit le contexte du
 personnel de la plateforme sous une élévation, sans l'entrée d'audit qu'écrit `acrossTenants`.
 
 ## De bout en bout
@@ -682,10 +711,10 @@ afterAll(() => server.close());
 | `client.get / post / put / patch / delete` | du JSON en entrée, `{ status, headers, body }` en sortie ; `body` est analysé quand le type de contenu est JSON, du texte sinon ; un 4xx ou un 5xx est une réponse, pas une exception |
 | `client.post(path, body, { headers })`, `client.withHeaders(headers)` | des en-têtes pour un appel, ou un client pour un autre appelant |
 | `expectStatus(response, 201)` | rend la réponse, ou échoue en montrant le corps, où l'API dit pourquoi |
-| `expectProblem(response, { status, code, facts })` | vérifie une réponse RFC 9457 `application/problem+json` et rend le document ; `code` et `facts` sont optionnels, et `facts` nomme les faits que le document doit exposer, tels que JSON les écrit (une date est son texte ISO) |
+| `expectProblem(response, { status, code, facts })` | vérifie une réponse RFC 9457 `application/problem+json` et rend le document ; `code` et `facts` sont optionnels, et `facts` nomme les faits que le document doit exposer, tels que JSON les écrit (une date est son texte ISO). Quand elle échoue, elle montre ce qui était attendu, ce qui a été reçu et le corps, où l'API dit pourquoi |
 | `settled(sources, { timeoutMs = 2000, intervalMs = 10 })` | se résout dès que chaque source ne compte plus de travail en attente ; quand le temps est écoulé, échoue en nommant chaque source qui attend encore, combien elle en tient et combien en a échoué |
 | `eventually(assertion, { timeoutMs = 2000, intervalMs = 20 })` | réessaie jusqu'à ce que l'assertion passe ; quand le temps est écoulé, échoue en citant la dernière erreur |
-| `pending(body)` | tient un scénario d'acceptation écrit avant son code : passe tant qu'une assertion de `body` échoue, échoue dès que `body` passe (retirer l'enveloppe) ou s'arrête sur autre chose qu'une assertion (le scénario est cassé) ; `it('#US5.02 AC1 ...', pending(async () => { ... }))`. Une assertion se reconnaît à sa forme, jamais par `instanceof Error` : une `AssertionError` de `node:assert`, que Jest charge dans un autre royaume (*realm*) que la spec, ou un *matcher* de Vitest ou de Jest qui échoue, y compris comme cause de l'échec d'`eventually` |
+| `pending(body)` | tient un scénario d'acceptation écrit avant son code : passe tant qu'une assertion de `body` échoue, échoue dès que `body` passe (retirer l'enveloppe) ou s'arrête sur autre chose qu'une assertion (le scénario est cassé) ; `it('#US5.02 AC1 ...', pending(async () => { ... }))`. Une assertion se reconnaît à sa forme, jamais par `instanceof Error` : une `AssertionError` de `node:assert`, que Jest charge dans un autre royaume (*realm*) que la spec, ou un *matcher* de Vitest ou de Jest qui échoue, y compris comme cause de l'échec d'`eventually`. Une attente qu'`until` ou `settled` abandonne échoue comme une assertion : un scénario qui attend une projection ou l'outbox est donc tenu comme un autre |
 | `collectEvents(subscriber, types)` | enregistre les événements d'intégration publiés : `received(type?)`, `waitFor(type, predicate?, options?)`, `stop()` |
 
 Les assertions sont celles de `node:assert` : elles se lisent de la même façon sous n'importe quel runner.
@@ -870,16 +899,16 @@ repositoryContract(runner, { ...options, name: 'DrizzleOrderRepository', createR
 | Suite | Tient |
 |---|---|
 | `repositoryContract` | enregistrer puis retrouver, id inconnu, mise à jour, isolement de la copie stockée, concurrence optimiste (toute erreur de code `CONCURRENCY_CONFLICT`), et avec `createAggregateTaking` un nouvel agrégat qui prend une valeur unique d'un autre refusé avec le code `CONFLICT`, rien de stocké, et avec `createAggregateAgain` un nouvel agrégat enregistré plusieurs fois en même temps : un enregistrement l'écrit et les autres sont refusés avec le code `CONCURRENCY_CONFLICT`, jamais pour sa valeur unique |
-| `tenantIsolationContract` | un *repository* sous une stratégie d'isolement des *tenants* : ce qu'un *tenant* a enregistré est caché à un autre ; un autre *tenant* qui enregistre sous le même id le laisse intact, par une mise à jour ou (si `recreate(aggregate)` est donné, un nouvel agrégat sous le même id) par une insertion ; le personnel de la plateforme, avec une élévation sur tous les *tenants*, n'écrit rien, et lit l'agrégat de l'autre *tenant* quand `elevatedReads` est vrai (tables partagées, sécurité au niveau des lignes) ; une écriture d'un travail qui ne nomme aucun *tenant* est refusée (`NoCurrentTenantError`) et une lecture est refusée ou ne trouve rien. `createRepository(scope)` lit le *tenant* dans la portée qu'on lui donne, sur un stockage où existent les *tenants* `acme` et `globex`. Pour prouver la sécurité au niveau des lignes elle-même, exécutez-la sur un *repository* qui n'écrit aucune condition de *tenant* |
-| `eventBusContract` | tout fournisseur d'`EventBus` : routage par type, plusieurs abonnés, désabonnement, aller-retour exact de l'enveloppe (`traceparent`, `correlationId`, `tenantId`), remontée de l'échec d'un gestionnaire. Les relivraisons sont acceptées ; rendez `settle()` depuis `createBus` pour les fournisseurs qui livrent de façon asynchrone |
-| `unitOfWorkContract` | toute `UnitOfWork`, appelée par `run` sans bus de commandes : les événements du domaine attendent la fin et sont distribués avant la validation (commit), si bien que les gestionnaires voient chaque sauvegarde et que ce qu'ils écrivent, l'outbox comprise, est validé avec ; un échec dans une sauvegarde, dans le travail, dans un gestionnaire ou dans la validation (une contrainte différée) ne laisse rien derrière lui ; les gestionnaires `after-commit` s'exécutent une fois les lignes validées, jamais autrement. Un adaptateur qui n'est pas construit sur `withinUnitOfWork` échoue ici |
-| `outboxStoreContract` | tout stockage d'outbox : ordre, limite, bail, prises concurrentes, publié, échoué, mort, `retryDead`, purge ; avec `carriesTenant: true`, le *tenant* de chaque événement conservé |
+| `tenantIsolationContract` | un *repository* sous une stratégie d'isolement des *tenants* : ce qu'un *tenant* a enregistré est caché à un autre ; un autre *tenant* qui enregistre sous le même id le laisse intact, par une mise à jour ou (si `recreate(aggregate)` est donné, un nouvel agrégat sous le même id) par une insertion ; le personnel de la plateforme, avec une élévation sur tous les *tenants*, n'écrit rien, et lit l'agrégat de l'autre *tenant* quand `elevatedReads` est vrai (tables partagées, sécurité au niveau des lignes) ; une écriture d'un travail qui ne nomme aucun *tenant* est refusée (`NoCurrentTenantError`) et une lecture est refusée ou ne trouve rien. Sans `mutate`, le cas de la mise à jour sous un id déjà détenu reste en attente. `createRepository(scope)` lit le *tenant* dans la portée qu'on lui donne, sur un stockage où existent les *tenants* `acme` et `globex`. Pour prouver la sécurité au niveau des lignes elle-même, exécutez-la sur un *repository* qui n'écrit aucune condition de *tenant* |
+| `eventBusContract` | tout fournisseur d'`EventBus` : routage par type, plusieurs abonnés, désabonnement, aller-retour exact de l'enveloppe (`traceparent`, `correlationId`, `tenantId`), un événement reçu tel que JSON le porte et jamais l'objet publié (une `Date` de la charge utile sous forme de texte), remontée de l'échec d'un gestionnaire. Les relivraisons sont acceptées ; rendez `settle()` depuis `createBus` pour les fournisseurs qui livrent de façon asynchrone |
+| `unitOfWorkContract` | toute `UnitOfWork`, appelée par `run` sans bus de commandes : les événements du domaine attendent la fin et sont distribués avant la validation (commit), si bien que les gestionnaires voient chaque sauvegarde et que ce qu'ils écrivent, l'outbox comprise, est validé avec ; un échec dans une sauvegarde, dans le travail, dans un gestionnaire ou dans la validation (une contrainte différée) ne laisse rien derrière lui, pas plus qu'un `run` imbriqué qui a échoué bien que le travail ait intercepté son échec ; exécutée dans l'unité de travail d'une autre base de données, elle ouvre la sienne, les deux phases autour de sa propre validation ; les gestionnaires `after-commit` s'exécutent une fois les lignes validées, jamais autrement. Un adaptateur qui n'est pas construit sur `unitOfWorkOver` échoue ici |
+| `outboxStoreContract` | tout stockage d'outbox : ordre, limite, bail, prises concurrentes, publié, échoué, reporté sans tentative, mort, `retryDead`, purge ; avec `carriesTenant: true`, le *tenant* de chaque événement conservé |
 | `processedEventStoreContract` | tout `ProcessedEventStore` : une fois par consommateur et par événement, aussi sous des livraisons concurrentes |
 | `eventStoreContract` | tout `EventStore` : un flux créé à la version 0 et relu dans l'ordre, numéroté à partir de 1, avec son type, sa version de forme, ses données, ses métadonnées et son instant ; un ajout à une version que le flux n'a plus (en retard ou en avance) refusé avec `CONCURRENCY_CONFLICT` et rien n'en est gardé ; un seul de deux ajouts à la même version passe ; des flux numérotés séparément ; tout le stockage lu dans l'ordre des ajouts, positions croissantes à partir de 1, après une position et dans une limite ; `head()` ; avec `createTenantStore`, un flux gardé au *tenant* de son premier ajout quelle que soit la version depuis laquelle on le lit, le travail qui ne nomme aucun *tenant* refusé avant de lire ou d'ajouter, un agrégat d'un autre *tenant* répondu comme un identifiant inconnu |
 | `eventStoreUnitOfWorkContract` | un `EventStore` transactionnel avec l'outbox de sa base de données sous une même `UnitOfWork` : le flux et les enregistrements de l'outbox publiés pour ses événements sont validés ensemble ; rien ne reste dans l'outbox pour un ajout défait par un retour arrière (rollback), ni pour un ajout refusé par un conflit de concurrence. `createSubject()` rend `{ unitOfWork, store, outbox }` |
 | `processStoreContract` | tout `ProcessStore` de gestionnaires de processus : une instance telle qu'enregistrée (état JSON, délais armés, fin), une version qui n'est pas la suivante refusée avec `CONCURRENCY_CONFLICT`, un seul de deux premiers enregistrements qui l'emporte, avec `unitOfWork` rien de laissé par une sauvegarde défaite par un retour arrière (rollback), et avec `storeInTenant` une instance cachée à un autre tenant, deux tenants avec chacun une instance sous la même clé, et un travail qui ne nomme aucun tenant refusé |
-| `jobStoreContract` | tout `JobStore` de *jobs* en arrière-plan : les *jobs* dus, le plus ancien d'abord et chacun à une seule prise, les *jobs* différés, les clés d'idempotence restreintes au *tenant* (deux *tenants* n'en partagent jamais une), le *tenant* et le sujet que montre `find`, le bail et ses battements de cœur, les comptes rendus entendus seulement de la tentative qui tient le *job* (progression, point de reprise remis à la tentative suivante, succès, nouvelle tentative, mort et ranimé, libération), l'annulation d'un *job* en attente et d'un *job* en cours, la purge. Avec `unitOfWork` (sur le même contexte que le stockage qui vient d'être créé), un *job* ajouté, annulé ou ranimé dans une unité de travail qui revient en arrière (rollback) reste tel qu'il était, et un *job* dont l'unité de travail est validée est ajouté, annulé ou ranimé. Les prises demandent un bail de 30 s |
-| `cacheContract` | tout `Cache` : aller-retour de chaque forme de valeur, isolement des entrées, suppression, durée de vie |
+| `jobStoreContract` | tout `JobStore` de *jobs* en arrière-plan : les *jobs* dus, le plus ancien d'abord et chacun à une seule prise, les *jobs* différés, les clés d'idempotence restreintes au *tenant* (deux *tenants* n'en partagent jamais une), un *job* déjà gardé sous le même identifiant répondu comme un doublon et laissé tel qu'il a été ajouté, le *tenant* et le sujet que montre `find`, le bail et ses battements de cœur, les comptes rendus entendus seulement de la tentative qui tient le *job* (progression, point de reprise remis à la tentative suivante, succès, nouvelle tentative, mort et ranimé, libération), l'annulation d'un *job* en attente et d'un *job* en cours, la purge. Avec `unitOfWork` (sur le même contexte que le stockage qui vient d'être créé), un *job* ajouté, annulé ou ranimé dans une unité de travail qui revient en arrière (rollback) reste tel qu'il était, et un *job* dont l'unité de travail est validée est ajouté, annulé ou ranimé. Les prises demandent un bail de 30 s |
+| `cacheContract` | tout `Cache` : aller-retour de chaque forme de valeur, une copie qui lui est propre (une valeur modifiée après son écriture ou après sa lecture n'est pas ce que le cache détient), une valeur rendue telle que JSON la porte (une `Date` sous forme de texte), isolement des entrées, suppression, durée de vie |
 | `cachePurgerContract` | tout `CachePurger` avec son cache partagé (`store`, `holds`) : un tag purge ce qu'il nomme et rien d'autre, une sorte atteint chaque élément, les *tenants* restent séparés, la purge est idempotente |
 | `lockContract` | tout `Lock` : un seul détenteur à la fois, aussi sous des demandes concurrentes, libération, expiration, une libération tardive ignorée, jeton de clôture (*fencing token*) croissant, `waitMs` |
 | `jobSchedulerContract` | tout `JobScheduler` : enregistrement et description, un nom en double et une planification illisible refusés, `runNow` (aussi pour un *job* désactivé, un nom inconnu rejeté), rien par le temps avant `start` ni après `stop`, aucun chevauchement par défaut, un *job* en échec, signalé `failed` avec son code, pendant que les autres continuent, le contexte d'exécution d'une exécution |
@@ -913,7 +942,10 @@ Les suites n'utilisent que `describe`, `it`, `beforeEach`, `expect(...).toBe` et
 runner est le type `ContractRunner`.
 
 Un *package* qui tient un port à lui publie son contrat sur la même base, `ContractSuite` : un sujet créé à
-neuf avant chaque test, et `it`, `expect`, `afterEach` liés au runner.
+neuf avant chaque test, et `it`, `expect`, `afterEach` liés au runner. `holds(condition, otherwise)`
+affirme ce qui n'est pas une valeur à comparer, et échoue avec la phrase qui dit ce que l'adaptateur a
+fait : l'auteur d'un adaptateur lit `the key is still refused after its holder released it`, jamais
+`expected false to be true`. Les suites du *package* sont écrites ainsi.
 
 <!-- checked sample -->
 ```ts
@@ -932,6 +964,12 @@ class GeocoderSuite extends ContractSuite<Geocoder> {
   protected tests(): void {
     this.it('answers undefined for an address it does not know', async () => {
       this.expect(await this.subject.locate('nowhere')).toBe(undefined);
+    });
+
+    this.it('locates London north of the equator', async () => {
+      const found = await this.subject.locate('10 Downing Street, London');
+
+      this.holds((found?.latitude ?? 0) > 0, `London was located at the latitude ${String(found?.latitude)}`);
     });
   }
 }

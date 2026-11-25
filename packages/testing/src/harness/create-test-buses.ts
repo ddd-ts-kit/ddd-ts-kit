@@ -11,10 +11,10 @@ import {
   dispatchingOnSave,
   unitOfWorkMiddleware,
   executionContext,
-  type EventBusFailures,
   type ExecutionContext,
   type IntegrationEvent,
 } from '@ddd-ts-kit/kernel';
+import { testEpoch } from './test-epoch';
 
 export interface TestBusesOptions {
   /** The instant the clock is frozen at. Default 2026-01-01T00:00:00.000Z. */
@@ -26,11 +26,6 @@ export interface TestBusesOptions {
    * role, correlation `test-correlation`, origin `test`.
    */
   readonly executionContext?: ExecutionContext;
-  /**
-   * How `eventBus` rejects when its handlers fail: `as-thrown` rethrows the failure of a single
-   * handler as it is. Default `aggregated`, which becomes `as-thrown` in a later minor version.
-   */
-  readonly eventBusFailures?: EventBusFailures;
 }
 
 export interface TestBuses {
@@ -70,7 +65,7 @@ export interface TestBuses {
  * test, execute a command, assert the repository fake and `publishedEvents()`.
  */
 export function createTestBuses(options: TestBusesOptions = {}): TestBuses {
-  const eventBus = new InMemoryEventBus({ failures: options.eventBusFailures });
+  const eventBus = new InMemoryEventBus();
   const context = options.executionContext ?? DEFAULT_EXECUTION_CONTEXT;
   const actorContext = new FixedActorContext(context.actor);
   const domainEvents = new InMemoryDomainEventDispatcher();
@@ -83,7 +78,7 @@ export function createTestBuses(options: TestBusesOptions = {}): TestBuses {
     domainEvents,
     dispatching: (repository) => dispatchingOnSave(repository, () => domainEvents),
     unitOfWork,
-    clock: new FixedClock(options.now ?? new Date('2026-01-01T00:00:00.000Z')),
+    clock: new FixedClock(options.now ?? testEpoch()),
     ids: new SequentialIdGenerator(options.idPrefix),
     executionScope: new FixedExecutionScope(context, actorContext),
     actorContext,

@@ -3,9 +3,8 @@ import type { Project } from '../model/project';
 import type { Rule } from '../model/rule';
 import type { Violation } from '../model/violation';
 import { findSuppressions } from '../suppressions/find-suppressions';
-import { isSuppressed } from '../suppressions/is-suppressed';
-import { SUPPRESSION_RULE_ID } from '../suppressions/suppression-rule-id';
-import { suppressionViolations } from '../suppressions/suppression-violations';
+import { perFile } from '../support/per-file';
+import { Silencing } from '../suppressions/silencing';
 import type { CheckResult } from './check-result';
 import { summarize } from './summarize';
 
@@ -22,8 +21,6 @@ export function runCheck(project: Project, options: CheckOptions = {}): CheckRes
   const selected = (id: string): boolean =>
     options.rules === undefined || options.rules.length === 0 || options.rules.includes(id);
 
-  const suppressions = project.files.flatMap(findSuppressions);
-
   const active = (options.catalogue ?? RULES).filter(
     (rule) => selected(rule.id) && project.severity(rule.id) !== 'off',
   );
@@ -32,16 +29,24 @@ export function runCheck(project: Project, options: CheckOptions = {}): CheckRes
     .flatMap((rule) => violationsOf(rule, project, options.fileScopeOnly === true))
     .flatMap((violation) => placed(violation, project));
 
-  const kept = raw.filter((violation) => !isSuppressed(violation, suppressions));
+  const silencing = new Silencing(project.files.flatMap(findSuppressions));
+  const kept = raw.filter((violation) => !silencing.silences(violation));
   const suppressedCount = raw.length - kept.length;
 
-  if (selected(SUPPRESSION_RULE_ID)) {
-    kept.push(...suppressionViolations(project, suppressions));
+  if (judgesEverything(options)) {
+    const idle = active.flatMap((rule) => rule.ofIdleSuppressions?.(project, silencing.idle) ?? []);
+
+    kept.push(...idle.flatMap((violation) => placed(violation, project)));
   }
 
   kept.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line || a.ruleId.localeCompare(b.ruleId));
 
-  return summarize(kept, { suppressedCount, suppressionCount: suppressions.length, fileCount: project.files.length });
+  return summarize(kept, { suppressedCount, suppressionCount: silencing.count, fileCount: project.files.length });
+}
+
+/** Only a run of every rule on every file knows that a directive silenced nothing. */
+function judgesEverything({ rules = [], fileScopeOnly = false }: CheckOptions): boolean {
+  return rules.length === 0 && !fileScopeOnly;
 }
 
 /**
@@ -62,10 +67,13 @@ function placed(violation: Violation, project: Project): Violation[] {
   return [violation.severity === project.severity(violation.ruleId) ? { ...violation, severity } : violation];
 }
 
-function violationsOf(rule: Rule, project: Project, oneFileOnly: boolean): Violation[] {
-  if (!oneFileOnly) {
-    return [...rule.run(project), ...(rule.acrossProject?.(project) ?? [])];
+/** The engine owns the walk: a file rule is handed each source in turn, and the tree only where it asks for it. */
+function violationsOf(rule: Rule, project: Project, oneFileOnly: boolean): readonly Violation[] {
+  if (rule.scope === 'project') {
+    return oneFileOnly ? [] : rule.judge(project);
   }
 
-  return rule.scope === 'project' ? [] : rule.run(project);
+  const inEachFile = perFile(project, rule.id, (file) => rule.judge(file, project));
+
+  return oneFileOnly ? inEachFile : [...inEachFile, ...(rule.acrossProject?.(project) ?? [])];
 }

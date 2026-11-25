@@ -4,7 +4,8 @@ import type { AggregateRoot, Repository } from '@ddd-ts-kit/kernel';
 import type { Awaitable } from './awaitable';
 import type { ContractRunner } from './contract-runner';
 import { ContractSuite } from './contract-suite';
-import { failureOf } from './failure-of';
+import { failureOf } from '../scenarios/failure-of';
+import { codeOf } from '../scenarios/code-of';
 
 /** What a JSON column holds, as a row type states it: an object, a list, a string, a number or a boolean; SQL NULL is no value. */
 export type JsonColumnValue = object | string | number | boolean;
@@ -288,8 +289,4 @@ class RepositorySuite<A extends AggregateRoot<Id>, Id extends string | number> e
 
     return found;
   }
-}
-
-function codeOf(error: unknown): unknown {
-  return typeof error === 'object' && error !== null && 'code' in error ? error.code : undefined;
 }

@@ -105,7 +105,7 @@ export abstract class WorkingHoursGateway {
 // the port and every handler that uses it stay as they are.
 @Gateway(WorkingHoursGateway)
 export class InProcessWorkingHoursGateway implements WorkingHoursGateway {
-  constructor(readonly upstream: WorkingHoursContract) {}
+  constructor(private readonly upstream: WorkingHoursContract) {}
 
   async worksDuring(practitionerId: string, startsAt: Date, endsAt: Date): Promise<boolean> {
     const intervals = await this.upstream.workingHours(practitionerId, startsAt.toISOString().slice(0, 10));

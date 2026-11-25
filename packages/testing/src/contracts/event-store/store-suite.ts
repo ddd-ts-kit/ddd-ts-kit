@@ -44,8 +44,9 @@ export class StoreSuite extends ContractSuite<EventStore> {
 
         this.expect(all.map(({ position }) => position)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
-        this.expect(all.every((event, index) => event.version === 1 || all[index - 1]?.stream === event.stream)).toBe(
-          true,
+        this.holds(
+          all.every((event, index) => event.version === 1 || all[index - 1]?.stream === event.stream),
+          'the events of one append are not next to each other in the whole store: concurrent appends were interleaved',
         );
       },
     );

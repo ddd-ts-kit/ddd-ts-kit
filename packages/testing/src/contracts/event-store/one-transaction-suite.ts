@@ -5,7 +5,7 @@ import {
   type IntegrationEvent,
 } from '@ddd-ts-kit/kernel';
 import { ContractSuite } from '../contract-suite';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
 import { Consignment } from './consignment';
 import { Consignments } from './consignments';
 import type { EventStoreUnderContract } from './event-store-under-contract';
@@ -53,7 +53,11 @@ export class OneTransactionSuite extends ContractSuite<EventStoreUnderContract> 
         }),
       );
 
-      this.expect(failure instanceof TruckLost).toBe(true);
+      this.holds(
+        failure instanceof TruckLost,
+        `the unit of work did not reject with the failure of its work: got ${String(failure)}`,
+      );
+
       this.expect(await this.subject.store.readStream('shipping.consignment-c1')).toEqual([]);
       this.expect((await this.subject.outbox.stats()).pending).toBe(0);
       this.expect(await this.relayed()).toEqual([]);
@@ -73,7 +77,7 @@ export class OneTransactionSuite extends ContractSuite<EventStoreUnderContract> 
 
       const refused = await failureOf(() => this.subject.unitOfWork.run(() => consignments.save(stale.weigh(200))));
 
-      this.expect(refused === undefined).toBe(false);
+      this.holds(refused !== undefined, 'the save of a stale aggregate was accepted');
 
       this.expect((await this.subject.store.readStream('shipping.consignment-c1')).length).toBe(2);
       this.expect((await loaded(consignments, 'c1')).weight).toBe(100);

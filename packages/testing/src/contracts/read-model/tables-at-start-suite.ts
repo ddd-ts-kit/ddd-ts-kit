@@ -6,7 +6,7 @@ import {
 } from '@ddd-ts-kit/kernel';
 import type { Awaitable } from '../awaitable';
 import type { ContractRunner } from '../contract-runner';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
 import type { ReadModelTableShape } from './read-model-table-shape';
 import { READ_MODEL_TABLE_SHAPES as TABLES } from './read-model-table-shapes';
 import type { ReadModelTablesUnderContract } from './read-model-tables-under-contract';
@@ -58,11 +58,16 @@ export class TablesAtStartSuite extends ReadModelTablesSuite {
 
         this.expect(said.length).toBe(2);
 
-        this.expect(said.every((line) => line.startsWith('warn: The read model tables could not be checked'))).toBe(
-          true,
+        this.holds(
+          said.every((line) => line.startsWith('warn: The read model tables could not be checked')),
+          `the start said something else than a warning that the tables could not be checked: ${said.join(' | ')}`,
         );
 
-        this.expect(said.join('').includes('select ')).toBe(false);
+        this.holds(
+          !said.join('').includes('select '),
+          'the warning of the start carries the statement that failed, not its cause in a few words',
+        );
+
         this.expect((await tables.report()).outcome).toBe('unread');
       } finally {
         await closed?.close();

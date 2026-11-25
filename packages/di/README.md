@@ -1081,7 +1081,7 @@ barrel instead of discovery the two lines become `contextModule('ordering', orde
 | `UnitOfWork` | `InMemoryUnitOfWork` | `unitOfWork` |
 | `CommandBus` | `InMemoryCommandBus` running each command in the unit of work: the domain events its saves announce are dispatched once the handler has returned, before the commit, then the `after-commit` handlers run | `commandBus` |
 | `QueryBus` | `InMemoryQueryBus` | `queryBus` |
-| `EventBus` | `InMemoryEventBus`, which rejects with an `AggregateError` of what its handlers threw; `eventBusFailures: 'as-thrown'` rethrows the failure of a single handler as it is (the default in a later minor version) | `eventBus`, `eventBusFailures` |
+| `EventBus` | `InMemoryEventBus`, which rejects with the failure of a single handler as it is, and with an `AggregateError` of several | `eventBus` |
 | `IntegrationEventPublisher` | the event bus | `eventPublisher` |
 | `IntegrationEventSubscriber` | the event bus | `eventSubscriber` |
 | `EventSubscribers` | the single `IntegrationEventSubscriber`, for every context | `eventSubscribers` |
@@ -1250,14 +1250,14 @@ const app = createTestApplication({
 `fake(Port, value)` is checked: the value implements the port. An in-memory class, an object
 literal and a class written in the spec all fit, since a port is a shape.
 
-`createTestApplication({ modules, fakes, now?, idPrefix?, actor?, session?, executionContext?, authorization?, jobs?, eventBusFailures? })` puts the modules on a deterministic
+`createTestApplication({ modules, fakes, now?, idPrefix?, actor?, session?, executionContext?, authorization?, jobs? })` puts the modules on a deterministic
 kernel, whether or not they list `kernelModule()`, and returns the application plus what a
 spec touches:
 
 | Member | Is |
 |---|---|
 | `commandBus`, `queryBus` | the in-memory buses, with every declared handler |
-| `eventBus` | `InMemoryEventBus`; `eventBus.published` lists what the use cases announced. Every context listens on it, whatever `EventSubscribers` the modules bind. With `eventBusFailures: 'as-thrown'`, `publish` rejects with the failure of a single handler as it is instead of an `AggregateError` |
+| `eventBus` | `InMemoryEventBus`; `eventBus.published` lists what the use cases announced. Every context listens on it, whatever `EventSubscribers` the modules bind. `publish` rejects with the failure of a single handler as it is, and with an `AggregateError` of several |
 | `domainEvents` | `InMemoryDomainEventDispatcher`: the save of every repository, adapter or fake, announces to it, with the timing of the application (at the end of the command, then after it for `after-commit` handlers); a spec may dispatch a domain event itself to see the declared handlers react, and `domainEvents.afterCommitFailures` holds what `after-commit` handlers threw |
 | `clock` | `FixedClock` at `now` (default `2026-01-01T00:00:00.000Z`); `clock.advance(ms)` |
 | `ids` | `SequentialIdGenerator`: `id-1`, `id-2`... |
@@ -1517,10 +1517,10 @@ export class InvoiceIssuedEventHandler implements DomainEventHandler<InvoiceIssu
 }
 ```
 
-A `UnitOfWork` given through `kernelModule({ unitOfWork })` gets this timing for commands
-whatever it is made of: the default command bus puts `withinUnitOfWork` of the kernel around
-it. Built on `withinUnitOfWork` itself, as the ORM packages are, it gives the same timing to a
-`run` called directly, the one of a consumer included.
+A `UnitOfWork` given through `kernelModule({ unitOfWork })` is built on `unitOfWorkOver` of the
+kernel, as the ORM packages are: it gives this timing to commands and to a `run` called
+directly, the one of a consumer included. The default command bus refuses one that opens no
+scope for the domain events (`UnscopedUnitOfWorkError`).
 
 In a test application, the adapter of a module and the fake given for a repository port both
 announce to `app.domainEvents`, whether `kernelModule()` is listed or not. Without a container,

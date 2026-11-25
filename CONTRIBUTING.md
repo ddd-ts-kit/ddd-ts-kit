@@ -114,10 +114,18 @@ restarted a desktop. Two things bound them:
   instead (a reason too short, or a promise for later, fails), the run of a pull request annotates
   each line it adds (`pipeline/monorepo/asymmetries.mjs`), and in Claude Code the hook of
   `.claude/settings.json` asks before any edit of them, whatever the permission mode.
-- A new check rule comes with a passing and a failing fixture, a `fix` sentence and an
-  `explain` entry.
+- A check rule is one file of `packages/cli/src/check/rules/`, named after its id, that says
+  everything about the rule: its `id` and `description`, its default `severity`, its `doc` (the
+  reason and the two examples `ddd-ts-kit explain` shows), its `scope` and its `judge`. A `file`
+  rule judges one source at a time, `judge(file, project)`, and answers findings; the engine walks
+  the sources. It may ask the project for the config, the place of a file and a source it imports,
+  never for the tree, so that `check-file` and `check` agree: what needs every source is its
+  `acrossProject`, or a `project` rule. `standalone: true` says the rule judges a source whatever
+  the project around it (`check --clean-only`). A new rule is listed in
+  `catalogue/architecture-rules.ts` and comes with a passing and a failing fixture and a `fix`
+  sentence.
 - Before 1.0, a rule that prevents a problem is an error at once: a new rule takes `error` as its
-  default (nothing in `default-severities.ts` for `ddd-ts-kit check`, `recommended: 'error'` for
+  default (`severity: 'error'` in its rule file for `ddd-ts-kit check`, `recommended: 'error'` for
   the ESLint rule), and so does what a rule judges more. There is no warning first and no version
   in which it becomes an error later: a rule left a warning to soften an upgrade is one that a
   project learns to ignore. A rule is `warn` only when what it reports may be right and a reader

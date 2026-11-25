@@ -1,5 +1,5 @@
 [English](cache-and-coordination.md) · **Français**
-<!-- translation-of: cache-and-coordination.md sha256:4d43f632dbfec825 -->
+<!-- translation-of: cache-and-coordination.md sha256:4321a7958e609821 -->
 
 # Cache et coordination : Redis, Dragonfly, Valkey
 
@@ -176,7 +176,7 @@ export const calendars = cached({
 ```
 
 Des appels identiques et simultanés d'un même *tenant* partagent un seul appel au contexte
-calendars ; un appel en échec n'est pas mis en cache ; un cache en panne vaut un défaut de cache.
+calendars ; un appel en échec n'est pas mis en cache ; un cache en panne vaut un défaut de cache, compté dans `cache_errors_total`.
 Avec un conteneur, le même aspect se pose sur la liaison : `.as('gateway').with(cached({ ... }))`.
 
 `cached` a besoin du `scope` d'`installAspectRuntime`, que donne une racine de composition générée,

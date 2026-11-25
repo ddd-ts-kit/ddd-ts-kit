@@ -1,10 +1,11 @@
 import type { ProcessedEventStore } from '../../application/ports/processed-event-store';
+import { compositeKey } from './composite-key';
 
 export class InMemoryProcessedEventStore implements ProcessedEventStore {
   private readonly seen = new Set<string>();
 
   async markProcessed(consumer: string, eventId: string): Promise<boolean> {
-    const key = keyOf(consumer, eventId);
+    const key = compositeKey(consumer, eventId);
 
     if (this.seen.has(key)) {
       return false;
@@ -16,11 +17,6 @@ export class InMemoryProcessedEventStore implements ProcessedEventStore {
   }
 
   async release(consumer: string, eventId: string): Promise<void> {
-    this.seen.delete(keyOf(consumer, eventId));
+    this.seen.delete(compositeKey(consumer, eventId));
   }
-}
-
-// JSON keeps the pair unambiguous: 'a:b' + 'c' must not equal 'a' + 'b:c'.
-function keyOf(consumer: string, eventId: string): string {
-  return JSON.stringify([consumer, eventId]);
 }

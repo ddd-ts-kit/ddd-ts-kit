@@ -48,6 +48,37 @@ describe('a body Hono cannot read as JSON', () => {
     expect(await response.json()).toMatchObject({ status: 400, code: 'MALFORMED_BODY', requestId: 'req-1' });
   });
 
+  it.each(['application/json-seq', 'text/json'])(
+    'reads no body under %s, which only looks like JSON: the one reading of a JSON media type',
+    async (contentType) => {
+      const app = new Hono();
+
+      mountHono(app, orderRoutes);
+
+      const response = await app.request('/orders', {
+        method: 'POST',
+        headers: { 'content-type': contentType },
+        body: JSON.stringify({ customerId: 'c-1', items: [{ sku: 'A-1', quantity: 2 }] }),
+      });
+
+      expect(response.status).toBe(422);
+    },
+  );
+
+  it('reads a JSON body under a media type with the +json suffix, whatever its parameters', async () => {
+    const app = new Hono();
+
+    mountHono(app, orderRoutes);
+
+    const response = await app.request('/orders', {
+      method: 'POST',
+      headers: { 'content-type': 'Application/Vnd.Order+JSON; charset=utf-8' },
+      body: JSON.stringify({ customerId: 'c-1', items: [{ sku: 'A-1', quantity: 2 }] }),
+    });
+
+    expect(response.status).toBe(201);
+  });
+
   it('reads no body that is not JSON', async () => {
     const app = new Hono();
 

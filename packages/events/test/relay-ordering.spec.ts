@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FixedClock, type IntegrationEvent } from '@ddd-ts-kit/kernel';
 import {
-  HELD_FOR_ORDER,
   InMemoryOutboxStore,
   OutboxRelay,
   type OutboxOrdering,
@@ -90,7 +89,21 @@ describe('OutboxRelay with per-key ordering', () => {
     expect(await relay.tick()).toEqual({ published: 1, failed: 1 });
 
     expect(publisher.delivered).toEqual(['b-1']);
-    expect(recordOf(store, 'a-2')).toMatchObject({ status: 'pending', lastErrorCode: HELD_FOR_ORDER });
+    expect(recordOf(store, 'a-2')?.status).toBe('pending');
+  });
+
+  it('postpones a held record: no attempt is counted, and it is not a failure', async () => {
+    const { clock, store, relay } = setup({ 'a-1': 2 });
+
+    await store.append([event('a-1'), event('a-2'), event('a-3')]);
+    await relay.tick();
+
+    const held = recordOf(store, 'a-2');
+
+    expect(held?.attempts).toBe(0);
+    expect(held?.lastErrorCode).toBe(undefined);
+    expect(held?.nextAttemptAt).toEqual(new Date(clock.now().getTime() + RETRY_MS));
+    expect(await store.stats()).toEqual({ pending: 3, failed: 1, dead: 0 });
   });
 
   it('publishes the key in order once the failing publisher recovers', async () => {
@@ -200,6 +213,7 @@ describe('OutboxRelay with per-key ordering, when the head of a key goes away', 
     await store.append([event('a-2')]);
     await relay.tick();
     expect(publisher.delivered).toEqual([]);
+    expect(recordOf(store, 'a-2')?.attempts).toBe(0);
     clock.advance(60_000);
     await relay.tick();
 

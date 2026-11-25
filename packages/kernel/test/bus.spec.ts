@@ -5,8 +5,10 @@ import {
   HandlerNotFoundError,
   InMemoryCommandBus,
   InMemoryQueryBus,
+  InMemoryUnitOfWork,
   Query,
   unitOfWorkMiddleware,
+  type CommandHandler,
 } from '../src';
 
 class PlaceOrder extends Command<string> {
@@ -44,6 +46,23 @@ describe('InMemoryCommandBus', () => {
     await expect(bus.execute(new PlaceOrder('x'))).rejects.toBeInstanceOf(HandlerNotFoundError);
 
     expect(() => bus.register(CancelOrder, { execute: async () => undefined })).toThrow(DuplicateHandlerError);
+  });
+
+  it('rejects, and never throws, whenever the handler fails, with or without a middleware', async () => {
+    const failing: CommandHandler<CancelOrder> = {
+      execute: () => {
+        throw new Error('before its first await');
+      },
+    };
+
+    const bare = new InMemoryCommandBus().register(CancelOrder, failing);
+    const wrapped = new InMemoryCommandBus().register(CancelOrder, failing).use((_message, next) => next());
+
+    for (const bus of [bare, wrapped]) {
+      const executed = bus.execute(new CancelOrder('o-1'));
+
+      await expect(executed).rejects.toThrow('before its first await');
+    }
   });
 
   it('runs middlewares outside in, around the handler', async () => {
@@ -93,12 +112,13 @@ describe('InMemoryCommandBus', () => {
 
   it('opens a unit of work for commands only', async () => {
     let opened = 0;
+    const unitOfWork = new InMemoryUnitOfWork();
 
     const middleware = unitOfWorkMiddleware({
       run: (work) => {
         opened += 1;
 
-        return work();
+        return unitOfWork.run(work);
       },
     });
 

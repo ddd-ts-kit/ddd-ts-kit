@@ -3,6 +3,7 @@ import { CliError } from '../cli-error';
 import { type EarlierDeclarations, type KeptContext, refreshBarrels } from '../generate/refresh-barrels';
 import { refreshNestControllers } from '../nest-controllers/refresh-nest-controllers';
 import { replaceRegion } from '../markers';
+import { packageManagerVars } from '../package-manager/package-manager-vars';
 import { readTemplate, renderTemplate } from '../templating';
 import type { Workspace } from '../workspace';
 import { brokerStrategy } from './broker-strategy';
@@ -69,7 +70,10 @@ export function writeDocs(
   if (!ws.exists(INTEGRATION_README)) {
     ws.create(
       INTEGRATION_README,
-      renderTemplate('docs/integration-readme.md.tpl', { integration: { strategy: brokerStrategy(config) } }),
+      renderTemplate('docs/integration-readme.md.tpl', {
+        pm: packageManagerVars(config),
+        integration: { strategy: brokerStrategy(config) },
+      }),
     );
   }
 
@@ -78,7 +82,7 @@ export function writeDocs(
 
 function writeContextMap(ws: Workspace, lines: readonly string[]): void {
   const existing = ws.read(CONTEXT_MAP);
-  const next = replaceRegion(existing ?? readTemplate('docs/context-map.md.tpl'), 'context-map', lines);
+  const next = replaceRegion(existing ?? ws.spoken(readTemplate('docs/context-map.md.tpl')), 'context-map', lines);
 
   if (next === undefined) {
     throw new CliError(

@@ -11,19 +11,19 @@ import {
   type Config,
   type Deviation,
 } from '../../config';
-import { DEFAULT_SEVERITIES } from '../catalogue/default-severities';
 import { commentLines } from '../comments/comment-lines';
 import { ADR_DIRECTORY } from '../governance/adr-directory';
-import { DecisionRecords } from '../governance/decision-records';
+import type { DecisionRecords } from '../governance/decision-records';
 import { recordNumber } from '../governance/record-number';
+import { recordsOf } from '../governance/records-of';
 import { referencedRecord } from '../governance/referenced-record';
 import type { Finding } from '../model/finding';
 import type { Flaw } from '../model/flaw';
-import type { Rule } from '../model/rule';
+import type { Project } from '../model/project';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { findSuppressions } from '../suppressions/find-suppressions';
 import { lineOfSequence } from '../support/line-of-sequence';
-import { perFile } from '../support/per-file';
 import { reporter } from '../support/reporter';
 import { toViolations } from '../support/to-violations';
 
@@ -47,22 +47,30 @@ interface ConfigFinding extends Flaw {
   readonly where: readonly string[];
 }
 
-export const governanceRecordedDeviation: Rule = {
+export const governanceRecordedDeviation: FileRule = {
   id: 'governance/recorded-deviation',
   description:
     'A suppression, a lowered severity, a lowered coverage threshold, an extra directory, a context outside the tenancy or an extra allowed package carries a reason and points to a decision record in docs/adr/.',
+  severity: 'error',
+  doc: {
+    why: 'The architecture can be changed deliberately, not case by case. A suppression, a lowered severity or a widened list that points to no decision is indistinguishable from a shortcut, and gets copied. The decision record says why, for what scope and until when, so the exception can be reviewed today and removed later.',
+    bad: `// eslint-disable-next-line no-console -- needed for the demo
+"rules": { "test/spec-required": { "severity": "off", "files": ["src/contexts/billing/infrastructure/**"] } }`,
+    good: `// eslint-disable-next-line no-console -- ADR-0004: startup banner read by operations
+"rules": { "test/spec-required": { "severity": "off", "files": ["src/contexts/billing/infrastructure/**"] } },
+"deviations": [{ "what": "rules.test/spec-required", "adr": "0009", "reason": "Generated adapters are covered by the contract suite." }]
+// docs/adr/0004-startup-banner.md, docs/adr/0009-no-spec-for-generated-adapters.md`,
+  },
   scope: 'file',
-  run(project) {
-    const records = new DecisionRecords(project.root);
-
-    return perFile(project, this.id, (file) => unrecordedSuppressions(file, records));
+  judge(file, project) {
+    return unrecordedSuppressions(file, recordsOf(project));
   },
   acrossProject(project) {
-    const records = new DecisionRecords(project.root);
+    const records = recordsOf(project);
     const { config, configText } = project;
 
     const findings = [
-      ...unrecordedRelaxations(config),
+      ...unrecordedRelaxations(project),
       ...config.deviations.flatMap((deviation) => flawedDeviation(deviation, records)),
     ];
 
@@ -78,7 +86,7 @@ export const governanceRecordedDeviation: Rule = {
 
 function unrecordedSuppressions(file: SourceFile, records: DecisionRecords): Finding[] {
   const incomplete = findSuppressions(file).filter(
-    (suppression) => suppression.ruleId === '' || suppression.reason === '',
+    (suppression) => suppression.ruleIds.length === 0 || suppression.reason === '',
   );
 
   const reportedElsewhere = new Set(incomplete.map((suppression) => suppression.line));
@@ -127,9 +135,11 @@ function missingRecordFix(number: number): string {
   return `Write ${ADR_DIRECTORY}/${String(number).padStart(4, '0')}-<slug>.md (context, what is deviated from, why, scope, condition for removing it), or correct the number.`;
 }
 
-function unrecordedRelaxations(config: Config): ConfigFinding[] {
+function unrecordedRelaxations(project: Project): ConfigFinding[] {
+  const { config } = project;
+
   const relaxations = [
-    ...loweredRules(config),
+    ...loweredRules(project),
     ...loweredCoverage(config),
     ...raisedBudget(config),
     ...loweredMutation(config),
@@ -149,10 +159,10 @@ function unrecordedRelaxations(config: Config): ConfigFinding[] {
     }));
 }
 
-function loweredRules({ rules }: Config): Relaxation[] {
-  return Object.entries(rules).flatMap(([id, setting]) => {
+function loweredRules(project: Project): Relaxation[] {
+  return Object.entries(project.config.rules).flatMap(([id, setting]) => {
     const severity = typeof setting === 'string' ? setting : setting.severity;
-    const lowered = severity === 'off' || (severity === 'warn' && (DEFAULT_SEVERITIES[id] ?? 'error') === 'error');
+    const lowered = severity === 'off' || (severity === 'warn' && project.defaultSeverity(id) === 'error');
     const scope = typeof setting === 'string' ? '' : ' for some files';
 
     return lowered

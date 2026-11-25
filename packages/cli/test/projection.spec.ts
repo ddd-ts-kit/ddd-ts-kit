@@ -6,6 +6,8 @@ import { failure, report } from './reports';
 const SHIPPING = 'src/contexts/shipping';
 const PROJECTION = `${SHIPPING}/application/projections/invoices-to-ship.projection.ts`;
 const SPEC = `${SHIPPING}/test/unit/invoices-to-ship.projection.spec.ts`;
+// One running test says what the fresh projection does, so that a generated project covers it as generated.
+const REFUSED = 'await expect(projection.issued(fact)).rejects.toMatchObject({ code: NOT_IMPLEMENTED });';
 
 let root: string;
 
@@ -31,7 +33,7 @@ describe('generate projection', () => {
       "import { invoiceIssuedV2, type InvoiceIssuedV2 } from '@/contexts/billing/published-language';",
     );
 
-    expect(read(root, SPEC)).toContain('await expect(projection.issued(fact)).resolves.toBeUndefined();');
+    expect(read(root, SPEC)).toContain(REFUSED);
 
     expect(read(root, `${SHIPPING}/application/application.declarations.ts`)).toContain(
       "export * from '@/contexts/shipping/application/projections/invoices-to-ship.projection';",
@@ -111,7 +113,7 @@ describe('generate projection', () => {
     );
 
     expect(module).toContain('builder.include(InvoicesToShipProjection);');
-    expect(read(explicit, SPEC)).toContain('await expect(projection.issued(fact)).resolves.toBeUndefined();');
+    expect(read(explicit, SPEC)).toContain(REFUSED);
 
     expect(
       checkJsonOf(cli(explicit, 'check', '--json')).violations.filter(({ file }) => file.includes('projection')),
@@ -170,5 +172,41 @@ describe('generate projection, on an event the formatter folded', () => {
     );
 
     expect(generated.created).toEqual([PROJECTION, SPEC]);
+  });
+});
+
+describe('generate projection of a read model that exists', () => {
+  it('hands the projection its read model: the port in the constructor, the fake in the spec, and a note that names it', () => {
+    const terms = ['--term', 'Due=An invoice waiting for its payment'];
+    const kept = `${SHIPPING}/application/projections/due-invoices.projection.ts`;
+
+    expect(
+      cli(root, 'generate', 'read-model', 'shipping', 'DueInvoices', '--field', 'total:decimal', ...terms).code,
+    ).toBe(0);
+
+    const generated = report(
+      cli(root, 'generate', 'projection', 'shipping', 'DueInvoices', 'billing.invoice.issued', '--json'),
+    );
+
+    expect(read(root, kept)).toContain(
+      "import type { DueInvoices } from '@/contexts/shipping/application/ports/due-invoices.port';",
+    );
+
+    expect(read(root, kept)).toContain('  constructor(private readonly dueInvoices: DueInvoices) {}');
+    expect(read(root, kept)).toContain('): Promise<ReadModelWrite> {');
+    expect(read(root, kept)).toContain('`return this.dueInvoices.upsertIfNewer(<id>, stampOf(event),');
+    expect(read(root, kept)).not.toContain('generate read-model');
+
+    expect(read(root, `${SHIPPING}/test/unit/due-invoices.projection.spec.ts`)).toContain(
+      'const projection = new DueInvoicesProjection(new FakeDueInvoices());',
+    );
+
+    expect(read(root, `${SHIPPING}/application/application.declarations.ts`)).toContain(
+      'injected(DueInvoicesProjection, [DueInvoices]);',
+    );
+
+    expect(generated.notes).toEqual([
+      'DueInvoicesProjection keeps the read model DueInvoices (application/ports/due-invoices.port.ts): the line each event writes is left to decide.',
+    ]);
   });
 });

@@ -15,6 +15,7 @@ import { locatedStep } from './located-step';
 import { removeFile } from './remove-file';
 import { refuseLeaving } from './refuse-leaving';
 import { refuseUnheld } from './refuse-unheld';
+import { updatedAndSkipped } from './updated-and-skipped';
 import { writtenOf } from './written-of';
 import type { WorkspaceReport } from './workspace-report';
 
@@ -24,10 +25,10 @@ interface Pending {
 }
 
 /**
- * Every generator writes through this overlay, so a command either lands as a whole
- * plan or (with --dry-run) not at all, and later steps see the files of earlier ones.
- * What it writes and notes is said in the dialect of the package manager the config
- * file of the project names: the templates are written for npm.
+ * Every generator writes through this overlay, so a command either lands as a whole plan or (with
+ * --dry-run) not at all, and later steps see the files of earlier ones. A file is written as it is
+ * given: the dialect of the package manager is spoken where the kit renders its own text, never
+ * over a file, which holds the words of the team beside it. The notes are said in that dialect.
  */
 export class Workspace {
   readonly notes: string[] = [];
@@ -162,7 +163,7 @@ export class Workspace {
     }
 
     this.removed.delete(file);
-    this.pending.set(file, { content: this.spoken(this.withImports(file, content)), existed: onDisk });
+    this.pending.set(file, { content: this.withImports(file, content), existed: onDisk });
 
     return true;
   }
@@ -179,7 +180,7 @@ export class Workspace {
 
   update(asked: string, written: string): void {
     const file = this.placed(asked, true);
-    const content = this.spoken(this.withImports(file, written));
+    const content = this.withImports(file, written);
     const pending = this.pending.get(file);
 
     if (pending !== undefined) {
@@ -208,8 +209,8 @@ export class Workspace {
   }
 
   /**
-   * Writes a file as it is, no dialect of the package manager and no import rewrite applied:
-   * what a move carries from one place to another, which must lose nothing of the text.
+   * Writes a file as it is, no import rewrite applied: what a move carries from one place to
+   * another, which must lose nothing of the text.
    */
   writeAsIs(asked: string, content: string): void {
     const file = this.placed(asked, true);
@@ -275,7 +276,7 @@ export class Workspace {
     this.pruning = true;
   }
 
-  /** A text written for npm, as the package manager of the project says it: what is compared with a file is compared in its dialect. */
+  /** A text the kit wrote for npm in its code, as the package manager of the project says it: a template is rendered in it already. */
   spoken(text: string): string {
     return inDialect(text, packageManagerOf(this.read(CONFIG_FILE)));
   }
@@ -297,7 +298,8 @@ export class Workspace {
   }
 
   /**
-   * Writes the plan, or (dry run) only says it. A file it cannot write here (a path the sandbox of an
+   * Writes the plan, or (dry run) only says it: whole or not at all, a write that fails leaving the
+   * project as it stood (`writtenOf`). A file it cannot write here (a path the sandbox of an
    * agent protects) is reported as unwritable, in `skipped` too, and every other file is written;
    * then no file is deleted, so that a move loses nothing. A path that leads out of the project,
    * or a file --force would replace that git does not hold, refuses the whole plan first.
@@ -332,9 +334,8 @@ export class Workspace {
 
     return {
       created: written.filter(({ existed }) => !existed).map(({ file }) => file),
-      updated: written.filter(({ existed, file }) => existed && !this.left.has(file)).map(({ file }) => file),
+      ...updatedAndSkipped(written, { skipped: this.skipped, unwritable, left: this.left }),
       deleted,
-      skipped: [...new Set([...this.skipped, ...unwritable, ...this.left])].sort(),
       kept: [...this.kept].sort(),
       unwritable,
       left: [...this.left].sort(),

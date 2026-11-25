@@ -45,6 +45,7 @@ const authorization = authorizationModule({ authorizer: new RoleBasedAuthorizer(
 {{/unless}}
 
 describe('{{name.title}}', () => {
+{{#unless access.policyApplies}}
   it('answers what the read model holds', async () => {
     const answer: {{name.pascal}}Result = {};
     const application = {{world.await}}arrange(answer);
@@ -52,6 +53,18 @@ describe('{{name.title}}', () => {
 
     expect(await application.queryBus.execute(query)).toEqual(answer);
   });
+{{/unless}}
+{{#if access.policyApplies}}
+  // TODO(domain): a policy refines the permission {{access.permission}}, and a generated policy refuses everybody until its rule is written: once it is, replace this test by one per case of the policy, the first for an actor it lets through, what the read model holds answered.
+  it('is refused to an actor the policy of {{access.permission}} does not let through', async () => {
+    const application = {{world.await}}arrange({});
+    const query = new {{name.pascal}}Query({{access.holder}});
+
+    await expect(application.queryBus.execute(query)).rejects.toMatchObject({ code: KitCodes.Forbidden });
+  });
+
+  it.todo('answers what the read model holds, for an actor the policy lets through');
+{{/if}}
 {{#if access.protected}}
 
   it('is refused to an actor who does not hold the permission {{access.permission}}', async () => {

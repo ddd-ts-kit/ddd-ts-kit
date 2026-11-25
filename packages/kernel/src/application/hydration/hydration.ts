@@ -96,8 +96,10 @@ export class Hydration<Row extends object, Extra extends object = object>
     const run: HydrationRun = { policies: this.parts.policies, failures: new Map(), warnings: [] };
     const extras = await this.parts.complete(items, run);
 
-    for (const failure of run.failures.values()) {
-      throw failure;
+    const [firstFailure] = run.failures.values();
+
+    if (run.failures.size > 0) {
+      throw firstFailure;
     }
 
     const hydrated = extras.flatMap((extra, index) => {

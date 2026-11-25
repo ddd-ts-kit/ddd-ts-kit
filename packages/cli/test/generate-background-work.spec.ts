@@ -214,8 +214,12 @@ describe('generate process', () => {
     expect(process).toContain("import type { ProcessDecision, ProcessManager } from '@ddd-ts-kit/kernel';");
 
     expect(read(root, TIMEOUT_JOB)).toContain(
-      'await this.processes.timeout(DunningProcess, delivered, (current) => this.process.timedOut(due.timeout, current));',
+      'await this.processes.timeout(DunningProcess, delivered, (current) => this.dunning.timedOut(due.timeout, current));',
     );
+
+    // The global `process` of Node keeps its name: the process manager is named after its concept.
+    expect(read(root, TIMEOUT_JOB)).toContain('private readonly dunning = new DunningProcess();');
+    expect(read(root, PROCESS_SPEC)).toContain('const dunning = new DunningProcess();');
   });
 
   it('tests the decisions given a state, and the timeout through the queue of the test application', () => {

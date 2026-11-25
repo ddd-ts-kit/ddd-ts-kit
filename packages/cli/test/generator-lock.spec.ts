@@ -102,7 +102,7 @@ describe('two generators that write the shared files of one project', () => {
     const landed = names.filter((_, at) => ended[at]?.code === 0);
 
     for (const { code, stderr } of ended.filter((result) => result.code !== 0)) {
-      expect({ code, refused: stderr.includes('Another generator holds the lock of this project') }).toEqual({
+      expect({ code, refused: stderr.includes('Another command holds the lock of this project') }).toEqual({
         code: 2,
         refused: true,
       });
@@ -143,7 +143,7 @@ describe('two generators that write the shared files of one project', () => {
         ran = true;
       }),
     ).toThrow(
-      `Another generator holds the lock of this project: \`${HOLDER}\` (pid ${process.pid}, started 600 seconds ago).`,
+      `Another command holds the lock of this project: \`${HOLDER}\` (pid ${process.pid}, started 600 seconds ago).`,
     );
 
     expect(ran).toBe(false);
@@ -186,7 +186,7 @@ describe('two generators that write the shared files of one project', () => {
 
     expect(message).toMatch(
       new RegExp(
-        `^Another generator holds the lock of this project: \`${HOLDER}\` \\(pid ${process.pid}, started \\d+ seconds ago\\)\\. This command waited for it and wrote nothing\\.$`,
+        `^Another command holds the lock of this project: \`${HOLDER}\` \\(pid ${process.pid}, started \\d+ seconds ago\\)\\. This command waited for it and wrote nothing\\.$`,
       ),
     );
 
@@ -194,7 +194,7 @@ describe('two generators that write the shared files of one project', () => {
     expect(seconds).toBeGreaterThanOrEqual(HEAD_START + 5);
 
     expect(jsonAt(error, 'fix')).toBe(
-      'Run the generators one after the other: run this command again once that one has ended. A lock taken on this machine is kept while its command runs and taken over once it has ended; one taken on another machine, or whose holder cannot be read, is taken over a minute after it was taken. To take it at once, remove .ddd-ts-kit/lock.',
+      'Run the commands that write the project one after the other: run this command again once that one has ended. A lock taken on this machine is kept while its command runs and taken over once it has ended; one taken on another machine, or whose holder cannot be read, is taken over a minute after it was taken. To take it at once, remove .ddd-ts-kit/lock.',
     );
 
     expect(read(root, 'ddd-ts-kit.config.json')).toBe(config);

@@ -74,7 +74,11 @@ class PersonalDataExportSuite<Row extends object> extends ContractSuite<Personal
       const sources = (await exporter.exportOf('ada')).map(({ source }) => source);
 
       this.expect(sources).toEqual([sources[0], sources[0]]);
-      this.expect(sources[0] === exporter.name || sources[0]?.startsWith(`${exporter.name}.`)).toBe(true);
+
+      this.holds(
+        sources[0] === exporter.name || sources[0]?.startsWith(`${exporter.name}.`) === true,
+        `the source ${String(sources[0])} of a record is neither the name of the exporter, ${exporter.name}, nor that name followed by a table`,
+      );
     });
   }
 

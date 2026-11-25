@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { ERRORS_DOCS } from '../src/check/explain/errors-docs';
-import { STANDARD_DOCS } from '../src/check/explain/standard-docs';
+import { errorsCodeUnique } from '../src/check/rules/errors-code-unique';
+import { governanceRecordedDeviation } from '../src/check/rules/governance-recorded-deviation';
 import { cli, exists, read, REPO_ROOT, tempDir, walk, write } from './helpers';
 
 const page = (file: string): string => fs.readFileSync(path.join(REPO_ROOT, file), 'utf8');
@@ -115,19 +115,19 @@ describe('guides, the examples of explain, in a project init wrote', () => {
   });
 
   it('errors/code-unique: the Bad sample is reported, the Good sample is accepted', () => {
-    const doc = ERRORS_DOCS['errors/code-unique'];
+    const { doc } = errorsCodeUnique;
 
-    write(root, CODES, `${doc?.bad}\n`.replace(/^\/\/ .*\n/, ''));
+    write(root, CODES, `${doc.bad}\n`.replace(/^\/\/ .*\n/, ''));
 
     expect(cli(root, 'check', '--rule', 'errors/code-unique').code).toBe(1);
 
-    write(root, CODES, `${doc?.good}\n`.replace(/^\/\/ .*\n/, ''));
+    write(root, CODES, `${doc.good}\n`.replace(/^\/\/ .*\n/, ''));
 
     expect(cli(root, 'check', '--rule', 'errors/code-unique').code).toBe(0);
   });
 
   it('governance/recorded-deviation: the Good sample is accepted without a warning', () => {
-    const good = STANDARD_DOCS['governance/recorded-deviation']?.good ?? '';
+    const { good } = governanceRecordedDeviation.doc;
     const lines = good.split('\n').filter((line) => line.startsWith('"'));
     const config = JSON.parse(read(root, 'ddd-ts-kit.config.json')) as Record<string, unknown>;
 

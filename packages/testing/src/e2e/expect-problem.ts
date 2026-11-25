@@ -1,4 +1,6 @@
-import { deepStrictEqual } from 'node:assert';
+import { AssertionError } from 'node:assert';
+import { isDeepStrictEqual } from 'node:util';
+import { show } from '../scenarios/show';
 import type { HttpResponse } from './http-response';
 
 /** `Code` is the codes the answer may carry: any string, unless the caller names them (`ExpectedProblem<SchedulingCode | KitCode>`). */
@@ -17,7 +19,8 @@ const PROBLEM_JSON = 'application/problem+json';
 /**
  * Asserts an RFC 9457 answer: the status, on the response and in the document, the
  * `application/problem+json` content type, the `code` member and, when given, the exposed
- * `facts`. Returns the document.
+ * `facts`. Returns the document. On a mismatch the failure shows the body too, which is where an
+ * API says why it answered otherwise: the `detail` and the `errors` of a 422, for instance.
  *
  * The code is any string, or one of the codes the caller names, which the compiler then checks
  * and the editor completes: `expectProblem<SchedulingCode | KitCode>(response, { status: 409, code: 'SLOT_TAKEN' })`.
@@ -31,18 +34,31 @@ export function expectProblem<Code extends string = string>(
   const exposed = isRecord(problem.facts) ? problem.facts : {};
   const names = Object.keys(expected.facts ?? {});
 
-  deepStrictEqual(
-    {
-      status: response.status,
-      contentType: mediaTypeOf(response),
-      problem: { status: problem.status, ...code(problem.code), ...facts(names, exposed) },
-    },
-    {
-      status: expected.status,
-      contentType: PROBLEM_JSON,
-      problem: { status: expected.status, ...code(expected.code), ...facts(names, expected.facts ?? {}) },
-    },
-  );
+  const received = {
+    status: response.status,
+    contentType: mediaTypeOf(response),
+    problem: { status: problem.status, ...code(problem.code), ...facts(names, exposed) },
+  };
+
+  const wanted = {
+    status: expected.status,
+    contentType: PROBLEM_JSON,
+    problem: { status: expected.status, ...code(expected.code), ...facts(names, expected.facts ?? {}) },
+  };
+
+  if (!isDeepStrictEqual(received, wanted)) {
+    throw new AssertionError({
+      message: [
+        'The answer is not the expected problem.',
+        `Expected: ${show(wanted)}`,
+        `Received: ${show(received)}`,
+        `Body: ${show(response.body)}`,
+      ].join('\n'),
+      actual: received,
+      expected: wanted,
+      operator: 'expectProblem',
+    });
+  }
 
   return problem;
 }

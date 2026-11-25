@@ -2,7 +2,7 @@ import type { IntegrationEvent } from '@ddd-ts-kit/kernel';
 import type { Awaitable } from './awaitable';
 import type { ContractRunner } from './contract-runner';
 import { ContractSuite } from './contract-suite';
-import { failureOf } from './failure-of';
+import { failureOf } from '../scenarios/failure-of';
 import { fullEnvelope } from './full-envelope';
 import { OutboxErasureSuite } from './outbox-store/outbox-erasure-suite';
 import type { OutboxStoreUnderContract } from './outbox-store/outbox-store-under-contract';
@@ -47,6 +47,8 @@ class OutboxStoreSuite extends ContractSuite<OutboxStoreUnderContract> {
     this.returnsTheEventAsAppended();
     this.leasesWhatItHandsOut();
     this.followsTheOutcomeOfAnAttempt();
+    this.postponesWithoutAnAttempt();
+    this.postponesOnlyWhatWasClaimed();
     this.revivesDeadRecords();
     this.purgesAndRefusesDuplicates();
   }
@@ -107,10 +109,12 @@ class OutboxStoreSuite extends ContractSuite<OutboxStoreUnderContract> {
 
     this.it('hides a claimed record until its lease expires, then hands it out again', async () => {
       await this.subject.append([outboxEvent('evt-1')]);
-      await this.subject.claimBatch(10, NOW);
+      const claimed = await this.subject.claimBatch(10, NOW);
 
       this.expect(await this.claimedIds(10, NOW)).toEqual([]);
       this.expect(await this.claimedIds(10, later(this.options.leaseMs - 1))).toEqual([]);
+
+      this.expect(claimed[0]?.nextAttemptAt).toEqual(later(this.options.leaseMs));
 
       const again = await this.subject.claimBatch(10, later(this.options.leaseMs));
 
@@ -171,6 +175,58 @@ class OutboxStoreSuite extends ContractSuite<OutboxStoreUnderContract> {
     });
   }
 
+  private postponesWithoutAnAttempt(): void {
+    this.it('postpones a claimed record: the claim is not an attempt, and it is not a failure', async () => {
+      await this.subject.append([outboxEvent('evt-1')]);
+      await this.subject.claimBatch(10, NOW);
+
+      await this.subject.postpone('evt-1', later(5_000));
+
+      this.expect(await this.subject.stats()).toEqual({ pending: 1, failed: 0, dead: 0 });
+      this.expect(await this.claimedIds(10, later(4_999))).toEqual([]);
+      const again = await this.subject.claimBatch(10, later(5_000));
+
+      this.expect(again.map((record) => record.event.id)).toEqual(['evt-1']);
+      this.expect(again[0]?.attempts).toBe(1);
+      this.expect(again[0]?.lastErrorCode).toBe(undefined);
+    });
+
+    this.it('keeps the last failure of a record it postpones', async () => {
+      await this.subject.append([outboxEvent('evt-1')]);
+      await this.subject.claimBatch(10, NOW);
+      await this.subject.markFailed('evt-1', { code: 'BROKER_DOWN' }, later(1_000));
+      await this.subject.claimBatch(10, later(1_000));
+
+      await this.subject.postpone('evt-1', later(5_000));
+
+      this.expect(await this.subject.stats()).toEqual({ pending: 1, failed: 1, dead: 0 });
+      const again = await this.subject.claimBatch(10, later(5_000));
+
+      this.expect(again[0]?.attempts).toBe(2);
+      this.expect(again[0]?.lastErrorCode).toBe('BROKER_DOWN');
+    });
+  }
+
+  private postponesOnlyWhatWasClaimed(): void {
+    this.it('postpones no record that is published, dead, never claimed or unknown', async () => {
+      await this.subject.append([outboxEvent('evt-1'), outboxEvent('evt-2'), outboxEvent('evt-3')]);
+      await this.subject.claimBatch(2, NOW);
+      await this.subject.markPublished(['evt-1'], NOW);
+      await this.subject.markFailed('evt-2', { code: 'BROKER_DOWN' }, null);
+
+      for (const id of ['evt-1', 'evt-2', 'evt-3', 'unknown']) {
+        await this.subject.postpone(id, later(this.options.leaseMs * 10));
+      }
+
+      this.expect(await this.subject.stats()).toEqual({ pending: 1, failed: 0, dead: 1 });
+      const claimed = await this.subject.claimBatch(10, NOW);
+
+      this.expect(claimed.map((record) => record.event.id)).toEqual(['evt-3']);
+      this.expect(claimed[0]?.attempts).toBe(1);
+      this.expect(await this.subject.purgePublished(later(1_000))).toBe(1);
+    });
+  }
+
   private revivesDeadRecords(): void {
     this.it('sets a dead record aside for good', async () => {
       await this.subject.append([outboxEvent('evt-1'), outboxEvent('evt-2')]);
@@ -221,7 +277,7 @@ class OutboxStoreSuite extends ContractSuite<OutboxStoreUnderContract> {
       const batch = [outboxEvent('evt-2'), outboxEvent('evt-1')];
       const failure = await failureOf(() => this.subject.append(batch));
 
-      this.expect(failure !== undefined).toBe(true);
+      this.holds(failure !== undefined, 'a batch with an event id the store already holds was accepted');
       this.expect(await this.subject.stats()).toEqual({ pending: 1, failed: 0, dead: 0 });
     });
   }
