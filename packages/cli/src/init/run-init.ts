@@ -241,7 +241,10 @@ function writeFiles(ws: Workspace, { config, projectName, flat, force, earlier }
   const rewriting: Rewriting = { config, force, earlier: stackBefore(ws.root), orphaned: [] };
 
   for (const [target, template] of initFiles(config, projectName).filter(([file]) => !earlier.includes(file))) {
-    const content = template.endsWith('.tpl') ? renderTemplate(template, context) : readTemplate(template);
+    const content = template.endsWith('.tpl')
+      ? renderTemplate(template, context)
+      : inDialect(readTemplate(template), config.stack.packageManager);
+
     const kept = flat.moved.get(target.replace(/\.ts$/, ''));
     const file = kept === undefined ? target : `${kept}.ts`;
 

@@ -3,9 +3,14 @@ import type { Name } from './name';
 import { plural as pluralize } from './plural';
 import { splitWords } from './split-words';
 
+/**
+ * A name in every casing, from any of them. Its words are those of its PascalCase form, whatever
+ * the separators it was typed with: `credit 2 note` and `Credit2Note` name one file, so a later
+ * command, which reads the name of the class, finds what this one wrote.
+ */
 export function toName(input: string): Name {
-  const words = splitWords(input);
-  const pascal = words.map(capitalize).join('');
+  const pascal = splitWords(input).map(capitalize).join('');
+  const words = splitWords(pascal);
   const plural = [...words.slice(0, -1), pluralize(words.at(-1) ?? '')];
 
   return {

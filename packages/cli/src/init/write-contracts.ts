@@ -38,7 +38,7 @@ export function writeContracts(ws: Workspace, { config, projectName, presetAppli
 
   // With the privacy folder, the platform publishes the erasure of a data subject: the contracts list it from the start.
   const events = config.stack.privacy === 'on' ? '.privacy' : '';
-  const catalog = readTemplate(`docs/event-catalog${events}.md`);
+  const catalog = ws.spoken(readTemplate(`docs/event-catalog${events}.md`));
 
   const contracts: (readonly [string, string])[] = [
     [`${INTEGRATION}/asyncapi.${format}`, written(`docs/asyncapi${events}.json.tpl`)],
