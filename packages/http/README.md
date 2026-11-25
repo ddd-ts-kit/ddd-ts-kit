@@ -157,6 +157,7 @@ It answers 201 with `{ id }`, documents `OUT_OF_STOCK` (its own), `FORBIDDEN` (i
 | `HttpRequest<{ params, query, headers, body }>` | the request as `handle`, a mapper or a guard names it, with `actor` and `context` |
 | `controllerRoutes(controllers, { resolve, security, guards })` | the `Route` of each controller, given as a class (built by `resolve`) or as an instance; `security` names the schemes of the application (`['bearer']` by default); `guards: 'skip'` is for the spec of a controller alone |
 | `controllerRoute(controller, options)` | the one route of one controller, for a spec |
+| `writtenText(response)` | (`@ddd-ts-kit/http/testing`) the text an adapter writes for an answer, read to its end: the XML or the CSV of a representation, a list read as it comes; `response.body` is the value before it was written |
 | `routeOf(controller or route, options)` | (`@ddd-ts-kit/http/testing`) the route of a spec and `send(request)`, through the whole pipeline as an authenticated `caller`, guards included unless `guards: 'skip'` says otherwise, answers checked: see [The spec of a route](#the-spec-of-a-route-routeof) |
 
 A controller with no group and no guard is refused when its class is defined. Guards run in
@@ -176,7 +177,13 @@ are on the [presentation layer](../../docs/concepts/presentation-layer.md) page.
 
 `executeRoute(route, request, options)` is the whole behaviour of the package: an adapter only
 copies the request of its framework into a `RawRequest` (`params`, `query`, `headers`, `body`,
-`raw`, and the body `stream`), calls it, and writes back the `RouteResponse` it returns.
+`raw`, and the body `stream`), calls it, and writes back the `RouteResponse` it returns: a
+`status`, `headers` and a `payload` already decided, `{ kind: 'none' }`, `{ kind: 'text', text }`
+(JSON, another representation, a problem document), `{ kind: 'bytes', bytes }` or
+`{ kind: 'stream', stream }` (a file, or the chunks of a list read as it comes). An adapter
+serializes nothing: a value that cannot be written (a cycle) fails inside the pipeline, is told
+to `onError` and answered 500 as a problem, under the headers of a refusal. `body` holds the
+value answered, before anything wrote it, for a spec and for an RPC procedure.
 
 ![The steps executeRoute takes for one request: the identifiers, then, inside the around hook, authentication, upload, validation, If-Match, execution context and tenant, then guards and handle inside the execution scope, the check of the answer, the headers and the 304; each step that can refuse names its status, and every refusal becomes a problem document](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/http-package-pipeline.svg)
 
@@ -1006,9 +1013,10 @@ JSON (`consumes`), on `@Controller` or on `defineRoute` alike:
   on every route that reads a body, declared in `produces` and `consumes` or not. Without
   `representations`, the contract says JSON only and neither status, as the server answers.
 - **Without `representations`**, nothing changes: every answer is JSON, whatever the request
-  accepts. With them, an answer in the JSON of the kit stays a value in the `RouteResponse` (a
-  spec calling `executeRoute` reads it as before); another representation gives bytes in
-  `body`, or chunks in `stream`.
+  accepts, a list read as it comes included, written as one JSON array. With or without them,
+  `body` of the `RouteResponse` is the value answered (a spec calling `executeRoute` reads it as
+  before) and `payload` what is written: `writtenText(response)` of `@ddd-ts-kit/http/testing`
+  reads it to its end, the XML or the CSV of an answer, the chunks of a streamed list.
 
 ### The serialization rules, the same in every representation
 
@@ -1233,16 +1241,24 @@ declare const options: ExecuteOptions;
 declare const logger: Logger;
 
 const app = express();
-app.use(express.json()); // required: the adapter does not parse bodies
-mountExpress(app, routes, options); // an express.Router() works too
+mountExpress(app, routes, options); // an express.Router() works too; reads the bodies itself
 app.use(problemNotFoundHandler({ logger })); // after the routes: a path none serves
 app.use(problemErrorHandler({ logger })); // last: what Express refuses before a route
 app.listen(3000);
 ```
 
+The adapter reads the body of each route itself, up to `bodyLimit` bytes (1 MiB by default, as
+Fastify and Hono): JSON whatever its value, an object or `null`, a number, a text, for the schema
+of the route to decide (422), and a media type the route consumes as text. A route that reads its
+own stream (an upload, a raw body) gets no parser. A parser of the application that ran first
+wins: `express.json()` refuses a JSON value that is no object or array with 400 unless it is given
+`strict: false`, and reads at most 100 kB.
+
 `problemErrorHandler` answers as a problem what reaches Express before a route of the kit: a body
-`express.json()` cannot parse is 400 `MALFORMED_BODY`, a body over its limit (100 kB by default)
-413 `BODY_TOO_LARGE`, another error that carries a status (`status` or `statusCode`, 4xx or 5xx)
+that is not JSON is 400 `MALFORMED_BODY`, a body over the limit
+413 `BODY_TOO_LARGE`, an error of the kit a middleware passes to `next` (`UnauthorizedError`,
+`ForbiddenError`, a `DomainError` of the project) the problem a route answers for it, under the
+status `errorMapper` gives its code (the default mapping when left out), another error that carries a status (`status` or `statusCode`, 4xx or 5xx)
 that status, with the code the kit gives it (`UNAUTHORIZED`, `VALIDATION_FAILED` for 422,
 `SERVICE_UNAVAILABLE` for the 503 of a store down) and the headers it carries for its client
 (`WWW-Authenticate`, `Allow`, `Retry-After`), and any other error a middleware passes to `next`
@@ -1308,7 +1324,7 @@ serve({ fetch: app.fetch, port: 3000 });
 ```
 
 The adapter reads the JSON body itself, chunk by chunk and up to `bodyLimit` bytes (1 MiB by
-default, as Fastify; Express stops at 100 kB): a larger body is answered 413 as a problem
+default, as Fastify and Express): a larger body is answered 413 as a problem
 (`BODY_TOO_LARGE`), a body that is not JSON 400 (`MALFORMED_BODY`), both before the pipeline and
 without holding the body whole. A body in a media type the route consumes (`consumes`) is read
 as text under the same limit, for its representation; another media type is not read, and the
@@ -1364,7 +1380,11 @@ problem instead, on Express and on Fastify, and logs it as `problemErrorHandler`
 large is 413 `BODY_TOO_LARGE`, a path no route serves 404 `NOT_FOUND`, a body that is not JSON
 400 `MALFORMED_BODY` as on the other frameworks: Nest wraps the error of its parser in an
 exception of its own before any filter, which the filter tells by its status, its message and a
-JSON request whose body was never read.
+JSON request whose body was never read. Over Express, the parser of Nest refuses a JSON value
+that is no object or array (`null`, a number, a text) with 400, where the schema of the route
+answers 422 on the other frameworks: `app.useBodyParser('json', { strict: false })`, before the
+application listens, lets the route decide. The filter takes the `errorMapper` of the application
+as `problemErrorHandler` does, for an error of the kit a middleware raises.
 
 ### Nest controllers served by the kit
 
@@ -1858,7 +1878,7 @@ rejects instead of waiting forever.
 application serves itself, the local directory of development or the memory of the tests:
 `GET /files?token=` downloads (as an attachment, `nosniff`, `no-store`), `PUT /files?token=`
 uploads, refused with 413 beyond the size the link was signed for. They are public, the token being the grant, and are not part of the contract. With
-Express, mount them before `express.json()`: that parser reads a JSON body first. An object
+Express, mount them before an `express.json()` of the application, if it has one: that parser reads a JSON body first. An object
 store answers its own links and needs no route.
 
 A handler may answer a stream (`Readable`) as its body: it is piped to the response, with its

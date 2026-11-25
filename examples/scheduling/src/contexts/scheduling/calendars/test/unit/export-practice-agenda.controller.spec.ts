@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Representations, controllerRoute, executeRoute, type RouteResponse } from '@ddd-ts-kit/http';
+import { Representations, controllerRoute, executeRoute } from '@ddd-ts-kit/http';
+import { writtenText } from '@ddd-ts-kit/http/testing';
 import { InMemoryQueryBus, type Actor } from '@ddd-ts-kit/kernel';
 import { SearchPracticeAgendaQuery } from '@/contexts/scheduling/calendars/application/queries/search-practice-agenda/search-practice-agenda.query';
 import { ExportPracticeAgendaController } from '@/contexts/scheduling/calendars/presentation/http/practices/export-practice-agenda/export-practice-agenda.controller';
@@ -46,7 +47,7 @@ describe('GET /practices/:practiceId/agenda/export', () => {
       resolvePrincipal: () => caller,
     });
 
-    const rows = (await text(response)).trimEnd().split('\r\n');
+    const rows = (await writtenText(response)).trimEnd().split('\r\n');
 
     expect(response.headers['content-type']).toBe('text/csv; charset=utf-8');
 
@@ -69,7 +70,7 @@ describe('GET /practices/:practiceId/agenda/export', () => {
       { representations: Representations.standard(), resolvePrincipal: () => caller },
     );
 
-    expect(await text(response)).toContain('<item><id>appointment-1</id>');
+    expect(await writtenText(response)).toContain('<item><id>appointment-1</id>');
   });
 
   it('refuses a practice that is not named', async () => {
@@ -82,13 +83,3 @@ describe('GET /practices/:practiceId/agenda/export', () => {
     expect(response.status).toBe(422);
   });
 });
-
-async function text(response: RouteResponse): Promise<string> {
-  let written = '';
-
-  for await (const chunk of response.stream ?? []) {
-    written += chunk;
-  }
-
-  return written;
-}

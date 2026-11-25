@@ -4,10 +4,16 @@ import { initProject } from './support/init-project';
 
 describe('the HTTP server init writes answers what fails at its edge', () => {
   it.each([
-    ['express', 'app.use(problemErrorHandler({ logger: served.logger }));'],
-    ['fastify', 'app.setErrorHandler(problemErrorHandler({ logger: served.logger }));'],
-    ['hono', 'app.onError(problemErrorHandler({ logger: served.logger }));'],
-    ['nest', 'app.useGlobalFilters(new ProblemExceptionFilter(app.getHttpAdapter(), { logger: served.logger }));'],
+    ['express', 'app.use(problemErrorHandler({ logger: served.logger, errorMapper: served.boundary.errorMapper }));'],
+    [
+      'fastify',
+      'app.setErrorHandler(problemErrorHandler({ logger: served.logger, errorMapper: served.boundary.errorMapper }));',
+    ],
+    ['hono', 'app.onError(problemErrorHandler({ logger: served.logger, errorMapper: served.boundary.errorMapper }));'],
+    [
+      'nest',
+      'new ProblemExceptionFilter(app.getHttpAdapter(), {\n      logger: served.logger,\n      errorMapper: served.boundary.errorMapper,\n    }),',
+    ],
   ])('answers what %s refuses before a route as a problem, logged without the body', (http, installed) => {
     const server = read(initProject('--http', http), 'src/platform/http/start-http-server.ts');
 

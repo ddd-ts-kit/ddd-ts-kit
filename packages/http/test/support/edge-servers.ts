@@ -31,7 +31,7 @@ import {
 import { createRoutesModule, ProblemExceptionFilter } from '../../src/nest';
 import { z } from 'zod';
 import { zodSchema } from '@ddd-ts-kit/validation/zod';
-import { defineRoute, type Route } from '../../src';
+import { defineRoute, UnauthorizedError, type Route } from '../../src';
 import { orderRoutes, SECRET } from './orders';
 import type { RunningServer } from './running-server';
 
@@ -88,6 +88,8 @@ const RAISED: Readonly<Record<string, () => Error>> = {
   // As http-errors builds it for Express, and as Fastify reads it: the challenge travels with the refusal.
   '/unauthenticated': () =>
     Object.assign(new Error(SECRET), { status: 401, headers: { 'WWW-Authenticate': CHALLENGE } }),
+  // A refusal in the vocabulary of the kit, as an authentication middleware of the project raises it.
+  '/expired': () => new UnauthorizedError('The token has expired.'),
 };
 
 /** On Hono, the response an HTTPException carries holds the headers of the refusal. */

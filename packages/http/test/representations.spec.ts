@@ -1,6 +1,7 @@
 import express from 'express';
 import Fastify from 'fastify';
 import { Hono } from 'hono';
+import { writtenText } from '../src/testing';
 import { describe, expect, it } from 'vitest';
 import { DeclarationError } from '@ddd-ts-kit/kernel/declarations';
 import { z } from 'zod';
@@ -12,11 +13,9 @@ import {
   controllerRoute,
   defineRoute,
   executeRoute,
-  serializeBody,
   type RawRequest,
   type Representation,
   type Route,
-  type RouteResponse,
 } from '../src';
 import { mountExpress } from '../src/express';
 import { mountFastify } from '../src/fastify';
@@ -33,17 +32,7 @@ const request = (headers: RawRequest['headers'] = {}, body?: unknown): RawReques
   raw: null,
 });
 
-async function text(response: RouteResponse): Promise<string> {
-  // The JSON of the kit stays a value, which the adapter writes as JSON; another representation is bytes or chunks.
-  const serialized = serializeBody(response);
-  let written = serialized instanceof Uint8Array ? new TextDecoder().decode(serialized) : (serialized ?? '');
-
-  for await (const chunk of response.stream ?? []) {
-    written += chunk;
-  }
-
-  return written;
-}
+const text = writtenText;
 
 const OPERATIONS = ['searchProducts', 'exportProducts', 'addProduct'];
 
