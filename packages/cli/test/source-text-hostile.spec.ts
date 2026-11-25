@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CliError } from '../src/cli-error';
 import { addFactory } from '../src/generate/errors/add-factory';
 import { withImport } from '../src/generate/with-import';
+import { insertInRegion, replaceInRegion } from '../src/markers';
 import { SourceText } from '../src/source-text';
 
 const FILE = 'src/roles.ts';
@@ -232,5 +233,63 @@ describe('a factory added to a class', () => {
     expect(
       addFactory("// class InvoiceRefusal {}\nconst text = 'class InvoiceRefusal {}';\n", factory),
     ).toBeUndefined();
+  });
+});
+
+describe('an import merged into the imports region', () => {
+  const region = (...lines: readonly string[]): string =>
+    ['// ddd-ts-kit:imports', ...lines, '// /ddd-ts-kit:imports', 'run();', ''].join('\n');
+
+  it('keeps a statement that holds a comment as it is written, and imports the new name beside it', () => {
+    const held = ['import {', '  C, // the c', '  D,', "} from '@/z';"];
+
+    expect(insertInRegion(region(...held), 'imports', "import { G } from '@/z';")).toBe(
+      region(...held, "import { G } from '@/z';"),
+    );
+
+    expect(insertInRegion(region(...held), 'imports', "import { D } from '@/z';")).toBe(region(...held));
+  });
+
+  it('adds a name to the statement of its module whatever its quotes and its semicolon, in the style of that statement', () => {
+    expect(insertInRegion(region('import { A } from "@/x"'), 'imports', "import { A } from '@/x';")).toBe(
+      region('import { A } from "@/x"'),
+    );
+
+    expect(insertInRegion(region('import { A } from "@/x"'), 'imports', "import { B } from '@/x';")).toBe(
+      region('import { A, B } from "@/x"'),
+    );
+
+    expect(insertInRegion(region("import {A,B} from '@/x';"), 'imports', "import { B, C } from '@/x';")).toBe(
+      region("import { A, B, C } from '@/x';"),
+    );
+  });
+
+  it('never merges a type import with a value import, a default import or a namespace', () => {
+    const held = ["import type { A } from '@/x';", "import x, { B } from '@/x';", "import * as all from '@/y';"];
+
+    expect(insertInRegion(region(...held), 'imports', "import { C } from '@/x';\nimport { D } from '@/y';")).toBe(
+      region(...held, "import { C } from '@/x';", "import { D } from '@/y';"),
+    );
+
+    expect(insertInRegion(region(...held), 'imports', "import type { C } from '@/x';")).toBe(
+      region("import type { A, C } from '@/x';", ...held.slice(1)),
+    );
+  });
+
+  it('keeps the comments and the statements it does not read between the imports', () => {
+    const held = ['// the wiring of billing', "import { A } from '@/x';", '', "import '@/polyfill'; // first"];
+
+    expect(insertInRegion(region(...held), 'imports', "import { B } from '@/x';\nimport '@/polyfill';")).toBe(
+      region(held[0] ?? '', "import { A, B } from '@/x';", ...held.slice(2)),
+    );
+  });
+});
+
+describe('a block replaced in a region', () => {
+  it("writes the new block as it is given, a `$&` or a `$'` of it included", () => {
+    const file = ['// ddd-ts-kit:registrations', 'old();', '// /ddd-ts-kit:registrations', ''].join('\n');
+    const by = "price(/^\\d+$/, '$&', \"$'\");";
+
+    expect(replaceInRegion(file, 'registrations', { replaced: 'old();', by })).toBe(file.replace('old();', () => by));
   });
 });
