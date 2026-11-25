@@ -1,5 +1,5 @@
 import { InMemoryLogger, ReadModelTables, ReadModelTablesNotReadyError } from '@ddd-ts-kit/kernel';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
 import { READ_MODEL_TABLE_SHAPES as TABLES } from './read-model-table-shapes';
 import { ReadModelTablesSuite } from './read-model-tables-suite';
 
@@ -55,9 +55,10 @@ export class TableDoubtsSuite extends ReadModelTablesSuite {
         const refusal = await failureOf(() => this.run(statements));
         const [found] = await this.listed(TABLES.agenda.shape).states();
 
-        this.expect(
+        this.holds(
           String(refusal).includes('The constraint agenda_live_rows_whole of tables_contract.agenda is not written as'),
-        ).toBe(true);
+          `the migration did not fail by saying that the constraint of that name is not written as the kit writes it: got ${String(refusal)}`,
+        );
 
         this.expect(found?.constraint?.state).toBe('unexpected');
         this.expect(found?.refusing).toEqual(this.agenda.refusing);
@@ -84,7 +85,11 @@ export class TableDoubtsSuite extends ReadModelTablesSuite {
       ]);
 
       this.expect(logger.entries.map(({ level }) => level)).toEqual(['warn']);
-      this.expect(logger.entries[0]?.message.includes('checked_rows_title_present')).toBe(true);
+
+      this.holds(
+        logger.entries[0]?.message.includes('checked_rows_title_present') === true,
+        `the warning does not name the check constraint checked_rows_title_present: ${String(logger.entries[0]?.message)}`,
+      );
     });
 
     this.it('warns that a view is not a table: what its base columns refuse is not read', async () => {

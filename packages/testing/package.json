@@ -71,6 +71,14 @@
     "./mutation": {
       "types": "./dist/mutation.d.ts",
       "default": "./dist/mutation.js"
+    },
+    "./setup/vitest": {
+      "types": "./dist/setup-vitest.d.ts",
+      "default": "./dist/setup-vitest.js"
+    },
+    "./setup/jest": {
+      "types": "./dist/setup-jest.d.ts",
+      "default": "./dist/setup-jest.js"
     }
   },
   "files": [
@@ -83,13 +91,18 @@
     "@ddd-ts-kit/aspects": "0.114.1",
     "@ddd-ts-kit/events": "0.114.1",
     "@faker-js/faker": "^10.6.0",
-    "@ddd-ts-kit/scheduling": "0.114.1"
+    "@ddd-ts-kit/scheduling": "0.114.1",
+    "vitest": "^5.0.5"
   },
   "peerDependencies": {
-    "@faker-js/faker": ">=9.0.0"
+    "@faker-js/faker": ">=9.0.0",
+    "vitest": ">=3.0.0"
   },
   "peerDependenciesMeta": {
     "@faker-js/faker": {
+      "optional": true
+    },
+    "vitest": {
       "optional": true
     }
   }

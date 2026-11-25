@@ -2,6 +2,7 @@ import { DomainError, FactualRefusal, type RefusalFacts } from '@ddd-ts-kit/kern
 import { ValidationError } from '@ddd-ts-kit/validation';
 import type { ErrorMapper } from './error-mapper';
 import { INTERNAL_ERROR_CODE } from './internal-error-code';
+import { mappedStatus } from './mapped-status';
 import type { Problem } from './problem';
 import { statusTitle } from './status-title';
 
@@ -88,7 +89,7 @@ function exposedFacts(error: DomainError): { facts?: RefusalFacts } {
  */
 function serverFaultProblem(error: unknown, mapper: ErrorMapper, requestId: string): Problem {
   const code: unknown = error instanceof Error ? Reflect.get(error, 'code') : undefined;
-  const status = typeof code === 'string' ? mapper.mapping[code] : undefined;
+  const status = typeof code === 'string' ? mappedStatus(mapper.mapping, code) : undefined;
 
   if (typeof code !== 'string' || status === undefined || status < 500) {
     return internalProblem(requestId);

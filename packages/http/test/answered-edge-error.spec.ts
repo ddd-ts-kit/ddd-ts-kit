@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { DomainError } from '@ddd-ts-kit/kernel';
+import { ValidationError } from '@ddd-ts-kit/validation';
+import { createErrorMapper } from '../src/error/create-error-mapper';
 import { answeredEdgeError } from '../src/error/answered-edge-error';
 import { codeOfStatus } from '../src/error/code-of-status';
 import { DEFAULT_ERROR_MAPPING } from '../src/error/default-error-mapping';
@@ -133,5 +136,39 @@ describe('an empty body in JSON that Fastify refuses out of the routes of the ki
 
     expect(answered(error).problem).toMatchObject({ status: 400, code: 'BAD_REQUEST' });
     expect(answered(error).problem).not.toHaveProperty('detail');
+  });
+});
+
+describe('an error of the domain raised at the edge', () => {
+  class OrderAlreadyShippedError extends DomainError {
+    readonly code = 'ORDER_ALREADY_SHIPPED';
+  }
+
+  const shipped = new OrderAlreadyShippedError('Order o-1 has shipped.');
+
+  it('is answered under the status the mapper of the application gives its code', () => {
+    const errorMapper = createErrorMapper({ ORDER_ALREADY_SHIPPED: 410 });
+    const answer = answeredEdgeError({ error: shipped, headers: { 'x-request-id': 'req-1' } }, { errorMapper });
+
+    expect(answer.status).toBe(410);
+
+    expect(answer.problem).toEqual({
+      type: 'urn:problem:order-already-shipped',
+      title: 'Gone',
+      status: 410,
+      code: 'ORDER_ALREADY_SHIPPED',
+      detail: 'Order o-1 has shipped.',
+      requestId: 'req-1',
+    });
+  });
+
+  it('is answered under the default mapping when no mapper is given, 422 for a code it does not name', () => {
+    expect(answered(shipped).problem).toMatchObject({ status: 422, code: 'ORDER_ALREADY_SHIPPED' });
+  });
+
+  it('keeps the issues of a validation it refuses with', () => {
+    const issues = [{ path: 'header.x-tenant-id', code: 'required', message: 'Required' }];
+
+    expect(answered(new ValidationError(issues)).problem).toMatchObject({ status: 422, issues });
   });
 });

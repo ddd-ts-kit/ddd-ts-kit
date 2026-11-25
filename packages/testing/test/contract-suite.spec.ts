@@ -16,6 +16,19 @@ class Waiting extends ContractSuite<string> {
   }
 }
 
+/** A suite with a condition that holds and one that does not. */
+class Conditions extends ContractSuite<string> {
+  protected tests(): void {
+    this.it('holds', async () => {
+      this.holds(this.subject === 'a subject', 'the subject is not the one created');
+    });
+
+    this.it('does not hold', async () => {
+      this.holds(this.subject === 'another', `the adapter answered ${this.subject}, not another`);
+    });
+  }
+}
+
 describe('ContractSuite', () => {
   it('has a subject while a test runs, and none outside', () => {
     expect(() => new ReadingTooEarly(new CollectingRunner(), () => 'a subject').describe('too early')).toThrow(
@@ -44,5 +57,17 @@ describe('ContractSuite', () => {
 
     expect(collecting.pending).toEqual([]);
     expect(await collecting.run()).toEqual({ failed: [], passed: ['waits for what it needs'], messages: [] });
+  });
+
+  it('fails a condition that does not hold with the sentence that says what the adapter did', async () => {
+    const collecting = new CollectingRunner();
+
+    new Conditions(collecting, () => 'a subject').describe('conditions');
+
+    expect(await collecting.run()).toEqual({
+      failed: ['does not hold'],
+      passed: ['holds'],
+      messages: ['the adapter answered a subject, not another'],
+    });
   });
 });

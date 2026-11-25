@@ -86,6 +86,59 @@ describe('defineBuilder', () => {
   });
 });
 
+describe('the plain data of a builder, copied at each build', () => {
+  interface Price {
+    amount: number;
+    readonly currency: string;
+  }
+
+  interface PricedLine {
+    readonly sku: string;
+    readonly price: Price;
+    readonly discounts: readonly Price[];
+    readonly addedAt: Date;
+  }
+
+  const addedAt = new Date('2026-03-01T10:00:00.000Z');
+
+  const aPricedLine = defineBuilder<PricedLine>({
+    defaults: {
+      sku: 'pen',
+      price: { amount: 10, currency: 'EUR' },
+      discounts: [{ amount: 1, currency: 'EUR' }],
+      addedAt,
+    },
+  });
+
+  it('gives each build its own nested objects: changing one built value does not change the next', () => {
+    const first = aPricedLine().build();
+
+    first.price.amount = 99;
+    first.discounts.forEach((discount) => (discount.amount = 99));
+
+    expect(aPricedLine().build()).toEqual({
+      sku: 'pen',
+      price: { amount: 10, currency: 'EUR' },
+      discounts: [{ amount: 1, currency: 'EUR' }],
+      addedAt,
+    });
+  });
+
+  it('copies a plain object set with `with` too, and leaves the one given untouched', () => {
+    const price: Price = { amount: 20, currency: 'USD' };
+    const line = aPricedLine().with('price', price);
+
+    line.build().price.amount = 99;
+
+    expect(price.amount).toBe(20);
+    expect(line.build().price).toEqual({ amount: 20, currency: 'USD' });
+  });
+
+  it('hands an instance of a class as it is: a domain object is never rewritten', () => {
+    expect(aPricedLine().build().addedAt).toBe(addedAt);
+  });
+});
+
 describe('sequence and lazy, the defaults drawn at each build', () => {
   it('draws a fresh sequence value at each build, and none when the value is given', () => {
     expect(

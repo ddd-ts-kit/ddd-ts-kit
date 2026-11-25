@@ -31,6 +31,28 @@ describe('InMemoryCache', () => {
     expect(await cache.get(quoteKey('EUR-GBP'))).toBeUndefined();
   });
 
+  it('keeps and hands a value as a shared cache does, as JSON carries it', async () => {
+    const { cache } = createCache();
+    const key = cacheKey<{ at: Date | string; sources: string[] }>('quoted');
+    const written = { at: new Date('2026-03-01T10:00:00.000Z'), sources: ['ecb'] };
+
+    await cache.set(key, written);
+    written.sources.push('changed after the write');
+    (await cache.get(key))?.sources.push('changed after the read');
+
+    expect(await cache.get(key)).toEqual({ at: '2026-03-01T10:00:00.000Z', sources: ['ecb'] });
+  });
+
+  it('refuses at the write a value JSON cannot carry, and answers undefined for one JSON leaves out', async () => {
+    const { cache } = createCache();
+
+    await expect(cache.set(cacheKey<bigint>('count'), 1n)).rejects.toBeInstanceOf(TypeError);
+    await cache.set(cacheKey<undefined>('nothing'), undefined);
+
+    expect(await cache.get(cacheKey<bigint>('count'))).toBeUndefined();
+    expect(await cache.get(cacheKey<undefined>('nothing'))).toBeUndefined();
+  });
+
   it('forgets an entry once its time to live has passed', async () => {
     const { cache, clock } = createCache();
 

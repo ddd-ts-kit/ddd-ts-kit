@@ -1,5 +1,5 @@
 [English](purity-no-ambient-randomness.md) · **Français**
-<!-- translation-of: purity-no-ambient-randomness.md sha256:840bfb0683120f9d -->
+<!-- translation-of: purity-no-ambient-randomness.md sha256:e3dd2d5e9b547a63 -->
 
 # ddd-ts-kit/purity-no-ambient-randomness
 
@@ -44,4 +44,4 @@ Aucune.
 
 ## Avec le checker de la CLI
 
-`ddd-ts-kit check` cherche les mêmes noms avec des expressions régulières. Cette règle fait autorité : elle distingue un nom masqué de la globale, et du code d'une chaîne.
+`ddd-ts-kit check` juge d'après la même table et formule un constat de la même façon, sur le texte du fichier là où cette règle lit son arbre syntaxique. Il distingue de la globale un paramètre, une variable, un nom déstructuré, une fonction ou une classe que le fichier déclare, et d'un appel une méthode déclarée sous le nom d'une globale. Cette règle fait autorité là où ils diffèrent : le checker ne suit aucun alias (`const clock = Date`, `import { randomUUID as id }`), ne masque un `var` que dans son bloc et une variable de boucle sans accolades que dans l'en-tête de la boucle, lit `typeof process.env` dans un type comme un usage, et prend pour un appel une signature qui n'a ni corps, ni type de retour, ni modificateur, ou qui suit un membre qu'aucun point-virgule ne termine.

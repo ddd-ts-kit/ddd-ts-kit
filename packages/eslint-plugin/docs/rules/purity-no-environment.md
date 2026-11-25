@@ -45,4 +45,4 @@ None.
 
 ## With the CLI checker
 
-`ddd-ts-kit check` looks for the same names with regular expressions. This rule is the authority: it knows a shadowed name from the global, and code from a string.
+`ddd-ts-kit check` judges from the same table and words a finding the same way, on the text of the file where this rule reads its syntax tree. It knows a parameter, a variable, a destructured name, a function or a class the file declares from the global, and a method declared under the name of a global from a call. This rule is the authority where they differ: the checker follows no alias (`const clock = Date`, `import { randomUUID as id }`), hides a `var` in its block only and a loop variable without braces in the head of the loop only, reads `typeof process.env` in a type as a use, and takes for a call a signature that has neither body, return type nor modifier, or that follows a member no semicolon ends.

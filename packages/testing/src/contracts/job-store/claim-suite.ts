@@ -12,6 +12,7 @@ export class ClaimSuite extends ContractSuite<JobStoreUnderContract> {
     this.dropsDuplicates();
     this.keepsTheKeysOfTenantsApart();
     this.leasesWhatItHandsOut();
+    this.handsAJobToOneClaim();
   }
 
   private handsOutWhatWasAdded(): void {
@@ -130,15 +131,28 @@ export class ClaimSuite extends ContractSuite<JobStoreUnderContract> {
       await this.subject.add(aJob('job-1'));
       await this.claim(10, NOW);
 
-      this.expect(await this.subject.heartbeat({ id: 'job-1', attempt: 1 }, later(LEASE_MS * 2))).toBe(true);
+      this.holds(
+        await this.subject.heartbeat({ id: 'job-1', attempt: 1 }, later(LEASE_MS * 2)),
+        'the heartbeat of the attempt that holds the job was refused',
+      );
+
       this.expect(await this.claimedIds(10, later(LEASE_MS))).toEqual([]);
-      this.expect(await this.subject.heartbeat({ id: 'job-1', attempt: 2 }, later(LEASE_MS * 3))).toBe(false);
+
+      this.holds(
+        !(await this.subject.heartbeat({ id: 'job-1', attempt: 2 }, later(LEASE_MS * 3))),
+        'the heartbeat of an attempt that never claimed the job was accepted',
+      );
     });
 
     this.it('answers false to the heartbeat of a job it does not hold', async () => {
-      this.expect(await this.subject.heartbeat({ id: 'unknown', attempt: 1 }, later(LEASE_MS))).toBe(false);
+      this.holds(
+        !(await this.subject.heartbeat({ id: 'unknown', attempt: 1 }, later(LEASE_MS))),
+        'the heartbeat of an unknown job was accepted',
+      );
     });
+  }
 
+  private handsAJobToOneClaim(): void {
     this.it('never hands the same job to two concurrent claims', async () => {
       await this.addMany(['job-1', 'job-2', 'job-3', 'job-4', 'job-5', 'job-6']);
 

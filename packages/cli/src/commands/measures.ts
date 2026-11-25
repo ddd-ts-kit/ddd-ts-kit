@@ -20,11 +20,7 @@ export const measuresCommand: Command = (argv, io) => {
     format: { type: 'string' },
   });
 
-  const format = args.text('format') ?? (args.json ? 'json' : 'text');
-
-  if (format !== 'text' && format !== 'json') {
-    throw new CliError(`--format ${format} is not an output of measures.`, 'Use --format text or --format json.');
-  }
+  const format = args.format(['text', 'json'], 'text');
 
   const view = readMeasures(args.projectRoot, {
     ...sinceOf(args.text('since')),

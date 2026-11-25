@@ -163,16 +163,26 @@ describe('a tables file whose names are types, or that the reader may misread', 
     ['a regular expression', 'const held = /orders/;'],
     ['a backtick in a regular expression', 'const held = /`/;'],
     [
-      'a division after a non-null assertion, read as a regular expression',
-      'const half = w! / 2; const rest = w! / 3;',
+      'a division on the line after a closing brace, read as a regular expression',
+      'const sizes = { half: 4 }\n/ 2; const rest = sizes / 3;',
     ],
-    ['a division after an increment, read as one', 'const half = i++ / 2; const rest = i++ / 3;'],
     ['a template that does not close', 'const held = `orders'],
     ['a template whose expression does not close', 'const held = `${orders'],
   ])('reads nothing with certainty past %s', (_what, statement) => {
     const { unread } = read({ 'tables.ts': `${statement} export const orders = 1;\n` });
 
     expect(unread.length).toBeGreaterThan(0);
+  });
+
+  it.each([
+    ['two divisions after a non-null assertion', 'const half = w! / 2; const rest = w! / 3;'],
+    ['two divisions after an increment', 'const half = i++ / 2; const rest = i++ / 3;'],
+    ['two divisions after a closing brace on their line', 'const half = { size: 4 }.size / 2 / { size: 2 } / 3;'],
+  ])('reads with certainty past %s, which the scanner knows from a regular expression', (_what, statement) => {
+    expect(read({ 'tables.ts': `${statement} export const orders = 1;\n` })).toMatchObject({
+      names: ['orders'],
+      unread: [],
+    });
   });
 
   it.each([

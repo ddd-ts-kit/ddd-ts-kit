@@ -4,6 +4,7 @@ import { ESLINT_ONLY_RULES } from '../src/check/catalogue/eslint-only-rules';
 import { KNOWN_RULE_IDS } from '../src/check/catalogue/known-rule-ids';
 import { changeConfig, checkJsonOf, errorFixOf, isRecord } from './check-support';
 import { cli, scaffoldEverything, tempDir, write, type CliResult } from './helpers';
+import { failure } from './reports';
 
 interface Listed {
   readonly id: string;
@@ -133,6 +134,21 @@ describe('check --clean-only', () => {
 
     expect(checkJsonOf(cli(root, 'check', '--clean-only', 'lib', '--rule', 'clean/stepdown', '--json')).errors).toBe(1);
     expect(cli(root, 'check', '--clean-only', 'other').code).toBe(0);
+  });
+
+  it('refuses a ref to compare with and a rule that needs a project, which it would not honour', () => {
+    const root = tempDir('clean-refusals');
+
+    write(root, 'src/a.ts', 'export const fine = 1;\n');
+
+    const since = cli(root, 'check', '--clean-only', '--changed-since', 'nope', 'src', '--json');
+    const rule = cli(root, 'check', '--clean-only', '--rule', 'layer/domain-purity', '--rule', 'clean/braces', 'src');
+
+    expect(since.code).toBe(2);
+    expect(failure(since).message).toBe('--clean-only compares with no ref.');
+    expect(rule.code).toBe(2);
+    expect(rule.stderr).toContain('--clean-only does not run layer/domain-purity.');
+    expect(rule.stderr).toContain('clean/stepdown, clean/function-size');
   });
 
   it('holds the layout, the private members, the exports and the sizes of a file alone', () => {

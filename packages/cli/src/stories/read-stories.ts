@@ -4,7 +4,7 @@ import { runGit } from '../commit/run-git';
 import { classifyConflict } from '../merge/classify-conflict';
 import type { MergeRepository } from '../merge/lost/merge-repository';
 import { mergeRepositoryOf } from '../merge/lost/merge-repository-of';
-import { changedFiles } from '../worker/changed-files';
+import { worktreeFiles } from '../worker/worktree-files';
 import { forecastMerge } from './forecast-merge';
 import type { MergeForecast } from './merge-forecast';
 import type { OpenStory } from './open-story';
@@ -55,7 +55,7 @@ function stateOf(repo: MergeRepository, story: OpenStory): StoryState {
   const mergeBase = runGit(top, ['merge-base', base, 'HEAD'])?.trim();
   const trunk = branch === undefined ? undefined : forecastMerge(repo, { ours: branch, theirs: base });
 
-  return { ...story, files: changedFiles(top, mergeBase), ...(trunk === undefined ? {} : { trunk }) };
+  return { ...story, files: worktreeFiles(top, mergeBase), ...(trunk === undefined ? {} : { trunk }) };
 }
 
 function crossingOf(repo: MergeRepository, first: StoryState, second: StoryState): StoryCrossing[] {

@@ -2,7 +2,7 @@ import type { IntegrationEvent } from '@ddd-ts-kit/kernel';
 import type { Awaitable } from './awaitable';
 import type { ContractRunner } from './contract-runner';
 import { ContractSuite } from './contract-suite';
-import { failureOf } from './failure-of';
+import { failureOf } from '../scenarios/failure-of';
 import { fullEnvelope } from './full-envelope';
 import { OutboxErasureSuite } from './outbox-store/outbox-erasure-suite';
 import type { OutboxStoreUnderContract } from './outbox-store/outbox-store-under-contract';
@@ -221,7 +221,7 @@ class OutboxStoreSuite extends ContractSuite<OutboxStoreUnderContract> {
       const batch = [outboxEvent('evt-2'), outboxEvent('evt-1')];
       const failure = await failureOf(() => this.subject.append(batch));
 
-      this.expect(failure !== undefined).toBe(true);
+      this.holds(failure !== undefined, 'a batch with an event id the store already holds was accepted');
       this.expect(await this.subject.stats()).toEqual({ pending: 1, failed: 0, dead: 0 });
     });
   }

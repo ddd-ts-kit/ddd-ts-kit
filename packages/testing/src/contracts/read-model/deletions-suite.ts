@@ -1,6 +1,6 @@
 import { ReadModelKeyHeldElsewhereError } from '@ddd-ts-kit/kernel';
 import type { ContractRunner } from '../contract-runner';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
 import type { Awaitable } from '../awaitable';
 import { ReadModelStoreSuite } from './read-model-store-suite';
 import type { ReadModelRowsUnderContract } from './read-model-rows-under-contract';
@@ -68,8 +68,16 @@ export class DeletionsSuite extends ReadModelStoreSuite {
     this.it('inserts the trace of a deleted row under a key it does not hold, once', async () => {
       const { table } = this.subject;
 
-      this.expect(await table.insert({ key: 'a1', row: undefined, stamp: at('evt-1', 1) })).toBe(true);
-      this.expect(await table.insert({ key: 'a1', row: undefined, stamp: at('evt-2', 2) })).toBe(false);
+      this.holds(
+        await table.insert({ key: 'a1', row: undefined, stamp: at('evt-1', 1) }),
+        'the trace of a deleted row was not inserted under a key the table does not hold',
+      );
+
+      this.holds(
+        !(await table.insert({ key: 'a1', row: undefined, stamp: at('evt-2', 2) })),
+        'the trace of a deleted row was inserted a second time under the key that holds one',
+      );
+
       this.expect(await table.find('a1')).toEqual({ key: 'a1', row: undefined, stamp: at('evt-1', 1) });
       this.expect(await this.ids()).toEqual([]);
     });
@@ -146,8 +154,13 @@ export class DeletionsSuite extends ReadModelStoreSuite {
 
       const refusal = await failureOf(() => this.put({ ...row('a2'), title: row('a1').title }, at('evt-1', 1)));
 
-      this.expect(refusal instanceof Error).toBe(true);
-      this.expect(refusal instanceof ReadModelKeyHeldElsewhereError).toBe(false);
+      this.holds(refusal instanceof Error, 'a row that takes the unique value of a live one was accepted');
+
+      this.holds(
+        !(refusal instanceof ReadModelKeyHeldElsewhereError),
+        'a row that takes the unique value of a live one was refused as a key held elsewhere',
+      );
+
       this.expect(await this.ids()).toEqual(['a1']);
     });
   }

@@ -2,6 +2,7 @@ import type { DomainEvent } from '@ddd-ts-kit/kernel';
 import { describeEvent } from './describe-event';
 import type { EventMatcher } from './event-matcher';
 import { show } from './show';
+import { namingAProperty } from './naming-a-property';
 import { subsetDifferences } from './subset-differences';
 
 /** Why the event is not the one the matcher describes, one line per difference; none when it is. */
@@ -16,5 +17,8 @@ export function eventMismatches(event: DomainEvent, matcher: EventMatcher, where
       : [`${where}: expected an instance of ${matcher.name}, recorded ${describeEvent(event)}`];
   }
 
-  return subsetDifferences(event, matcher, where);
+  return subsetDifferences(event, namingAProperty(matcher, 'event', 'the name or the class'), {
+    path: where,
+    verb: 'recorded',
+  });
 }

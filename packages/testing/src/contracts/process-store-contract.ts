@@ -10,7 +10,8 @@ import { asTenant } from '../execution/as-tenant';
 import type { Awaitable } from './awaitable';
 import type { ContractRunner } from './contract-runner';
 import { ContractSuite } from './contract-suite';
-import { failureOf } from './failure-of';
+import { failureOf } from '../scenarios/failure-of';
+import { codeOf } from '../scenarios/code-of';
 
 /** The process store port of the kernel, restated so that a store of any package fits. */
 export interface ProcessStoreUnderContract {
@@ -209,8 +210,4 @@ function anInstance(version: number): StoredProcess {
     ended: false,
     timeouts: { 'second-reminder': 'job-7' },
   };
-}
-
-function codeOf(failure: unknown): unknown {
-  return typeof failure === 'object' && failure !== null ? Reflect.get(failure, 'code') : undefined;
 }

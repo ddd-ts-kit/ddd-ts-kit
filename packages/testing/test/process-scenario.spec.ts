@@ -16,6 +16,19 @@ class CloseDunning extends Command {
 
 const due = new Date('2026-03-02T12:00:00.000Z');
 
+/** The message of the AssertionError a failing assertion throws. */
+const failureOf = (assertion: () => unknown): string => {
+  try {
+    assertion();
+  } catch (error) {
+    expect(error).toBeInstanceOf(AssertionError);
+
+    return error instanceof Error ? error.message : '';
+  }
+
+  throw new Error('The assertion was expected to fail');
+};
+
 const issued = (current: Dunning | undefined): ProcessDecision<Dunning> | undefined =>
   current === undefined
     ? { state: { invoiceId: 'invoice-1', stage: 'waiting' }, timeouts: [{ name: 'reminder', at: due }] }
@@ -50,22 +63,77 @@ describe('a step of a process, given a state', () => {
     givenProcess<Dunning>({ invoiceId: 'invoice-1', stage: 'waiting' }).when(issued).thenIgnored();
   });
 
-  it('says what differs', () => {
+  it('says what differs in one sentence, with what was expected and what was decided', () => {
     const outcome = givenProcess<Dunning>({ invoiceId: 'invoice-1', stage: 'waiting' }).when(paid);
     const ignored = givenProcess<Dunning>(undefined).when(paid);
 
-    expect(() => outcome.thenCommands([{ invoiceId: 'invoice-2' }])).toThrow(
-      /command 0.invoiceId: expected 'invoice-2'/,
+    expect(failureOf(() => outcome.thenState({ invoiceId: 'invoice-1', stage: 'waiting' }))).toBe(
+      "Expected the state { invoiceId: 'invoice-1', stage: 'waiting' }, but the step decided { invoiceId: 'invoice-1', stage: 'paid' }.",
     );
 
-    expect(() => outcome.thenCommands([Command, CloseDunning])).toThrow(/expected 2 command\(s\), decided 1/);
-    expect(() => outcome.thenCommands([class Other extends Command {}])).toThrow(/expected an instance of Other/);
-    expect(() => outcome.thenState({ invoiceId: 'invoice-1', stage: 'waiting' })).toThrow(AssertionError);
-    expect(() => outcome.thenTimeouts([{ name: 'reminder', at: due }])).toThrow(/expected the timeouts/);
-    expect(() => outcome.thenCancelled([])).toThrow(/expected to disarm/);
-    expect(() => outcome.thenIgnored()).toThrow(/expected the step to ignore it/);
-    expect(() => ignored.thenEnded()).toThrow(/expected a decision/);
-    expect(() => givenProcess<Dunning>(undefined).when(issued).thenEnded()).toThrow(/expected the process to end/);
+    expect(failureOf(() => outcome.thenIgnored())).toContain(
+      'Expected the step to ignore what it was given, but it decided { cancel:',
+    );
+
+    expect(failureOf(() => ignored.thenEnded())).toBe('Expected a decision, but the step ignored what it was given.');
+
+    expect(failureOf(() => givenProcess<Dunning>(undefined).when(issued).thenEnded())).toBe(
+      'Expected the process to end, but it goes on.',
+    );
+  });
+
+  it('lists the commands expected and decided, and points at what differs, positions from 1', () => {
+    const outcome = givenProcess<Dunning>({ invoiceId: 'invoice-1', stage: 'waiting' }).when(paid);
+
+    expect(failureOf(() => outcome.thenCommands([{ invoiceId: 'invoice-2' }]))).toBe(
+      [
+        'The decided commands are not the expected ones.',
+        'Expected:',
+        "  1. { invoiceId: 'invoice-2' }",
+        'Decided:',
+        "  1. CloseDunning { invoiceId: 'invoice-1' }",
+        'Difference:',
+        "  1. command 1.invoiceId: expected 'invoice-2', decided 'invoice-1'",
+      ].join('\n'),
+    );
+
+    expect(failureOf(() => outcome.thenCommands([Command, CloseDunning]))).toContain(
+      '  1. expected 2 commands, decided 1 command',
+    );
+
+    expect(failureOf(() => outcome.thenCommands([class Other extends Command {}]))).toContain(
+      '  1. command 1: expected an instance of Other, decided CloseDunning',
+    );
+  });
+
+  it('lists the timeouts expected and decided, armed or disarmed', () => {
+    const outcome = givenProcess<Dunning>({ invoiceId: 'invoice-1', stage: 'waiting' }).when(paid);
+
+    expect(failureOf(() => outcome.thenTimeouts([{ name: 'reminder', at: due }]))).toBe(
+      [
+        'The armed timeouts are not the expected ones.',
+        'Expected:',
+        "  1. { at: 2026-03-02T12:00:00.000Z, name: 'reminder' }",
+        'Decided:',
+        '  (none)',
+      ].join('\n'),
+    );
+
+    expect(failureOf(() => outcome.thenCancelled([]))).toBe(
+      ['The disarmed timeouts are not the expected ones.', 'Expected:', '  (none)', 'Decided:', '  1. reminder'].join(
+        '\n',
+      ),
+    );
+  });
+
+  it('refuses a command matcher that names no property, which any command would match', () => {
+    const outcome = givenProcess<Dunning>({ invoiceId: 'invoice-1', stage: 'waiting' }).when(paid);
+
+    expect(() => outcome.thenCommands([{}])).toThrow(
+      new TypeError(
+        'A command matcher names at least one property: {} would match any command. Give the class of the command to expect it whatever it carries.',
+      ),
+    );
   });
 
   it('refuses a state that the JSON of the store would change', () => {

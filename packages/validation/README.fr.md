@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:af4d7d4f7f6d74f7 -->
+<!-- translation-of: README.md sha256:8f15636a3ff8c449 -->
 
 # @ddd-ts-kit/validation
 
@@ -214,7 +214,10 @@ défaut : une propriété non déclarée est un problème. Modifiez-le avec
 `classSchema(Dto, { validator: { forbidNonWhitelisted: false }, transform: { ... } })`. Les
 erreurs imbriquées sont aplaties (`items.0.quantity`), un problème par contrainte en échec, le
 nom de la contrainte en `code`. Le JSON Schema est en draft 2020-12 et porte sous `$defs` les
-classes imbriquées atteignables depuis la classe.
+classes imbriquées atteignables depuis la classe. Chaque classe est décrite par ses propres
+contraintes, comme elle est validée : deux classes du même nom, une par contexte délimité, ne
+partagent jamais un champ. Une classe qui imbrique deux classes du même nom est refusée
+(`DeclarationError`) quand son schéma est demandé, un contrat nommant un schéma d'après sa classe.
 
 Exige `experimentalDecorators` dans le `tsconfig.json` du projet.
 
