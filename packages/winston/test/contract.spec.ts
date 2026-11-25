@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { LogFields } from '@ddd-ts-kit/kernel';
 import { loggerContract } from '@ddd-ts-kit/testing/contracts';
 import winston from 'winston';
-import { WinstonLogger, correlationFields, createWinstonLogger } from '../src';
+import { WinstonLogger, correlationFields, createWinstonLogger, redactCredentials } from '../src';
 import { loggedLine } from './support/logged-line';
 import { MemorySink } from './support/memory-sink';
 import { memoryTransport } from './support/memory-transport';
@@ -17,6 +17,7 @@ const runner = { describe, it, expect, beforeEach, afterEach };
 
 loggerContract(runner, {
   name: 'WinstonLogger of createWinstonLogger',
+  redacts: true,
   createLogger: (setup) => {
     const sink = new MemorySink();
 
@@ -29,12 +30,13 @@ loggerContract(runner, {
 
 loggerContract(runner, {
   name: 'WinstonLogger around an instance of the project',
-  createLogger: ({ level, fields, scrubMessages }) => {
+  redacts: true,
+  createLogger: ({ level, fields, scrubMessages, redact }) => {
     const sink = new MemorySink();
 
     const instance = winston.createLogger({
       level,
-      format: winston.format.combine(correlationFields(fields), winston.format.json()),
+      format: winston.format.combine(correlationFields(fields), redactCredentials(redact), winston.format.json()),
       transports: [memoryTransport(sink)],
     });
 

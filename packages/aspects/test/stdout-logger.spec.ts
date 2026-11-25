@@ -123,6 +123,19 @@ describe('StdoutLogger, on credentials', () => {
     expect(lines.join('')).not.toContain('value-of-');
   });
 
+  it('hides the keys the project adds to the list, whatever their case', () => {
+    const lines: string[] = [];
+
+    new StdoutLogger({ clock, write: (line) => lines.push(line), redact: ['iban'] }).info('transfer', {
+      IBAN: 'FR76',
+      bank: { Iban: 'FR76', password: 'p', name: 'Lovelace' },
+    });
+
+    expect(written(lines)).toMatchObject([
+      { IBAN: REDACTED, bank: { Iban: REDACTED, password: REDACTED, name: 'Lovelace' } },
+    ]);
+  });
+
   it('hides them whatever their case, in the fields of a line, of a child and read at each entry', () => {
     const lines: string[] = [];
 

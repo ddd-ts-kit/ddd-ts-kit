@@ -8,4 +8,9 @@ export interface LoggerContractSetup {
   readonly fields: () => LogFields;
   /** Whether the message of an error that is not a `DomainError` must be replaced. */
   readonly scrubMessages: boolean;
+  /**
+   * Field names whose value must be hidden in addition to `CREDENTIAL_KEYS`, whatever their case.
+   * Given to a logger the contract was told `redacts`, by the cases about redaction only.
+   */
+  readonly redact?: readonly string[];
 }
