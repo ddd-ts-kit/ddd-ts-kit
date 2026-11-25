@@ -181,7 +181,7 @@ new OrderLine('p-7', Quantity.create(1)).equals(new OrderLine('p-7', Quantity.cr
 | Block | What the kernel gives it |
 |---|---|
 | `Entity<Id>` | `id` and `equals`: two entities are equal when their class and their id are |
-| `ValueObject<Props>` | frozen `props`, `equals` by value (dates by their time, lists and records deeply), `toJSON` |
+| `ValueObject<Props>` | a copy of its `props` frozen in depth (`ValueObjectProps`: primitives, dates, value objects, lists and plain records of those), `equals` by value (dates by their time, lists and records deeply, a value object it holds by its own `equals`), `toJSON` |
 | `AggregateRoot<Id>` | an entity with `version`, the optimistic concurrency token its repository adapter manages, `record(event)` for its methods and `pullEvents()`. The recorded events are not enumerable: spreading, comparing or serialising an aggregate never sees them |
 | `DomainEvent` | an interface: `name`, `occurredAt`, `aggregateId` |
 

@@ -108,9 +108,11 @@ What the shape gives:
   being repeated wherever two pairs of dates meet.
 - **No hidden clock.** `startsWithin` receives `now`; the domain never reads the system time
   (`purity/no-system-clock`).
-- **Equality for free.** `ValueObject` freezes the props at construction and compares them in
-  `equals`, dates by their instant and arrays item by item: two slots built from the same
-  instants are equal, `===` is not the question.
+- **Equality for free.** `ValueObject` keeps a copy of the props, frozen in depth, and compares
+  them in `equals`: dates by their instant, lists item by item, plain records name by name and
+  a value object it holds by the `equals` of that one. Two slots built from the same instants
+  are equal, `===` is not the question, and the list or the date a slot was built from can
+  change afterwards without changing the slot.
 - **Props are a `type`, not an `interface`, and hold values only.** `ValueObject<Props>` requires
   `ValueObjectProps`: each prop is a primitive, a `Date`, another value object, or a list or a
   plain record of those, so that the value object can copy, freeze and compare all it holds. A

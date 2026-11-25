@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:32d9cb44336efff6 -->
+<!-- translation-of: README.md sha256:a21ee111db17300f -->
 
 # @ddd-ts-kit/kernel
 
@@ -184,7 +184,7 @@ new OrderLine('p-7', Quantity.create(1)).equals(new OrderLine('p-7', Quantity.cr
 | Bloc | Ce que le noyau lui donne |
 |---|---|
 | `Entity<Id>` | `id` et `equals` : deux entités sont égales quand leur classe et leur id le sont |
-| `ValueObject<Props>` | des `props` gelées, `equals` par valeur (les dates par leur instant, les listes et les enregistrements en profondeur), `toJSON` |
+| `ValueObject<Props>` | une copie de ses `props` gelée en profondeur (`ValueObjectProps` : primitives, dates, objets-valeurs, listes et enregistrements simples de ceux-ci), `equals` par valeur (les dates par leur instant, les listes et les enregistrements en profondeur, un objet-valeur qu'il tient par son propre `equals`), `toJSON` |
 | `AggregateRoot<Id>` | une entité avec `version`, le jeton de concurrence optimiste que gère l'adaptateur de son *repository*, `record(event)` pour ses méthodes et `pullEvents()`. Les événements enregistrés ne sont pas énumérables : décomposer, comparer ou sérialiser un agrégat ne les voit jamais |
 | `DomainEvent` | une interface : `name`, `occurredAt`, `aggregateId` |
 

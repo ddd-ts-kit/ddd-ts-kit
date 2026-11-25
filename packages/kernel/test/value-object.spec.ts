@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ValueObject, type StoredFile, type ValueObjectProps } from '../src';
+import { ValueObject, type PropValue, type StoredFile, type ValueObjectProps } from '../src';
 
 class Currency extends ValueObject<{ readonly code: string }> {
   static of(code: string): Currency {
@@ -110,5 +110,72 @@ describe('ValueObject.equals', () => {
     const map = new Map([['a', 1]]);
 
     expect(Anything.holding(map).equals(Anything.holding(map))).toBe(true);
+  });
+});
+
+class Period extends ValueObject<{
+  readonly start: Date;
+  readonly days: readonly number[];
+  readonly place: { readonly rooms: readonly string[] };
+  readonly price: Money;
+}> {
+  static of(start: Date, days: number[], rooms: string[]): Period {
+    return new Period({ start, days, place: { rooms }, price: Money.of(5, Currency.of('EUR')) });
+  }
+
+  get price(): Money {
+    return this.props.price;
+  }
+}
+
+describe('a ValueObject, once built', () => {
+  it('does not change with the list, the record or the date it was built from', () => {
+    const start = new Date(0);
+    const days = [1, 2];
+    const rooms = ['B'];
+    const period = Period.of(start, days, rooms);
+
+    start.setUTCFullYear(2000);
+    days.push(3);
+    rooms.push('C');
+
+    expect(JSON.stringify(period)).toBe(
+      '{"start":"1970-01-01T00:00:00.000Z","days":[1,2],"place":{"rooms":["B"]},"price":{"amount":5,"in":{"code":"EUR"}}}',
+    );
+
+    expect(period.equals(Period.of(new Date(0), [1, 2], ['B']))).toBe(true);
+  });
+
+  it('hands out lists and records that cannot be changed, at any depth', () => {
+    const { days, place } = Period.of(new Date(0), [1, 2], ['B']).toJSON();
+
+    expect(Object.isFrozen(days)).toBe(true);
+    expect(Object.isFrozen(place)).toBe(true);
+    expect(Object.isFrozen(place.rooms)).toBe(true);
+  });
+
+  it('keeps the value objects it holds as they are', () => {
+    const period = Period.of(new Date(0), [], []);
+
+    expect(period.price).toBeInstanceOf(Money);
+    expect(period.price).toBe(period.toJSON().price);
+  });
+
+  it('refuses props that hold themselves', () => {
+    const cycle: { [name: string]: PropValue } = {};
+
+    cycle.itself = cycle;
+
+    expect(() => Anything.holding(cycle)).toThrow(
+      new TypeError('Data that holds itself cannot be copied: a value has no cycle.'),
+    );
+  });
+
+  it('holds one same list twice, which is not a cycle', () => {
+    const shared = [1];
+
+    expect(Anything.holding({ once: shared, twice: shared }).toJSON()).toEqual({
+      held: { once: [1], twice: [1] },
+    });
   });
 });
