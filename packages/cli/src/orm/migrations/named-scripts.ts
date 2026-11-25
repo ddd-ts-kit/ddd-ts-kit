@@ -8,6 +8,8 @@ import { renumberedName } from './renumbered-name';
 import { scriptNamed } from './script-named';
 import { SCRIPTS } from './scripts';
 
+const folder: MigrationTool['folder'] = (root) => migrationFilesIn(root, SCRIPTS.folder, SCRIPTS.extensions);
+
 /** knex sorts the names of its scripts. */
 const comesAfter: MigrationTool['comesAfter'] = (key, previous) => key > previous;
 
@@ -17,13 +19,11 @@ const comesAfter: MigrationTool['comesAfter'] = (key, previous) => key > previou
  */
 export const namedScripts: MigrationTool = {
   name: 'knex',
+  folder,
   inTree: (root) =>
     inOrder(
       comesAfter,
-      migrationFilesIn(root, SCRIPTS.folder, SCRIPTS.extensions).migrations.map((migration) => ({
-        ...migration,
-        key: migration.name,
-      })),
+      folder(root).migrations.map((migration) => ({ ...migration, key: migration.name })),
     ),
   inCommit: (root, commit) => inOrder(comesAfter, filesOfCommit(root, commit, SCRIPTS.folder).flatMap(scriptOf)),
   comesAfter,

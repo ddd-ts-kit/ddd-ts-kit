@@ -1,4 +1,6 @@
+import { replayedAfterTrunk } from '../../merge/replayed-after-trunk';
 import type { OrmMember } from '../orm-member';
 
-/** drizzle-kit orders its migrations by its journal: they are generated again, never renamed. */
-export const drizzle: OrmMember = {};
+export const drizzle: OrmMember = {
+  migrations: replayedAfterTrunk,
+};

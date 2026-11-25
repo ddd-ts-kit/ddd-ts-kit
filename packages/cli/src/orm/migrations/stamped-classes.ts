@@ -16,6 +16,8 @@ const STAMPED_CLASS = /(?<![\w$.])class\s+[A-Za-z_$][\w$]*?(\d{13})(?![\w$])/;
 /** A class whose name ends with 13 digits, for `git grep -E`, which reads a commit without a checkout. */
 const STAMPED_CLASS_IN_GIT = 'class[[:space:]]+[A-Za-z_$][A-Za-z0-9_$]*[0-9]{13}';
 
+const folder: MigrationTool['folder'] = (root) => migrationFilesIn(root, SCRIPTS.folder, SCRIPTS.extensions);
+
 /** TypeORM sorts the stamps of its classes, as numbers. */
 const comesAfter: MigrationTool['comesAfter'] = (key, previous) => Number(key) > Number(previous);
 
@@ -26,10 +28,11 @@ const comesAfter: MigrationTool['comesAfter'] = (key, previous) => Number(key) >
  */
 export const stampedClasses: MigrationTool = {
   name: 'TypeORM',
+  folder,
   inTree: (root) =>
     inOrder(
       comesAfter,
-      migrationFilesIn(root, SCRIPTS.folder, SCRIPTS.extensions).migrations.flatMap((migration) =>
+      folder(root).migrations.flatMap((migration) =>
         stamped(migration, fs.readFileSync(path.join(root, migration.file), 'utf8')),
       ),
     ),

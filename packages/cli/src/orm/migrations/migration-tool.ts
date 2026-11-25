@@ -1,3 +1,4 @@
+import type { MigrationFolder } from '../../check/migrations/migration-folder';
 import type { OrderedMigration } from './ordered-migration';
 
 /**
@@ -8,6 +9,8 @@ import type { OrderedMigration } from './ordered-migration';
 export interface MigrationTool {
   /** The tool, as a sentence names it. */
   readonly name: string;
+  /** Where it writes its migrations, and what the folder holds, by name: not all of it is a migration to the tool. */
+  folder(root: string): MigrationFolder;
   /** What it takes for a migration in the working tree, in the order it runs them. */
   inTree(root: string): OrderedMigration[];
   /** The same in a commit, read from git: the trunk a branch has to follow. */

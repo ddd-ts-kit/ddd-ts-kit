@@ -17,6 +17,7 @@ import {
   typeOnlyImports,
   warnDroppedContextTables,
 } from '../migration';
+import { stampedClasses } from '../orm/migrations/stamped-classes';
 import { Arguments } from './arguments';
 import type { Command } from './command';
 import type { Io } from './io';
@@ -43,7 +44,7 @@ export const typeormGenerateCommand: Command = (argv, io) => {
   refuseOtherOrm(root, 'typeorm');
   const target = migrationTarget(args.positionals[0]);
 
-  refuseTakenMigrationName(root, 'typeorm', path.posix.basename(target));
+  refuseTakenMigrationName(root, stampedClasses, path.posix.basename(target));
   ensureDatabaseReachable();
 
   const offline = !hasDatabaseUrl();

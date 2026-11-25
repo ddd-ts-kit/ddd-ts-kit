@@ -1,5 +1,5 @@
-import { readMigrationFolder } from '../check/migrations/read-migration-folder';
 import { CliError } from '../cli-error';
+import type { MigrationTool } from '../orm/migrations/migration-tool';
 
 /**
  * Two migrations of one name read as one in a review, and `verify-merge` knows a migration by
@@ -7,15 +7,13 @@ import { CliError } from '../cli-error';
  * of the ORM runs. Names are compared without their number, a dash and an underscore being one
  * (Prisma writes `add_invoices` for `add-invoices`).
  */
-export function refuseTakenMigrationName(root: string, orm: 'knex' | 'prisma' | 'typeorm', name: string): void {
-  const taken = readMigrationFolder(root, orm)?.migrations.find((migration) => said(migration.name) === said(name));
+export function refuseTakenMigrationName(root: string, tool: MigrationTool, name: string): void {
+  const taken = tool.folder(root).migrations.find((migration) => said(migration.name) === said(name));
 
   if (taken !== undefined) {
-    const example = orm === 'typeorm' ? 'migrations/add-due-date-to-invoices' : 'add-due-date-to-invoices';
-
     throw new CliError(
       `A migration named ${name} already exists: ${taken.name}.`,
-      `Name this one by what it changes this time, a column or a table: \`npm run db:generate ${example}\`.`,
+      `Name this one by what it changes this time, a column or a table: \`npm run db:generate ${tool.generatedAs('add-due-date-to-invoices')}\`.`,
     );
   }
 }

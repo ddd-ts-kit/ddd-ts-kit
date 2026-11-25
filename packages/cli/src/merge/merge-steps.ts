@@ -2,14 +2,12 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { acceptInMergeMessage } from './accept-in-merge-message';
-import { landDrizzle } from './land-drizzle';
 import { ORM_MEMBERS } from '../orm/orm-members';
 import type { MergeContext } from './merge-context';
 import type { MergeReport } from './merge-report';
 import type { MergeState, MergeStep } from './merge-state';
 import { NEXT_STEPS } from './next-steps';
 import { renumberAdrs } from './renumber-adrs';
-import { renumberMigrations } from './renumber-migrations';
 
 /** What one step gave: the report with what it did, and why the merge stops when it does. */
 export interface StepOutcome {
@@ -60,16 +58,9 @@ export const MERGE_STEPS: Readonly<
 
   migrations(context, state, now) {
     const { report } = state;
-    const orm = context.config?.stack.orm;
-    const tool = orm === undefined ? undefined : ORM_MEMBERS[orm].migrationTool;
-    const sides = { base: report.base.commit, trunk: report.trunk.commit };
-
-    const landed =
-      orm === 'drizzle'
-        ? landDrizzle(context.root, { ...sides, ours: state.ours, toLand: state.toLand })
-        : tool !== undefined && state.toLand
-          ? renumberMigrations({ root: context.root, tool, ...sides, now })
-          : { lines: [] };
+    const history = context.config === undefined ? undefined : ORM_MEMBERS[context.config.stack.orm].migrations;
+    const merge = { root: context.root, base: report.base.commit, ours: state.ours, trunk: report.trunk.commit };
+    const landed = history?.landInMerge({ ...merge, toLand: state.toLand, now }) ?? { lines: [] };
 
     const next = { ...report, migrations: [...report.migrations, ...landed.lines] };
 

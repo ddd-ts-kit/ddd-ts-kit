@@ -3,9 +3,7 @@ import path from 'node:path';
 import { runGit } from '../../commit/run-git';
 import { CONFIG_FILE, readConfig } from '../../config';
 import { ORM_MEMBERS } from '../../orm/orm-members';
-import { drizzleOrder } from './drizzle-order';
 import type { MigrationOrderFinding } from './migration-order-finding';
-import { namedOrder } from './named-order';
 
 /**
  * The migrations of the working tree that do not follow the trunk's: one the branch adds that
@@ -17,11 +15,5 @@ export function migrationOrder(root: string, trunk: { name: string; commit: stri
   const orm = fs.existsSync(path.join(root, CONFIG_FILE)) ? readConfig(root).config.stack.orm : undefined;
   const merged = runGit(root, ['merge-base', '--is-ancestor', trunk.commit, 'HEAD']) !== undefined;
 
-  if (orm === 'drizzle') {
-    return drizzleOrder(root, { ...trunk, merged });
-  }
-
-  const tool = orm === undefined ? undefined : ORM_MEMBERS[orm].migrationTool;
-
-  return tool === undefined ? [] : namedOrder(root, tool, { ...trunk, merged });
+  return orm === undefined ? [] : (ORM_MEMBERS[orm].migrations?.outOfOrder(root, { ...trunk, merged }) ?? []);
 }

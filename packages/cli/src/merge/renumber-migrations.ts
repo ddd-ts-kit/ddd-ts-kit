@@ -5,6 +5,7 @@ import { runGit } from '../commit/run-git';
 import { mentionedTables } from './mentioned-tables';
 import { nextMigrationNumber } from './next-migration-number';
 import type { MigrationTool } from '../orm/migrations/migration-tool';
+import type { MigrationsLanded } from '../orm/migrations/migrations-landed';
 import { numberedName } from '../orm/migrations/numbered-name';
 import type { OrderedMigration } from '../orm/migrations/ordered-migration';
 import { appliedUnderOldName } from './order/applied-under-old-name';
@@ -23,12 +24,6 @@ export interface Renumbering {
   readonly now: Date;
   /** Says what would be renamed, and renames nothing. */
   readonly dryRun?: boolean;
-}
-
-/** What renaming did, or why it stopped. */
-export interface MigrationsLanded {
-  readonly lines: readonly string[];
-  readonly stop?: string;
 }
 
 /** A migration of the branch and what it lands as. */

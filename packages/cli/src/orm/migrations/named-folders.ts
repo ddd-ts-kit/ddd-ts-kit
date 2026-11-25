@@ -11,6 +11,8 @@ import { renumberedName } from './renumbered-name';
 const FOLDER = 'prisma/migrations';
 const STATEMENTS = 'migration.sql';
 
+const folder: MigrationTool['folder'] = (root) => migrationFoldersIn(root, FOLDER);
+
 /** Prisma sorts the names of its folders. */
 const comesAfter: MigrationTool['comesAfter'] = (key, previous) => key > previous;
 
@@ -20,10 +22,11 @@ const comesAfter: MigrationTool['comesAfter'] = (key, previous) => key > previou
  */
 export const namedFolders: MigrationTool = {
   name: 'Prisma',
+  folder,
   inTree: (root) =>
     inOrder(
       comesAfter,
-      migrationFoldersIn(root, FOLDER)
+      folder(root)
         .migrations.filter(({ file }) => fs.existsSync(path.join(root, file)))
         .map((migration) => ({ ...migration, key: migration.name })),
     ),
