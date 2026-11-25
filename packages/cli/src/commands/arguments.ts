@@ -5,57 +5,72 @@ import { isOneOf } from '../config/is-one-of';
 import { ArgumentsError } from './arguments-error';
 import { findRoot } from './find-root';
 
-type Options = NonNullable<ParseArgsConfig['options']>;
+/** One option of a command: a switch, or a text, which may be given several times. */
+type OptionSpec =
+  | { readonly type: 'boolean'; readonly default?: false }
+  | { readonly type: 'string'; readonly multiple?: true };
 
-const COMMON: Options = {
-  json: { type: 'boolean', default: false },
+/** The options of one command, each under the name it has on the command line, without its dashes. */
+export type OptionSpecs = Readonly<Record<string, OptionSpec>>;
+
+/** The options of `O` that are not of the shape `Not`: every one, when a command declares its options loosely. */
+type OptionsNot<O extends OptionSpecs, Not> = { [K in keyof O & string]: O[K] extends Not ? never : K }[keyof O &
+  string];
+
+/** The switches among the options `O`. */
+export type FlagOf<O extends OptionSpecs> = OptionsNot<O, { type: 'string' }>;
+
+/** The arguments of a command that declares the options `O`: each accessor takes the options of its shape alone. */
+export type ArgumentsOf<O extends OptionSpecs> = Arguments<
+  OptionsNot<O, { type: 'boolean' } | { multiple: true }>,
+  FlagOf<O>,
+  OptionsNot<O, { type: 'boolean' } | { type: 'string'; multiple?: never }>
+>;
+
+const COMMON: ParseArgsConfig['options'] = {
+  json: { type: 'boolean' },
   cwd: { type: 'string' },
-  help: { type: 'boolean', short: 'h', default: false },
+  help: { type: 'boolean', short: 'h' },
 };
 
-/** The arguments of one command, with typed accessors. */
-export class Arguments {
-  constructor(
+/**
+ * The arguments of one command, read as its options declare them: the options it reads as one
+ * text, as a switch and as several texts. A helper that names none takes those of any command.
+ */
+export class Arguments<Text extends string = string, Flag extends string = string, Many extends string = string> {
+  private constructor(
     private readonly values: Readonly<Record<string, unknown>>,
     readonly positionals: readonly string[],
   ) {}
 
-  static parse(args: readonly string[], options: Options): Arguments {
-    try {
-      const { values, positionals } = parseArgs({
-        args: [...args],
-        options: { ...COMMON, ...options },
-        allowPositionals: true,
-        strict: true,
-      });
-
-      return new Arguments(values, positionals);
-    } catch (error) {
-      throw new ArgumentsError(
-        error instanceof Error ? error.message : 'Invalid arguments.',
-        'Run `ddd-ts-kit --help` for the accepted options.',
-      );
-    }
+  /** The arguments a command accepts, read as it declares them: an option it does not declare is refused. */
+  static declared<const O extends OptionSpecs>(args: readonly string[], options: O): ArgumentsOf<O> {
+    return new Arguments(...read(args, options));
   }
 
-  text(key: string): string | undefined {
+  /** The same for a command not declared yet, which names its options as it reads them. */
+  static parse(args: readonly string[], options: OptionSpecs): Arguments {
+    return new Arguments(...read(args, options));
+  }
+
+  text(key: Text): string | undefined {
     const value = this.values[key];
 
     return typeof value === 'string' ? value : undefined;
   }
 
-  flag(key: string): boolean {
+  flag(key: Flag): boolean {
     return this.values[key] === true;
   }
 
-  many(key: string): string[] {
+  many(key: Many): string[] {
     const value: unknown = this.values[key];
 
     return Array.isArray(value) ? value.filter((item) => typeof item === 'string') : [];
   }
 
   /** The given keys that were passed, as an object without undefined values. */
-  texts<K extends string>(keys: readonly K[]): { [P in K]?: string } {
+  texts<K extends Text>(keys: readonly K[]): { [P in K]?: string } {
     const picked: { [P in K]?: string } = {};
 
     for (const key of keys) {
@@ -70,7 +85,7 @@ export class Arguments {
   }
 
   get json(): boolean {
-    return this.flag('json');
+    return this.values['json'] === true;
   }
 
   /**
@@ -78,7 +93,7 @@ export class Arguments {
    * are one thing, and `--json` beside another format asks for two outputs.
    */
   format<Format extends string>(printed: readonly Format[], otherwise: Format): Format {
-    const named = this.text('format');
+    const named = this.common('format');
 
     if (this.json && named !== undefined && named !== 'json') {
       throw new CliError(
@@ -97,11 +112,44 @@ export class Arguments {
   }
 
   get workingDirectory(): string {
-    return path.resolve(this.text('cwd') ?? process.cwd());
+    return path.resolve(this.common('cwd') ?? process.cwd());
   }
 
   /** The project root: the closest directory, upward from the working directory, holding the config file. */
   get projectRoot(): string {
     return findRoot(this.workingDirectory);
+  }
+
+  /** A text every command reads the same way, whatever it declares: `--cwd`, and `--format` beside `--json`. */
+  private common(key: 'cwd' | 'format'): string | undefined {
+    const value = this.values[key];
+
+    return typeof value === 'string' ? value : undefined;
+  }
+}
+
+/** The values and the positionals of a command line, an option the command does not declare refused. */
+function read(args: readonly string[], options: OptionSpecs): [Readonly<Record<string, unknown>>, readonly string[]] {
+  const declared: ParseArgsConfig['options'] = Object.fromEntries(
+    Object.entries(options).map(([name, option]) => [
+      name,
+      { type: option.type, multiple: option.type === 'string' && option.multiple === true },
+    ]),
+  );
+
+  try {
+    const { values, positionals } = parseArgs({
+      args: [...args],
+      options: { ...COMMON, ...declared },
+      allowPositionals: true,
+      strict: true,
+    });
+
+    return [values, positionals];
+  } catch (error) {
+    throw new ArgumentsError(
+      error instanceof Error ? error.message : 'Invalid arguments.',
+      'Run `ddd-ts-kit --help` for the accepted options.',
+    );
   }
 }
