@@ -128,21 +128,21 @@ import { NamedDomainEvent,
 // domain/events: facts, in the past tense
 export class AttendanceRecordCreated extends NamedDomainEvent('scheduling.attendance-record.created') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly patientId: string,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
 export class AttendanceRecordNoShowNoted extends NamedDomainEvent('scheduling.attendance-record.no-show-noted') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly appointmentId: string,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
@@ -329,11 +329,11 @@ import { defineStoredEvent, personalData, NamedDomainEvent, type PersonalValue }
 
 export class AttendanceRecordCancellationNoted extends NamedDomainEvent('scheduling.attendance-record.cancellation-noted') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly cancelled: { readonly patientId: string; readonly appointmentId: string; readonly reason: string | undefined },
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
@@ -407,12 +407,12 @@ import { NamedDomainEvent,
 
 export class AttendanceRecordCancellationNoted extends NamedDomainEvent('scheduling.attendance-record.cancellation-noted') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly patientId: string,
     readonly reason: string | undefined, // the words of the patient: personal data
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
@@ -600,21 +600,21 @@ import { EventSourcedAggregate, type AggregateHistory, type Appliers, NamedDomai
 
 class AttendanceRecordCreated extends NamedDomainEvent('scheduling.attendance-record.created') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly patientId: string,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
 class AttendanceRecordNoShowNoted extends NamedDomainEvent('scheduling.attendance-record.no-show-noted') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly appointmentId: string,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

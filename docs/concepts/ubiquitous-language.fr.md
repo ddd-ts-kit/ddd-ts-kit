@@ -1,5 +1,5 @@
 [English](ubiquitous-language.md) · **Français**
-<!-- translation-of: ubiquitous-language.md sha256:e2e73d77eda9f755 -->
+<!-- translation-of: ubiquitous-language.md sha256:c6db2a360bcc9cfe -->
 
 # Langage omniprésent
 
@@ -168,11 +168,11 @@ export class CannotRescheduleCancelled extends DomainRefusal {
 
 export class AppointmentRescheduled extends NamedDomainEvent('appointments.appointment.rescheduled') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly startsAt: Date,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 ```
@@ -320,14 +320,7 @@ d'intégration lit le type qu'il traite dans le contrat de son contexte amont,
 import { NamedDomainEvent } from '@ddd-ts-kit/kernel';
 import { DomainEventHandler } from '@ddd-ts-kit/kernel/declarations';
 
-export class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {}
 
 // Un port du contexte, déclaré ici pour que l'exemple compile seul.
 export abstract class Agenda {

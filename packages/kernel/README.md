@@ -125,11 +125,11 @@ export class OrderLine extends Entity {
 // A domain event: a fact of the past, named <context>.<aggregate>.<fact>.
 export class OrderPlaced extends NamedDomainEvent('ordering.order.placed') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly lineCount: number,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
@@ -183,7 +183,7 @@ new OrderLine('p-7', Quantity.create(1)).equals(new OrderLine('p-7', Quantity.cr
 | `Entity<Id>` | `id` and `equals`: two entities are equal when their class and their id are |
 | `ValueObject<Props>` | a copy of its `props` frozen in depth (`ValueObjectProps`: primitives, dates, value objects, lists and plain records of those), `equals` by value (dates by their time, lists and records deeply, a value object it holds by its own `equals`), `toJSON` |
 | `AggregateRoot<Id>` | an entity with a read-only `version`, the optimistic concurrency token its repository adapter moves (`loadedAt`, `optimisticUpdate`), and `record(event)` for its methods. A save moves the version to the rank of the last event the aggregate recorded, and by one when it recorded none. The version and the recorded events are not enumerable: spreading, comparing or serialising an aggregate never sees them |
-| `DomainEvent` | an interface: `name`, `occurredAt`, `aggregateId`. The aggregate that records an event gives it its rank in its history, from 1 (`rankOf(event)`), and its identity follows from both: `eventIdOf(event)` is `<name>:<aggregateId>:<rank>`, the same for the event a save dispatches and for the one read back from a stream. A test that builds an event by hand says where it stands: `ranked(event, rank)` |
+| `DomainEvent` | an interface: `name`, `occurredAt`, `aggregateId`. `NamedDomainEvent('<name>')` is its base class: it writes the name once and carries the other two, the id of the aggregate as text whatever its type, so an event with no fact of its own is `class OrderPlaced extends NamedDomainEvent('ordering.order.placed') {}`. The aggregate that records an event gives it its rank in its history, from 1 (`rankOf(event)`), and its identity follows from both: `eventIdOf(event)` is `<name>:<aggregateId>:<rank>`, the same for the event a save dispatches and for the one read back from a stream. A test that builds an event by hand says where it stands: `ranked(event, rank)` |
 
 Instead of changing the state from outside, where every caller has to remember the rule:
 
@@ -508,14 +508,7 @@ import { NamedDomainEvent,
   type DomainEvent,
 } from '@ddd-ts-kit/kernel';
 
-class CartOpened extends NamedDomainEvent('shop.cart.opened') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+class CartOpened extends NamedDomainEvent('shop.cart.opened') {}
 
 class Cart extends AggregateRoot {
   static open(id: string, now: Date): Cart {

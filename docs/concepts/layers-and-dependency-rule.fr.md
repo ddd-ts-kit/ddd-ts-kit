@@ -1,5 +1,5 @@
 [English](layers-and-dependency-rule.md) · **Français**
-<!-- translation-of: layers-and-dependency-rule.md sha256:8df50e600da635e5 -->
+<!-- translation-of: layers-and-dependency-rule.md sha256:e12869d5ba4c919f -->
 
 # Les couches et la règle de dépendance
 
@@ -62,14 +62,7 @@ import { NamedDomainEvent,
 import { CommandHandler, Requires } from '@ddd-ts-kit/kernel/declarations';
 
 // domain/ : n'importe rien d'autre que le noyau
-export class AppointmentBooked extends NamedDomainEvent('appointments.appointment.booked') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class AppointmentBooked extends NamedDomainEvent('appointments.appointment.booked') {}
 
 export const AppointmentsCodes = { SlotTaken: 'SLOT_TAKEN' } as const;
 

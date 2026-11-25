@@ -4,8 +4,8 @@ import type { MemberRight } from '{{alias.context}}/domain/vocabularies/member-r
 /** A member lent some of their rights to another, for a period. */
 export class DelegationGranted extends NamedDomainEvent('{{context.kebab}}.delegation.granted') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly facts: {
       readonly organisationId: string;
       readonly delegatorId: string;
@@ -15,6 +15,6 @@ export class DelegationGranted extends NamedDomainEvent('{{context.kebab}}.deleg
       readonly endsAt: Date;
     },
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }

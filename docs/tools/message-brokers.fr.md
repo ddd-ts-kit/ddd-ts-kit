@@ -1,5 +1,5 @@
 [English](message-brokers.md) · **Français**
-<!-- translation-of: message-brokers.md sha256:c75cb003b43cd5e7 -->
+<!-- translation-of: message-brokers.md sha256:ee2c98965d60284f -->
 
 # Brokers de messages : en processus, RabbitMQ, Kafka, NATS JetStream, Redis Streams
 
@@ -56,11 +56,11 @@ import { z } from 'zod';
 // contexts/appointments/domain/events/appointment-booked.event.ts
 export class AppointmentBooked extends NamedDomainEvent('appointments.appointment.booked') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly startsAt: Date,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

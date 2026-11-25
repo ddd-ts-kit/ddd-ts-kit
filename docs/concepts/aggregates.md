@@ -372,7 +372,8 @@ declare function insertUnlessExists(row: AppointmentRow): Promise<boolean>;
 declare function updateWhereVersion(row: AppointmentRow, expected: number): Promise<number>;
 
 export async function save(appointment: Appointment): Promise<void> {
-  // expected: the version loaded (0: never saved); next: the version to write.
+  // expected: the version loaded (0: never saved); next: the version to write, the rank of the last
+  // event the aggregate recorded (expected + 1 when it recorded none).
   await optimisticUpdate(appointment, async ({ expected, next }) => {
     const row = { ...rowOf(appointment), version: next };
 

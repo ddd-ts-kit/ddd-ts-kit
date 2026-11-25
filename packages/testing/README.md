@@ -54,11 +54,11 @@ class OrderAlreadyPaid extends DomainRefusal {
 
 class OrderPaid extends NamedDomainEvent('ordering.order.paid') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly amount: number,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

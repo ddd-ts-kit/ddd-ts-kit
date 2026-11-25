@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:184842fed945dcc6 -->
+<!-- translation-of: README.md sha256:1a6cb9b2862dbe39 -->
 
 # @ddd-ts-kit/kernel
 
@@ -128,11 +128,11 @@ export class OrderLine extends Entity {
 // Un événement du domaine : un fait passé, nommé <contexte>.<agrégat>.<fait>.
 export class OrderPlaced extends NamedDomainEvent('ordering.order.placed') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly lineCount: number,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
@@ -186,7 +186,7 @@ new OrderLine('p-7', Quantity.create(1)).equals(new OrderLine('p-7', Quantity.cr
 | `Entity<Id>` | `id` et `equals` : deux entités sont égales quand leur classe et leur id le sont |
 | `ValueObject<Props>` | une copie de ses `props` gelée en profondeur (`ValueObjectProps` : primitives, dates, objets-valeurs, listes et enregistrements simples de ceux-ci), `equals` par valeur (les dates par leur instant, les listes et les enregistrements en profondeur, un objet-valeur qu'il tient par son propre `equals`), `toJSON` |
 | `AggregateRoot<Id>` | une entité avec une `version` en lecture seule, le jeton de concurrence optimiste que déplace l'adaptateur de son *repository* (`loadedAt`, `optimisticUpdate`), et `record(event)` pour ses méthodes. Une sauvegarde porte la version au rang du dernier événement que l'agrégat a enregistré, et l'avance de un quand il n'en a enregistré aucun. La version et les événements enregistrés ne sont pas énumérables : décomposer, comparer ou sérialiser un agrégat ne les voit jamais |
-| `DomainEvent` | une interface : `name`, `occurredAt`, `aggregateId`. L'agrégat qui enregistre un événement lui donne son rang dans son histoire, à partir de 1 (`rankOf(event)`), et son identité découle des deux : `eventIdOf(event)` vaut `<name>:<aggregateId>:<rang>`, la même pour l'événement qu'une sauvegarde distribue et pour celui relu depuis un flux. Un test qui construit un événement à la main dit où il se place : `ranked(event, rang)` |
+| `DomainEvent` | une interface : `name`, `occurredAt`, `aggregateId`. `NamedDomainEvent('<name>')` est sa classe de base : elle écrit le nom une seule fois et porte les deux autres, l'id de l'agrégat en texte quel que soit son type, si bien qu'un événement sans fait propre s'écrit `class OrderPlaced extends NamedDomainEvent('ordering.order.placed') {}`. L'agrégat qui enregistre un événement lui donne son rang dans son histoire, à partir de 1 (`rankOf(event)`), et son identité découle des deux : `eventIdOf(event)` vaut `<name>:<aggregateId>:<rang>`, la même pour l'événement qu'une sauvegarde distribue et pour celui relu depuis un flux. Un test qui construit un événement à la main dit où il se place : `ranked(event, rang)` |
 
 Plutôt que de changer l'état depuis l'extérieur, où chaque appelant doit se souvenir de la
 règle :
@@ -519,14 +519,7 @@ import { NamedDomainEvent,
   type DomainEvent,
 } from '@ddd-ts-kit/kernel';
 
-class CartOpened extends NamedDomainEvent('shop.cart.opened') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+class CartOpened extends NamedDomainEvent('shop.cart.opened') {}
 
 class Cart extends AggregateRoot {
   static open(id: string, now: Date): Cart {

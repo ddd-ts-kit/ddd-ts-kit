@@ -4,8 +4,8 @@ import type { MemberRole } from '{{alias.context}}/domain/vocabularies/member-ro
 /** A member holds another role: what they may do in the organisation follows from it from now on. */
 export class MemberRoleChanged extends NamedDomainEvent('{{context.kebab}}.member.role-changed') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly facts: {
       readonly organisationId: string;
       readonly accountId: string;
@@ -15,6 +15,6 @@ export class MemberRoleChanged extends NamedDomainEvent('{{context.kebab}}.membe
       readonly delegationId?: string;
     },
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }

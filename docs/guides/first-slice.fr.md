@@ -1,5 +1,5 @@
 [English](first-slice.md) · **Français**
-<!-- translation-of: first-slice.md sha256:a1e74f75eb644138 -->
+<!-- translation-of: first-slice.md sha256:bf7dac9c28d72db2 -->
 
 # Une tranche, de bout en bout
 
@@ -70,11 +70,11 @@ export class OrderEmpty extends DomainRefusal {
 // domain/events/order-placed.event.ts : un fait, nommé au passé
 export class OrderPlaced extends NamedDomainEvent('ordering.order.placed') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly customerId: string,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

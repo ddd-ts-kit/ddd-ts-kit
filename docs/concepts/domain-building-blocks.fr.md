@@ -1,5 +1,5 @@
 [English](domain-building-blocks.md) · **Français**
-<!-- translation-of: domain-building-blocks.md sha256:82b820812ffd541d -->
+<!-- translation-of: domain-building-blocks.md sha256:e36581055067ac3d -->
 
 # Événements du domaine, services du domaine, repositories et fabriques
 
@@ -35,14 +35,20 @@ interface CancellationReason {
 
 export class AppointmentCancelled extends NamedDomainEvent('appointments.appointment.cancelled') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly reason: CancellationReason,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 ```
+
+La base porte ce que dit tout événement : l'id de son agrégat, gardé en texte quel que soit le type
+de cet id, et l'instant. Un événement qui ne dit rien de plus n'a pas besoin de constructeur,
+`class AppointmentBooked extends NamedDomainEvent('..') {}` se construit
+`new AppointmentBooked(id, at)` ; celui qui porte des faits les déclare après les deux et passe
+ceux-ci à `super`.
 
 Le nom s'écrit une seule fois, dans `extends NamedDomainEvent('..')` : la classe le porte comme
 `eventName` et chaque événement comme `name`, tous deux typés avec le littéral, et chaque réaction
@@ -66,11 +72,11 @@ import { AggregateRoot, DomainRefusal, NamedDomainEvent } from '@ddd-ts-kit/kern
 
 class AppointmentCancelled extends NamedDomainEvent('appointments.appointment.cancelled') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly reason: string,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
@@ -407,14 +413,7 @@ Le constructeur est privé, pour que ce soient les seules portes d'entrée :
 // contexts/appointments/domain/aggregates/appointment.aggregate.ts (les portes d'entrée)
 import { AggregateRoot, DomainRefusal, NamedDomainEvent } from '@ddd-ts-kit/kernel';
 
-class AppointmentBooked extends NamedDomainEvent('appointments.appointment.booked') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+class AppointmentBooked extends NamedDomainEvent('appointments.appointment.booked') {}
 
 // appointments.codes.ts
 const AppointmentsCodes = {

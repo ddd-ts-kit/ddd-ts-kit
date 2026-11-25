@@ -1,5 +1,5 @@
 [English](domain-and-integration-events.md) · **Français**
-<!-- translation-of: domain-and-integration-events.md sha256:9db648c7629f9fa4 -->
+<!-- translation-of: domain-and-integration-events.md sha256:7ffff2b1e4c44300 -->
 
 # Événements du domaine et événements d'intégration
 
@@ -39,11 +39,11 @@ import { NamedDomainEvent } from '@ddd-ts-kit/kernel';
 // contexts/scheduling/domain/events/appointment-booked.event.ts (simplifié)
 export class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly slot: Slot, // un type du modèle, que les consommateurs ne voient jamais
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 ```
@@ -352,14 +352,7 @@ s'exécutent dans le contexte de l'unité de travail.
 import { NamedDomainEvent } from '@ddd-ts-kit/kernel';
 import { DomainEventHandler } from '@ddd-ts-kit/kernel/declarations';
 
-class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {}
 
 /** Un tableau des créneaux libres gardé dans un cache : le rafraîchir peut échouer sans dommage. */
 export abstract class AvailabilityBoard {
@@ -397,14 +390,7 @@ import { NamedDomainEvent,
   type DomainEvent,
 } from '@ddd-ts-kit/kernel';
 
-class SlotHeld extends NamedDomainEvent('scheduling.slot.held') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+class SlotHeld extends NamedDomainEvent('scheduling.slot.held') {}
 
 class Slot extends AggregateRoot {
   static hold(id: string, now: Date): Slot {

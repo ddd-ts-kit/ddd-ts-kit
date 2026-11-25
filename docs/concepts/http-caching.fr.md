@@ -1,5 +1,5 @@
 [English](http-caching.md) · **Français**
-<!-- translation-of: http-caching.md sha256:c3ebc75fddcbe67d -->
+<!-- translation-of: http-caching.md sha256:b9260dcc01426451 -->
 
 # Cache HTTP
 
@@ -293,14 +293,7 @@ changé ce que montrent les réponses :
 import { CacheInvalidation, CachePurger, cacheTag, NamedDomainEvent } from '@ddd-ts-kit/kernel';
 import { DomainEventHandler } from '@ddd-ts-kit/kernel/declarations';
 
-export class CalendarOpeningHoursSet extends NamedDomainEvent('scheduling.calendar.opening-hours-set') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class CalendarOpeningHoursSet extends NamedDomainEvent('scheduling.calendar.opening-hours-set') {}
 
 // au lieu de : une purge envoyée après la validation, depuis le processus : perdue s'il s'arrête entre les deux
 @DomainEventHandler(CalendarOpeningHoursSet, { phase: 'after-commit' })

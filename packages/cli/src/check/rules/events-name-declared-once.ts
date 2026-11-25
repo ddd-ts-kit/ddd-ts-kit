@@ -22,8 +22,7 @@ export const eventsNameDeclaredOnce: FileRule = {
     bad: `export class InvoiceIssued implements DomainEvent {
   readonly name = 'billing.invoice.issued';
 }`,
-    good: `export class InvoiceIssued extends NamedDomainEvent('billing.invoice.issued') {
-}`,
+    good: `export class InvoiceIssued extends NamedDomainEvent('billing.invoice.issued') {}`,
   },
   scope: 'file',
   judge(file) {

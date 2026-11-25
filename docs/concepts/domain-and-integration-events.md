@@ -36,11 +36,11 @@ import { NamedDomainEvent } from '@ddd-ts-kit/kernel';
 // contexts/scheduling/domain/events/appointment-booked.event.ts (simplified)
 export class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly slot: Slot, // a type of the model, which consumers never see
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 ```
@@ -343,14 +343,7 @@ the context of the unit of work.
 import { NamedDomainEvent } from '@ddd-ts-kit/kernel';
 import { DomainEventHandler } from '@ddd-ts-kit/kernel/declarations';
 
-class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {}
 
 /** A board of free slots kept in a cache: refreshing it may fail without harm. */
 export abstract class AvailabilityBoard {
@@ -388,14 +381,7 @@ import { NamedDomainEvent,
   type DomainEvent,
 } from '@ddd-ts-kit/kernel';
 
-class SlotHeld extends NamedDomainEvent('scheduling.slot.held') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+class SlotHeld extends NamedDomainEvent('scheduling.slot.held') {}
 
 class Slot extends AggregateRoot {
   static hold(id: string, now: Date): Slot {

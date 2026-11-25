@@ -1,5 +1,5 @@
 [English](methodology.md) · **Français**
-<!-- translation-of: methodology.md sha256:a89f61bb2596e892 -->
+<!-- translation-of: methodology.md sha256:3cbca5419f3e69a9 -->
 
 # Méthodologie : d'une expression des besoins au code qui tourne
 
@@ -309,14 +309,7 @@ export class AppointmentAlreadyCancelled extends DomainRefusal {
 }
 
 // Le fait, au passé.
-export class AppointmentCancelled extends NamedDomainEvent('appointments.appointment.cancelled') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class AppointmentCancelled extends NamedDomainEvent('appointments.appointment.cancelled') {}
 
 type AppointmentStatus = 'booked' | 'cancelled';
 

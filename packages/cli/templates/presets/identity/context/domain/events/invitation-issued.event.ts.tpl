@@ -4,8 +4,8 @@ import type { MemberRole } from '{{alias.context}}/domain/vocabularies/member-ro
 /** An invitation was issued to an email address. */
 export class InvitationIssued extends NamedDomainEvent('{{context.kebab}}.invitation.issued') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly facts: {
       readonly organisationId: string;
       readonly email: string;
@@ -15,6 +15,6 @@ export class InvitationIssued extends NamedDomainEvent('{{context.kebab}}.invita
       readonly delegationId?: string;
     },
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
