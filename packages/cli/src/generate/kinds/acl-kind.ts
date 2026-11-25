@@ -28,8 +28,12 @@ export const aclKind: Kind = {
     ]);
 
     if (ownEntry(scope.config.contexts, name.kebab) !== undefined && relationship !== 'anti-corruption-layer') {
+      const upstreams = `contexts.${scope.context.kebab}.upstreams`;
+
       scope.ws.note(
-        `"${name.kebab}" is a context of this project: declare it in contexts.${scope.context.kebab}.upstreams with the relationship "anti-corruption-layer".`,
+        relationship === undefined
+          ? `"${name.kebab}" is a context of this project: declare it in ${upstreams} with the relationship "anti-corruption-layer".`
+          : `"${name.kebab}" is already an upstream of ${scope.context.kebab}, under the relationship "${relationship}": change it to "anti-corruption-layer" in ${upstreams} if ${scope.context.kebab} now translates everything it reads of it.`,
       );
     }
   },

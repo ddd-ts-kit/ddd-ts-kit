@@ -1,7 +1,8 @@
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { Violation } from '../model/violation';
 import type { SourceFile } from '../model/source-file';
+import { JUDGED_ONLY_WHEN_ON } from '../privacy/judged-only-when-on';
 import { type ColumnDefinition, columnDefinitionsIn } from '../privacy/column-definitions-in';
 import { declaresName } from '../privacy/declares-name';
 import { isSnapshotMapper } from '../privacy/is-snapshot-mapper';
@@ -35,12 +36,28 @@ interface Kept {
  * and is not a column; a snapshot mapper holds no column either, `privacy/snapshot-sealed` reads it.
  * Silent with `stack.privacy` off.
  */
-export const privacyDeclaredField: Rule = {
+export const privacyDeclaredField: ProjectRule = {
   id: 'privacy/declared-field',
   description:
     'A column whose name says it holds personal data is named by a personalFields declaration of its context, which the erasure, the export and the register read.',
+  severity: 'warn',
+  doc: {
+    why: `The erasure, the export, the retention and the register of personal data read the personalFields declarations, never the columns: a column that holds a person and that no declaration names is a copy nobody erases, exports, purges or lists, and nothing fails. Judged on the name: a column of a table of a context (a Knex table, a Drizzle table, a TypeORM entity schema of its infrastructure/persistence/, a model of prisma/schema/ in the schema of the context) whose words hold a word of the vocabulary (email, phone, first_name, birth_date, address, iban, ip_address and the others of the kit, with privacy.vocabulary of the config added and privacy.allow removed) is named by a declaration of the same context, among its fields, its files or as its subject, in either spelling (customer_email or customerEmail). A name says nothing of what a text column holds: a notes column may hold a diagnosis, which the declarations of the project say, not the rule; a column added only by a migration written by hand is not read. An event stream has no table: a key of an event mapper that the same file seals with personalData(subject, value) (written \`key: personalData(...)\`, read \`data.text('key')\`) is declared by that, and only a key stored in clear is reported. ${JUDGED_ONLY_WHEN_ON}`,
+    bad: `// contexts/billing/infrastructure/persistence/create-billing-tables.schema.ts
+table.text('customer_email');
+// and no billing/infrastructure/persistence/*.personal-fields.ts names it`,
+    good: `// contexts/billing/infrastructure/persistence/invoice.personal-fields.ts
+const declaration: PersonalFieldsOptions<InvoiceRow> = {
+  subject: 'customer_id',
+  fields: ['customer_email'],
+  erasure: 'pseudonymise',
+};
+export const InvoicePersonalFields = personalFields(TABLE, declaration);
+// a column that holds no person here (the address of a mailbox of the company):
+// ddd-ts-kit-disable-next-line privacy/declared-field -- ADR-0012: the shared mailbox of the accounting team`,
+  },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!privacyJudged(project)) {
       return [];
     }

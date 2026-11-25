@@ -230,7 +230,7 @@ metrics leave with the spans. The tracing bootstrap turns off runtime and host m
 What is measured: `use_case_duration_ms` and `use_case_total` from `metricsMiddleware` on the
 buses (labels `message`, `kind` and `outcome`, plus `error_code` on the counter),
 `dependency_call_duration_ms` and `dependency_call_total` from the `timed` aspect on the
-adapters it wraps (the prefix is its `name` option), `cache_errors_total` from `RedisCache`,
+adapters it wraps (the prefix is its `name` option), `cache_errors_total` from `RedisCache` and from the `cached` aspect,
 the gauges `outbox_pending`, `outbox_failed` and `outbox_dead` from an `OutboxRelay` given the
 metrics, and `jobs_waiting`, `jobs_running` and `jobs_dead` per `queue` from a `QueueWorker`
 given them. A project that Prometheus scrapes instead registers its own meter provider before

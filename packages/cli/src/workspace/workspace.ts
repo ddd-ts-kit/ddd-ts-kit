@@ -15,6 +15,7 @@ import { locatedStep } from './located-step';
 import { removeFile } from './remove-file';
 import { refuseLeaving } from './refuse-leaving';
 import { refuseUnheld } from './refuse-unheld';
+import { updatedAndSkipped } from './updated-and-skipped';
 import { writtenOf } from './written-of';
 import type { WorkspaceReport } from './workspace-report';
 
@@ -333,9 +334,8 @@ export class Workspace {
 
     return {
       created: written.filter(({ existed }) => !existed).map(({ file }) => file),
-      updated: written.filter(({ existed, file }) => existed && !this.left.has(file)).map(({ file }) => file),
+      ...updatedAndSkipped(written, { skipped: this.skipped, unwritable, left: this.left }),
       deleted,
-      skipped: [...new Set([...this.skipped, ...unwritable, ...this.left])].sort(),
       kept: [...this.kept].sort(),
       unwritable,
       left: [...this.left].sort(),

@@ -4,6 +4,7 @@
  */
 export const FORMATTER_RULE = {
   id: 'clean/formatted',
+  severity: 'error',
   description:
     'Every TypeScript, JavaScript and JSON file is laid out by the formatter of the project, Biome, at a line width of 120: the format check reports nothing to change.',
 } as const;

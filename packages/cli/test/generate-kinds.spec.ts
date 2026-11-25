@@ -82,7 +82,7 @@ describe('authorization and gateway kinds', () => {
     );
 
     expect(module).toContain(
-      "builder.bind(InvoiceStatusContract).toValue({});\n    builder.bind(InvoiceStatusGateway).toClass(InProcessInvoiceStatusGateway, [InvoiceStatusContract]).as('gateway');",
+      "    builder.bind(InvoiceStatusContract).toFactory(() => {\n      throw undecided('what billing answers as InvoiceStatusContract');\n    });\n\n    builder.bind(InvoiceStatusGateway).toClass(InProcessInvoiceStatusGateway, [InvoiceStatusContract]).as('gateway');",
     );
 
     // shipping already depends on billing: declaring the reverse would close a cycle, so it is refused as one.

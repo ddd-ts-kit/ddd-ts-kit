@@ -92,7 +92,7 @@ A policy is a named, pure, unit-tested class in `application/authorization/*.pol
 asks `Access.authorize(command.actor, permission, appointment)`, the loaded aggregate named after its concept. Every
 handler of a use case requiring that permission must ask it: `authz/policy-asked` reports one that
 does not or drops the decision of a `decide`, and at run time its result is refused with `PolicyNotAskedError`, or with `PolicyDenialIgnoredError` when it answers a success with no question on it allowed, and rolled back. The
-generators write the question about the message; replace the message by the loaded aggregate. A rule that holds whoever asks ("not after publication") is an invariant: it goes in
+generated policy refuses everybody until its rule is written, and the generators write the question about an element, never the message: the aggregate a birth builds, what a query read, or a `TODO(domain)` where a handler that still refuses will ask. A rule that holds whoever asks ("not after publication") is an invariant: it goes in
 the aggregate.
 
 ## Searches

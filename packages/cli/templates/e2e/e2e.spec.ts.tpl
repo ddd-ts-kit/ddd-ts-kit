@@ -4,7 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, it, onTestFailed } from 'vit
 {{#if tests.jest}}
 import { afterAll, beforeAll, beforeEach, describe, it } from '@jest/globals';
 {{/if}}
-import { expectStatus } from '@ddd-ts-kit/testing/e2e';
+import { expectStatus{{#if e2e.held}}, pending{{/if}} } from '@ddd-ts-kit/testing/e2e';
 {{#if tests.vitest}}
 import { reportSeedOnFailure } from '@ddd-ts-kit/testing/faker';
 {{/if}}
@@ -59,6 +59,9 @@ describe('{{name.title}}, end to end', () => {
     expectStatus(response, 403);
   });
 
+{{/if}}
+{{#if e2e.held}}
+  // TODO(domain): "{{name.words}}" still refuses (501, `NOT_IMPLEMENTED`): `pending(...)` holds the scenarios that wait for it, and fails them once it is written. Remove it then.
 {{/if}}
 {{#if e2e.traced}}
   it('is one trace: the request, the use case and what it saves', async () => {

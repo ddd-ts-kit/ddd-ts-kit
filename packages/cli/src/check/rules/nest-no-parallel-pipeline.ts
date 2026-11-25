@@ -1,10 +1,9 @@
 import type { Finding } from '../model/finding';
 import type { Layer } from '../model/layer';
-import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectFacts } from '../model/project';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { nestEquivalentsOf } from '../nest/nest-equivalents-of';
-import { perFile } from '../support/per-file';
 
 /** `domain/`, `application/` and the published language refuse every framework already (`layer/*`, `context/*`). */
 const JUDGED: readonly Layer[] = ['presentation', 'infrastructure', 'module', 'root'];
@@ -16,23 +15,40 @@ const BUSES = ['CommandBus', 'QueryBus'];
 const ROUTED_BY_NEST_FIX =
   'Make it a route of the kit: `@KitRoute` of `@ddd-ts-kit/http/nest` on each method, served by `createControllersModule`, with its guards, its refusals and its place in the contract. A controller of Nest stays for what reaches no use case (health, metrics).';
 
-export const nestNoParallelPipeline: Rule = {
+export const nestNoParallelPipeline: FileRule = {
   id: 'nest/no-parallel-pipeline',
   description:
     "A context uses none of the tools of Nest that the kit does its own way (guards, pipes, exception filters, interceptors, its logger, Swagger, CQRS, its scheduler, a controller Nest serves): they would bypass the security, the errors and the contract of the kit. A Nest controller the kit serves (`@KitRoute`) declares its routes with Nest's decorators. Outside the contexts, a controller Nest serves reaches no use case. Nest stays in the platform for the rest.",
+  severity: 'error',
+  doc: {
+    why: 'The routes of the kit are mounted under Nest, not through its pipeline: a guard, a pipe, an exception filter or an interceptor of Nest never sees them, and a controller of Nest written in a context is a route the kit does not see either. Its security is declared nowhere, its refusals are not problem documents with the codes the clients read, and it is missing from the contract. A right checked by a Nest guard is checked on HTTP only, never on /rpc, /trpc, a job or an event handler, which the permission of the use case covers. A Nest controller the kit serves is the exception: with `@KitRoute` of `@ddd-ts-kit/http/nest` on its methods, its routes are declared with the decorators of Nest (`@Controller`, `@Post`, `@Body`, `@Param`...) and served by the pipeline of the kit, and the raw request, the guards, pipes, filters and interceptors of Nest stay refused there. Outside the contexts, a controller Nest serves that reaches a use case (it names `CommandBus` or `QueryBus`, or imports a file of a context) is refused too: moving it to the platform would keep the hole. Each tool of Nest has its place in the kit: the message says which. Nest stays in the platform, for what is not a use case (health, WebSocket gateways, GraphQL), and its WebSocket, GraphQL, microservice and testing packages are not judged. Judged: presentation/, infrastructure/ and the module file of a context, outside its tests; domain/ and application/ already refuse every framework.',
+    bad: `// presentation/http/issue-invoice.controller.ts
+import { Controller, Post, UseGuards } from '@nestjs/common';
+// infrastructure/external/payment-settings.ts
+import { ConfigService } from '@nestjs/config';`,
+    good: `// presentation/http/invoices.controller.ts
+import { Body, Controller, Param, Post } from '@nestjs/common';
+import { CurrentActor, KitRoute, KitRoutes } from '@ddd-ts-kit/http/nest';
+
+@Controller('invoices')
+@KitRoutes({ guards: [Authenticated] })
+export class InvoicesController {
+  @Post(':invoiceId/issue')
+  @KitRoute({ operationId: 'issueInvoice', summary: 'Issue an invoice', errors: ['INVOICE_ALREADY_ISSUED'] })
+  issue(@Param('invoiceId') invoiceId: string, @Body() body: IssueInvoiceBody, @CurrentActor() actor: Actor) {}
+}`,
+  },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (file.isTest) {
-        return [];
-      }
+  judge(file, project) {
+    if (file.isTest) {
+      return [];
+    }
 
-      if (file.location.area === 'context') {
-        return JUDGED.includes(file.location.layer) ? nestToolsIn(file) : [];
-      }
+    if (file.location.area === 'context') {
+      return JUDGED.includes(file.location.layer) ? nestToolsIn(file) : [];
+    }
 
-      return isUnderSources(file, project) ? routedByNest(file) : [];
-    });
+    return isUnderSources(file, project) ? routedByNest(file) : [];
   },
 };
 
@@ -94,6 +110,6 @@ function reachesUseCase(file: SourceFile): boolean {
   );
 }
 
-function isUnderSources({ path }: SourceFile, { config }: Project): boolean {
+function isUnderSources({ path }: SourceFile, { config }: ProjectFacts): boolean {
   return path.startsWith(`${config.sourceRoot}/`);
 }

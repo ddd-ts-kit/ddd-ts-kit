@@ -202,7 +202,7 @@ through the `Access` port once it holds the element.
 npx ddd-ts-kit generate policy scheduling ConfirmAppointment --permission appointment.confirm --json
 ```
 
-The generator writes the file with a body that only refuses the anonymous actor, and a
+The generator writes the file with a body that refuses everybody until the rule is written, and a
 `TODO(domain)` where the rule goes. Filled in, in the declared style:
 
 ```ts
@@ -258,8 +258,8 @@ every caller, it moves into the aggregate.
 ### Its spec
 
 A policy is a plain object, so its spec needs no application and no mock. The generator writes
-the first two tests (the declaration, and the refusal of the anonymous actor) and leaves
-`it.todo` entries for the rule.
+one test, which says that the policy refuses everybody until its rule is written, and leaves
+`it.todo` entries for the rule: the first real test replaces the generated one.
 
 ```ts
 describe('Confirm appointment policy', () => {

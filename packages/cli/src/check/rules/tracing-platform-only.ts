@@ -1,39 +1,45 @@
-import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectFacts } from '../model/project';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { isUnder } from '../project/is-under';
-import { perFile } from '../support/per-file';
 
 const TRACING_PACKAGE = '@ddd-ts-kit/tracing';
 const OPEN_TELEMETRY_SCOPE = '@opentelemetry/';
 
-export const tracingPlatformOnly: Rule = {
+export const tracingPlatformOnly: FileRule = {
   id: 'tracing/platform-only',
   description:
     'Tracing is wired once: @ddd-ts-kit/tracing and @opentelemetry/* are imported only by the platform directory, main.ts and apps/.',
+  severity: 'error',
+  doc: {
+    why: 'Tracing is non-invasive and wired once. One action is one trace because every span is opened by the same few places: the request boundary, the bus middleware, the instrumentation around adapters and handlers, the outbox relay. A context that imports @ddd-ts-kit/tracing or an @opentelemetry package opens spans of its own, with names and attributes nobody reviews, and can no longer be traced differently by changing the composition root alone. Judged: every source under the source root, tests included, but the platform directory, main.ts and apps/.',
+    bad: `// infrastructure/external/stripe-payment.gateway.ts
+import { trace } from '@opentelemetry/api';`,
+    good: `// src/platform/observability/tracing.ts
+import { traceApplication, tracedPublisher } from '@ddd-ts-kit/tracing';
+import { initTracing } from '@ddd-ts-kit/tracing/node';`,
+  },
   scope: 'file',
-  run(project) {
+  judge(file, project) {
+    if (!isJudged(file, project)) {
+      return [];
+    }
+
     const { platformDir } = project.config;
     const fix = `Remove the import: adapters are wrapped by the \`decorate\` hook of the composition root and use cases by a bus middleware; what has to open a span of its own lives in ${platformDir}/.`;
 
-    return perFile(project, this.id, (file) => {
-      if (!isJudged(file, project)) {
-        return [];
-      }
-
-      return file.imports
-        .filter(({ target }) => target.kind === 'package' && isTracing(target.name))
-        .map(({ line, specifier }) => ({
-          line,
-          message: `"${specifier}" is imported in ${placeOf(file)}: tracing is wired once, by the platform.`,
-          fix,
-        }));
-    });
+    return file.imports
+      .filter(({ target }) => target.kind === 'package' && isTracing(target.name))
+      .map(({ line, specifier }) => ({
+        line,
+        message: `"${specifier}" is imported in ${placeOf(file)}: tracing is wired once, by the platform.`,
+        fix,
+      }));
   },
 };
 
 /** Every source under the source root, tests included, but the platform, `main.ts` and the entry points under `apps/`. */
-function isJudged({ location, path }: SourceFile, { config }: Project): boolean {
+function isJudged({ location, path }: SourceFile, { config }: ProjectFacts): boolean {
   const isWiring =
     location.area === 'platform' || location.area === 'main' || isUnder(path, `${config.sourceRoot}/apps`);
 

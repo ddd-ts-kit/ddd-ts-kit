@@ -5,11 +5,10 @@ import { kebabCaseOf } from '../exports/kebab-case-of';
 import { matchesGlob } from '../exports/matches-glob';
 import { namedAfter } from '../exports/named-after';
 import type { Finding } from '../model/finding';
-import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectFacts } from '../model/project';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { isGeneratedContextFile } from '../support/is-generated-context-file';
-import { perFile } from '../support/per-file';
 import { braceDepthAt } from '../text/brace-depth-at';
 
 const STATEMENT =
@@ -23,28 +22,42 @@ const ENTRY_FIX =
 const COUNT_FIX =
   'Keep one and move each other to its own file named after it; only the types of its signature stay next to it. Exports that really are one thing are listed, with their reason, under "onePerFile.allow" in ddd-ts-kit.config.json.';
 
-export const cleanOneExportPerFile: Rule = {
+export const cleanOneExportPerFile: FileRule = {
   id: 'clean/one-export-per-file',
   description:
     'One exported class, interface or function per file, the file named after it in kebab-case; an index file only re-exports. The types of a signature and the small closed families are read as text: an approximation of what ESLint holds.',
+  severity: 'error',
+  doc: {
+    why: 'A file that exports one thing is named after it, found by its name and changed for one reason. A second exported class or function is a second responsibility hiding behind the first name. The companions that stay are the ones that are not a second thing: the types of its signature, its contract constants, a type sharing its name, and a small closed family (a type with its constructors, the accessors of one private state). An index file only re-exports: it says what a folder offers. Tests are not judged. This checker reads declarations as text, so the allowances are an approximation; ESLint is authoritative, and what neither can express is listed with its reason under "onePerFile.allow".',
+    bad: `// application/ports/gateways.port.ts
+export abstract class PaymentGateway {}
+export abstract class TaxGateway {}
+// domain/services/helpers.service.ts
+export class InvoiceNumbering {}`,
+    good: `// application/ports/payment-gateway.port.ts
+export abstract class PaymentGateway {}
+// application/ports/tax-gateway.port.ts
+export abstract class TaxGateway {}
+// application/commands/issue-invoice/issue-invoice.result.ts
+export interface IssueInvoiceResult { readonly invoiceId: string }`,
+  },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (!isJudged(file, project)) {
-        return [];
-      }
+  standalone: true,
+  judge(file, project) {
+    if (!isJudged(file, project)) {
+      return [];
+    }
 
-      if (isGeneratedContextFile(file)) {
-        return [];
-      }
+    if (isGeneratedContextFile(file)) {
+      return [];
+    }
 
-      return isEntry(file) ? declaredInEntry(file) : judged(file, project);
-    });
+    return isEntry(file) ? declaredInEntry(file) : judged(file, project);
   },
 };
 
 /** Sources under the source root, or under a directory named like it when there is no project around: tests are not judged. */
-function isJudged(file: SourceFile, project: Project): boolean {
+function isJudged(file: SourceFile, project: ProjectFacts): boolean {
   const segments = file.path.split('/');
   const root = project.config.sourceRoot;
 
@@ -83,7 +96,7 @@ function isAllowedInEntry(statement: string): boolean {
   return list !== null && (list[2] !== undefined || (list[1] ?? '').trim() === '');
 }
 
-function judged(file: SourceFile, project: Project): Finding[] {
+function judged(file: SourceFile, project: ProjectFacts): Finding[] {
   const verdict = judgeExports(file);
   const allowed = project.config.onePerFile.allow.some((allowance) => matchesGlob(allowance.file, file.path));
 

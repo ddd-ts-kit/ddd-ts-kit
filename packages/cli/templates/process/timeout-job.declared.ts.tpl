@@ -14,13 +14,13 @@ export class {{name.pascal}}TimeoutBackgroundJob implements BackgroundJob<Proces
 
   static readonly payload = processTimeoutDuePayload;
 
-  private readonly process = new {{name.pascal}}Process();
+  private readonly {{name.camel}} = new {{name.pascal}}Process();
 
   constructor(private readonly processes: ProcessRunner) {}
 
   async run(due: ProcessTimeoutDue, execution: BackgroundJobExecution): Promise<void> {
     const delivered = { ...due, jobId: execution.jobId };
 
-    await this.processes.timeout({{name.pascal}}Process, delivered, (current) => this.process.timedOut(due.timeout, current));
+    await this.processes.timeout({{name.pascal}}Process, delivered, (current) => this.{{name.camel}}.timedOut(due.timeout, current));
   }
 }

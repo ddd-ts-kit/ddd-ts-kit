@@ -1,3 +1,4 @@
+import { safely } from '../observation/safely';
 import type { ErrorReporter } from '../ports/error-reporter';
 import type { ErrorReport } from './error-report';
 
@@ -20,11 +21,7 @@ export function reportOnce(reporter: ErrorReporter, error: unknown, report: Erro
     REPORTED.add(error);
   }
 
-  try {
-    reporter.report(error, report);
-  } catch {
-    return;
-  }
+  safely(() => reporter.report(error, report));
 }
 
 function wasReported(error: unknown, depth: number): boolean {

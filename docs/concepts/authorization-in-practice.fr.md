@@ -1,5 +1,5 @@
 [English](authorization-in-practice.md) · **Français**
-<!-- translation-of: authorization-in-practice.md sha256:252f51cd2121c6ec -->
+<!-- translation-of: authorization-in-practice.md sha256:345bc0b7960c2867 -->
 
 # L'autorisation en pratique
 
@@ -212,8 +212,8 @@ gestionnaire la demande par le port `Access` une fois qu'il détient l'élément
 npx ddd-ts-kit generate policy scheduling ConfirmAppointment --permission appointment.confirm --json
 ```
 
-Le générateur écrit le fichier avec un corps qui ne refuse que l'acteur anonyme, et un
-`TODO(domain)` là où va la règle. Une fois rempli, dans le style déclaré :
+Le générateur écrit le fichier avec un corps qui refuse tout le monde tant que la règle n'est pas
+écrite, et un `TODO(domain)` là où va la règle. Une fois rempli, dans le style déclaré :
 
 ```ts
 // scheduling/application/authorization/confirm-appointment.policy.ts
@@ -269,8 +269,9 @@ appelant, elle passe dans l'agrégat.
 ### Sa *spec*
 
 Une politique est un objet ordinaire, donc sa *spec* n'a besoin ni d'application ni de *mock*. Le
-générateur écrit les deux premiers tests (la déclaration, et le refus de l'acteur anonyme) et
-laisse des entrées `it.todo` pour la règle.
+générateur écrit un test, qui dit que la politique refuse tout le monde tant que sa règle n'est
+pas écrite, et laisse des entrées `it.todo` pour la règle : le premier vrai test remplace celui
+qui a été généré.
 
 ```ts
 describe('Confirm appointment policy', () => {

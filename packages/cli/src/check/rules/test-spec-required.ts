@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { roleOf } from '../canonical/role-of';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { isAbstractBase } from '../support/is-abstract-base';
@@ -21,12 +21,18 @@ interface Subject {
   readonly module: string | undefined;
 }
 
-export const testSpecRequired: Rule = {
+export const testSpecRequired: ProjectRule = {
   id: 'test/spec-required',
   description:
     "Every aggregate, value object, domain service, command handler, query handler, domain event handler, integration event handler and job has a *.spec.ts in the context's test/; an abstract base is held by the specs of its implementations.",
+  severity: 'error',
+  doc: {
+    why: 'Aggregates, value objects, domain services, handlers and jobs hold the business behaviour and what triggers it; an untested one is an unverified rule. Requiring the spec file makes the missing test visible at the moment the code is written. An abstract base (every exported class abstract, no exported function), such as a strategy of domain/services, needs none: the specs of its implementations hold its behaviour.',
+    bad: `domain/aggregates/invoice.aggregate.ts with no test/**/invoice.aggregate.spec.ts`,
+    good: `test/unit/invoice.aggregate.spec.ts`,
+  },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const specs = specsOf(project);
 
     return perFile(project, this.id, (file) => {
