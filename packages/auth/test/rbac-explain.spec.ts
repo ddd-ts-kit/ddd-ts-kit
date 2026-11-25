@@ -97,6 +97,11 @@ describe('RoleBasedAuthorizer.explain, with the tenant check', () => {
     );
 
     expect(await lastLine({ actor: bob, context: { tenantId: '*' } })).toBe('x "*" is not a tenant id');
+
+    expect(await lastLine({ actor: bob, context: { tenantId: ['acme'] } })).toBe(
+      'x the tenant the request targets is not a text',
+    );
+
     expect(await lastLine({ actor: bob })).toBe('  the request targets no tenant');
     expect(await lastLine({ actor: operator, context: { tenantId: 'globex' } })).toBe('  operator acts across tenants');
   });

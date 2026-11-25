@@ -2,8 +2,11 @@ import { isSystem, isTenantId, isTenantMember } from '@ddd-ts-kit/kernel';
 import type { CheckRequest } from '../authorization/check-request';
 import type { Trace } from '../authorization/trace';
 
-/** The tenant a request targets, or `undefined` when it targets none. See `tenantOfContext`. */
-export type TenantOf = (request: CheckRequest) => string | undefined | Promise<string | undefined>;
+/**
+ * The tenant a request targets, or `undefined` when it targets none. What is answered is not
+ * trusted to be a tenant id: the check refuses anything else. See `tenantOfContext`.
+ */
+export type TenantOf = (request: CheckRequest) => unknown;
 
 /**
  * Whether the request stays in a tenant the actor may act in, said in one line of the trace:
@@ -19,7 +22,11 @@ export async function tenantCheck(request: CheckRequest, tenantOf: TenantOf, tra
   }
 
   if (!isTenantId(targeted)) {
-    return trace.no(`"${String(targeted)}" is not a tenant id`);
+    return trace.no(
+      typeof targeted === 'string'
+        ? `"${targeted}" is not a tenant id`
+        : 'the tenant the request targets is not a text',
+    );
   }
 
   if (workTenantId !== undefined && targeted !== workTenantId) {

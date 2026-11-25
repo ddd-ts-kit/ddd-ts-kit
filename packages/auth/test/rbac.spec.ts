@@ -132,6 +132,16 @@ describe('RoleBasedAuthorizer tenant check', () => {
     expect(await about(ada)).toEqual({ allowed: true });
   });
 
+  it('refuses a request whose tenant is not a text, as one that targets a tenant of nobody', async () => {
+    const targeting = (tenantId: unknown) => authorizer.check({ actor: ada, permission: read, context: { tenantId } });
+
+    for (const tenantId of [42, null, ['acme'], { value: 'acme' }, '']) {
+      expect(await targeting(tenantId)).toEqual({ allowed: false, reason: 'TENANT_MISMATCH' });
+    }
+
+    expect(await targeting(undefined)).toEqual({ allowed: true });
+  });
+
   it('lets the roles declared cross-tenant act everywhere', async () => {
     expect(await about(operator, 'globex')).toEqual({ allowed: true });
   });
