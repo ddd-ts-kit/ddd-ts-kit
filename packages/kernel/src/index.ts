@@ -137,6 +137,7 @@ export * from './application/pagination/offset-page';
 export * from './application/pagination/page-limits';
 export * from './application/pagination/page-of';
 export * from './application/pagination/page-request';
+export * from './application/observation/safely';
 export * from './application/pagination/page';
 export * from './application/pagination/sort-direction';
 export * from './application/pagination/sort';

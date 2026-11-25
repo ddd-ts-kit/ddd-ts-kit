@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:751e1117aa72432c -->
+<!-- translation-of: README.md sha256:3222447f11f06ffa -->
 
 # @ddd-ts-kit/events
 
@@ -369,7 +369,8 @@ parcours :
 Le délai vaut `min(maxMs, baseMs * factor ** (attempts - 1))` ; passez
 `backoff: { baseMs, factor, maxMs }` pour le changer. `code` est le `code` de l'erreur quand il a
 la forme d'un identifiant, sinon le nom de sa classe : jamais son message, qui peut citer la
-charge utile, si bien que `onFailure` peut être journalisé tel quel.
+charge utile, si bien que `onFailure` peut être journalisé tel quel. Ce que lève `onFailure` est
+abandonné : un hook qui échoue n'interrompt jamais un tick et n'arrête jamais le relais.
 
 **Le traçage à travers l'outbox.** L'enveloppe porte `traceparent`, et chaque stockage d'outbox
 le persiste et le restitue exactement (la suite de contrat le vérifie). Avec

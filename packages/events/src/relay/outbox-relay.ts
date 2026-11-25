@@ -1,4 +1,10 @@
-import type { Clock, IntegrationEvent, IntegrationEventPublisher, Metrics } from '@ddd-ts-kit/kernel';
+import {
+  safely,
+  type Clock,
+  type IntegrationEvent,
+  type IntegrationEventPublisher,
+  type Metrics,
+} from '@ddd-ts-kit/kernel';
 import type { OutboxRecord } from '../outbox/outbox-record';
 import type { OutboxStore } from '../outbox/outbox-store';
 import type { ClaimWindow } from './claim-window';
@@ -22,7 +28,7 @@ export interface OutboxRelayOptions {
   /** Attempts after which a record is dead. Default 8. */
   readonly maxAttempts?: number;
   readonly backoff?: OutboxBackoff;
-  /** Observability hook. It receives codes only, so it is safe to log as is. */
+  /** Observability hook. It receives codes only, so it is safe to log as is. What it throws is dropped. */
   readonly onFailure?: (failure: OutboxRelayFailure) => void;
   /**
    * Makes a started relay tick as soon as the store says something was appended, so
@@ -109,7 +115,8 @@ export class OutboxRelay {
     this.batchSize = options.batchSize ?? 100;
     this.maxAttempts = options.maxAttempts ?? 8;
     this.backoff = backoffOf(options.backoff);
-    this.onFailure = options.onFailure ?? (() => undefined);
+    // A hook that throws must not abort a tick or stop the relay.
+    this.onFailure = (failure) => safely(() => options.onFailure?.(failure));
     this.wakeOn = options.wakeOn;
     this.order = new KeyOrder(orderingKeyOf(options));
     this.metrics = options.metrics;

@@ -359,7 +359,7 @@ not fail its neighbours. With the defaults (`baseMs: 1000`, `factor: 2`, `maxMs:
 The delay is `min(maxMs, baseMs * factor ** (attempts - 1))`; pass `backoff: { baseMs, factor, maxMs }`
 to change it. `code` is the `code` of the error when it is shaped like an identifier, else its
 class name: never its message, which may quote the payload, so `onFailure` can be logged as it
-is.
+is. What `onFailure` throws is dropped: a hook that fails never aborts a tick nor stops the relay.
 
 **Tracing across the outbox.** The envelope carries `traceparent`, and every outbox store
 persists and restores it exactly (the contract suite checks it). With
