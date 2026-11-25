@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { withinUnitOfWork, type IntegrationEvent, type UnitOfWork } from '@ddd-ts-kit/kernel';
+import { unitOfWorkOver, type IntegrationEvent, type UnitOfWork } from '@ddd-ts-kit/kernel';
 import type { UnitOfWorkUnderContract } from '../../src/contracts';
 import { claimed } from './claimed';
 
@@ -12,7 +12,7 @@ interface Written {
 /**
  * A database in memory with real transactions: what a unit of work writes is its own until it
  * commits, and is forgotten when it fails. `cooperating: false` is the adapter that forgot
- * `withinUnitOfWork`: its transactions are as sound, and the contract still fails it.
+ * `unitOfWorkOver`: its transactions are as sound, and the contract still fails it.
  */
 export class TransactionalMemory implements UnitOfWorkUnderContract {
   readonly unitOfWork: UnitOfWork;
@@ -22,10 +22,9 @@ export class TransactionalMemory implements UnitOfWorkUnderContract {
   private readonly current = new AsyncLocalStorage<Written>();
 
   constructor({ cooperating }: { readonly cooperating: boolean } = { cooperating: true }) {
-    this.unitOfWork = {
-      run: (work) =>
-        cooperating ? withinUnitOfWork(work, (scoped) => this.atomically(scoped)) : this.atomically(work),
-    };
+    this.unitOfWork = cooperating
+      ? unitOfWorkOver((work) => this.atomically(work))
+      : { run: (work) => (this.current.getStore() === undefined ? this.atomically(work) : work()) };
   }
 
   readonly outbox: UnitOfWorkUnderContract['outbox'] = {
@@ -60,10 +59,6 @@ export class TransactionalMemory implements UnitOfWorkUnderContract {
   }
 
   private async atomically<T>(work: () => Promise<T>): Promise<T> {
-    if (this.current.getStore() !== undefined) {
-      return work();
-    }
-
     const written: Written = { rows: [], events: [], refusedAtCommit: false };
     const result = await this.current.run(written, work);
 

@@ -1,3 +1,4 @@
+import { InMemoryUnitOfWork, UnitOfWorkAbortedError } from '@ddd-ts-kit/kernel';
 import { ContractSuite } from '../contract-suite';
 import { failureOf } from '../../scenarios/failure-of';
 import { Parcel } from './parcel';
@@ -18,7 +19,9 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
 
     this.refusedSave();
     this.failingWork();
+    this.failingNestedRun();
     this.failingHandler();
+    this.failingHandlerInsideAnotherDatabase();
     this.failingCommit();
     this.relaysWhatCommitted();
   }
@@ -118,6 +121,32 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
     });
   }
 
+  private failingNestedRun(): void {
+    this.it(
+      'refuses to commit once a nested run failed, although the work caught its failure: nothing stored, no handler',
+      async () => {
+        const bench = this.everyEffect();
+
+        const failure = await failureOf(() =>
+          bench.run(async () => {
+            await failureOf(() =>
+              bench.run(async () => {
+                await bench.register('p1');
+                throw new CarrierDown();
+              }),
+            );
+
+            await bench.register('p2');
+          }),
+        );
+
+        this.expect(failure instanceof UnitOfWorkAbortedError).toBe(true);
+        this.expect(failure instanceof Error && failure.cause instanceof CarrierDown).toBe(true);
+        await this.expectNothingLeft(bench, ['saved p1', 'saved p2']);
+      },
+    );
+  }
+
   private failingHandler(): void {
     this.it(
       'fails the unit of work when a before-commit handler fails: state and outbox rolled back, no after-commit handler',
@@ -138,6 +167,25 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
         );
 
         await this.expectNothingLeft(bench, ['saved p1', 'saved p2', 'published p1', 'published p2']);
+      },
+    );
+  }
+
+  private failingHandlerInsideAnotherDatabase(): void {
+    this.it(
+      'rolls back with its before-commit handler that fails, opened inside the unit of work of another database',
+      async () => {
+        const bench = this.everyEffect();
+        const billing = new InMemoryUnitOfWork();
+
+        bench.on('before-commit', async () => {
+          throw new CarrierDown();
+        });
+
+        const failure = await failureOf(() => billing.run(() => bench.run(() => bench.register('p1'))));
+
+        this.expect(failure instanceof CarrierDown).toBe(true);
+        await this.expectNothingLeft(bench, ['saved p1', 'published p1']);
       },
     );
   }

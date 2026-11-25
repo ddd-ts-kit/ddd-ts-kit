@@ -12,7 +12,7 @@ import {
   TenantFileKeys,
   fileUploadsMiddleware,
   unitOfWorkMiddleware,
-  withinUnitOfWork,
+  unitOfWorkOver,
   type StoredFile,
 } from '../src';
 
@@ -43,14 +43,11 @@ function aBus() {
 
   const seenWhenTheTransactionBegan: string[][] = [];
 
-  const unitOfWork = {
-    run: <T>(work: () => Promise<T>) =>
-      withinUnitOfWork(work, (scoped) => {
-        seenWhenTheTransactionBegan.push([...storage.keys()]);
+  const unitOfWork = unitOfWorkOver((work) => {
+    seenWhenTheTransactionBegan.push([...storage.keys()]);
 
-        return scoped();
-      }),
-  };
+    return work();
+  });
 
   const bus = new InMemoryCommandBus()
     .use(fileUploadsMiddleware(() => desk))

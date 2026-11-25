@@ -1,5 +1,6 @@
 import { onKitContainer, QUEUE_ORMS, type Config } from '../config';
 import { diEntry } from '../generate/di-entry';
+import { packageManagerVars } from '../package-manager/package-manager-vars';
 import type { RenderContext } from '../templating';
 import { aliasVars } from './alias-vars';
 import { auditVars } from './audit-vars';
@@ -51,6 +52,7 @@ export function stackVars(config: Config): RenderContext {
     routes: routeVars(config),
     presentation: presentationVars(config),
     logger: one(logger, ['stdout', 'pino', 'winston']),
+    pm: packageManagerVars(config),
     tests: { ...one(tests, ['vitest', 'jest']), module: tests === 'jest' ? '@jest/globals' : 'vitest' },
     config: platformPaths(config),
     alias: aliasVars(config),

@@ -27,7 +27,7 @@ export function replaceInRegion(
     return undefined;
   }
 
-  lines.splice(open + 1, close - open - 1, ...inside.replace(before, laidOut(by, indent)).split('\n'));
+  lines.splice(open + 1, close - open - 1, ...inside.replace(before, () => laidOut(by, indent)).split('\n'));
 
   return lines.join('\n');
 }

@@ -1,10 +1,16 @@
-import type { UnitOfWork } from '@ddd-ts-kit/kernel';
+import { unitOfWorkOver, type UnitOfWork } from '@ddd-ts-kit/kernel';
 
 /** Stands for a database transaction: what was written inside `run` is kept only if it succeeds. */
 export class StagingUnitOfWork implements UnitOfWork {
   private staged: (() => Promise<void>)[] | undefined;
 
-  async run<T>(work: () => Promise<T>): Promise<T> {
+  private readonly unitOfWork = unitOfWorkOver((work) => this.transaction(work));
+
+  run<T>(work: () => Promise<T>): Promise<T> {
+    return this.unitOfWork.run(work);
+  }
+
+  private async transaction<T>(work: () => Promise<T>): Promise<T> {
     this.staged = [];
 
     try {

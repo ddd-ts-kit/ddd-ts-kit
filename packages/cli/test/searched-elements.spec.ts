@@ -21,7 +21,13 @@ describe('the names a generated search gives to its lines', () => {
 
   it('are prefixed when the template already uses the word, or the language reserves it', () => {
     expect(searchedElements(toName('SearchPages'))).toEqual({ element: 'foundPage', elements: 'foundPages' });
-    expect(searchedElements(toName('SearchNews'))).toEqual({ element: 'foundNew', elements: 'foundNews' });
+    expect(searchedElements(toName('SearchDeletes'))).toEqual({ element: 'foundDelete', elements: 'foundDeletes' });
+  });
+
+  it('name one line of a word that is the same in both numbers apart from the lines', () => {
+    expect(searchedElements(toName('SearchNews'))).toEqual({ element: 'oneNews', elements: 'news' });
+    expect(searchedElements(toName('SearchTimeSeries'))).toEqual({ element: 'oneTimeSeries', elements: 'timeSeries' });
+    expect(searchedElements(toName('SearchStatuses'))).toEqual({ element: 'status', elements: 'statuses' });
   });
 });
 

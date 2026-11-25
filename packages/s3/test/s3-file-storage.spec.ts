@@ -1,7 +1,9 @@
+import { Readable } from 'node:stream';
+import { S3Client } from '@aws-sdk/client-s3';
 import { FileError } from '@ddd-ts-kit/kernel';
 import { describe, expect, it } from 'vitest';
 import { S3FileStorage, s3ClientOf } from '../src';
-import { settledFirst } from '../src/settled-first';
+import { uploadSettled } from '../src/upload-settled';
 
 const client = s3ClientOf({
   endpoint: 'http://127.0.0.1:1',
@@ -11,6 +13,7 @@ const client = s3ClientOf({
 });
 
 const storage = new S3FileStorage({ client, bucket: 'documents', prefix: 'app/' });
+const MEBIBYTE = 1024 * 1024;
 
 describe('S3FileStorage without a server', () => {
   it('signs a short download link for the key under its prefix, with the name to save under', async () => {
@@ -94,11 +97,61 @@ describe('S3FileStorage without a server', () => {
     await expect(storage.get('reports/march.pdf')).rejects.toThrow();
   });
 
-  it('rejects with the failure of the content before the one of the upload it cut', async () => {
+  it('rejects with the refusal of the content before the failure of the upload it cut', async () => {
     const refused = FileError.tooLarge(10);
 
-    await expect(settledFirst(Promise.reject(refused), Promise.reject(new Error('cut')))).rejects.toBe(refused);
-    await expect(settledFirst(Promise.resolve(), Promise.reject(new Error('cut')))).rejects.toThrow('cut');
-    await expect(settledFirst(Promise.resolve(), Promise.resolve('done'))).resolves.toBeUndefined();
+    await expect(uploadSettled(Promise.reject(refused), Promise.reject(new Error('cut')))).rejects.toBe(refused);
+    await expect(uploadSettled(Promise.resolve(), Promise.reject(new Error('cut')))).rejects.toThrow('cut');
+    await expect(uploadSettled(Promise.resolve(), Promise.resolve('done'))).resolves.toBeUndefined();
+  });
+
+  it('rejects with the failure of the upload before the one of the stream it cut', async () => {
+    const down = new Error('network down');
+
+    await expect(uploadSettled(Promise.reject(new Error('aborted')), Promise.reject(down))).rejects.toBe(down);
+    await expect(uploadSettled(Promise.reject(new Error('aborted')), Promise.resolve())).rejects.toThrow('aborted');
+  });
+});
+
+/** A storage whose service fails every request the same way, as a network that is down does. */
+function storageOfAServiceDown(): S3FileStorage {
+  const down = new S3Client({
+    region: 'us-east-1',
+    maxAttempts: 1,
+    credentials: { accessKeyId: 'key', secretAccessKey: 'secret' },
+    requestHandler: { handle: () => Promise.reject(new Error('network down')) },
+  });
+
+  return new S3FileStorage({ client: down, bucket: 'documents', partSize: 5 * MEBIBYTE });
+}
+
+function contentOf(mebibytes: number): Readable {
+  return Readable.from(Array.from({ length: mebibytes * 16 }, () => Buffer.alloc(MEBIBYTE / 16, 1)));
+}
+
+describe('S3FileStorage.put when the service fails', () => {
+  const failureOf = (mebibytes: number, from: S3FileStorage = storageOfAServiceDown()) =>
+    from.put('big.bin', contentOf(mebibytes), { mediaType: 'application/octet-stream' }).then(
+      () => 'stored',
+      (error: Error) => error.message,
+    );
+
+  it('says so whatever the size of the content, in one part or in several', async () => {
+    expect([await failureOf(1), await failureOf(12)]).toEqual(['network down', 'network down']);
+  });
+
+  it('says what cut the content when its source fails', async () => {
+    const cut = Readable.from(
+      (async function* () {
+        yield Buffer.alloc(MEBIBYTE, 1);
+        throw new Error('client gone');
+      })(),
+    );
+
+    const failure = storageOfAServiceDown()
+      .put('big.bin', cut, { mediaType: 'application/octet-stream' })
+      .catch((error: Error) => error.message);
+
+    expect(await failure).toBe('client gone');
   });
 });

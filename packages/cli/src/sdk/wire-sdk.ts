@@ -23,7 +23,7 @@ export function wireSdk(ws: Workspace, config: Config, clients: readonly Planned
   editJsonFile(ws, 'package.json', (manifest) => ({
     ...manifest,
     ...(config.stack.packageManager === 'pnpm' ? {} : { workspaces: withEntry(manifest['workspaces'], PACKAGES) }),
-    scripts: sdkScripts(texts(manifest['scripts'])),
+    scripts: sdkScripts(texts(manifest['scripts']), config.stack.packageManager),
   }));
 
   editJsonFile(ws, 'tsconfig.json', (tsconfig) => withClientPaths(tsconfig, clients));

@@ -1,11 +1,15 @@
-/** The last words that name several things already, or a mass: the table is named as they are (`reader_settings`). */
-const ALREADY_PLURAL =
-  /^(?:settings|preferences|news|series|species|data|metadata|analytics|statistics|logistics|economics)$/;
+import { INFLECTION } from './inflection';
 
-/** The plural of an English word, as the generator writes table names: `purchase_orders`, `deliveries`. */
+/** The plural of an English word, as the generator writes table names: `purchase_orders`, `deliveries`, `statuses`. */
 export function plural(word: string): string {
-  if (ALREADY_PLURAL.test(word)) {
+  if (INFLECTION.sameInBothNumbers.has(word) || INFLECTION.alreadyPlural.has(word)) {
     return word;
+  }
+
+  const irregular = INFLECTION.irregular.get(word);
+
+  if (irregular !== undefined) {
+    return irregular;
   }
 
   if (/[^aeiou]y$/.test(word)) {

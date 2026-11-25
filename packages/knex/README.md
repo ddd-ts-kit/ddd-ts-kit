@@ -225,12 +225,17 @@ rolled back with the business write: that is the whole point of the outbox.
 `createKnexUnitOfWork(db, { isolationLevel: 'repeatable read' })` forwards the transaction
 configuration of knex.
 
-`run` is built on `withinUnitOfWork` of the kernel. The domain events of the aggregates saved
+`run` is built on `unitOfWorkOver` of the kernel. The domain events of the aggregates saved
 inside it wait until `work` has returned, then are dispatched inside the transaction, before
 the commit: their handlers see every save, and what they write commits or rolls back with it.
 If `work`, a handler or the commit fails, nothing is left: no row, no outbox record, no handler
 run after the commit. Handlers declared `after-commit` run once the transaction has committed.
 A nested `run` joins the unit of work in progress: one dispatch, at the end of the outermost.
+Called inside the unit of work of another database, `run` opens its own: its events are
+dispatched before its own commit.
+The unit of work commits or rolls back as a whole: once a nested `run` has failed it no longer
+commits, and when the work caught that failure and went on the outermost `run` rejects with a
+`UnitOfWorkAbortedError` whose `cause` it is.
 A `run` called directly (a consumer, a script) has the same timing as a command.
 `unitOfWorkContract` of `@ddd-ts-kit/testing/contracts` proves it, with a deferred constraint
 for the commit that fails; on a real PostgreSQL (`DDD_TS_KIT_TEST_DATABASE_URL`) it also proves
@@ -631,7 +636,8 @@ no tenant raises `NoCurrentTenantError` before any SQL. The three keep the condi
 the statement: SQL binds `and` before `or`, so `.orWhere*` and `.or` at the top of their builder
 throw `UngroupedOrError` and the alternatives go in a group,
 `.where((either) => either.where(a).orWhere(b))`; the text of a `whereRaw`, or a `knex.raw` given
-to a where, is kept in parentheses as one conjunct, with its bindings; `clearWhere()` and
+to any where (`where`, `whereIn`, `whereBetween`, `whereNull`, `whereLike`...) as its condition,
+its column, a value or a bound, is kept in parentheses as one conjunct, with its bindings; `clearWhere()` and
 `clear('where')` throw `ClearedTenantConditionError`. An `orHaving` applies after the where, and
 is free. A read model of tenant data passes
 `tenant: scope` to `KnexReadModelTable` and `KnexReadModelStore`: each row is written with the
@@ -696,7 +702,8 @@ maxTenants: 20 })` opens one knex (one bounded pool) per tenant on first use. At
 accept more than `maxTenants * pool.max` connections per instance of the application. Work holds
 the instance of its tenant by a lease (`databases.lease(tenantId, (knex) => ...)`): an instance is
 closed only when no work holds it, the least recently used first, and work for another tenant
-waits for a place instead of opening beyond the bound. `createTenantRoutedUnitOfWork(databases,
+waits for a place instead of opening beyond the bound. An idle instance that cannot be closed
+gives its place all the same, and `onCloseFailure(error, tenantId)` is told. `createTenantRoutedUnitOfWork(databases,
 scope)` is the unit of work and `KnexContext`: each transaction holds a lease on the database of
 the tenant of the work until it ends; every statement runs inside it
 (`StatementOutsideUnitOfWorkError` otherwise, so queries go through the unit of work too), work
@@ -732,7 +739,8 @@ async search(criteria: ScopedCriteria<AppointmentRow>): Promise<Page<Appointment
 A cursor page is fetched one row longer than asked, which is how `pageOfPlan` knows whether
 another follows; an offset page takes its total from a second statement
 (`predicateToKnex(...).count()`). A field declared `nullable` is ordered `nulls last`
-ascending and `nulls first` descending on every dialect.
+ascending and `nulls first` descending. The criteria are written for PostgreSQL, as the read
+models are: a search that ignores case is an `ILIKE`.
 
 **Strings.** A text column is ordered and compared by range in the collation of the column;
 criteria order strings by code point. Declare the text columns that are sorted or compared
@@ -781,7 +789,12 @@ meanwhile in `<table>__touched`, the swap by rename in one transaction) and its 
 and limits are in the README of `@ddd-ts-kit/kernel` ("Rebuild"). The store passes
 `criteriaContract` and `readModelStoreContract` of `@ddd-ts-kit/testing/contracts`, on PGlite
 and on PostgreSQL 18.
-Criteria and read models were never run on MySQL or SQLite.
+Read models are PostgreSQL only: a `KnexReadModelStore` (a `KnexReadModelTable`) built on a knex
+instance of another database is refused by name, `The read model of @ddd-ts-kit/knex runs on
+PostgreSQL, and this knex speaks sqlite`, when it is built, or at its first statement under
+database per tenant, where the database is known only inside a unit of work. Its stamps, the
+trace of a deleted row and the rebuild rely on `timestamptz`, `boolean` and the catalog of
+PostgreSQL; on SQLite they answered wrong before they failed.
 
 ## Personal data erasure
 
