@@ -111,9 +111,11 @@ anything is written; a link that stays inside the project is written through. `i
 `.claude/settings.json` would be the settings of every session: run it in the directory of the
 project.
 
-Each file is written whole or not at all: to `<name>.<random>.tmp` beside it, then renamed into
-place. A command stopped half way leaves complete files only (a process killed there may leave
-its `.tmp` file, which can be removed), and the same command run again writes the ones missing.
+What a command writes lands whole or not at all: each file is written to `<name>.<random>.tmp`
+beside its place, and the files are renamed into place only once every one of them is written. A
+write that fails (a full disk) leaves the project as it stood, and the same command run again
+writes it; a process killed half way may leave `.tmp` files, which can be removed, and, when it was
+killed while renaming, the files already in place, which the same command completes.
 `init` on a project already initialised, each `generate` that is not a dry run and `drizzle-generate`
 hold the lock of the project, `.ddd-ts-kit/lock`, which git ignores: a second one waits up to five seconds, then exits 2 naming the command that
 holds it and the fix, run the generators one after the other:

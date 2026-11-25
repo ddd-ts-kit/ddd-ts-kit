@@ -24,11 +24,10 @@ interface Pending {
 }
 
 /**
- * Every generator writes through this overlay, so a command either lands as a whole
- * plan or (with --dry-run) not at all, and later steps see the files of earlier ones.
- * A file is written as it is given: the dialect of the package manager is spoken where the kit
- * renders its own text (`renderTemplate`, `spoken`), never over a file, which holds the words of
- * the team beside it. The notes of a command are said in that dialect.
+ * Every generator writes through this overlay, so a command either lands as a whole plan or (with
+ * --dry-run) not at all, and later steps see the files of earlier ones. A file is written as it is
+ * given: the dialect of the package manager is spoken where the kit renders its own text, never
+ * over a file, which holds the words of the team beside it. The notes are said in that dialect.
  */
 export class Workspace {
   readonly notes: string[] = [];
@@ -298,7 +297,8 @@ export class Workspace {
   }
 
   /**
-   * Writes the plan, or (dry run) only says it. A file it cannot write here (a path the sandbox of an
+   * Writes the plan, or (dry run) only says it: whole or not at all, a write that fails leaving the
+   * project as it stood (`writtenOf`). A file it cannot write here (a path the sandbox of an
    * agent protects) is reported as unwritable, in `skipped` too, and every other file is written;
    * then no file is deleted, so that a move loses nothing. A path that leads out of the project,
    * or a file --force would replace that git does not hold, refuses the whole plan first.

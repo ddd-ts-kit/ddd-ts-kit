@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:3585353f70049434 -->
+<!-- translation-of: README.md sha256:4f6cb127bd364861 -->
 
 # ddd-ts-kit
 
@@ -119,10 +119,12 @@ autre endroit), fait refuser la commande avec le code de sortie 2 et le chemin n
 fichiers, où son `.claude/settings.json` serait le réglage de toutes les sessions : lancez-le dans
 le répertoire du projet.
 
-Chaque fichier est écrit en entier ou pas du tout : dans `<name>.<random>.tmp` à côté de lui, puis
-renommé à sa place. Une commande arrêtée à mi-chemin ne laisse que des fichiers complets (un
-processus tué à ce moment peut laisser son fichier `.tmp`, qu'on peut supprimer), et la même
-commande relancée écrit ceux qui manquent. `init` sur un projet déjà initialisé, chaque
+Ce qu'écrit une commande arrive en entier ou pas du tout : chaque fichier est écrit dans
+`<name>.<random>.tmp` à côté de sa place, et les fichiers ne sont renommés à leur place qu'une fois
+tous écrits. Une écriture qui échoue (un disque plein) laisse le projet tel qu'il était, et la même
+commande relancée l'écrit ; un processus tué à mi-chemin peut laisser des fichiers `.tmp`, qu'on
+peut supprimer, et, s'il a été tué pendant les renommages, les fichiers déjà en place, que la même
+commande complète. `init` sur un projet déjà initialisé, chaque
 `generate` qui n'est pas un essai à blanc et `drizzle-generate` tiennent le verrou du projet, `.ddd-ts-kit/lock`, que git ignore : une deuxième commande
 attend jusqu'à cinq secondes, puis sort avec le code 2 en nommant la commande qui le tient et le
 correctif, lancer les générateurs l'un après l'autre :
