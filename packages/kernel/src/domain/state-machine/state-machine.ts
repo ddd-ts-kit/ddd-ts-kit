@@ -1,7 +1,9 @@
 import type { DomainError } from '../errors/domain-error';
+import { frozenCopy } from '../value-object/frozen-copy';
 import { InvalidStateMachineError } from './invalid-state-machine-error';
 import type { StateMachineDeclaration } from './state-machine-declaration';
 import type { StateMachineDescription } from './state-machine-description';
+import type { TransitionDeclaration } from './transition-declaration';
 import { TransitionError } from './transition-error';
 
 /**
@@ -13,10 +15,15 @@ import { TransitionError } from './transition-error';
  * A transition the current state does not allow throws the refusal the declaration builds with
  * a static factory; a guard throws its own. The status field changes through it and nowhere
  * else (`lifecycle/status-through-machine`).
+ *
+ * It keeps a frozen copy of its declaration: what it checked is what it follows.
  */
 export class StateMachine<State extends string, Name extends string, Context = void> {
-  constructor(private readonly declaration: StateMachineDeclaration<State, Name, Context>) {
+  private readonly declaration: StateMachineDeclaration<State, Name, Context>;
+
+  constructor(declaration: StateMachineDeclaration<State, Name, Context>) {
     assertConsistent(declaration);
+    this.declaration = frozenCopy(declaration);
   }
 
   /** The state an aggregate is created in. Throws `InvalidStateMachineError` for a state that is not initial: a defect, not a refusal. */
@@ -33,6 +40,7 @@ export class StateMachine<State extends string, Name extends string, Context = v
   /**
    * The state `transition` leads to from `from`. Throws the refusal of a forbidden transition,
    * or of its guard. `context` is what the guards read; a machine without one takes none.
+   * Throws `InvalidStateMachineError` for a name that is not a transition of the machine.
    */
   next(from: State, transition: Name, context: Context): State {
     const refusal = this.refusalOf(from, transition, context);
@@ -41,7 +49,7 @@ export class StateMachine<State extends string, Name extends string, Context = v
       throw refusal;
     }
 
-    return this.declaration.transitions[transition].to ?? from;
+    return this.declared(transition).to ?? from;
   }
 
   /** Whether `transition` would be accepted from `from`, its guard included. */
@@ -51,7 +59,7 @@ export class StateMachine<State extends string, Name extends string, Context = v
 
   /** The transitions a state allows, guards aside. */
   allowedFrom(state: State): Name[] {
-    return this.names().filter((name) => this.declaration.transitions[name].from.includes(state));
+    return this.names().filter((name) => this.declared(name).from.includes(state));
   }
 
   /** A state no transition leaves. */
@@ -75,7 +83,7 @@ export class StateMachine<State extends string, Name extends string, Context = v
   }
 
   private refusalOf(from: State, transition: Name, context: Context): DomainError | undefined {
-    const declared = this.declaration.transitions[transition];
+    const declared = this.declared(transition);
 
     if (!declared.from.includes(from)) {
       const { refused } = this.declaration;
@@ -86,6 +94,16 @@ export class StateMachine<State extends string, Name extends string, Context = v
     }
 
     return declared.guard?.(context);
+  }
+
+  private declared(transition: Name): TransitionDeclaration<State, Context> {
+    if (!Object.hasOwn(this.declaration.transitions, transition)) {
+      throw new InvalidStateMachineError(
+        `"${transition}" is not a transition of the machine: one of ${this.names().join(', ')}.`,
+      );
+    }
+
+    return this.declaration.transitions[transition];
   }
 
   private names(): Name[] {
