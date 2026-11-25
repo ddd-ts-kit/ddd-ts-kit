@@ -1,22 +1,19 @@
 import { CONFIG_FILE } from '../../config';
 import { CliError } from '../../cli-error';
-import type { Kind } from '../kind';
 import { label } from '../label';
-import { openScope } from '../open-scope';
 import { controllerOf } from './presentation/controller-of';
 import { controllerSource } from './presentation/controller-source';
+import { defineKind } from '../define-kind';
 
-export const formKind: Kind = {
+export const formKind = defineKind({
   name: 'form',
-  aliases: [],
-  usage: 'form <context> <UseCase>',
   summary:
     'The form of a controller that receives a body: `defineForm` hints next to its schemas, named in `@Controller` (`@KitRoute` of a Nest controller) as `form`, served at GET /forms/<operationId> when "stack.forms" is "on". Fields, constraints and options come from the body schema, read-only and hidden fields from its field access. After `generate route <context> <UseCase>` under "stack.routes": "controllers" or "nest", or `generate controller <context> <UseCase>`.',
-  positionals: ['context', 'UseCase'],
-  writesShared: false,
+  scope: 'context',
+  positionals: ['UseCase'],
+  options: {},
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
+  run: (scope, request) => {
     const useCase = label(scope, request.args[1] ?? '', { what: 'use case', strip: ['controller'] });
     const { file, source } = controllerOf(scope, useCase);
     const nestBody = controllerSource.nestBody(source);
@@ -50,7 +47,7 @@ export const formKind: Kind = {
       );
     }
   },
-};
+});
 
 /** The hints of the form, typed by the shape of the body: `Infer<typeof body>` of a schema, or the DTO class a Nest controller takes. */
 function hints(shape: string): string {

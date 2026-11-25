@@ -1,29 +1,24 @@
 import { concept } from '../concept';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
-import { learnTerms } from '../learn-terms';
+import { TERM } from '../kind-options';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import { specVars } from '../spec-vars';
 import { vars } from '../vars';
 import { wire } from '../wire';
 import { specFamily } from './background/spec-family';
 import { worldArrangement } from './world/world-arrangement';
+import { defineKind } from '../define-kind';
 
-export const processKind: Kind = {
+export const processKind = defineKind({
   name: 'process',
   aliases: ['process-manager'],
-  usage: 'process <context> <Name> [--term "<Term>=<meaning>"]...',
   summary:
     'A process manager: its state kept with optimistic concurrency, a first step that arms a deadline, a step that ends it in time, the step of the deadline, the background job that delivers its timeouts and the specs of both, given/when/then on the decisions.',
-  positionals: ['context', 'Name'],
-  writesShared: false,
+  scope: 'context',
+  positionals: ['Name'],
+  options: { term: TERM },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const name = concept(scope, request.args[1] ?? '', { what: 'process', strip: ['process', 'saga'] });
 
     const spec = specVars(scope, { protected: false });
@@ -55,4 +50,4 @@ export const processKind: Kind = {
       scope.ws.note(world.hint);
     }
   },
-};
+});

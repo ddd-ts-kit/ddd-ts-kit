@@ -10,12 +10,13 @@ import { refusalClassName } from '../errors/refusal-class-name';
 import { refusalFactoryName } from '../errors/refusal-factory-name';
 import { refusalName } from '../errors/refusal-name';
 import { writeNamedRefusal } from '../errors/write-named-refusal';
-import type { Kind, KindRequest } from '../kind';
-import { learnTerms } from '../learn-terms';
+import type { KindRequest } from '../kind';
+import { TERM } from '../kind-options';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { vars } from '../vars';
+import { IN_SHARED_KERNEL, SHARED_GLOSSARY } from '../shared-write';
+import { defineKind } from '../define-kind';
 
 interface Refusal {
   readonly concept: Name;
@@ -23,20 +24,25 @@ interface Refusal {
   readonly code: string;
 }
 
-export const errorKind: Kind = {
+export const errorKind = defineKind({
   name: 'error',
   aliases: ['refusal'],
-  usage: 'error <context|shared-kernel> <Refusal> <factory> [--code CODE] [--term "<Term>=<meaning>"]...',
   summary:
     'A refusal: under "stack.refusals": "named", its class, its code in <context>.codes.ts and a static factory, each created when absent, and its spec case; under factories or classes, `<Concept> <refusal>` adds a static factory to the error class of a concept. With shared-kernel, the refusal of a value object of the shared kernel, at its root.',
-  positionals: ['context', 'Refusal', 'factory'],
-  writesShared: true,
+  scope: 'context-or-shared-kernel',
+  positionals: ['Refusal', 'factory'],
+  options: { code: { type: 'string', value: 'CODE' }, term: TERM },
+  shared: {
+    files: [
+      '<sharedKernelDir>/<refusal>.error.ts and its spec',
+      '<sharedKernelDir>/shared-kernel.codes.ts (stack.refusals named)',
+      SHARED_GLOSSARY,
+    ],
+    when: `${IN_SHARED_KERNEL}: the refusal of a value of the shared kernel`,
+    worker: 'in its own context',
+  },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request, { sharedKernel: true });
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     if (request.config.stack.refusals === 'named') {
       writeNamedRefusal(scope, {
         refusal: refusalClassName(request.args[1] ?? ''),
@@ -49,7 +55,7 @@ export const errorKind: Kind = {
 
     writeConceptRefusal(scope, request);
   },
-};
+});
 
 /** One refusal as a static factory of the error class of a concept: the form of `factories` and `classes`. */
 function writeConceptRefusal(scope: Scope, request: KindRequest): void {

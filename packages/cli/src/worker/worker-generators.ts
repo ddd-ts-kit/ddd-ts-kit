@@ -1,5 +1,5 @@
 import type { Kind } from '../generate/kind';
-import { SHARED_WRITES } from '../generate/shared-writes';
+import { writesInAContext } from '../generate/writes-in-a-context';
 
 /**
  * The kinds a worker confined to one context may run: those of a context that write nothing
@@ -7,13 +7,13 @@ import { SHARED_WRITES } from '../generate/shared-writes';
  */
 export function workerGenerators(kinds: readonly Kind[]): string[] {
   return kinds
-    .filter((kind) => kind.positionals[0] === 'context' || SHARED_WRITES[kind.name]?.worker !== undefined)
+    .filter((kind) => writesInAContext(kind) || kind.shared?.worker !== undefined)
     .flatMap((kind) => {
-      if (!kind.writesShared) {
+      if (kind.shared === undefined) {
         return [kind.name];
       }
 
-      const allowed = SHARED_WRITES[kind.name]?.worker;
+      const allowed = kind.shared.worker;
 
       return allowed === undefined ? [] : [`${kind.name} (${allowed})`];
     });

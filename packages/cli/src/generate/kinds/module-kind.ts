@@ -6,31 +6,30 @@ import { earlierFolders, moduleFileOf, moduleNameFlaw } from '../../model-module
 import { filesUnder } from '../files-under';
 import { renderTemplate } from '../../templating';
 import { readName, type Name } from '../../naming';
-import type { Kind } from '../kind';
-import { learnTerms } from '../learn-terms';
+import { TERM } from '../kind-options';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { spokenInLanguage } from '../spoken-in-language';
 import { vars } from '../vars';
 import { wire } from '../wire';
 import { wiringFamily } from '../wiring-family';
+import { defineKind } from '../define-kind';
 
-export const moduleKind: Kind = {
+export const moduleKind = defineKind({
   name: 'module',
-  aliases: [],
-  usage:
-    'module <context> <module> [--purpose "<what it holds>"] [--classification <core|supporting|generic>] [--term "<Term>=<meaning>"]...',
   summary:
     'A module of the model of a context (Evans, Modules): declared in contexts.<name>.modules, given its row in the "## Modules" table of CONTEXT.md, its terms added to the glossary, and, in the explicit style, its module file <module>/<module>.module.ts, composed by <context>.module.ts. Run again, it adds what is missing. Generate into it with --module, move files into it with `ddd-ts-kit move-to-module`. After `generate context <name>`.',
-  positionals: ['context', 'module'],
-  writesShared: true,
+  scope: 'context',
+  positionals: ['module'],
+  options: {
+    purpose: { type: 'string', value: '"<what it holds>"' },
+    classification: { type: 'string', value: '<core|supporting|generic>' },
+    term: TERM,
+  },
+  shared: { files: ['ddd-ts-kit.config.json'] },
   writesInModules: false,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  declaresModule: true,
+  run: (scope, request) => {
     const module = moduleName(scope, request.args[1] ?? '');
     const doc = `${scope.dir}/CONTEXT.md`;
 
@@ -49,7 +48,7 @@ export const moduleKind: Kind = {
       `Generate into the module with \`--module ${module.kebab}\`, or move files of ${scope.context.kebab} into it with \`ddd-ts-kit move-to-module ${scope.context.kebab} ${module.kebab} <path>...\`, one cluster of concepts per commit.`,
     );
   },
-};
+});
 
 /**
  * In the explicit style, the module file of the module, `<module>/<module>.module.ts`, composed by

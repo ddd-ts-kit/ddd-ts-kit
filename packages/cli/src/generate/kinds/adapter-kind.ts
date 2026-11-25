@@ -7,29 +7,31 @@ import { filesUnder } from '../files-under';
 import { declaredModules, intoModule, roleFoldersOf, treeOf, wiringTextOf } from '../../model-modules';
 import { toName } from '../../naming';
 import { isDeclared } from '../is-declared';
-import type { Kind } from '../kind';
 import { label } from '../label';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import { requireFile } from '../require-file';
 import type { Scope } from '../scope';
 import { vars } from '../vars';
 import { wire } from '../wire';
 import { writeOwnPolicy } from './write-own-policy';
+import { defineKind } from '../define-kind';
 
 const ADAPTER_KINDS = ['external', 'gateway', 'simulated'];
 
-export const adapterKind: Kind = {
+export const adapterKind = defineKind({
   name: 'adapter',
-  aliases: [],
-  usage: 'adapter <context> <Port> [--kind external|gateway|simulated] [--decorators]',
   summary:
     'An infrastructure adapter of an existing port towards an outside system, its spec and its registration with a retry and timeout policy; with --decorators its outbound method carries the policy itself. With --kind simulated, an adapter that answers in the memory of the process, for an environment whose provider is simulated. After `generate port <context> <Port>`.',
-  positionals: ['context', 'Port'],
-  writesShared: true,
+  scope: 'context',
+  positionals: ['Port'],
+  options: { kind: { type: 'string', value: 'external|gateway|simulated' }, decorators: { type: 'boolean' } },
+  shared: {
+    files: ['<platformDir>/resilience/own-policy.ts'],
+    when: 'the adapter is the first of a project wired on tsyringe to state its own policy (the helper joins the platform)',
+    worker: 'once the project has its first adapter',
+  },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
+  run: (scope, request) => {
     const name = label(scope, request.args[1] ?? '', { what: 'port', strip: ['port'] });
 
     requireFile(scope, {
@@ -62,7 +64,7 @@ export const adapterKind: Kind = {
 
     register(scope, context, { port: name.pascal, kind: adapter.kind, decorated: adapter.decorated });
   },
-};
+});
 
 interface AdapterVars {
   readonly [key: string]: string | boolean;

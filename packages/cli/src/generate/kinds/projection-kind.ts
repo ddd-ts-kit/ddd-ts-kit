@@ -5,10 +5,8 @@ import { parseContextName, toName, type Name } from '../../naming';
 import type { RenderContext } from '../../templating';
 import { emit } from '../emit';
 import { label } from '../label';
-import type { Kind } from '../kind';
-import { learnTerms } from '../learn-terms';
+import { TERM } from '../kind-options';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { vars } from '../vars';
 import { wire } from '../wire';
@@ -20,21 +18,19 @@ import { eventTypeAsPublished } from './event-type-as-published';
 import { pickDeclaration } from './pick-declaration';
 import { refuseUnpublishedVersion } from './refuse-unpublished-version';
 import { ownEntry } from '../../config/values/own-entry';
+import { defineKind } from '../define-kind';
 
-export const projectionKind: Kind = {
+export const projectionKind = defineKind({
   name: 'projection',
   aliases: ['projector'],
-  usage: 'projection <context> <Name> <eventType>[@v<n>] [--term "<Term>=<meaning>"]...',
   summary:
     'A projector, the class that keeps one read model up to date from integration events of its own context or of a declared upstream, and its spec; registered in the module file of its context in the explicit style. The read model it keeps (port, table, store adapter, fake) comes from `generate read-model <context> <Name>`. After `generate integration-event <context> <Aggregate> <Fact>` of its eventType, in the context that publishes it.',
-  positionals: ['context', 'Name', 'eventType'],
-  writesShared: false,
+  scope: 'context',
+  positionals: ['Name', 'eventType'],
+  options: { term: TERM },
+  shown: { eventType: '<eventType>[@v<n>]' },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const name = label(scope, request.args[1] ?? '', { what: 'projection', strip: ['projection', 'projector'] });
 
     const input = request.args[2] ?? '';
@@ -73,7 +69,7 @@ export const projectionKind: Kind = {
     wire(scope, 'projection', context);
     noteTheReadModel(scope, name, readModel.known);
   },
-};
+});
 
 /**
  * The read model of the same name, when `generate read-model <context> <Name>` wrote its port already.

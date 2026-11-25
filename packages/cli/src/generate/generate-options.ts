@@ -1,65 +1,38 @@
-export const TEXT = { type: 'string' } as const;
-const SWITCH = { type: 'boolean' } as const;
-const TEXTS = { type: 'string', multiple: true } as const;
+import type { OptionSpec, OptionSpecs } from '../commands/arguments';
+import type { Kind } from './kind';
+import { KINDS } from './kinds';
+import { optionsOf } from './options-of';
 
-/** The flags of `generate` every kind takes, whatever its usage shows: the `generate` line of the help states them. */
+const SWITCH = { type: 'boolean' } as const;
+
+/** The flags of `generate` every kind takes, whatever it declares: the `generate` line of the help states them. */
 export const COMMON_FLAGS = ['allow-name', 'local-only', 'dry-run', 'force'] as const;
 
-/** Every flag a kind may take; each kind reads the ones it knows, and refuses the others its usage does not show. */
-export const GENERATE_OPTIONS = {
+/**
+ * Every flag a kind may take, so that a kind refuses the flag of another in its own words rather
+ * than in the parser's: the flags every kind takes, then those the kinds declare.
+ */
+export const GENERATE_OPTIONS: OptionSpecs = {
   ...Object.fromEntries(COMMON_FLAGS.map((flag) => [flag, SWITCH])),
-  classification: TEXT,
-  purpose: TEXT,
-  preset: TEXT,
-  upstream: TEXTS,
-  term: TEXTS,
-  value: TEXTS,
-  transition: TEXTS,
-  field: TEXTS,
-  code: TEXT,
-  aggregate: TEXT,
-  method: TEXT,
-  path: TEXT,
-  command: SWITCH,
-  query: SWITCH,
-  version: TEXT,
-  permission: TEXT,
-  grant: TEXT,
-  public: SWITCH,
-  'tenant-scoped': SWITCH,
-  personal: TEXT,
-  subject: TEXT,
-  erasure: TEXT,
-  retention: TEXT,
-  search: SWITCH,
-  kind: TEXT,
-  decorators: SWITCH,
-  global: SWITCH,
-  deviation: TEXT,
-  phase: TEXT,
-  event: TEXT,
-  job: TEXT,
-  group: TEXT,
-  prefix: TEXT,
-  role: TEXT,
-  mapper: SWITCH,
-  serializer: SWITCH,
-  cache: TEXT,
-  text: TEXT,
-  module: TEXT,
-  'event-sourced': SWITCH,
-  creates: SWITCH,
-  birth: TEXT,
-  reason: TEXT,
-  number: TEXT,
-  name: TEXT,
-  every: TEXT,
-  cron: TEXT,
-  'time-zone': TEXT,
+  ...declaredBy(KINDS),
 };
 
-/** Every flag of `generate`, by its name: a kind that does not show one in its usage refuses it. */
+/** Every flag of `generate`, by its name: a kind that does not declare one refuses it. */
 export const GENERATE_FLAGS: readonly string[] = Object.keys(GENERATE_OPTIONS);
 
-/** How `generate` parses one flag. */
-export type GenerateOption = typeof TEXT | typeof SWITCH | typeof TEXTS;
+/**
+ * The flags the kinds declare, each read as the first kind that declares it reads it, but as a
+ * switch when some kind reads it as one: `--command` of a route. The kind asked reads its own
+ * flags its own way (`generateOptionsOn`), `--command <UseCase>` of a job.
+ */
+function declaredBy(kinds: readonly Kind[]): OptionSpecs {
+  const read = new Map<string, OptionSpec>();
+
+  for (const [flag, option] of kinds.flatMap((kind) => Object.entries(optionsOf(kind)))) {
+    if (!read.has(flag) || option.type === 'boolean') {
+      read.set(flag, option);
+    }
+  }
+
+  return Object.fromEntries(read);
+}

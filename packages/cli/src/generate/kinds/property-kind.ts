@@ -2,28 +2,29 @@ import { VERSIONS } from '../../init/manifest/versions';
 import { concept } from '../concept';
 import { emit } from '../emit';
 import { editJson } from './extraction/edit-json';
-import type { Kind } from '../kind';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import { requireFile } from '../require-file';
 import type { Scope } from '../scope';
 import { recordOf } from './extraction/record-of';
 import { vars } from '../vars';
+import { defineKind } from '../define-kind';
 
 const FAST_CHECK = 'fast-check';
 
-export const propertyKind: Kind = {
+export const propertyKind = defineKind({
   name: 'property',
-  aliases: [],
-  usage: 'property <context> <ValueObject>',
   summary:
     'The laws of a value object checked on generated values (fast-check): a spec beside its own, with fast-check added to the development dependencies when it is missing. After `generate value-object <context> <ValueObject>`.',
-  positionals: ['context', 'ValueObject'],
-  writesShared: true,
+  scope: 'context',
+  positionals: ['ValueObject'],
+  options: {},
+  shared: {
+    files: ['package.json (fast-check joins the development dependencies)'],
+    when: 'fast-check is not yet a dependency of the project',
+    worker: 'once fast-check is installed',
+  },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
+  run: (scope, request) => {
     const name = concept({ ...scope, flags: { ...scope.flags, allowName: true } }, request.args[1] ?? '', {
       what: 'value object',
       strip: ['vo'],
@@ -41,7 +42,7 @@ export const propertyKind: Kind = {
 
     addFastCheck(scope);
   },
-};
+});
 
 /** fast-check joins the development dependencies with the first property, and the output says to install it; a project that has it keeps its own range. */
 function addFastCheck(scope: Scope): void {

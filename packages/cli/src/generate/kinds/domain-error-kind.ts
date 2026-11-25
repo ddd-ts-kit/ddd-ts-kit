@@ -3,26 +3,27 @@ import type { Config } from '../../config';
 import { concept } from '../concept';
 import { emit } from '../emit';
 import { ERROR_CODE } from '../errors/error-code-pattern';
-import type { Kind } from '../kind';
-import { learnTerms } from '../learn-terms';
+import { TERM } from '../kind-options';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import { vars } from '../vars';
+import { IN_SHARED_KERNEL, SHARED_GLOSSARY } from '../shared-write';
+import { defineKind } from '../define-kind';
 
-export const domainErrorKind: Kind = {
+export const domainErrorKind = defineKind({
   name: 'domain-error',
-  aliases: [],
-  usage: 'domain-error <context|shared-kernel> <Name> [--code CODE] [--term "<Term>=<meaning>"]...',
   summary:
     'One class per error, built with `new`, and its spec: the form of a project whose "stack.refusals" is "classes", or says nothing. With shared-kernel, at the root of the shared kernel.',
-  positionals: ['context', 'Name'],
-  writesShared: true,
+  scope: 'context-or-shared-kernel',
+  positionals: ['Name'],
+  options: { code: { type: 'string', value: 'CODE' }, term: TERM },
+  shared: {
+    files: ['<sharedKernelDir>/<name>.error.ts and its spec', SHARED_GLOSSARY],
+    when: `${IN_SHARED_KERNEL}: the refusal of a value of the shared kernel`,
+    worker: 'in its own context',
+  },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request, { sharedKernel: true });
-
+  run: (scope, request) => {
     refuseBuiltThroughFactories(request.config.stack.refusals, scope.context.kebab);
-    learnTerms(scope);
 
     const name = concept({ ...scope, flags: { ...scope.flags, allowName: true } }, request.args[1] ?? '', {
       what: 'domain error',
@@ -44,7 +45,7 @@ export const domainErrorKind: Kind = {
       ['domain-error/domain-error.spec.ts.tpl', `test/unit/${name.kebab}.error.spec.ts`],
     ]);
   },
-};
+});
 
 /** Under `named` and `factories`, a refusal is built by a static factory: `generate error` writes it. */
 function refuseBuiltThroughFactories(form: Config['stack']['refusals'], context: string): void {

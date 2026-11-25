@@ -5,9 +5,8 @@ import { parseContextName, toName, type Name } from '../../naming';
 import type { RenderContext } from '../../templating';
 import { emit } from '../emit';
 import { isDeclared } from '../is-declared';
-import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { vars } from '../vars';
 import { wire } from '../wire';
@@ -19,24 +18,20 @@ import { refuseUnpublishedVersion } from './refuse-unpublished-version';
 import type { WantedEvent } from './wanted-event';
 import { subscriptionVars } from './subscription-vars';
 import { givenName } from '../given-name';
-import { learnTerms } from '../learn-terms';
 import { ownEntry } from '../../config/values/own-entry';
+import { defineKind } from '../define-kind';
 
-export const integrationHandlerKind: Kind = {
+export const integrationHandlerKind = defineKind({
   name: 'integration-handler',
   aliases: ['consumer'],
-  usage:
-    'integration-handler <context> <upstreamContext> <eventType>[@v<n>] [--version <n>] [--name <Name>] [--term "<Term>=<meaning>"]...',
   summary:
     'An idempotent handler of an integration event of a declared upstream, its spec and its subscription under a consumer name. After `generate integration-event <upstreamContext> <Aggregate> <Fact>` of its eventType.',
-  positionals: ['context', 'upstreamContext', 'eventType'],
-  writesShared: false,
+  scope: 'context',
+  positionals: ['upstreamContext', 'eventType'],
+  options: { version: { type: 'string', value: '<n>' }, name: { type: 'string', value: '<Name>' }, term: TERM },
+  shown: { eventType: '<eventType>[@v<n>]' },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const upstream = declaredUpstream(scope, request.args[1] ?? '');
     const { type: eventType, version } = wantedEvent(upstream, request.args[2] ?? '', request.flags.version);
 
@@ -73,7 +68,7 @@ export const integrationHandlerKind: Kind = {
       );
     }
   },
-};
+});
 
 /** A handler declares itself against the declaration of its event: without one there is nothing to handle. */
 function undeclaredEvent(upstream: Name, { type, version }: WantedEvent): MissingPrerequisite {

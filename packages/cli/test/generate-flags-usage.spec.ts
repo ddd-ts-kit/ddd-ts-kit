@@ -3,11 +3,11 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { COMMON_FLAGS } from '../src/generate/generate-options';
 import { KINDS } from '../src/generate/kinds';
-import { usageOf } from '../src/generate/usage-of';
 import { REPO_ROOT } from './helpers';
 
 const SOURCES = path.join(REPO_ROOT, 'packages/cli/src');
 const KINDS_DIRECTORY = path.join(SOURCES, 'generate/kinds');
+const DEFINE_KIND = path.join(SOURCES, 'generate/define-kind.ts');
 const KIND_FLAGS = fs.readFileSync(path.join(SOURCES, 'generate/kind.ts'), 'utf8');
 
 /** The fields of `KindFlags` the probe of `plan-waves` gives in place of a flag: the names it hears, the files built on. */
@@ -97,25 +97,41 @@ function sourceOf(kind: string): string {
   return file;
 }
 
-/** The flags the sources of a kind read that neither its usage, the common flags nor a decision above account for. */
+/** The flags the sources of a kind read that neither its declarations, the common flags nor a decision above account for. */
 function unshown(kind: (typeof KINDS)[number]): string[] {
-  // `--module` is in the usage of the kinds that write into a module; the others refuse it, saying why.
+  // `--module` is taken by the kinds that write into a module; the others refuse it, saying why.
   const shown = new Set([
     ...COMMON_FLAGS,
     'module',
-    ...[...usageOf(kind).matchAll(/--([a-z-]+)/g)].map((match) => match[1]),
+    ...Object.keys(kind.options),
     ...(READ_WITH_FLAGS_OF_ITS_OWN[kind.name]?.flags ?? []),
   ]);
 
-  const read = [...closureOf(sourceOf(kind.name))].flatMap(fieldsReadBy);
+  // The steps `defineKind` takes for every kind read `--term` of the kinds that declare it alone.
+  const read = [...closureOf(sourceOf(kind.name), new Set([DEFINE_KIND]))].flatMap(fieldsReadBy);
   const flags = read.map((field) => FLAG_OF[field] ?? field.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`));
 
   return [...new Set(flags)].filter((flag) => !shown.has(flag));
 }
 
 describe('the usage of each kind of generate', () => {
+  it.each(KINDS.flatMap((kind) => (kind.shownOptions === undefined ? [] : [[kind.name, kind] as const])))(
+    'writes by hand the flags %s declares, and those alone',
+    (_name, kind) => {
+      const written = [...new Set([...(kind.shownOptions ?? '').matchAll(/--([a-z-]+)/g)].map((match) => match[1]))];
+
+      expect(written).toEqual(Object.keys(kind.options));
+
+      for (const [flag, option] of Object.entries(kind.options)) {
+        const value = option.type === 'string' ? ` ${option.value ?? `<${flag}>`}` : '';
+
+        expect(kind.shownOptions).toContain(`--${flag}${value}`);
+      }
+    },
+  );
+
   it.each(KINDS.map((kind) => [kind.name, kind] as const))(
-    'shows every flag the sources of %s read, the flags every kind takes aside',
+    'declares every flag the sources of %s read, the flags every kind takes aside',
     (_name, kind) => {
       expect(unshown(kind)).toEqual([]);
     },

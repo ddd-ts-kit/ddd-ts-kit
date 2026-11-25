@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { GENERATE_FLAGS } from '../src/generate/generate-options';
 import { commandsGuideRegion } from '../src/help/commands-guide-region';
 import { referenceText } from '../src/help/reference-text';
 import { cli, REPO_ROOT } from './helpers';
@@ -12,19 +13,13 @@ const GUIDES = ['docs/guides/commands.md', 'docs/guides/commands.fr.md']
 
 const SOURCES = ['packages/cli/src/commands', 'packages/cli/src/check/commands'];
 
-/** The flags of `generate`, which the generator reads beside its kinds. */
-const GENERATE_OPTIONS = 'packages/cli/src/generate/generate-options.ts';
-
-/** The options a command declares to its parser: `name: { type: ... }`, `name: TEXT`, and the flag lists of `init`. */
+/** The options a command declares to its parser: `name: { type: ... }`, `name: TEXT`, the flag lists of `init`, and the flags of the kinds of `generate`. */
 function declaredOptions(): string[] {
-  const texts = [
-    ...SOURCES.flatMap((directory) =>
-      fs
-        .readdirSync(path.join(REPO_ROOT, directory))
-        .map((file) => fs.readFileSync(path.join(REPO_ROOT, directory, file), 'utf8')),
-    ),
-    fs.readFileSync(path.join(REPO_ROOT, GENERATE_OPTIONS), 'utf8'),
-  ];
+  const texts = SOURCES.flatMap((directory) =>
+    fs
+      .readdirSync(path.join(REPO_ROOT, directory))
+      .map((file) => fs.readFileSync(path.join(REPO_ROOT, directory, file), 'utf8')),
+  );
 
   const options = texts.flatMap((text) => [
     ...[...text.matchAll(/^\s+'?([a-z][a-z-]*)'?: (?:\{ type: '(?:string|boolean)'|TEXTS?\b|SWITCH\b)/gm)].map(
@@ -34,6 +29,9 @@ function declaredOptions(): string[] {
       [...(match[1] ?? '').matchAll(/'([a-z-]+)'/g)].map((name) => name[1]),
     ),
   ]);
+
+  // The flags of `generate`, which its kinds declare.
+  options.push(...GENERATE_FLAGS);
 
   return [...new Set(options.filter((option) => option !== undefined))];
 }

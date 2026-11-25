@@ -4,10 +4,8 @@ import type { RenderContext } from '../../templating';
 import { renderTemplate } from '../../templating';
 import { applyWiring } from '../apply-wiring';
 import { emit, type Output } from '../emit';
-import type { Kind } from '../kind';
-import { learnTerms } from '../learn-terms';
+import { TERM } from '../kind-options';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { vars } from '../vars';
 import { wire } from '../wire';
@@ -16,20 +14,21 @@ import { assertDeclaresItsName } from './assert-declares-its-name';
 import { eventNameReference } from './event-name-reference';
 import { parseVersion } from './parse-version';
 import { publishInIndex } from './publish-in-index';
+import { defineKind } from '../define-kind';
 
-export const integrationEventKind: Kind = {
+export const integrationEventKind = defineKind({
   name: 'integration-event',
-  aliases: [],
-  usage: 'integration-event <context> <Aggregate> <Fact> [--version <n>] [--term "<Term>=<meaning>"]...',
   summary: 'A versioned declaration in the published language, its publisher, its spec and its registration.',
-  positionals: ['context', 'Aggregate', 'Fact'],
-  writesShared: true,
+  scope: 'context',
+  positionals: ['Aggregate', 'Fact'],
+  options: { version: { type: 'string', value: '<n>' }, term: TERM },
+  shared: {
+    files: ['the audited events registry (<platformDir>/audit/audited-events.ts)', 'docs/context-map.md'],
+    when: 'the audit trail is wired, or the event type is new',
+    conductorStep: true,
+  },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const version = parseVersion(request.flags.version ?? '1');
     const names = ensureDomainEvent(scope, request.args[1] ?? '', request.args[2] ?? '');
 
@@ -53,7 +52,7 @@ export const integrationEventKind: Kind = {
       context,
     );
   },
-};
+});
 
 interface PublishedFile {
   readonly template: string;

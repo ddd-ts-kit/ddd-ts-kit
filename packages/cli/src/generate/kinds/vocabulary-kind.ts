@@ -1,21 +1,19 @@
 import { CliError } from '../../cli-error';
-import type { Kind } from '../kind';
 import { label } from '../label';
-import { openScope } from '../open-scope';
 import { entriesOf } from '../vocabulary/entries-of';
 import { vocabularyText } from '../vocabulary/vocabulary-text';
+import { defineKind } from '../define-kind';
 
-export const vocabularyKind: Kind = {
+export const vocabularyKind = defineKind({
   name: 'vocabulary',
-  aliases: [],
-  usage: 'vocabulary <context> <Name> --value <value> [--value <value>]...',
   summary:
     'A closed vocabulary of the domain (a status, a kind, a role of the model): an object `as const` of its values and the union type of the same name, so that code reads `AppointmentStatus.NoShow` and never a string; run again, it adds the values the file does not hold yet.',
-  positionals: ['context', 'Name'],
-  writesShared: false,
+  scope: 'context',
+  positionals: ['Name'],
+  options: { value: { type: 'string', multiple: true } },
+  shownOptions: '--value <value> [--value <value>]...',
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
+  run: (scope, request) => {
     const name = label(scope, request.args[1] ?? '', { what: 'vocabulary', strip: ['vocabulary'] });
 
     if (request.flags.value.length === 0) {
@@ -40,4 +38,4 @@ export const vocabularyKind: Kind = {
       request.ws.update(file, text);
     }
   },
-};
+});

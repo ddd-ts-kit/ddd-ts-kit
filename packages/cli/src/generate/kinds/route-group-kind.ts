@@ -2,29 +2,38 @@ import { specifierOf } from '../../alias';
 import { CliError } from '../../cli-error';
 import { readName, toName } from '../../naming';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
 import { label } from '../label';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { vars } from '../vars';
 import { declareRole } from '../vocabulary/declare-role';
 import { groupFile } from './route/group-file';
 import { groupPrefix } from './route/group-prefix';
 import { groupVars, type GroupDeclaration } from './route/group-vars';
+import { defineKind } from '../define-kind';
 
 const PREFIX = /^(\/(:[A-Za-z_][A-Za-z0-9_]*|[A-Za-z0-9._~-]+))*$/;
 
-export const routeGroupKind: Kind = {
+export const routeGroupKind = defineKind({
   name: 'route-group',
   aliases: ['group'],
-  usage: 'route-group <context> <Name> [--prefix <path>] [--group <ParentName>] [--public | --role <role>]',
   summary:
     'A route group: an empty class carrying @RouteGroup with its path prefix, its tag and its guards (Authenticated unless --public or --role says otherwise); with --group <ParentName>, it refines that group and inherits from it, after `generate route-group <context> <Name>` of the parent.',
-  positionals: ['context', 'Name'],
-  writesShared: true,
+  scope: 'context',
+  positionals: ['Name'],
+  options: {
+    prefix: { type: 'string', value: '<path>' },
+    group: { type: 'string', value: '<ParentName>' },
+    public: { type: 'boolean' },
+    role: { type: 'string' },
+  },
+  shownOptions: '[--prefix <path>] [--group <ParentName>] [--public | --role <role>]',
+  shared: {
+    files: ['the role vocabulary of the platform (<platformDir>/auth/authorization/role.ts)'],
+    when: '--role names a role the vocabulary does not hold yet',
+    worker: 'without --role, or with a role the vocabulary already holds',
+  },
   writesInModules: false,
-  run: (request) => {
-    const scope = openScope(request);
+  run: (scope, request) => {
     const name = label(scope, (request.args[1] ?? '').replace(/Routes$/, ''), { what: 'route group' });
     const { prefix = '', role } = scope.flags;
 
@@ -49,7 +58,7 @@ export const routeGroupKind: Kind = {
 
     emit(scope, vars(scope, { group: groupVars(group) }), [['controller/group.ts.tpl', `${groupFile(name.kebab)}.ts`]]);
   },
-};
+});
 
 function accessOf(scope: Scope): Pick<GroupDeclaration, 'access' | 'parent'> {
   const asked = scope.flags.group;

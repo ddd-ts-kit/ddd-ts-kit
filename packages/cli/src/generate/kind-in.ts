@@ -2,6 +2,7 @@ import { findKind } from './find-kind';
 import { GENERATE_OPTIONS } from './generate-options';
 import type { Kind } from './kind';
 import { KINDS } from './kinds';
+import { optionsOf } from './options-of';
 
 /**
  * The kind a command line asks for: its first word that is neither a flag nor the value of one
@@ -27,11 +28,9 @@ export function kindIn(argv: readonly string[]): Kind | undefined {
 }
 
 function takesValue(flag: string, next: string): boolean {
-  const option = Object.entries(GENERATE_OPTIONS).find(([name]) => name === flag)?.[1];
-
-  if (flag === 'cwd' || option?.type === 'string') {
+  if (flag === 'cwd' || GENERATE_OPTIONS[flag]?.type === 'string') {
     return true;
   }
 
-  return KINDS.some((kind) => kind.textFlags?.includes(flag) === true) && findKind(next) === undefined;
+  return KINDS.some((kind) => optionsOf(kind)[flag]?.type === 'string') && findKind(next) === undefined;
 }

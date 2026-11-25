@@ -2,8 +2,6 @@ import { CONFIG_FILE } from '../../config';
 import { inertPersistenceFile } from '../../init/files/inert-persistence-file';
 import { WITH_DATABASE } from '../../stack/with-database';
 import { renderTemplate } from '../../templating';
-import type { Kind } from '../kind';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { applyWiring } from '../apply-wiring';
 import { platformPath } from '../platform-path';
@@ -15,20 +13,29 @@ import { editJson } from './extraction/edit-json';
 import { EntryPoint } from './extraction/entry-point';
 import { recordOf } from './extraction/record-of';
 import { serviceSelection } from './extraction/service-selection';
+import { defineKind } from '../define-kind';
 
 const HOSTING_PROOF = 'test/architecture/hosting.spec.ts';
 
-export const serviceKind: Kind = {
+export const serviceKind = defineKind({
   name: 'service',
-  aliases: [],
-  usage: 'service <context>',
   summary:
     'The context run alone, with its scheduled jobs: its entry point under apps/, a start script, a compose service, `deployable` in the config, and its departure from the whole application (consumers, processes and jobs run once).',
-  positionals: ['context'],
-  writesShared: true,
+  scope: 'context',
+  positionals: [],
+  options: {},
+  shared: {
+    files: [
+      '<sourceRoot>/apps/<context>/main.ts',
+      'package.json',
+      'knip.json',
+      'ddd-ts-kit.config.json',
+      'docker-compose.yml',
+      'docs/context-map.md',
+    ],
+  },
   writesInModules: false,
-  run: (request) => {
-    const scope = openScope(request);
+  run: (scope) => {
     const { ws, config, context } = scope;
     const entry = new EntryPoint(config, context.kebab);
     const service = { ...serviceSelection(scope) };
@@ -53,7 +60,7 @@ export const serviceKind: Kind = {
 
     noteTheReadModelTables(scope);
   },
-};
+});
 
 /** A root checks the read model tables of the contexts it hosts: the service its own, on its own database. */
 function noteTheReadModelTables({ ws, config, context }: Scope): void {

@@ -14,6 +14,7 @@ import { refuseUndeclaredFlags } from '../generate/refuse-undeclared-flags';
 import { stopIgnoringValidation } from '../generate/stop-ignoring-validation';
 import { MODULE_OPTION, usageOf } from '../generate/usage-of';
 import { contextArgument } from '../generate/context-argument';
+import { writesInAContext } from '../generate/writes-in-a-context';
 import { keepThePicture } from '../generate/kinds/same-name/keep-the-picture';
 import { Workspace } from '../workspace';
 import type { Arguments } from './arguments';
@@ -73,13 +74,13 @@ function generateKind({ argv, io, probe, args, kind, rest }: Asked): number {
   refuseModuleOf(kind, flags);
   refuseUndeclaredFlags(kind, passedFlags(args), COMMON_FLAGS);
 
-  const context = kind.positionals[0] === 'context' ? contextArgument(config, rest[0] ?? '').kebab : undefined;
+  const context = writesInAContext(kind) ? contextArgument(config, rest[0] ?? '').kebab : undefined;
 
   const stopPlacing = placeGeneratedFiles(ws, config, {
     context,
     module: flags.module,
     command: ['generate', ...argv].join(' '),
-    declaresModule: kind.name === 'module',
+    declaresModule: kind.declaresModule === true,
   });
 
   kind.run({ ws, config, args: rest, flags });
@@ -88,7 +89,7 @@ function generateKind({ argv, io, probe, args, kind, rest }: Asked): number {
   refreshDocs(ws, args.flag('local-only') ? 'keep' : 'move', docsScope(args, probe));
 
   if (args.flag('local-only')) {
-    refuseSharedWrites(ws, config, context, argv);
+    refuseSharedWrites(ws, config, { context, kind, argv });
   } else {
     // A worker confined to its context leaves knip.json alone: the next command on the trunk, or `docs`, does this.
     stopIgnoringValidation(ws, config);
@@ -133,11 +134,12 @@ function requestedKind(name: string | undefined, rest: readonly string[]): Kind 
     );
   }
 
+  const required = writesInAContext(kind) ? ['context', ...kind.positionals] : kind.positionals;
   const optional = kind.optionalPositionals ?? [];
 
-  if (rest.length < kind.positionals.length || rest.length > kind.positionals.length + optional.length) {
+  if (rest.length < required.length || rest.length > required.length + optional.length) {
     throw new CliError(
-      `${kind.name} expects ${expectedArguments(kind.positionals, optional)}.`,
+      `${kind.name} expects ${expectedArguments(required, optional)}.`,
       `Usage: ddd-ts-kit generate ${usageOf(kind)}`,
     );
   }

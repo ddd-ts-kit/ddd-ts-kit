@@ -2,24 +2,21 @@ import { onKitContainer } from '../../config';
 import { CliError } from '../../cli-error';
 import { toName } from '../../naming';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
-import { openScope } from '../open-scope';
 import { vars } from '../vars';
 import { contextFakes } from './world/context-fakes';
 import { worldVars } from './world/world-vars';
+import { defineKind } from '../define-kind';
 
-export const testWorldKind: Kind = {
+export const testWorldKind = defineKind({
   name: 'test-world',
-  aliases: [],
-  usage: 'test-world <context> [Name]',
   summary:
     'The arrangement several specs of a context share, in test/worlds/: the test application, or the buses, with every fake of test/fakes/.',
-  positionals: ['context'],
+  scope: 'context',
+  positionals: [],
   optionalPositionals: ['Name'],
-  writesShared: false,
+  options: {},
   writesInModules: false,
-  run: (request) => {
-    const scope = openScope(request);
+  run: (scope, request) => {
     const name = toName(request.args[1] ?? scope.context.kebab);
 
     if (!/^[a-z]/.test(name.kebab)) {
@@ -44,4 +41,4 @@ export const testWorldKind: Kind = {
 
     leftOut.forEach((reason) => scope.ws.note(`Not in the world: ${reason}`));
   },
-};
+});

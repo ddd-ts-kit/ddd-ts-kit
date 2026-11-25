@@ -16,12 +16,16 @@ const STORY = /^[A-Za-z0-9][A-Za-z0-9-]*$/;
 export const acceptanceKind: Kind = {
   name: 'acceptance',
   aliases: [],
-  usage: 'acceptance <story> ["<title>"]',
   summary:
     'The acceptance spec of a story, in test/acceptance/, written before its code: an it.todo per acceptance criterion of docs/architecture/stories/<story>.md, or per slice row of the story in docs/architecture/slices.md when it states none.',
+  scope: 'project',
   positionals: ['story'],
   optionalPositionals: ['title'],
-  writesShared: true,
+  options: {},
+  shown: { title: '["<title>"]' },
+  shared: {
+    files: ['test/acceptance/<story>.acceptance.spec.ts, the acceptance of a story, written before its code'],
+  },
   writesInModules: false,
   run: ({ ws, config, args }) => {
     const story = storyNamed(args[0] ?? '');

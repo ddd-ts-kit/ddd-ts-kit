@@ -1,31 +1,28 @@
 import { CliError } from '../../cli-error';
 import { emit } from '../emit';
 import { givenName } from '../given-name';
-import type { Kind } from '../kind';
-import { learnTerms } from '../learn-terms';
+import { TERM } from '../kind-options';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { wire } from '../wire';
 import { ensureDomainEvent } from './ensure-domain-event';
 import { assertDeclaresItsName } from './assert-declares-its-name';
 import { eventVars } from './event-vars';
+import { defineKind } from '../define-kind';
 
-export const eventHandlerKind: Kind = {
+export const eventHandlerKind = defineKind({
   name: 'event-handler',
-  aliases: [],
-  usage:
-    'event-handler <context> <Aggregate> <Fact> [--phase before-commit|after-commit] [--name <Name>] [--term "<Term>=<meaning>"]...',
   summary:
     'A reaction to a domain event of the same context, its spec and its subscription: before the commit of the unit of work by default, after it with --phase after-commit, for an effect no transaction covers.',
-  positionals: ['context', 'Aggregate', 'Fact'],
-  writesShared: false,
+  scope: 'context',
+  positionals: ['Aggregate', 'Fact'],
+  options: {
+    phase: { type: 'string', value: 'before-commit|after-commit' },
+    name: { type: 'string', value: '<Name>' },
+    term: TERM,
+  },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const names = ensureDomainEvent(scope, request.args[1] ?? '', request.args[2] ?? '');
 
     assertDeclaresItsName(scope, names);
@@ -40,7 +37,7 @@ export const eventHandlerKind: Kind = {
 
     wire(scope, 'event-handler', context);
   },
-};
+});
 
 const PHASES = ['before-commit', 'after-commit'];
 

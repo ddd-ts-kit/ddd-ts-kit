@@ -1,4 +1,5 @@
-import type { OptionSpec, OptionSpecs } from './arguments';
+import type { OptionSpecs } from './arguments';
+import { optionUsage } from './option-usage';
 
 /** What the usage of a command is written from, when nobody wrote it by hand. */
 interface Shown {
@@ -16,20 +17,11 @@ interface Shown {
 export function usageLine({ name, positionals, mode, options }: Shown): string {
   const chosenBy = Object.entries(options)
     .filter(([option]) => option === mode?.chosenBy)
-    .map(([option, spec]) => `--${option}${valueOf(option, spec)}`);
+    .map(([option, spec]) => optionUsage(option, spec).required);
 
   const taken = Object.entries(options)
     .filter(([option]) => option !== mode?.chosenBy)
-    .map(([option, spec]) => `[--${option}${valueOf(option, spec)}]${again(spec)}`);
+    .map(([option, spec]) => optionUsage(option, spec).optional);
 
   return ['ddd-ts-kit', name, ...chosenBy, ...(positionals === undefined ? [] : [positionals]), ...taken].join(' ');
-}
-
-/** What a text takes: the values it names, or the word that stands for its value. */
-function valueOf(option: string, spec: OptionSpec): string {
-  return spec.type === 'boolean' ? '' : ` ${spec.values?.join('|') ?? spec.value ?? `<${option}>`}`;
-}
-
-function again(spec: OptionSpec): string {
-  return spec.type === 'string' && spec.multiple === true ? '...' : '';
 }

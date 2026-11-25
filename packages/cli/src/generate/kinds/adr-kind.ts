@@ -6,11 +6,20 @@ import { writeAdr } from './write-adr';
 export const adrKind: Kind = {
   name: 'adr',
   aliases: [],
-  usage: 'adr "<title>" [--number <n>] [--deviation <what>] [--reason "<why>"]',
   summary:
     'A decision record in docs/adr/, numbered after the highest or by --number; with --deviation, the entry of the config that points to it.',
+  scope: 'project',
   positionals: ['title'],
-  writesShared: true,
+  options: {
+    number: { type: 'string', value: '<n>' },
+    deviation: { type: 'string', value: '<what>' },
+    reason: { type: 'string', value: '"<why>"' },
+  },
+  shown: { title: '"<title>"' },
+  shared: {
+    files: ['docs/adr/', 'ddd-ts-kit.config.json (with --deviation)'],
+    worker: 'without --deviation: a decision of its slices',
+  },
   writesInModules: false,
   run: ({ ws, args, flags }) => {
     const title = (args[0] ?? '').trim();

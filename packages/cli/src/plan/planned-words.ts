@@ -146,7 +146,7 @@ function readCommand(argv: readonly string[]): CommandTerms | undefined {
 
     const kind = findKind(kindName);
     // `generate context <name>` writes the glossary of the context it creates.
-    const inContext = kind?.positionals[0] === 'context' || kind?.name === 'context';
+    const inContext = kind !== undefined && kind.scope !== 'project';
 
     return inContext && context !== undefined ? { context: toName(context).kebab, terms } : undefined;
   } catch {

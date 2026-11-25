@@ -4,7 +4,6 @@ import { emit, type Output } from '../emit';
 import type { Kind } from '../kind';
 import { label } from '../label';
 import { named } from '../named';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { searchedElements } from '../searched-elements';
 import { vars } from '../vars';
@@ -18,22 +17,28 @@ import { routeVars, type RouteParts } from './route/route-vars';
 import { writeController } from './route/write-controller';
 import { writeNestController } from './route/write-nest-controller';
 import { SEARCH_LINE_LIBRARIES } from './route/search-line-libraries';
+import { defineKind } from '../define-kind';
 
-const USAGE =
-  '<context> <UseCaseName> --method <GET|POST|PUT|PATCH|DELETE> --path <path> [--command|--query] [--group <Name>] [--mapper] [--serializer] [--cache public|private|no-store]';
-
-export const routeKind: Kind = {
+export const routeKind = defineKind({
   name: 'route',
-  aliases: [],
-  usage: `route ${USAGE}`,
   summary:
     'An HTTP route calling an existing use case through its bus, with its spec: under "stack.routes": "controllers", a controller class in its folder, behind the guards of its route group; under "functions", a defineRoute function and its registration; under "nest", a Nest controller whose method takes and answers what its signature names, listed in the generated <context>.controllers.ts. After `generate command <context> <UseCaseName>` or `generate query <context> <UseCaseName>`; with --group, after `generate route-group <context> <Name>`.',
-  positionals: ['context', 'UseCaseName'],
-  writesShared: false,
+  scope: 'context',
+  positionals: ['UseCaseName'],
+  options: {
+    method: { type: 'string', value: '<GET|POST|PUT|PATCH|DELETE>' },
+    path: { type: 'string' },
+    command: { type: 'boolean' },
+    query: { type: 'boolean' },
+    group: { type: 'string', value: '<Name>' },
+    mapper: { type: 'boolean' },
+    serializer: { type: 'boolean' },
+    cache: { type: 'string', value: 'public|private|no-store' },
+  },
+  shownOptions:
+    '--method <GET|POST|PUT|PATCH|DELETE> --path <path> [--command|--query] [--group <Name>] [--mapper] [--serializer] [--cache public|private|no-store]',
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
+  run: (scope, request) => {
     assertHttpStack(scope);
 
     const name = label(scope, request.args[1] ?? '', { what: 'use case', strip: ['route', 'controller', 'handler'] });
@@ -63,7 +68,7 @@ export const routeKind: Kind = {
     emit(scope, context, routeOutputs(scope, parts));
     wire(scope, 'route', context);
   },
-};
+});
 
 function assertNoCachePolicy(scope: Scope): void {
   if (scope.flags.cache === undefined) {
@@ -102,7 +107,6 @@ function routeOutputs(scope: Scope, { name, endpoint, useCase }: RouteParts): Ou
 export const controllerKind: Kind = {
   ...routeKind,
   name: 'controller',
-  usage: `controller ${USAGE}`,
   summary:
     'A controller class calling an existing use case through its bus, whatever "stack.routes" says: its folder, its schemas, its spec, and its route group when it is new. After `generate command <context> <UseCaseName>` or `generate query <context> <UseCaseName>`; with --group, after `generate route-group <context> <Name>`.',
   run: (request) => routeKind.run({ ...request, asController: true }),

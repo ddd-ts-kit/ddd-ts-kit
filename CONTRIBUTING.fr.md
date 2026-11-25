@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:d5b185ccb9b675cc -->
+<!-- translation-of: CONTRIBUTING.md sha256:cbb5a0f30c24a697 -->
 
 # Contribuer
 
@@ -182,6 +182,16 @@ bout prend 2,5 à 7 Go, et plusieurs à la fois (plusieurs sessions de code, un 
   kit ne la lit que pour que cette commande puisse la déplacer.
 - Un nouveau template compile tel qu'il est généré et ne porte de marqueurs `TODO(domain)` que
   là où une connaissance du métier est nécessaire.
+- Une sorte de `generate` est une déclaration dans `packages/cli/src/generate/kinds/`, listée dans
+  `kinds.ts`. Une sorte qui écrit dans un contexte est `defineKind({ name, summary, scope,
+  positionals, options, shared, writesInModules, run })` : `options` se déclarent comme une commande
+  déclare les siennes (`TERM` quand ses noms sont tenus au glossaire), `shared` dit ce qu'elle écrit
+  hors de son contexte et quand, et `run(scope, request)` reçoit le contexte ouvert et les lignes de
+  `--term` apprises. Un concept du modèle que ses templates disent en entier est un `conceptKind`
+  (`entity-kind.ts`). Son usage, les flags qu'elle refuse, `generate <kind> --help` et
+  `generate --help --json` s'écrivent depuis la déclaration ; `shownOptions` n'écrit ses flags à la
+  main que pour des formes qui s'excluent ou un flag qu'elle exige. Une sorte du projet ou d'un
+  nouveau contexte (`adr`, `context`) est un `Kind` simple.
 - Les packages d'exécution gardent les bibliothèques tierces derrière des dépendances pairs
   (peer dependencies) optionnelles et des points d'entrée par sous-chemin.
   `@ddd-ts-kit/kernel` et la CLI n'ont aucune dépendance d'exécution.

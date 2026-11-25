@@ -2,11 +2,9 @@ import { CliError } from '../../cli-error';
 import type { Name } from '../../naming';
 import { concept } from '../concept';
 import { emit } from '../emit';
-import type { Kind } from '../kind';
-import { learnTerms } from '../learn-terms';
+import { TERM } from '../kind-options';
 import { refinedByPolicy } from '../refined-by-policy';
 import { permissionWords } from '../permission-words';
-import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { wire } from '../wire';
 import { commandContext } from './command-context';
@@ -16,22 +14,32 @@ import { existingAggregate } from './existing-aggregate';
 import { generateRepository } from './generate-repository';
 import { repositoryLine } from './repository-line';
 import { wireRepositoryOnFirstUse } from './wire-repository-on-first-use';
+import { GRANTED, GRANTS, STORAGE, STORED } from '../shared-write';
+import { defineKind } from '../define-kind';
 
-export const commandKind: Kind = {
+export const commandKind = defineKind({
   name: 'command',
-  aliases: [],
-  usage:
-    'command <context> <UseCaseName> (--permission <aggregate>.<action> [--grant <role>] | --public) [--aggregate <Name> [--creates]] [--term "<Term>=<meaning>"]...',
   summary:
     'A command, its handler with injected ports, its spec and its registration on the command bus; with --aggregate the handler changes an existing aggregate and refuses until the domain is decided, with --creates it gives birth to one. With --aggregate, after `generate aggregate <context> <Name>`.',
-  positionals: ['context', 'UseCaseName'],
-  writesShared: true,
+  scope: 'context',
+  positionals: ['UseCaseName'],
+  options: {
+    permission: { type: 'string', value: '<aggregate>.<action>' },
+    grant: { type: 'string', value: '<role>' },
+    public: { type: 'boolean' },
+    aggregate: { type: 'string', value: '<Name>' },
+    creates: { type: 'boolean' },
+    term: TERM,
+  },
+  shownOptions:
+    '(--permission <aggregate>.<action> [--grant <role>] | --public) [--aggregate <Name> [--creates]] [--term "<Term>=<meaning>"]...',
+  shared: {
+    files: [...STORAGE, ...GRANTS],
+    when: `--aggregate names an aggregate without a repository, which is created with the command, and ${STORED}; or ${GRANTED}`,
+    worker: 'on an aggregate that has its repository, without --grant',
+  },
   writesInModules: true,
-  run: (request) => {
-    const scope = openScope(request);
-
-    learnTerms(scope);
-
+  run: (scope, request) => {
     const name = concept(scope, request.args[1] ?? '', {
       what: 'use case',
       strip: ['command', 'handler'],
@@ -58,7 +66,7 @@ export const commandKind: Kind = {
 
     writeCommand(scope, { name, aggregate }, generated);
   },
-};
+});
 
 /** The files of the command, its repository when it is the first use of one, its wiring, and the note about the world. */
 function writeCommand(
