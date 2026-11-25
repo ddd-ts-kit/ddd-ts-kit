@@ -248,4 +248,24 @@ describe('InMemoryEventBus', () => {
 
     expect(attempts).toBe(2);
   });
+
+  it('says both failures, the one of the handler first, when the mark cannot be given back', async () => {
+    const smtpDown = new Error('smtp down');
+    const storeDown = new Error('store down');
+
+    const handler = idempotent(
+      'mailer',
+      { markProcessed: async () => true, release: () => Promise.reject(storeDown) },
+      () => Promise.reject(smtpDown),
+    );
+
+    await expect(handler(event('e1'))).rejects.toThrow(
+      new AggregateError(
+        [smtpDown, storeDown],
+        'The handler of mailer failed on event e1 and its mark could not be released: a redelivery will be skipped.',
+      ),
+    );
+
+    await expect(handler(event('e1'))).rejects.toMatchObject({ errors: [smtpDown, storeDown], cause: smtpDown });
+  });
 });
