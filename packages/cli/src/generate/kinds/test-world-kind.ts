@@ -12,6 +12,7 @@ export const testWorldKind: Kind = {
   name: 'test-world',
   aliases: [],
   usage: 'test-world <context> [Name]',
+  options: {},
   summary:
     'The arrangement several specs of a context share, in test/worlds/: the test application, or the buses, with every fake of test/fakes/.',
   positionals: ['context'],

@@ -1,5 +1,6 @@
 import { eventNames } from '../event-names';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { openScope } from '../open-scope';
 import { refuseStutteringEvent } from '../refuse-stuttering-event';
@@ -10,6 +11,7 @@ export const domainEventKind: Kind = {
   name: 'domain-event',
   aliases: [],
   usage: 'domain-event <context> <Aggregate> <Fact> [--term "<Term>=<meaning>"]...',
+  options: { term: TERM },
   summary:
     'A domain event named <context>.<aggregate>.<fact>, and its spec; a fact that starts with the aggregate ("Order Confirmed" of Order) is refused, since the event is named after the aggregate already (--allow-name lets it through); for an event-sourced aggregate, its apply method and its stored form too.',
   positionals: ['context', 'Aggregate', 'Fact'],

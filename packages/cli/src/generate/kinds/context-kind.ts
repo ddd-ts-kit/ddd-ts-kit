@@ -12,6 +12,14 @@ export const contextKind: Kind = {
   aliases: [],
   usage:
     'context <name> --classification <core|supporting|generic> [--reason "<why it is of that classification>"] [--purpose "<two sentences>"] [--term "<Term>=<meaning>[|<not to be confused with>]"]... [--upstream <ctx>[:relationship]]... [--preset identity]',
+  options: {
+    classification: { type: 'string', value: '<core|supporting|generic>' },
+    reason: { type: 'string', value: '"<why it is of that classification>"' },
+    purpose: { type: 'string', value: '"<two sentences>"' },
+    term: { type: 'string', multiple: true, value: '"<Term>=<meaning>[|<not to be confused with>]"' },
+    upstream: { type: 'string', multiple: true, value: '<ctx>[:relationship]' },
+    preset: { type: 'string', value: 'identity' },
+  },
   summary:
     'A bounded context: CONTEXT.md with its glossary, published language, config entry, and what assembles it (its declarations, or its module file); with --preset, written whole from a preset of the kit.',
   positionals: ['name'],

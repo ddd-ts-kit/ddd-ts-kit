@@ -4,6 +4,7 @@ import { concept } from '../concept';
 import { emit } from '../emit';
 import { ERROR_CODE } from '../errors/error-code-pattern';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { named } from '../named';
 import { openScope } from '../open-scope';
@@ -13,6 +14,7 @@ export const domainErrorKind: Kind = {
   name: 'domain-error',
   aliases: [],
   usage: 'domain-error <context|shared-kernel> <Name> [--code CODE] [--term "<Term>=<meaning>"]...',
+  options: { code: { type: 'string', value: 'CODE' }, term: TERM },
   summary:
     'One class per error, built with `new`, and its spec: the form of a project whose "stack.refusals" is "classes", or says nothing. With shared-kernel, at the root of the shared kernel.',
   positionals: ['context', 'Name'],

@@ -4,6 +4,7 @@ import type { Name } from '../../naming';
 import type { RenderContext } from '../../templating';
 import { emit } from '../emit';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { label } from '../label';
 import { learnTerms } from '../learn-terms';
 import { named } from '../named';
@@ -24,6 +25,11 @@ export const readModelKind: Kind = {
   aliases: [],
   usage:
     'read-model <context> <Name> [--field <name>:<string|number|boolean|instant|decimal>[:nullable]]... [--tenant-scoped] [--term "<Term>=<meaning>"]...',
+  options: {
+    field: { type: 'string', multiple: true, value: '<name>:<string|number|boolean|instant|decimal>[:nullable]' },
+    'tenant-scoped': { type: 'boolean' },
+    term: TERM,
+  },
   summary:
     "The read model a projection keeps: its port (an abstract class of the application layer over ReadModelStore, with the type of its row and the criteria its readers may ask), its table in the schema of the context with the columns of each --field, the store adapter of the project's ORM (in memory without one) bound to the port, its fake, and the contract suite both pass. The projection that writes it comes from `generate projection <context> <Name> <eventType>`.",
   positionals: ['context', 'Name'],

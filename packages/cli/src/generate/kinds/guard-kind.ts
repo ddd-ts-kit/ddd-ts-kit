@@ -11,6 +11,7 @@ export const guardKind: Kind = {
   name: 'guard',
   aliases: [],
   usage: 'guard <context> <Name>',
+  options: {},
   summary:
     'A guard of the project: a declared class in presentation/http/guards/ that a route group or a controller names in `guards`, and its spec. It controls the caller at the edge; permissions stay on the use cases.',
   positionals: ['context', 'Name'],

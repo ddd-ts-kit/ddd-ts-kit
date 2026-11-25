@@ -1,6 +1,7 @@
 import { concept } from '../concept';
 import { emit } from '../emit';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { named } from '../named';
 import { openScope } from '../open-scope';
@@ -10,6 +11,7 @@ export const domainServiceKind: Kind = {
   name: 'domain-service',
   aliases: [],
   usage: 'domain-service <context> <Name> [--term "<Term>=<meaning>"]...',
+  options: { term: TERM },
   summary: 'A stateless domain service, and its spec.',
   positionals: ['context', 'Name'],
   writesShared: false,

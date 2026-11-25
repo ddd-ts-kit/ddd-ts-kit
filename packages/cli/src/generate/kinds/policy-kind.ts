@@ -6,6 +6,7 @@ import { declarePermission } from '../declare-permission';
 import { emit } from '../emit';
 import { isDeclared } from '../is-declared';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { label } from '../label';
 import { learnTerms } from '../learn-terms';
 import { markPolicyQuestions } from '../mark-policy-questions';
@@ -19,6 +20,7 @@ export const policyKind: Kind = {
   name: 'policy',
   aliases: [],
   usage: 'policy <context> <Name> --permission <aggregate>.<action> [--term "<Term>=<meaning>"]...',
+  options: { permission: { type: 'string', value: '<aggregate>.<action>' }, term: TERM },
   summary:
     'A rule about one element (only the author, not after closing), its spec and its registration with the policies Access asks.',
   positionals: ['context', 'Name'],

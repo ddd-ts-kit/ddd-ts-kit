@@ -11,6 +11,7 @@ import { refusalFactoryName } from '../errors/refusal-factory-name';
 import { refusalName } from '../errors/refusal-name';
 import { writeNamedRefusal } from '../errors/write-named-refusal';
 import type { Kind, KindRequest } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { named } from '../named';
 import { openScope } from '../open-scope';
@@ -27,6 +28,7 @@ export const errorKind: Kind = {
   name: 'error',
   aliases: ['refusal'],
   usage: 'error <context|shared-kernel> <Refusal> <factory> [--code CODE] [--term "<Term>=<meaning>"]...',
+  options: { code: { type: 'string', value: 'CODE' }, term: TERM },
   summary:
     'A refusal: under "stack.refusals": "named", its class, its code in <context>.codes.ts and a static factory, each created when absent, and its spec case; under factories or classes, `<Concept> <refusal>` adds a static factory to the error class of a concept. With shared-kernel, the refusal of a value object of the shared kernel, at its root.',
   positionals: ['context', 'Refusal', 'factory'],

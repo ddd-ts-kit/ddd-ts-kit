@@ -1,6 +1,7 @@
 import { concept } from '../concept';
 import { emit } from '../emit';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { named } from '../named';
 import { openScope } from '../open-scope';
@@ -10,6 +11,7 @@ export const entityKind: Kind = {
   name: 'entity',
   aliases: [],
   usage: 'entity <context> <Name> [--term "<Term>=<meaning>"]...',
+  options: { term: TERM },
   summary: 'An entity living inside an aggregate, and its spec.',
   positionals: ['context', 'Name'],
   writesShared: false,

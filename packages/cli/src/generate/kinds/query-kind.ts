@@ -3,6 +3,7 @@ import { parseConceptName } from '../../naming';
 import { concept } from '../concept';
 import { emit } from '../emit';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { markPolicyQuestions } from '../mark-policy-questions';
 import { refinedByPolicy } from '../refined-by-policy';
@@ -18,6 +19,13 @@ export const queryKind: Kind = {
   aliases: [],
   usage:
     'query <context> <UseCaseName> (--permission <aggregate>.<action> [--grant <role>] | --public) [--search] [--term "<Term>=<meaning>"]...',
+  options: {
+    permission: { type: 'string', value: '<aggregate>.<action>' },
+    grant: { type: 'string', value: '<role>' },
+    public: { type: 'boolean' },
+    search: { type: 'boolean' },
+    term: TERM,
+  },
   summary:
     'A query, its result, its handler, its read port with an in-memory adapter and a fake, its spec and its registration on the query bus; with --search, one page of a search filtered by the access scope of the actor; a name that starts with List is refused, a read that takes criteria is a Search<Things>.',
   positionals: ['context', 'UseCaseName'],

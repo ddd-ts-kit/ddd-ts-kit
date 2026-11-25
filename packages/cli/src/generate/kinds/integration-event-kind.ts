@@ -5,6 +5,7 @@ import { renderTemplate } from '../../templating';
 import { applyWiring } from '../apply-wiring';
 import { emit, type Output } from '../emit';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { named } from '../named';
 import { openScope } from '../open-scope';
@@ -21,6 +22,7 @@ export const integrationEventKind: Kind = {
   name: 'integration-event',
   aliases: [],
   usage: 'integration-event <context> <Aggregate> <Fact> [--version <n>] [--term "<Term>=<meaning>"]...',
+  options: { version: { type: 'string', value: '<n>' }, term: TERM },
   summary: 'A versioned declaration in the published language, its publisher, its spec and its registration.',
   positionals: ['context', 'Aggregate', 'Fact'],
   writesShared: true,

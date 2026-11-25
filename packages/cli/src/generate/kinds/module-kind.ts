@@ -7,6 +7,7 @@ import { filesUnder } from '../files-under';
 import { renderTemplate } from '../../templating';
 import { readName, type Name } from '../../naming';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { named } from '../named';
 import { openScope } from '../open-scope';
@@ -21,6 +22,11 @@ export const moduleKind: Kind = {
   aliases: [],
   usage:
     'module <context> <module> [--purpose "<what it holds>"] [--classification <core|supporting|generic>] [--term "<Term>=<meaning>"]...',
+  options: {
+    purpose: { type: 'string', value: '"<what it holds>"' },
+    classification: { type: 'string', value: '<core|supporting|generic>' },
+    term: TERM,
+  },
   summary:
     'A module of the model of a context (Evans, Modules): declared in contexts.<name>.modules, given its row in the "## Modules" table of CONTEXT.md, its terms added to the glossary, and, in the explicit style, its module file <module>/<module>.module.ts, composed by <context>.module.ts. Run again, it adds what is missing. Generate into it with --module, move files into it with `ddd-ts-kit move-to-module`. After `generate context <name>`.',
   positionals: ['context', 'module'],

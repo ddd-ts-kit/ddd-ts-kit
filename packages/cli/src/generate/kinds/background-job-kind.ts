@@ -3,6 +3,7 @@ import type { Name } from '../../naming';
 import { concept } from '../concept';
 import { emit } from '../emit';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { named } from '../named';
 import { openScope } from '../open-scope';
@@ -22,6 +23,7 @@ export const backgroundJobKind: Kind = {
   name: 'background-job',
   aliases: [],
   usage: 'background-job <context> <Name> --command <UseCaseName> [--term "<Term>=<meaning>"]...',
+  options: { command: { type: 'string', value: '<UseCaseName>' }, term: TERM },
   summary:
     'A job a use case enqueues, run later by a worker as the actor that enqueued it, with retries and a lease: the class named by its static jobName, its spec through a queue in memory and its registration. After `generate command <context> <UseCaseName>` of its --command.',
   positionals: ['context', 'Name'],

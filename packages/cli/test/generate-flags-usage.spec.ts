@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { COMMON_FLAGS } from '../src/generate/generate-options';
+import { COMMON_FLAGS, GENERATE_OPTIONS } from '../src/generate/generate-options';
 import { KINDS } from '../src/generate/kinds';
 import { usageOf } from '../src/generate/usage-of';
 import { REPO_ROOT } from './helpers';
@@ -114,6 +114,22 @@ function unshown(kind: (typeof KINDS)[number]): string[] {
 }
 
 describe('the usage of each kind of generate', () => {
+  it.each(KINDS.map((kind) => [kind.name, kind] as const))(
+    'shows the flags %s declares, each read as generate reads it',
+    (_name, kind) => {
+      const shown = [...new Set([...usageOf(kind).matchAll(/--([a-z-]+)/g)].map((match) => match[1] ?? ''))];
+
+      const read = (flag: string) =>
+        kind.textFlags?.includes(flag) === true
+          ? 'string'
+          : Object.entries(GENERATE_OPTIONS).find(([name]) => name === flag)?.[1].type;
+
+      const declared = Object.entries(kind.options).map(([flag, option]) => [flag, option.type]);
+
+      expect(declared).toEqual(shown.filter((flag) => flag !== 'module').map((flag) => [flag, read(flag)]));
+    },
+  );
+
   it.each(KINDS.map((kind) => [kind.name, kind] as const))(
     'shows every flag the sources of %s read, the flags every kind takes aside',
     (_name, kind) => {

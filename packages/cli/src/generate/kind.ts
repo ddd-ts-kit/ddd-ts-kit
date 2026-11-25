@@ -1,3 +1,4 @@
+import type { OptionSpecs } from '../commands/arguments';
 import type { Config } from '../config';
 import type { Workspace } from '../workspace';
 import type { PrerequisiteProbe } from './generator-probe';
@@ -110,6 +111,11 @@ export interface Kind {
   readonly name: string;
   readonly aliases: readonly string[];
   readonly usage: string;
+  /**
+   * Its own flags, declared as a command declares its options: `--module` aside, which
+   * `writesInModules` says, and the flags every kind takes.
+   */
+  readonly options: OptionSpecs;
   readonly summary: string;
   /** Positional arguments after the kind, by name; all are required. */
   readonly positionals: readonly string[];

@@ -20,6 +20,7 @@ export const gatewayKind: Kind = {
   name: 'gateway',
   aliases: [],
   usage: 'gateway <context> <upstreamContext> <Name>',
+  options: {},
   summary:
     "A port of the caller for a synchronous need from an upstream, its in-process adapter over the upstream's published read contract, a fake and one contract suite.",
   positionals: ['context', 'upstreamContext', 'Name'],

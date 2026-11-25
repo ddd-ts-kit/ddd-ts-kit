@@ -2,6 +2,7 @@ import { CliError } from '../../cli-error';
 import { emit } from '../emit';
 import { givenName } from '../given-name';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { named } from '../named';
 import { openScope } from '../open-scope';
@@ -16,6 +17,11 @@ export const eventHandlerKind: Kind = {
   aliases: [],
   usage:
     'event-handler <context> <Aggregate> <Fact> [--phase before-commit|after-commit] [--name <Name>] [--term "<Term>=<meaning>"]...',
+  options: {
+    phase: { type: 'string', value: 'before-commit|after-commit' },
+    name: { type: 'string', value: '<Name>' },
+    term: TERM,
+  },
   summary:
     'A reaction to a domain event of the same context, its spec and its subscription: before the commit of the unit of work by default, after it with --phase after-commit, for an effect no transaction covers.',
   positionals: ['context', 'Aggregate', 'Fact'],

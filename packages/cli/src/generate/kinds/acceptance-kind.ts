@@ -17,6 +17,7 @@ export const acceptanceKind: Kind = {
   name: 'acceptance',
   aliases: [],
   usage: 'acceptance <story> ["<title>"]',
+  options: {},
   summary:
     'The acceptance spec of a story, in test/acceptance/, written before its code: an it.todo per acceptance criterion of docs/architecture/stories/<story>.md, or per slice row of the story in docs/architecture/slices.md when it states none.',
   positionals: ['story'],

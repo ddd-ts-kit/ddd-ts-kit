@@ -10,6 +10,7 @@ export const aclKind: Kind = {
   name: 'acl',
   aliases: [],
   usage: 'acl <context> <upstreamOrSystemName>',
+  options: {},
   summary: 'An anti-corruption translator for the model of another context or system, and its spec.',
   positionals: ['context', 'upstreamOrSystemName'],
   writesShared: false,

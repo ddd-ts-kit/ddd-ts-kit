@@ -4,6 +4,7 @@ import { accessVars } from '../access-vars';
 import { concept } from '../concept';
 import { emit } from '../emit';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { named } from '../named';
 import { openScope } from '../open-scope';
@@ -23,6 +24,16 @@ export const fileUploadKind: Kind = {
   aliases: [],
   usage:
     'file-upload <context> <UseCaseName> --path <path> (--permission <aggregate>.<action> [--grant <role>] | --public) [--method <POST|PUT>] [--group <Name>] [--text <utf-8|single-byte>] [--term "<Term>=<meaning>"]...',
+  options: {
+    path: { type: 'string' },
+    permission: { type: 'string', value: '<aggregate>.<action>' },
+    grant: { type: 'string', value: '<role>' },
+    public: { type: 'boolean' },
+    method: { type: 'string', value: '<POST|PUT>' },
+    group: { type: 'string', value: '<Name>' },
+    text: { type: 'string', value: '<utf-8|single-byte>' },
+    term: TERM,
+  },
   summary:
     'An upload: a controller that declares the file it receives (`@Upload()` of a Nest controller; size and media types in the contract, checked as it streams; with `--text` a text file such as a CSV, `single-byte` when it may be in Windows-1252 as well as UTF-8), the command that carries it as a FileUpload (staged by the command bus before the transaction), the handler that records it and promotes it with the commit, and their specs. Needs "stack.storage".',
   positionals: ['context', 'UseCaseName'],

@@ -3,6 +3,7 @@ import type { Name } from '../../naming';
 import { concept } from '../concept';
 import { emit } from '../emit';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { refinedByPolicy } from '../refined-by-policy';
 import { permissionWords } from '../permission-words';
@@ -22,6 +23,14 @@ export const commandKind: Kind = {
   aliases: [],
   usage:
     'command <context> <UseCaseName> (--permission <aggregate>.<action> [--grant <role>] | --public) [--aggregate <Name> [--creates]] [--term "<Term>=<meaning>"]...',
+  options: {
+    permission: { type: 'string', value: '<aggregate>.<action>' },
+    grant: { type: 'string', value: '<role>' },
+    public: { type: 'boolean' },
+    aggregate: { type: 'string', value: '<Name>' },
+    creates: { type: 'boolean' },
+    term: TERM,
+  },
   summary:
     'A command, its handler with injected ports, its spec and its registration on the command bus; with --aggregate the handler changes an existing aggregate and refuses until the domain is decided, with --creates it gives birth to one. With --aggregate, after `generate aggregate <context> <Name>`.',
   positionals: ['context', 'UseCaseName'],

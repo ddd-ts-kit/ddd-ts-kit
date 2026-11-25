@@ -26,6 +26,16 @@ export const routeKind: Kind = {
   name: 'route',
   aliases: [],
   usage: `route ${USAGE}`,
+  options: {
+    method: { type: 'string', value: '<GET|POST|PUT|PATCH|DELETE>' },
+    path: { type: 'string' },
+    command: { type: 'boolean' },
+    query: { type: 'boolean' },
+    group: { type: 'string', value: '<Name>' },
+    mapper: { type: 'boolean' },
+    serializer: { type: 'boolean' },
+    cache: { type: 'string', value: 'public|private|no-store' },
+  },
   summary:
     'An HTTP route calling an existing use case through its bus, with its spec: under "stack.routes": "controllers", a controller class in its folder, behind the guards of its route group; under "functions", a defineRoute function and its registration; under "nest", a Nest controller whose method takes and answers what its signature names, listed in the generated <context>.controllers.ts. After `generate command <context> <UseCaseName>` or `generate query <context> <UseCaseName>`; with --group, after `generate route-group <context> <Name>`.',
   positionals: ['context', 'UseCaseName'],

@@ -1,6 +1,7 @@
 import { concept } from '../concept';
 import { emit } from '../emit';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { named } from '../named';
 import { openScope } from '../open-scope';
@@ -10,6 +11,7 @@ export const valueObjectKind: Kind = {
   name: 'value-object',
   aliases: ['vo'],
   usage: 'value-object <context|shared-kernel> <Name> [--term "<Term>=<meaning>"]...',
+  options: { term: TERM },
   summary:
     'An immutable value object validated in create, and its spec: in domain/value-objects/ of a context, or at the root of the shared kernel, beside its spec, when at least two contexts use it.',
   positionals: ['context', 'Name'],

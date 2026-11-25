@@ -9,6 +9,7 @@ export const vocabularyKind: Kind = {
   name: 'vocabulary',
   aliases: [],
   usage: 'vocabulary <context> <Name> --value <value> [--value <value>]...',
+  options: { value: { type: 'string', multiple: true } },
   summary:
     'A closed vocabulary of the domain (a status, a kind, a role of the model): an object `as const` of its values and the union type of the same name, so that code reads `AppointmentStatus.NoShow` and never a string; run again, it adds the values the file does not hold yet.',
   positionals: ['context', 'Name'],

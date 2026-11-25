@@ -6,6 +6,7 @@ import type { RenderContext } from '../../templating';
 import { emit } from '../emit';
 import { label } from '../label';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { learnTerms } from '../learn-terms';
 import { named } from '../named';
 import { openScope } from '../open-scope';
@@ -25,6 +26,7 @@ export const projectionKind: Kind = {
   name: 'projection',
   aliases: ['projector'],
   usage: 'projection <context> <Name> <eventType>[@v<n>] [--term "<Term>=<meaning>"]...',
+  options: { term: TERM },
   summary:
     'A projector, the class that keeps one read model up to date from integration events of its own context or of a declared upstream, and its spec; registered in the module file of its context in the explicit style. The read model it keeps (port, table, store adapter, fake) comes from `generate read-model <context> <Name>`. After `generate integration-event <context> <Aggregate> <Fact>` of its eventType, in the context that publishes it.',
   positionals: ['context', 'Name', 'eventType'],

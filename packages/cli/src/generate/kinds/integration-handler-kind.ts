@@ -6,6 +6,7 @@ import type { RenderContext } from '../../templating';
 import { emit } from '../emit';
 import { isDeclared } from '../is-declared';
 import type { Kind } from '../kind';
+import { TERM } from '../kind-options';
 import { named } from '../named';
 import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
@@ -27,6 +28,7 @@ export const integrationHandlerKind: Kind = {
   aliases: ['consumer'],
   usage:
     'integration-handler <context> <upstreamContext> <eventType>[@v<n>] [--version <n>] [--name <Name>] [--term "<Term>=<meaning>"]...',
+  options: { version: { type: 'string', value: '<n>' }, name: { type: 'string', value: '<Name>' }, term: TERM },
   summary:
     'An idempotent handler of an integration event of a declared upstream, its spec and its subscription under a consumer name. After `generate integration-event <upstreamContext> <Aggregate> <Fact>` of its eventType.',
   positionals: ['context', 'upstreamContext', 'eventType'],
