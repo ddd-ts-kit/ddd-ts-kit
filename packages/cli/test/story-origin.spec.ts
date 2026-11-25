@@ -71,7 +71,9 @@ describe('story-scope --from and --kind', () => {
       'docs/backlog/none.md does not exist.',
     );
 
-    expect(cli(root, 'story-scope', 'US7', '--kind', 'bug', '--dry-run').stderr).toContain('Unknown kind "bug".');
+    expect(cli(root, 'story-scope', 'US7', '--kind', 'bug', '--dry-run').stderr).toContain(
+      'Unknown value "bug" for --kind.',
+    );
   });
 
   it('records an accepted intent as the origin of a story, and says the story skill seeds the statement from it', () => {

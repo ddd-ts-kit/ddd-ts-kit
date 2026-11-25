@@ -17,9 +17,9 @@ import {
   warnDroppedContextTables,
 } from '../migration';
 import type { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import type { Io } from './io';
-import { parseMigrationArguments } from './parse-migration-arguments';
+import { refuseSecondName } from './refuse-second-name';
 
 /** The trunk a branch merged, when `--replay` is not given another. */
 const DEFAULT_BASE = 'origin/main';
@@ -31,16 +31,26 @@ const DEFAULT_BASE = 'origin/main';
  * context the schema index lost. `--replay` generates again the migrations of a branch on top of
  * the trunk it merged.
  */
-export const drizzleGenerateCommand: Command = (argv, io) => {
-  const args = parseMigrationArguments(argv, {
+export const drizzleGenerateCommand = defineCommand({
+  name: 'drizzle-generate',
+  usage: [
+    'ddd-ts-kit drizzle-generate --name <what-it-does> [--custom]',
+    'ddd-ts-kit drizzle-generate --replay [--base <git-ref>]',
+  ],
+  options: {
     name: { type: 'string' },
-    custom: { type: 'boolean', default: false },
-    replay: { type: 'boolean', default: false },
+    custom: { type: 'boolean' },
+    replay: { type: 'boolean' },
     base: { type: 'string' },
-  });
+  },
+  endsAScript: true,
+  takesTheLock: true,
+  run(args, io) {
+    refuseSecondName(args);
 
-  return generateMigration(args, io);
-};
+    return generateMigration(args, io);
+  },
+});
 
 function generateMigration(args: Arguments, io: Io): number {
   const root = args.projectRoot;

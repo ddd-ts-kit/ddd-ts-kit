@@ -138,6 +138,22 @@ restarted a desktop. Two things bound them:
   the project around it (`check --clean-only`). A new rule is listed in
   `catalogue/architecture-rules.ts` and comes with a passing and a failing fixture and a `fix`
   sentence.
+- A command of the CLI is one file of `packages/cli/src/commands/` that says everything about the
+  command in one declaration, `defineCommand({ name, positionals, options, usage, takesTheLock,
+  run })`, the sibling of a rule file: its `name`, its `positionals` as the usage writes them, its
+  `options` (a switch or a text; a text says the word that stands for its `value`, or the `values`
+  it is one of, which the parser then holds it to), and `run(args, io)`, whose `args` read only
+  the options declared. Its usage is written from the options; `usage` is written by hand only
+  when they cannot say it (forms that exclude each other, an option it requires). A command that
+  is one mode of another (`check --baseline`, joined to it by `withModes`) says its `mode`: the
+  option that chooses it, which opens its usage line, and `because`, why it takes no option of the
+  other modes, the words of the refusal of one (`check --baseline does not take --rule: it judges
+  every rule on every file.`). A command that reads the shared files of a project and writes them
+  back says `takesTheLock` and never takes the lock itself. A new command is added to the list of `packages/cli/src/commands.ts`, where
+  the reference lists it: `--help`, `<command> --help`, the usage a refused argument is answered
+  with and the reference of `docs/guides/commands.md` (`node pipeline/monorepo/commands-guide.mjs`)
+  are read from the declarations. What a line of the usage cannot say goes in a note of
+  `packages/cli/src/help/`.
 - Before 1.0, a rule that prevents a problem is an error at once: a new rule takes `error` as its
   default (`severity: 'error'` in its rule file for `ddd-ts-kit check`, `recommended: 'error'` for
   the ESLint rule), and so does what a rule judges more. There is no warning first and no version

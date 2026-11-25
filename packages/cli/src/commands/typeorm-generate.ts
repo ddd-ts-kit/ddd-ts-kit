@@ -18,8 +18,7 @@ import {
   warnDroppedContextTables,
 } from '../migration';
 import { stampedClasses } from '../orm/migrations/stamped-classes';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import type { Io } from './io';
 
 const TYPEORM = 'typeorm/cli.js';
@@ -37,46 +36,50 @@ const IN_PROCESS_ENV = { DATABASE_URL: '{url}', DATABASE_POOL_SIZE: '1' };
  * and the new one is the difference with the entities. It says first when that difference will
  * drop the tables of a context the schema index no longer lists.
  */
-export const typeormGenerateCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {});
-  const root = args.projectRoot;
+export const typeormGenerateCommand = defineCommand({
+  name: 'typeorm-generate',
+  positionals: '<folder>/<what-it-does>',
+  options: {},
+  run(args, io) {
+    const root = args.projectRoot;
 
-  refuseOtherOrm(root, 'typeorm');
-  const target = migrationTarget(args.positionals[0]);
+    refuseOtherOrm(root, 'typeorm');
+    const target = migrationTarget(args.positionals[0]);
 
-  refuseTakenMigrationName(root, stampedClasses, path.posix.basename(target));
-  ensureDatabaseReachable();
+    refuseTakenMigrationName(root, stampedClasses, path.posix.basename(target));
+    ensureDatabaseReachable();
 
-  const offline = !hasDatabaseUrl();
+    const offline = !hasDatabaseUrl();
 
-  const dataSource = `dist/${readConfig(root).config.platformDir}/database/data-source.js`;
+    const dataSource = `dist/${readConfig(root).config.platformDir}/database/data-source.js`;
 
-  const generate = (out: Io): number => {
-    warnDroppedContextTables(root, out, 'typeorm');
+    const generate = (out: Io): number => {
+      warnDroppedContextTables(root, out, 'typeorm');
 
-    return generateGuarded(
-      {
-        root,
-        orm: 'typeorm',
-        folder: path.posix.dirname(target),
-        migration: /\.ts$/,
-        generate: () => generateMigration({ root, dataSource, target, offline }),
-        tidy: (written) => {
-          for (const file of written) {
-            const full = path.join(root, file);
+      return generateGuarded(
+        {
+          root,
+          orm: 'typeorm',
+          folder: path.posix.dirname(target),
+          migration: /\.ts$/,
+          generate: () => generateMigration({ root, dataSource, target, offline }),
+          tidy: (written) => {
+            for (const file of written) {
+              const full = path.join(root, file);
 
-            fs.writeFileSync(full, schemasFirst(typeOnlyImports(fs.readFileSync(full, 'utf8'))));
-          }
+              fs.writeFileSync(full, schemasFirst(typeOnlyImports(fs.readFileSync(full, 'utf8'))));
+            }
 
-          formatAsTheProject(root, written, out);
+            formatAsTheProject(root, written, out);
+          },
         },
-      },
-      out,
-    );
-  };
+        out,
+      );
+    };
 
-  return args.json ? answeredAsJson({ root, folders: [path.posix.dirname(target)] }, io, generate) : generate(io);
-};
+    return args.json ? answeredAsJson({ root, folders: [path.posix.dirname(target)] }, io, generate) : generate(io);
+  },
+});
 
 const TARGET_FIX =
   'Run `npm run db:generate migrations/<what-it-does>`, for example `npm run db:generate migrations/add-invoices`.';

@@ -4,8 +4,8 @@ import { formatMergeReport } from '../merge/format-merge-report';
 import { mergeTrunk } from '../merge/merge-trunk';
 import type { MergeReport } from '../merge/merge-report';
 import { resumeMerge } from '../merge/resume-merge';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import type { Arguments } from './arguments';
+import { defineCommand } from './command';
 import { stdoutJson } from '../json/stdout-json';
 
 /** The options that start a merge, refused with `--continue` or `--abort`. */
@@ -17,40 +17,46 @@ const STARTING = ['trunk', 'since', 'to-land', 'dry-run'];
  * committed, up to date or previewed, 1 when something is left to a person (the merge stays in
  * progress), 2 when it cannot start.
  */
-export const mergeTrunkCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
+export const mergeTrunkCommand = defineCommand({
+  name: 'merge-trunk',
+  usage: [
+    'ddd-ts-kit merge-trunk [--trunk <git-ref>] [--since <commit>] [--to-land] [--dry-run]',
+    'ddd-ts-kit merge-trunk --continue [--accept-lost] | --abort',
+  ],
+  options: {
     trunk: { type: 'string' },
     since: { type: 'string' },
-    'to-land': { type: 'boolean', default: false },
-    'dry-run': { type: 'boolean', default: false },
-    continue: { type: 'boolean', default: false },
-    'accept-lost': { type: 'boolean', default: false },
-    abort: { type: 'boolean', default: false },
-  });
+    'to-land': { type: 'boolean' },
+    'dry-run': { type: 'boolean' },
+    continue: { type: 'boolean' },
+    'accept-lost': { type: 'boolean' },
+    abort: { type: 'boolean' },
+  },
+  run(args, io) {
+    refuseMixed(args);
 
-  refuseMixed(args);
+    if (args.flag('abort')) {
+      const said = abortMerge(args.projectRoot);
 
-  if (args.flag('abort')) {
-    const said = abortMerge(args.projectRoot);
+      io.out(args.json ? stdoutJson({ status: 'aborted', message: said }) : said);
 
-    io.out(args.json ? stdoutJson({ status: 'aborted', message: said }) : said);
+      return 0;
+    }
 
-    return 0;
-  }
+    const report = args.flag('continue')
+      ? resumeMerge(args.projectRoot, { acceptLost: args.flag('accept-lost'), now: new Date() })
+      : mergeTrunk({
+          root: args.projectRoot,
+          toLand: args.flag('to-land'),
+          dryRun: args.flag('dry-run'),
+          ...args.texts(['trunk', 'since']),
+        });
 
-  const report = args.flag('continue')
-    ? resumeMerge(args.projectRoot, { acceptLost: args.flag('accept-lost'), now: new Date() })
-    : mergeTrunk({
-        root: args.projectRoot,
-        toLand: args.flag('to-land'),
-        dryRun: args.flag('dry-run'),
-        ...args.texts(['trunk', 'since']),
-      });
+    io.out(args.json ? stdoutJson(report) : formatMergeReport(report));
 
-  io.out(args.json ? stdoutJson(report) : formatMergeReport(report));
-
-  return exitCodeOf(report);
-};
+    return exitCodeOf(report);
+  },
+});
 
 function refuseMixed(args: Arguments): void {
   const starting = STARTING.filter((option) =>

@@ -264,6 +264,16 @@ describe('check --self', () => {
     expect(result.stdout).toMatch(/(\d+)\/\1 rule fixtures behave as expected\./);
     expect(result.stdout).not.toContain('FAIL');
   });
+
+  it.each(['--rule=clean/braces', '--format=github', '--explain'])(
+    'reads no option of the check of a project: %s beside it is refused',
+    (option) => {
+      const refused = cli(tempDir('self-alone'), 'check', '--self', option);
+
+      expect(refused.code).toBe(2);
+      expect(refused.stderr).toContain(`error: check --self does not take ${option.split('=')[0] ?? ''}: it replays`);
+    },
+  );
 });
 
 /** A scaffolded project whose invoice aggregate imports a schema library. */

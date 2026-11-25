@@ -77,20 +77,29 @@ describe('check --baseline', () => {
   it('records only from a run of every rule on every file', () => {
     const root = legacyProject('baseline-partial');
 
-    const refused = cli(root, 'check', '--baseline', 'write', '--rule', 'layer/domain-purity');
+    const refused = cli(root, 'check', '--baseline', 'write', 'src');
 
     expect(refused.code).toBe(2);
-    expect(refused.stderr).toContain('--baseline write judges every rule on every file.');
-    expect(cli(root, 'check', '--baseline', 'keep').stderr).toContain('Use --baseline write or --baseline prune.');
+
+    expect(refused.stderr).toBe(
+      'error: check --baseline does not take a path: it judges every rule on every file.\n  fix: ddd-ts-kit check --baseline write|prune',
+    );
+
+    expect(cli(root, 'check', '--baseline', 'keep').stderr).toContain('fix: Use one of: write, prune.');
   });
 
-  it.each(['--explain', '--clean-only'])('refuses %s, which it would not honour', (option) => {
-    const refused = cli(legacyProject('baseline-other-mode'), 'check', '--baseline', 'prune', option);
+  it.each(['--rule=layer/domain-purity', '--changed-since=main', '--explain', '--clean-only', '--self'])(
+    'reads its own options alone: %s is refused with the usage of check',
+    (option) => {
+      const refused = cli(legacyProject('baseline-other-mode'), 'check', '--baseline', 'prune', option);
 
-    expect(refused.code).toBe(2);
-    expect(refused.stderr).toContain('--baseline prune judges every rule on every file.');
-    expect(refused.stderr).toContain('Run it without --rule, a path, --changed-since, --clean-only or --explain.');
-  });
+      expect(refused.code).toBe(2);
+
+      expect(refused.stderr).toBe(
+        `error: check --baseline does not take ${option.split('=')[0] ?? ''}: it judges every rule on every file.\n  fix: ddd-ts-kit check --baseline write|prune`,
+      );
+    },
+  );
 });
 
 describe('check --baseline, when files move', () => {

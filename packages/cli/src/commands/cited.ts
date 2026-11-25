@@ -12,8 +12,7 @@ import { readConfig } from '../config';
 import { readSlices, SLICES_FILE } from '../progress/read-slices';
 import type { Slice } from '../progress/slice';
 import { Workspace } from '../workspace';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import { knownContext } from './known-context';
 import { rowsOption } from './rows-option';
 import { stdoutJson } from '../json/stdout-json';
@@ -23,43 +22,46 @@ import { stdoutJson } from '../json/stdout-json';
  * they are built, or, with --removed-since, those a change removes. Reads, never writes, and
  * exits 0: what it reports is for the conductor to correct in the documents.
  */
-export const citedCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
-    rows: { type: 'string' },
-    base: { type: 'string' },
-    'removed-since': { type: 'string' },
-  });
+export const citedCommand = defineCommand({
+  name: 'cited',
+  positionals: '[<context>]',
+  options: {
+    rows: { type: 'string', value: '<id,...>' },
+    base: { type: 'string', value: '<ref>' },
+    'removed-since': { type: 'string', value: '<ref>' },
+  },
+  run(args, io) {
+    const root = args.projectRoot;
+    const { config } = readConfig(root);
+    const [asked] = args.positionals;
+    const slices = readSlices(new Workspace(root, false)) ?? [];
+    const ids = rowsOption(args.text('rows')).rows;
+    const rows = chosenRows(slices, asked === undefined ? undefined : knownContext(config, asked), ids);
+    const since = args.text('removed-since');
 
-  const root = args.projectRoot;
-  const { config } = readConfig(root);
-  const [asked] = args.positionals;
-  const slices = readSlices(new Workspace(root, false)) ?? [];
-  const ids = rowsOption(args.text('rows')).rows;
-  const rows = chosenRows(slices, asked === undefined ? undefined : knownContext(config, asked), ids);
-  const since = args.text('removed-since');
+    if (since !== undefined) {
+      const open = openRows(root, slices);
 
-  if (since !== undefined) {
-    const open = openRows(root, slices);
+      const selection = {
+        rows: new Set(rows.filter((id) => open.has(id))),
+        unlinked: asked === undefined && ids === undefined,
+      };
 
-    const selection = {
-      rows: new Set(rows.filter((id) => open.has(id))),
-      unlinked: asked === undefined && ids === undefined,
-    };
+      const removed = staleNamesSince(loadProject(root), knownRef(root, since), selection);
 
-    const removed = staleNamesSince(loadProject(root), knownRef(root, since), selection);
+      io.out(args.json ? stdoutJson({ since, citations: removed }) : formatRemovals(removed, since));
 
-    io.out(args.json ? stdoutJson({ since, citations: removed }) : formatRemovals(removed, since));
+      return 0;
+    }
+
+    const ref = args.text('base') ?? (runGit(root, ['branch', '--show-current'])?.trim() || 'HEAD');
+    const report = staleNamesAt(root, config, { ref, commit: knownRef(root, ref), rows });
+
+    io.out(args.json ? stdoutJson(report) : formatCitations(report, rows));
 
     return 0;
-  }
-
-  const ref = args.text('base') ?? (runGit(root, ['branch', '--show-current'])?.trim() || 'HEAD');
-  const report = staleNamesAt(root, config, { ref, commit: knownRef(root, ref), rows });
-
-  io.out(args.json ? stdoutJson(report) : formatCitations(report, rows));
-
-  return 0;
-};
+  },
+});
 
 /** The rows asked for, each of which must exist; by default every row not done, of the context when one is given. */
 function chosenRows(

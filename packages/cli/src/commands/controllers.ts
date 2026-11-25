@@ -5,8 +5,7 @@ import { migrateContext } from '../controllers/migrate-context';
 import type { Migration } from '../controllers/migration';
 import { MigrationDraft } from '../refusals/migration-draft';
 import { Workspace } from '../workspace';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import { ownEntry } from '../config/values/own-entry';
 import { stdoutJson } from '../json/stdout-json';
 
@@ -15,42 +14,47 @@ import { stdoutJson } from '../json/stdout-json';
  * `<name>.route.ts` becomes `<resource>/<name>/<name>.controller.ts` behind the group of its
  * resource, its schema files follow it, its spec too. A context is turned whole or not at all.
  */
-export const controllersCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, { 'dry-run': { type: 'boolean', default: false } });
-  const ws = new Workspace(args.projectRoot, false);
-  const { config } = readConfig(args.projectRoot);
-  const [asked] = args.positionals;
+export const controllersCommand = defineCommand({
+  name: 'controllers',
+  positionals: '[<context>]',
+  options: { 'dry-run': { type: 'boolean' } },
+  takesTheLock: true,
+  run(args, io) {
+    const ws = new Workspace(args.projectRoot, false);
+    const { config } = readConfig(args.projectRoot);
+    const [asked] = args.positionals;
 
-  if (asked !== undefined && ownEntry(config.contexts, asked) === undefined) {
-    throw new CliError(`Unknown context "${asked}".`, `Use one of: ${Object.keys(config.contexts).join(', ')}.`);
-  }
+    if (asked !== undefined && ownEntry(config.contexts, asked) === undefined) {
+      throw new CliError(`Unknown context "${asked}".`, `Use one of: ${Object.keys(config.contexts).join(', ')}.`);
+    }
 
-  const migration: Migration = {
-    ws,
-    config,
-    draft: new MigrationDraft(ws),
-    renamed: new Map(),
-    moved: [],
-    blockers: [],
-  };
+    const migration: Migration = {
+      ws,
+      config,
+      draft: new MigrationDraft(ws),
+      renamed: new Map(),
+      moved: [],
+      blockers: [],
+    };
 
-  const contexts = asked === undefined ? Object.keys(config.contexts) : [asked];
-  const turned = contexts.filter((context) => migrateContext(migration, context));
+    const contexts = asked === undefined ? Object.keys(config.contexts) : [asked];
+    const turned = contexts.filter((context) => migrateContext(migration, context));
 
-  if (turned.length > 0) {
-    finishMigration(migration, turned);
-  }
+    if (turned.length > 0) {
+      finishMigration(migration, turned);
+    }
 
-  const outcome = outcomeOf(migration, args.flag('dry-run'));
+    const outcome = outcomeOf(migration, args.flag('dry-run'));
 
-  if (!outcome.dryRun) {
-    migration.draft.commit();
-  }
+    if (!outcome.dryRun) {
+      migration.draft.commit();
+    }
 
-  io.out(args.json ? stdoutJson({ contexts: turned, ...outcome }) : report(outcome));
+    io.out(args.json ? stdoutJson({ contexts: turned, ...outcome }) : report(outcome));
 
-  return outcome.blockers.length > 0 ? 1 : 0;
-};
+    return outcome.blockers.length > 0 ? 1 : 0;
+  },
+});
 
 function outcomeOf({ draft, moved, blockers }: Migration, dryRun: boolean): Outcome {
   return { dryRun, moved, written: draft.written, removed: draft.removed, blockers, manual: draft.manual };

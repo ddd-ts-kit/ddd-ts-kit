@@ -11,8 +11,7 @@ import type { LintRun } from '../lint/lint-run';
 import { formatVerdict } from '../lint/format-verdict';
 import { lintVerdict, type LintVerdict } from '../lint/lint-verdict';
 import { stdoutJson } from '../json/stdout-json';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import type { Io } from './io';
 
 /**
@@ -21,40 +20,43 @@ import type { Io } from './io';
  * `affected` writes for a partial run), failing on an error or a warning. `--json` asks ESLint
  * for its JSON report and answers `{ errors, warnings, report }` on one line.
  */
-export const lintCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
-    format: { type: 'string' },
-    fix: { type: 'boolean', default: false },
-    'no-cache': { type: 'boolean', default: false },
-    'ignore-pattern': { type: 'string', multiple: true },
-  });
+export const lintCommand = defineCommand({
+  name: 'lint',
+  positionals: '[paths...]',
+  options: {
+    format: { type: 'string', value: '<eslint formatter>' },
+    fix: { type: 'boolean' },
+    'no-cache': { type: 'boolean' },
+    'ignore-pattern': { type: 'string', value: '<pattern>', multiple: true },
+  },
+  run(args, io) {
+    const root = args.projectRoot;
 
-  const root = args.projectRoot;
+    refuseWithoutEslint(root);
 
-  refuseWithoutEslint(root);
+    const answer = runEslint(
+      {
+        root,
+        patterns: args.positionals,
+        ignored: args.many('ignore-pattern'),
+        format: args.json ? 'json' : (args.text('format') ?? 'stylish'),
+        fix: args.flag('fix'),
+        cache: args.flag('no-cache') ? undefined : lintCacheOf(root),
+      },
+      io,
+    );
 
-  const answer = runEslint(
-    {
-      root,
-      patterns: args.positionals,
-      ignored: args.many('ignore-pattern'),
-      format: args.json ? 'json' : (args.text('format') ?? 'stylish'),
-      fix: args.flag('fix'),
-      cache: args.flag('no-cache') ? undefined : lintCacheOf(root),
-    },
-    io,
-  );
+    if (answer === undefined) {
+      return 2;
+    }
 
-  if (answer === undefined) {
-    return 2;
-  }
+    const verdict = lintVerdict(answer);
 
-  const verdict = lintVerdict(answer);
+    printVerdict({ answer, verdict, json: args.json }, io);
 
-  printVerdict({ answer, verdict, json: args.json }, io);
-
-  return verdict.errors > 0 || verdict.warnings > 0 ? 1 : 0;
-};
+    return verdict.errors > 0 || verdict.warnings > 0 ? 1 : 0;
+  },
+});
 
 function printVerdict(
   { answer, verdict, json }: { answer: LintAnswer; verdict: LintVerdict; json: boolean },

@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { COMMON_FLAGS } from '../src/generate/generate-options';
 import { findKind } from '../src/generate/find-kind';
@@ -9,7 +7,7 @@ import { NOTES } from '../src/help/notes';
 import { referenceText } from '../src/help/reference-text';
 import { USAGE } from '../src/help/usage';
 import { run } from '../src/run';
-import { cli, REPO_ROOT, tempDir } from './helpers';
+import { cli, tempDir } from './helpers';
 import { jsonAt } from './support/json-at';
 
 /** Every command the usage names, once. */
@@ -60,19 +58,6 @@ describe('<command> --help', () => {
 
     expect(lines.length).toBeGreaterThan(300);
     expect(lines.filter((line) => !helps.includes(line))).toEqual([]);
-  });
-
-  it('names in the usage of each command every flag its parser accepts', () => {
-    const unsaid = COMMANDS.flatMap((command) => {
-      const usage = (commandHelp(command) ?? '').split('\n\n')[0] ?? '';
-
-      return parsedFlags(command)
-        .filter((flag) => !usage.includes(`--${flag}`))
-        .map((flag) => `${command} --${flag}`);
-    });
-
-    expect(COMMANDS.filter((command) => parsedFlags(command).length > 0).length).toBeGreaterThan(15);
-    expect(unsaid).toEqual([]);
   });
 
   it('prints for each command exactly the notes that name it as theirs', () => {
@@ -281,7 +266,7 @@ describe('a refused option', () => {
 
   it('names the alias g among the commands when the command is unknown', () => {
     expect(cli(tempDir('unknown-command'), 'nothing-of-the-kind').stderr).toMatch(
-      /fix: Use one of: affected, init, generate, .*explain\. g is generate\./,
+      /fix: Use one of: init, generate, list, .*explain\. g is generate\./,
     );
   });
 
@@ -294,14 +279,3 @@ describe('a refused option', () => {
     });
   });
 });
-
-/** The flags the command file of a command declares to `Arguments.parse`, read from its source; none for a command without a file of its name. */
-function parsedFlags(command: string): string[] {
-  const file = path.join(REPO_ROOT, 'packages/cli/src/commands', `${command}.ts`);
-  const source = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-  const declared = [...source.matchAll(/Arguments\.parse\(\s*argv,\s*\{([\s\S]*?)\n\s*\}\s*[,)]/g)];
-
-  return declared.flatMap((match) =>
-    [...(match[1] ?? '').matchAll(/^\s*'?([a-z][a-z-]*)'?: \{ type:/gm)].map((flag) => flag[1] ?? ''),
-  );
-}

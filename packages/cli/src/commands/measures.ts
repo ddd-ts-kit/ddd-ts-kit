@@ -1,8 +1,7 @@
 import { CliError } from '../cli-error';
 import { formatMeasures } from '../measures/format-measures';
 import { readMeasures } from '../measures/read-measures';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import { stdoutJson } from '../json/stdout-json';
 
 /**
@@ -12,26 +11,28 @@ import { stdoutJson } from '../json/stdout-json';
  * origin and the repeat incidents, per story and as medians over the period. Reads, never writes,
  * and asks nothing of the platform.
  */
-export const measuresCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
-    since: { type: 'string' },
-    story: { type: 'string' },
-    'by-author': { type: 'boolean', default: false },
-    format: { type: 'string' },
-  });
+export const measuresCommand = defineCommand({
+  name: 'measures',
+  options: {
+    since: { type: 'string', value: '<date>' },
+    story: { type: 'string', value: '<code>' },
+    'by-author': { type: 'boolean' },
+    format: { type: 'string', values: ['text', 'json'] },
+  },
+  run(args, io) {
+    const format = args.format('text');
 
-  const format = args.format(['text', 'json'], 'text');
+    const view = readMeasures(args.projectRoot, {
+      ...sinceOf(args.text('since')),
+      ...args.texts(['story']),
+      byAuthor: args.flag('by-author'),
+    });
 
-  const view = readMeasures(args.projectRoot, {
-    ...sinceOf(args.text('since')),
-    ...args.texts(['story']),
-    byAuthor: args.flag('by-author'),
-  });
+    io.out(format === 'json' ? stdoutJson(view) : formatMeasures(view));
 
-  io.out(format === 'json' ? stdoutJson(view) : formatMeasures(view));
-
-  return 0;
-};
+    return 0;
+  },
+});
 
 function sinceOf(since: string | undefined): { since?: string } {
   if (since === undefined) {

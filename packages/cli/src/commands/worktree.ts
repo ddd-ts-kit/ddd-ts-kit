@@ -1,36 +1,38 @@
 import { readConfig } from '../config';
 import { openWorktree } from '../worktree/open-worktree';
 import type { WorktreeScope } from '../worktree/worktree-scope';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import { stdoutJson } from '../json/stdout-json';
 
 /**
  * The worktree of one piece of work, `.worktrees/<name>` on `work/<name>`: where a session writes
  * the code of the contexts, the main checkout of the trunk staying clean. An existing one is kept.
  */
-export const worktreeCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
-    branch: { type: 'string' },
-    base: { type: 'string' },
-    'dry-run': { type: 'boolean', default: false },
-    'no-install': { type: 'boolean', default: false },
-  });
+export const worktreeCommand = defineCommand({
+  name: 'worktree',
+  positionals: '<name>',
+  options: {
+    base: { type: 'string', value: '<ref>' },
+    branch: { type: 'string', value: '<name>' },
+    'no-install': { type: 'boolean' },
+    'dry-run': { type: 'boolean' },
+  },
+  run(args, io) {
+    const root = args.projectRoot;
+    const { config } = readConfig(root);
 
-  const root = args.projectRoot;
-  const { config } = readConfig(root);
+    const scope = openWorktree(root, config, {
+      name: args.positionals[0] ?? '',
+      ...args.texts(['branch', 'base']),
+      dryRun: args.flag('dry-run'),
+      install: !args.flag('no-install'),
+    });
 
-  const scope = openWorktree(root, config, {
-    name: args.positionals[0] ?? '',
-    ...args.texts(['branch', 'base']),
-    dryRun: args.flag('dry-run'),
-    install: !args.flag('no-install'),
-  });
+    io.out(args.json ? stdoutJson(scope) : formatWorktree(scope));
 
-  io.out(args.json ? stdoutJson(scope) : formatWorktree(scope));
-
-  return 0;
-};
+    return 0;
+  },
+});
 
 function formatWorktree(scope: WorktreeScope): string {
   const would = scope.dryRun ? 'would be ' : '';

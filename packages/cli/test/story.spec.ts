@@ -284,6 +284,6 @@ describe('story', () => {
 
   it('asks which story outside the worktree of one, and refuses an unknown gate', () => {
     expect(cli(root, 'story').stderr).toContain('Which story? This is not the worktree of a story.');
-    expect(cli(root, 'story', 'US5', '--gate', 'merge').stderr).toContain('Unknown gate "merge".');
+    expect(cli(root, 'story', 'US5', '--gate', 'merge').stderr).toContain('Unknown value "merge" for --gate.');
   });
 });

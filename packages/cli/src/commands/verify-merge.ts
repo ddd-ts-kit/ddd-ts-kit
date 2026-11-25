@@ -1,7 +1,6 @@
 import { formatMergeVerification } from '../merge/lost/format-merge-verification';
 import { verifyMerges } from '../merge/lost/verify-merges';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import { stdoutJson } from '../json/stdout-json';
 
 /** What `--warn` adds under the findings, while the check reaches projects as a warning first. */
@@ -16,30 +15,33 @@ const WARN_ONLY_NOTE =
  * (the same report, as the pre-push hook runs it) exits 0 on what a merge lost, and still 1 on
  * a migration out of order. Silent and 0 with nothing to say.
  */
-export const verifyMergeCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
-    since: { type: 'string' },
-    theirs: { type: 'string' },
-    base: { type: 'string' },
-    warn: { type: 'boolean', default: false },
-  });
+export const verifyMergeCommand = defineCommand({
+  name: 'verify-merge',
+  positionals: '[<commit>]',
+  options: {
+    since: { type: 'string', value: '<git-ref>' },
+    theirs: { type: 'string', value: '<git-ref>' },
+    base: { type: 'string', value: '<commit>' },
+    warn: { type: 'boolean' },
+  },
+  run(args, io) {
+    const [commit] = args.positionals;
 
-  const [commit] = args.positionals;
+    const verification = verifyMerges({
+      root: args.projectRoot,
+      ...(commit === undefined ? {} : { commit }),
+      ...args.texts(['since', 'theirs', 'base']),
+    });
 
-  const verification = verifyMerges({
-    root: args.projectRoot,
-    ...(commit === undefined ? {} : { commit }),
-    ...args.texts(['since', 'theirs', 'base']),
-  });
+    const warnOnly = args.flag('warn');
+    const report = args.json ? stdoutJson(verification) : formatMergeVerification(verification);
+    const softened = verification.errorCount > verification.migrations.length;
+    const note = warnOnly && !args.json && softened ? `\n${WARN_ONLY_NOTE}` : '';
 
-  const warnOnly = args.flag('warn');
-  const report = args.json ? stdoutJson(verification) : formatMergeVerification(verification);
-  const softened = verification.errorCount > verification.migrations.length;
-  const note = warnOnly && !args.json && softened ? `\n${WARN_ONLY_NOTE}` : '';
+    if (report !== '') {
+      io.out(`${report}${note}`);
+    }
 
-  if (report !== '') {
-    io.out(`${report}${note}`);
-  }
-
-  return verification.ok || (warnOnly && verification.migrations.length === 0) ? 0 : 1;
-};
+    return verification.ok || (warnOnly && verification.migrations.length === 0) ? 0 : 1;
+  },
+});

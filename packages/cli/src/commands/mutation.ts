@@ -9,8 +9,7 @@ import { MUTATION_REPORT } from '../mutation/mutation-report-file';
 import { type ContextScore, mutationScores } from '../mutation/mutation-scores';
 import { type MutationReport, readMutationReport } from '../mutation/read-mutation-report';
 import { type Survivor, survivors } from '../mutation/survivors';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import { stdoutJson } from '../json/stdout-json';
 
 /**
@@ -24,25 +23,28 @@ import { stdoutJson } from '../json/stdout-json';
  * change in progress, the floor being held by the run of the night. Runs no test itself:
  * `npm run test:mutation` runs Stryker, then this.
  */
-export const mutationCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
+export const mutationCommand = defineCommand({
+  name: 'mutation',
+  usage: ['ddd-ts-kit mutation [--report <file>] [--survivors] [--changed <ref>] [--json]'],
+  options: {
     report: { type: 'string' },
-    survivors: { type: 'boolean', default: false },
+    survivors: { type: 'boolean' },
     changed: { type: 'string' },
-  });
+  },
+  run(args, io) {
+    const root = args.projectRoot;
+    const { config } = readConfig(root);
+    const report = reportOf(root, args.text('report') ?? MUTATION_REPORT);
+    const since = args.text('changed') ?? process.env['DDD_TS_KIT_MUTATION_SINCE'];
+    const changed = since === undefined ? undefined : changedSince(root, since);
+    const scores = mutationScores(report, config);
+    const listed = args.flag('survivors') || changed !== undefined ? survivors(report, config, changed) : undefined;
 
-  const root = args.projectRoot;
-  const { config } = readConfig(root);
-  const report = reportOf(root, args.text('report') ?? MUTATION_REPORT);
-  const since = args.text('changed') ?? process.env['DDD_TS_KIT_MUTATION_SINCE'];
-  const changed = since === undefined ? undefined : changedSince(root, since);
-  const scores = mutationScores(report, config);
-  const listed = args.flag('survivors') || changed !== undefined ? survivors(report, config, changed) : undefined;
+    io.out(args.json ? asJson(config, scores, listed) : asText(scores, listed, since));
 
-  io.out(args.json ? asJson(config, scores, listed) : asText(scores, listed, since));
-
-  return changed !== undefined || scores.every((entry) => entry.held) ? 0 : 1;
-};
+    return changed !== undefined || scores.every((entry) => entry.held) ? 0 : 1;
+  },
+});
 
 function reportOf(root: string, file: string): MutationReport {
   const report = readMutationReport(root, file);

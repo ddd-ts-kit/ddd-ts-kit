@@ -2,8 +2,8 @@ import { CliError } from '../cli-error';
 import { CONFIG_FILE, DEFAULT_SDK_NAME, editConfigText, parseConfig, readConfig, type Config } from '../config';
 import { instructAgents, setUpSdk } from '../sdk';
 import { Workspace } from '../workspace';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import type { Arguments } from './arguments';
+import { defineCommand } from './command';
 import type { Io } from './io';
 import { printReport } from './print-report';
 import { stdoutJson } from '../json/stdout-json';
@@ -13,26 +13,29 @@ import { stdoutJson } from '../json/stdout-json';
  * what the project needs around them; asked the first time, it records "sdk" in the config.
  * With --check it writes nothing and fails while a client differs from its contract.
  */
-export const sdkCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
-    check: { type: 'boolean', default: false },
-    'dry-run': { type: 'boolean', default: false },
-  });
+export const sdkCommand = defineCommand({
+  name: 'sdk',
+  options: {
+    check: { type: 'boolean' },
+    'dry-run': { type: 'boolean' },
+  },
+  takesTheLock: true,
+  run(args, io) {
+    const root = args.projectRoot;
+    const { config } = readConfig(root);
 
-  const root = args.projectRoot;
-  const { config } = readConfig(root);
+    if (config.stack.http === 'none') {
+      throw new CliError(
+        'The project has no HTTP boundary, so no contract to generate a client from.',
+        'Choose an HTTP framework (`ddd-ts-kit init --force --http express`) before asking for a client.',
+      );
+    }
 
-  if (config.stack.http === 'none') {
-    throw new CliError(
-      'The project has no HTTP boundary, so no contract to generate a client from.',
-      'Choose an HTTP framework (`ddd-ts-kit init --force --http express`) before asking for a client.',
-    );
-  }
+    const ws = new Workspace(root, false);
 
-  const ws = new Workspace(root, false);
-
-  return args.flag('check') ? check(io, args, { ws, config }) : generate(io, args, { ws, config });
-};
+    return args.flag('check') ? check(io, args, { ws, config }) : generate(io, args, { ws, config });
+  },
+});
 
 interface Run {
   readonly ws: Workspace;

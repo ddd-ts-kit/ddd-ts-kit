@@ -7,7 +7,7 @@ import { failure } from './reports';
 const FORMATS = ['text', 'json', 'github'] as const;
 
 const formatOf = (...argv: string[]): string =>
-  Arguments.parse(argv, { format: { type: 'string' } }).format(FORMATS, 'text');
+  Arguments.declared(argv, { format: { type: 'string', values: FORMATS } }).format('text');
 
 describe('the output format of a command', () => {
   it('is the one --format names, the default without it', () => {
