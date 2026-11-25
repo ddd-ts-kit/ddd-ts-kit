@@ -224,6 +224,10 @@ aLine().with('quantity', 3).build(); // { sku: 'sku-1', quantity: 3 }
   `with` was given: changing a built value never changes the next one. An instance of a class (a
   `Date`, a value object, an aggregate) is handed as it is.
 - Call `resetSequences()` in `beforeEach`, so a test does not depend on the ones before it.
+- What a build needs is a property of the builder's props. A step copies the builder without
+  running its constructor: a field declared `private` or `readonly` follows the copy, a JavaScript
+  `#private` field does not and throws a `TypeError` when the copy reads it, so a builder class
+  declares none.
 - The class form keeps `with`, `withMany` and `adding` protected on purpose: the public
   surface of an aggregate builder is the language of the domain, not its property names.
 

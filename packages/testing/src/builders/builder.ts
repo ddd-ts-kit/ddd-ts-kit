@@ -11,9 +11,15 @@ import { RESOLVE, type Resolvable } from './resolvable';
  * through its public API, and exposes methods named in the ubiquitous language that delegate
  * to the protected `with`. Every such method returns a new builder: a builder is immutable,
  * so one instance can be shared between tests without leaking state.
+ *
+ * What a build needs is a property of `Props`, set with `with`. The new builder is a copy made
+ * without running the constructor: a field declared `private` or `readonly` follows it, a
+ * JavaScript `#private` field does not, and reading one on the copy throws a `TypeError`. A
+ * subclass declares none.
  */
 export abstract class Builder<Props extends object, Output> implements Resolvable<Output> {
-  // The copy made by `withMany` carries this field: it relies on it being an own enumerable property.
+  // The copy made by `withMany` carries this field as it carries those of a subclass: it relies on
+  // it being an own enumerable property, which a `#private` field is not.
   private readonly overrides: Partial<Defaults<Props>> = {};
 
   /** Valid defaults. Called at each build, so `lazy` and `sequence` yield fresh values. */

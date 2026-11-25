@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:3ffd5476e147e5dc -->
+<!-- translation-of: README.md sha256:c8ef7ffac170146a -->
 
 # @ddd-ts-kit/testing
 
@@ -228,6 +228,10 @@ aLine().with('quantity', 3).build(); // { sku: 'sku-1', quantity: 3 }
   par défaut comme dans ce que `with` a reçu : modifier une valeur construite ne change jamais la
   suivante. Une instance de classe (une `Date`, un objet-valeur, un agrégat) est remise telle quelle.
 - Appelez `resetSequences()` dans `beforeEach`, pour qu'un test ne dépende pas de ceux qui le précèdent.
+- Ce dont une construction a besoin est une propriété des *props* du *builder*. Une étape copie le
+  *builder* sans exécuter son constructeur : un champ déclaré `private` ou `readonly` suit la copie, un
+  champ `#private` de JavaScript ne la suit pas et lève une `TypeError` quand la copie le lit ; une
+  classe de *builder* n'en déclare donc aucun.
 - La forme en classe garde `with`, `withMany` et `adding` protégées à dessein : la surface publique
   d'un *builder* d'agrégat est le langage du domaine, pas les noms de ses propriétés.
 
