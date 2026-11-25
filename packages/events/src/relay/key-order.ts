@@ -9,22 +9,17 @@ interface Head {
   readonly until: HoldUntil;
 }
 
-interface Tracked {
-  readonly arrival: number;
-  holds: number;
-}
-
 /**
  * What a relay remembers to keep the records of one key in order: which record is at the
- * head of each key, in which order it first saw the others, and how many of their claims
- * were spent waiting. Kept in memory: it holds for one relay as long as it lives.
+ * head of each key, and in which order it first saw the others. Kept in memory: it holds for
+ * one relay as long as it lives.
  */
 export class KeyOrder<R extends KeyedRecord> {
   private readonly heads = new Map<string, Head>();
 
-  private readonly tracked = new Map<string, Tracked>();
+  private readonly arrivals = new Map<string, number>();
 
-  private arrivals = 0;
+  private seen = 0;
 
   constructor(private readonly keyOf: EventKey) {}
 
@@ -88,24 +83,11 @@ export class KeyOrder<R extends KeyedRecord> {
 
   /** The record was published or declared dead: it no longer stands in the way. */
   settle(key: string | undefined, eventId: string): void {
-    this.tracked.delete(eventId);
+    this.arrivals.delete(eventId);
 
     if (key !== undefined && this.heads.get(key)?.eventId === eventId) {
       this.heads.delete(key);
     }
-  }
-
-  countHold(eventId: string): void {
-    const tracked = this.tracked.get(eventId);
-
-    if (tracked !== undefined) {
-      tracked.holds += 1;
-    }
-  }
-
-  /** Delivery attempts really made: claims spent waiting for the head are not counted. */
-  attemptsOf(record: R): number {
-    return record.attempts - (this.tracked.get(record.event.id)?.holds ?? 0);
   }
 
   /**
@@ -129,9 +111,9 @@ export class KeyOrder<R extends KeyedRecord> {
 
   private sortByArrival(members: R[]): void {
     for (const { event } of members) {
-      if (!this.tracked.has(event.id)) {
-        this.arrivals += 1;
-        this.tracked.set(event.id, { arrival: this.arrivals, holds: 0 });
+      if (!this.arrivals.has(event.id)) {
+        this.seen += 1;
+        this.arrivals.set(event.id, this.seen);
       }
     }
 
@@ -139,6 +121,6 @@ export class KeyOrder<R extends KeyedRecord> {
   }
 
   private arrivalOf(record: R): number {
-    return this.tracked.get(record.event.id)?.arrival ?? 0;
+    return this.arrivals.get(record.event.id) ?? 0;
   }
 }

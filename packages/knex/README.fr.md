@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:c6d56ebe67625a45 -->
+<!-- translation-of: README.md sha256:3d338ad890f79e1a -->
 
 # @ddd-ts-kit/knex
 
@@ -900,7 +900,9 @@ garderait ce qu'il ne doit pas. L'adaptateur implémente `PersonalDataRetention`
   validée avec les effets du gestionnaire, et disparaît avec eux s'il échoue.
 
 La vie d'un enregistrement dans la table `outbox`. Le relais de `@ddd-ts-kit/events` le conduit
-par `claimBatch`, `markPublished` et `markFailed` ; `retryDead`, `purgePublished` et `stats` sont
+par `claimBatch`, `markPublished`, `markFailed` et `postpone` (un enregistrement retenu pour
+l'ordre derrière un précédent de sa clé : il attend, sans avoir été tenté) ; `retryDead`,
+`purgePublished` et `stats` sont
 appelés par un opérateur ou par un job planifié, jamais par le relais :
 
 ![Un enregistrement est ajouté en attente par la validation de la commande ; le relais le réclame quand il est dû et le publie, puis le marque publié, et purgePublished le supprime plus tard ; une publication en échec le laisse en attente, retenté après un délai exponentiel ; après la dernière tentative il est mort, jusqu'à ce que retryDead le remette en attente ; stats compte les enregistrements en attente, en échec et morts](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/transactional-outbox-record-lifecycle.fr.svg)

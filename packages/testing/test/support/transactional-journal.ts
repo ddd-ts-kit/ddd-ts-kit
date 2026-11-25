@@ -10,6 +10,7 @@ import {
   type UnitOfWork,
 } from '@ddd-ts-kit/kernel';
 import type { EventStoreUnderContract } from '../../src/contracts';
+import { claimed } from './claimed';
 
 interface Written {
   readonly events: StoredEvent[];
@@ -34,7 +35,7 @@ export class TransactionalJournal implements EventStoreUnderContract {
 
   readonly outbox: EventStoreUnderContract['outbox'] = {
     append: async (events) => void this.target().published.push(...events),
-    claimBatch: async () => this.committed.published.map((event) => ({ event, status: 'pending', attempts: 1 })),
+    claimBatch: async () => this.committed.published.map((event) => claimed(event)),
     stats: async () => ({ pending: this.committed.published.length, failed: 0, dead: 0 }),
   };
 
