@@ -166,9 +166,10 @@ describe('generate command --creates and the policy of a change', () => {
     const handler = read(root, HANDLER('void-invoice'));
 
     expect(handler).toContain(
-      "await this.access.authorize(command.actor, billingPermissions['invoice.void'], command);",
+      "a policy refines billingPermissions['invoice.void']: ask it about the invoice once it is loaded, before the change",
     );
 
+    expect(handler).toContain('private readonly access: Access');
     expect(handler).not.toContain('IdGenerator');
   });
 });

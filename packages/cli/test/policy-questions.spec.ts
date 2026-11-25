@@ -36,11 +36,10 @@ describe('a policy and the use cases of its permission', () => {
     const handler = read(project, HANDLER);
 
     expect(handler).toContain('  constructor(private readonly access: Access) {}');
-    expect(handler).toContain(MARKER);
-
-    expect(handler).toContain(
-      "    await this.access.authorize(command.actor, billingPermissions['invoice.cancel'], command);",
-    );
+    // The handler refuses until it is written: the marker says where it will ask, about the element it loads.
+    expect(handler).toContain(`${MARKER}: ask it about the element "cancel invoice" acts on once it is loaded`);
+    expect(handler).not.toContain('\n    await this.access.authorize(');
+    expect(handler).not.toContain(', command)');
 
     expect(read(project, `${BILLING}/application/application.declarations.ts`)).toContain(
       'injected(CancelInvoiceHandler, [Access]);',
@@ -77,8 +76,10 @@ describe('a policy and the use cases of its permission', () => {
     generate(project, 'command', 'billing', 'CancelInvoice', '--permission', 'invoice.cancel', ...TERMS);
 
     expect(read(project, HANDLER)).toContain(
-      "    await this.access.authorize(command.actor, billingPermissions['invoice.cancel'], command);",
+      `${MARKER}: ask it about the element "cancel invoice" acts on once it is loaded`,
     );
+
+    expect(read(project, HANDLER)).toContain('  constructor(private readonly access: Access) {}');
   });
 
   it('leaves alone a handler that already asks, and reports one that stopped asking', () => {
@@ -138,6 +139,28 @@ describe('the spec of a policy', () => {
   });
 });
 
+describe('a policy as generated', () => {
+  it.each([
+    ['declared', [], '  allows(_actor: Actor): boolean {\n    return false;\n  }'],
+    ['explicit', ['--style', 'explicit'], '  allows: () => false,'],
+  ])('refuses everybody until its rule is written, in the %s style, and its spec says so', (_style, flags, refusal) => {
+    const project = tempDir('policy-refuses');
+
+    expect(cli(project, 'init', ...flags, '--context', 'billing:core').code).toBe(0);
+    generate(project, 'policy', 'billing', 'OnlyIssuerCancels', '--permission', 'invoice.cancel', ...TERMS);
+
+    const policy = read(project, `${BILLING}/application/authorization/only-issuer-cancels.policy.ts`);
+    const spec = read(project, `${BILLING}/test/unit/only-issuer-cancels.policy.spec.ts`);
+
+    expect(policy).toContain(refusal);
+    expect(policy).toContain('TODO(domain): a policy refuses everybody until its rule is written.');
+    expect(policy).not.toContain('isAuthenticated');
+    expect(spec).toContain("it('refuses everybody until its rule is written', () => {");
+    expect(spec).toContain("it.todo('allows the actor the rule is written for');");
+    expect(spec).not.toContain('toBe(true)');
+  });
+});
+
 describe('a policy and the use cases of its permission, beyond a plain command', () => {
   const QUERY = `${BILLING}/application/queries/get-invoice/get-invoice.handler.ts`;
   const READ = ['--term', 'Get=To read one element'];
@@ -186,12 +209,17 @@ describe('a policy and the use cases of its permission, beyond a plain command',
 
     generate(project, 'policy', 'billing', 'OnlyIssuerCancels', '--permission', 'invoice.cancel');
 
+    // The birth asks about the aggregate it builds, the query about what it read: never about the message.
     expect(read(project, HANDLER)).toContain(
-      "    await this.access.authorize(command.actor, billingPermissions['invoice.cancel'], command);",
+      "    await this.access.authorize(command.actor, billingPermissions['invoice.cancel'], invoice);",
     );
 
     expect(read(project, QUERY)).toContain(
-      "    await this.access.authorize(query.actor, billingPermissions['invoice.cancel'], query);",
+      "    await this.access.authorize(query.actor, billingPermissions['invoice.cancel'], answer);",
+    );
+
+    expect(read(project, `${BILLING}/test/unit/cancel-invoice.handler.spec.ts`)).toContain(
+      "it('is refused to an actor the policy of invoice.cancel does not let through', async () => {",
     );
 
     expect(read(project, `${BILLING}/application/queries/search-invoices/search-invoices.handler.ts`)).not.toContain(
@@ -213,7 +241,7 @@ describe('a policy and the use cases of its permission, beyond a plain command',
     expect(read(project, MODULE)).toMatch(/import \{ Access \} from '@ddd-ts-kit\/auth';/);
 
     expect(read(project, QUERY)).toContain(
-      "await this.access.authorize(query.actor, billingPermissions['invoice.cancel'], query);",
+      "await this.access.authorize(query.actor, billingPermissions['invoice.cancel'], answer);",
     );
   });
 
