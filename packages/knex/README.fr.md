@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:c955608f8abdbaf8 -->
+<!-- translation-of: README.md sha256:3de95e02fb2c675e -->
 
 # @ddd-ts-kit/knex
 
@@ -768,7 +768,8 @@ async search(criteria: ScopedCriteria<AppointmentRow>): Promise<Page<Appointment
 Une page par curseur est lue avec une ligne de plus que demandé : c'est ainsi que `pageOfPlan`
 sait si une autre suit ; une page par offset tire son total d'une seconde instruction
 (`predicateToKnex(...).count()`). Un champ déclaré `nullable` est trié `nulls last` en ordre
-croissant et `nulls first` en ordre décroissant, sur tous les dialectes.
+croissant et `nulls first` en ordre décroissant. Les critères sont écrits pour PostgreSQL, comme
+les modèles de lecture : une recherche qui ignore la casse est un `ILIKE`.
 
 **Chaînes.** Une colonne de texte est triée et comparée par plage selon la collation de la
 colonne ; les critères trient les chaînes par point de code. Déclarez avec `COLLATE "C"` les
@@ -820,7 +821,13 @@ faite par `LIKE ... INCLUDING ALL`, les clés écrites entre-temps dans `<table>
 l'échange par renommage dans une seule transaction), et ses garanties et ses limites sont dans le
 README de `@ddd-ts-kit/kernel` (« Reconstruction »). Le store passe `criteriaContract` et
 `readModelStoreContract` de `@ddd-ts-kit/testing/contracts`, sur PGlite et sur PostgreSQL 18.
-Les critères et les modèles de lecture n'ont jamais été exécutés sur MySQL ni sur SQLite.
+Les modèles de lecture sont réservés à PostgreSQL : un `KnexReadModelStore` (un
+`KnexReadModelTable`) construit sur une instance knex d'une autre base de données est refusé
+nommément, `The read model of @ddd-ts-kit/knex runs on PostgreSQL, and this knex speaks sqlite`,
+à sa construction, ou à sa première instruction sous une base de données par *tenant*, où la
+base n'est connue que dans une unité de travail. Ses estampilles, la trace d'une ligne supprimée
+et la reconstruction reposent sur `timestamptz`, `boolean` et le catalogue de PostgreSQL ; sur
+SQLite ils répondaient faux avant d'échouer.
 
 ## Effacement des données personnelles
 

@@ -120,7 +120,7 @@ export class KnexStampedRows<Row extends object> implements ReadModelRows<Row> {
   }
 }
 
-/** The instant as the driver gave it: the text of a `Date` has no milliseconds, so a date is never read through it. */
+/** The instant as the driver of PostgreSQL gave it, a `Date`, or its text where the application parses `timestamptz` itself. */
 function instantOf(value: unknown): Date {
   return value instanceof Date ? value : new Date(String(value));
 }

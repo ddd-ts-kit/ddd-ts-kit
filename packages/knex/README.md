@@ -737,7 +737,8 @@ async search(criteria: ScopedCriteria<AppointmentRow>): Promise<Page<Appointment
 A cursor page is fetched one row longer than asked, which is how `pageOfPlan` knows whether
 another follows; an offset page takes its total from a second statement
 (`predicateToKnex(...).count()`). A field declared `nullable` is ordered `nulls last`
-ascending and `nulls first` descending on every dialect.
+ascending and `nulls first` descending. The criteria are written for PostgreSQL, as the read
+models are: a search that ignores case is an `ILIKE`.
 
 **Strings.** A text column is ordered and compared by range in the collation of the column;
 criteria order strings by code point. Declare the text columns that are sorted or compared
@@ -786,7 +787,12 @@ meanwhile in `<table>__touched`, the swap by rename in one transaction) and its 
 and limits are in the README of `@ddd-ts-kit/kernel` ("Rebuild"). The store passes
 `criteriaContract` and `readModelStoreContract` of `@ddd-ts-kit/testing/contracts`, on PGlite
 and on PostgreSQL 18.
-Criteria and read models were never run on MySQL or SQLite.
+Read models are PostgreSQL only: a `KnexReadModelStore` (a `KnexReadModelTable`) built on a knex
+instance of another database is refused by name, `The read model of @ddd-ts-kit/knex runs on
+PostgreSQL, and this knex speaks sqlite`, when it is built, or at its first statement under
+database per tenant, where the database is known only inside a unit of work. Its stamps, the
+trace of a deleted row and the rebuild rely on `timestamptz`, `boolean` and the catalog of
+PostgreSQL; on SQLite they answered wrong before they failed.
 
 ## Personal data erasure
 

@@ -16,6 +16,7 @@ import { criteriaToKnex } from './criteria-to-knex';
 import type { KnexReadModelOptions } from './knex-read-model-options';
 import { TENANT_COLUMN } from '../tenancy/where-tenant';
 import { KnexStampedRows } from './knex-stamped-rows';
+import { postgresOnly } from './postgres-only';
 import { predicateToKnex } from './predicate-to-knex';
 import { recordsOf } from './records-of';
 import { RowMapper } from './row.mapper';
@@ -23,7 +24,8 @@ import { RowMapper } from './row.mapper';
 /**
  * The table of one read model on knex: what `TableReadModelStore` and `ProjectionRebuild` are
  * given. Every statement runs on the executor of the context, so a write made by a projection
- * commits with the processed mark of its event. The rebuild is PostgreSQL only.
+ * commits with the processed mark of its event. PostgreSQL only, the rebuild as the rows: a knex
+ * instance on another database is refused by name (`postgresOnly`).
  */
 export class KnexReadModelTable<Row extends object> implements ReadModelTable<Row> {
   private readonly rows: KnexStampedRows<Row>;
@@ -34,11 +36,15 @@ export class KnexReadModelTable<Row extends object> implements ReadModelTable<Ro
 
   private readonly traces: PostgresTraceColumns;
 
+  private readonly context: KnexContext;
+
   constructor(
-    private readonly context: KnexContext,
+    context: KnexContext,
     private readonly options: KnexReadModelOptions<Row>,
   ) {
     const { table, schema } = options;
+
+    this.context = postgresOnly(context);
 
     this.traces = new PostgresTraceColumns(
       (statement, parameters) => this.run(statement, parameters),
@@ -47,8 +53,8 @@ export class KnexReadModelTable<Row extends object> implements ReadModelTable<Ro
 
     const copied = { ...options, table: PostgresReadModelRebuild.shadowOf(table) };
 
-    this.rows = new KnexStampedRows(context, options, this.traces);
-    this.copy = new KnexStampedRows(context, copied, this.traces);
+    this.rows = new KnexStampedRows(this.context, options, this.traces);
+    this.copy = new KnexStampedRows(this.context, copied, this.traces);
 
     this.rebuild = new PostgresReadModelRebuild((statement, parameters) => this.run(statement, parameters), {
       table,
