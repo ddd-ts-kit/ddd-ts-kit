@@ -1,4 +1,5 @@
 import { inspect } from 'node:util';
+import { failureOf } from '../scenarios/failure-of';
 import { isErrorLike } from '../scenarios/is-error-like';
 
 /** The body of an acceptance scenario: requests to the application and assertions on what it answers. */
@@ -33,16 +34,6 @@ export function pending(body: ScenarioBody): ScenarioBody {
       );
     }
   };
-}
-
-async function failureOf(body: ScenarioBody): Promise<unknown> {
-  try {
-    await body();
-
-    return undefined;
-  } catch (error) {
-    return error ?? new Error('A scenario threw nothing.');
-  }
 }
 
 /**

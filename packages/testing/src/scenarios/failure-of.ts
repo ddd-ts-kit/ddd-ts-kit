@@ -4,7 +4,7 @@ export async function failureOf(work: () => Promise<unknown>): Promise<unknown> 
     await work();
   } catch (error) {
     // A thrown `undefined` would read as "no failure".
-    return error ?? new Error('rejected without a reason');
+    return error ?? new Error('failed without a reason');
   }
 
   return undefined;
