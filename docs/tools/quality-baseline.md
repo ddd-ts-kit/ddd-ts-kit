@@ -250,7 +250,7 @@ to a project that asks for clients). The example application extends it instead 
 
 ```json
 {
-  "$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
   "root": false,
   "extends": "//"
 }
