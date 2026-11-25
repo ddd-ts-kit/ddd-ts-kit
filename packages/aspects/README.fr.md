@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:01ace5a43b25842c -->
+<!-- translation-of: README.md sha256:511f5df3ca37fadd -->
 
 # @ddd-ts-kit/aspects
 
@@ -253,7 +253,7 @@ dans le *runtime* des aspects au moment d'un appel.
 | `retry({ attempts, backoff?, retryOn?, sleep? })` | rappelle après un échec | jamais après une `DomainError`, un circuit ouvert ou une cloison pleine (`isTransient`) ; 100 ms doublés jusqu'à 30 s avec gigue complète | rien : il n'enregistre rien |
 | `timeout(ms, { signal?, scheduler?, statedBy? })` | rejette avec `TimeoutError` (`TIMEOUT`) | l'appel sous-jacent continue de s'exécuter, sauf avec `signal: true` | le message ne nomme que la classe et la méthode, puis qui a déclaré le délai quand `statedBy` le dit |
 | `circuitBreaker({ failureThreshold, resetAfterMs, halfOpenMax?, scope?, isFailure?, onStateChange?, clock? })` | refuse les appels avec `CircuitOpenError` (`CIRCUIT_OPEN`) après des échecs consécutifs, puis laisse passer des appels d'essai | un circuit par instance et par méthode ; une `DomainError` n'est pas un échec ; un appel d'essai | `onStateChange` reçoit la classe, la méthode, le contexte et les deux états |
-| `cached({ key, ttlMs, cache?, shared?, allowKinds? })` | répond à une lecture répétée depuis le port `Cache` | refuse les genres `repository` et `use-case` ; demande `scope` dans le *runtime* ou `shared: true` et lève l'erreur à l'appel sans l'un ni l'autre ; une entrée appartient au *tenant* du travail sauf avec `shared: true`, le travail qui ne nomme aucun *tenant* garde la clé telle qu'elle est écrite, et le travail sous une élévation (`acrossTenants`) ne lit ni n'écrit le cache ; un appel dont la clé est `undefined` n'est pas mis en cache ; les échecs ne sont pas mis en cache ; des appels identiques simultanés d'un même *tenant* partagent un seul appel ; un cache défaillant vaut un défaut de cache | la clé est construite par le projet à partir des arguments et ne va qu'au cache |
+| `cached({ key, ttlMs, cache?, metrics?, shared?, allowKinds? })` | répond à une lecture répétée depuis le port `Cache` | refuse les genres `repository` et `use-case` ; demande `scope` dans le *runtime* ou `shared: true` et lève l'erreur à l'appel sans l'un ni l'autre ; une entrée appartient au *tenant* du travail sauf avec `shared: true`, le travail qui ne nomme aucun *tenant* garde la clé telle qu'elle est écrite, et le travail sous une élévation (`acrossTenants`) ne lit ni n'écrit le cache ; un appel dont la clé est `undefined` n'est pas mis en cache ; les échecs ne sont pas mis en cache ; des appels identiques simultanés d'un même *tenant* partagent un seul appel ; une entrée appartient à un port d'un contexte : sa clé contient le contexte, le port auquel l'instance est liée (le nom de sa classe à défaut), la méthode et la clé de l'appel, et un objet qui n'a ni port ni nom de classe est refusé ; un cache défaillant vaut un défaut de cache, compté dans `cache_errors_total` (étiquettes `operation`, `context`, `class`, `method`) sur `metrics` ou sur les métriques du *runtime* | la clé est construite par le projet à partir des arguments et ne va qu'au cache |
 | `bulkhead({ maxConcurrent, maxQueued?, scope? })` | borne les appels qui s'exécutent en même temps, refuse au-delà avec `BulkheadFullError` (`BULKHEAD_FULL`) | pas de file d'attente ; un compartiment par instance et par méthode | rien |
 
 **Confidentialité.** La règle est celle du traçage : une entrée, un libellé ou une erreur levée
@@ -354,7 +354,7 @@ export function warnWhenSlow(thresholdMs: number, logger: Logger, clock: Clock):
 import { allOf, cached, forKinds, forMethods, when } from '@ddd-ts-kit/aspects';
 
 // Le seul endroit où les arguments sont lus : construire la clé à partir d'un identifiant, jamais de données personnelles.
-// `undefined` laisse l'appel hors du cache. La clé de cache contient aussi la classe et la méthode, et le
+// `undefined` laisse l'appel hors du cache. La clé de cache contient aussi le contexte, le port et la méthode, et le
 // tenant du travail, ce qui demande `scope` dans le runtime des aspects : `shared: true` garde une seule
 // entrée pour une lecture dont la réponse ne dépend d'aucun tenant, sans demander de scope.
 const key = (_method: string, [id]: readonly unknown[]): string | undefined => (typeof id === 'string' ? id : undefined);
