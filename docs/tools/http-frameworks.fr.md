@@ -1,5 +1,5 @@
 [English](http-frameworks.md) · **Français**
-<!-- translation-of: http-frameworks.md sha256:e39de8ff86ccbdb9 -->
+<!-- translation-of: http-frameworks.md sha256:4316976074a32920 -->
 
 # Frameworks HTTP : Express, Fastify, Hono, NestJS
 
@@ -86,8 +86,7 @@ declare const options: ExecuteOptions; // resolvePrincipal, executionScope, erro
 
 export function onExpress(): void {
   const app = express();
-  app.use(express.json()); // l'adaptateur n'analyse pas les corps
-  mountExpress(app, routes, options);
+  mountExpress(app, routes, options); // lit lui-même le corps de chaque route
   app.listen(3000);
 }
 
@@ -293,7 +292,7 @@ D'après [`packages/http/README.md`](../../packages/http/README.fr.md) et
 ## Limites, et quand ne pas l'utiliser
 
 - Un corps que le framework refuse lui-même (JSON mal formé, contenu trop volumineux) est refusé
-  avant le *pipeline* sur Express (`express.json()`, 100 kB par défaut), Fastify (1 MiB) et
+  avant le *pipeline* sur Express (1 MiB par défaut, `bodyLimit` de `mountExpress`), Fastify (1 MiB) et
   NestJS. Il reçoit un *problem*, 400 `MALFORMED_BODY` ou 413 `BODY_TOO_LARGE`, de
   `problemErrorHandler` de `@ddd-ts-kit/http/express` et `@ddd-ts-kit/http/fastify` et de
   `ProblemExceptionFilter` de `@ddd-ts-kit/http/nest`, que le `start-http-server.ts` généré installe, et qui journalisent le type de
@@ -312,8 +311,12 @@ D'après [`packages/http/README.md`](../../packages/http/README.fr.md) et
   gros téléchargement passe par un lien signé du stockage. Les événements envoyés par le serveur
   (server-sent events) et les WebSockets s'écrivent nativement dans le framework, hors du contrat
   généré.
-- Express a besoin d'un `express.json()` que vous installez : l'adaptateur n'analyse pas les
-  corps.
+- Sur Express, l'adaptateur lit lui-même le corps de chaque route, toute valeur JSON. Un
+  `express.json()` de l'application passé avant l'emporte, avec sa limite de 100 kB, et refuse
+  avec 400 une valeur JSON qui n'est ni un objet ni un tableau (`null`, un nombre, un texte), sauf
+  avec `strict: false`, comme l'analyseur de NestJS sur Express
+  (`app.useBodyParser('json', { strict: false })`) ; le `start-http-server.ts` généré règle les
+  deux.
 - Les chemins sont faits de segments littéraux et de paramètres `:name` seulement, la forme
   qu'Express et Fastify partagent : pas de routes par expression régulière, pas de jokers.
 - Les valeurs de la query arrivent en chaînes : convertissez-les dans le schéma.

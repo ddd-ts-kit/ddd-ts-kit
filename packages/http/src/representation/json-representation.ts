@@ -47,5 +47,16 @@ function stringified(value: unknown): string {
     return 'null';
   }
 
-  return JSON.stringify(value, (_key, part: unknown) => (typeof part === 'bigint' ? part.toString() : part));
+  // A function, a symbol: `JSON.stringify` answers nothing for them, which its declaration does not say.
+  const text: unknown = JSON.stringify(value, bigIntegersAsText);
+
+  if (typeof text !== 'string') {
+    throw new TypeError('The answer is a value JSON does not write.');
+  }
+
+  return text;
+}
+
+function bigIntegersAsText(_key: string, part: unknown): unknown {
+  return typeof part === 'bigint' ? part.toString() : part;
 }

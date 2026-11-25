@@ -30,6 +30,20 @@ export function answersProblems({ call, post, reported }: AdapterClient): void {
       expect(await issuePaths(response)).toEqual(['body.customerId', 'body.items.0.quantity']);
     });
 
+    it.each([
+      ['null', null],
+      ['a number', 12],
+      ['a text', 'text'],
+    ])(
+      'answers 422, as for any body its schema refuses, when the body is valid JSON that is %s',
+      async (_what, body) => {
+        const response = await post(body);
+
+        expect(response.status).toBe(422);
+        expect(await response.json()).toMatchObject({ code: 'VALIDATION_FAILED' });
+      },
+    );
+
     it('answers 422 when a path or query parameter is not valid', async () => {
       const response = await call('/orders/not-a-uuid?expand=everything');
 

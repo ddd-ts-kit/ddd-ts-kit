@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Representations, type ErrorContext } from '../../src';
 import { until } from '@ddd-ts-kit/testing/e2e';
-import { catalogRoutes, failingExportRoute } from './catalog';
+import { catalogRoutes, failingExportRoute, listedProductsRoute, PRODUCTS } from './catalog';
 import type { RunningServer, StartServer } from './running-server';
 
 /** Negotiation, streaming and XML bodies over a real connection: what each framework must not get in the way of. */
@@ -39,6 +39,26 @@ export function answersInSeveralMediaTypes(start: StartServer): void {
       const response = await fetch(`${server.url}/products`, { headers: { accept: 'image/png' } });
 
       expect(response.status).toBe(406);
+    });
+  });
+
+  describe('without representations', () => {
+    let server: RunningServer;
+
+    beforeAll(async () => {
+      server = await start([listedProductsRoute], {});
+    });
+
+    afterAll(async () => {
+      await server.close();
+    });
+
+    it('answers a list read as it comes as one JSON array', async () => {
+      const response = await fetch(`${server.url}/products/listed`);
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('content-type')).toBe('application/json; charset=utf-8');
+      expect(await response.json()).toEqual(PRODUCTS);
     });
   });
 

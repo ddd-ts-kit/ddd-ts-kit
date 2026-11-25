@@ -141,6 +141,20 @@ describe('the execution context around the handler', () => {
     expect(seen.handed).not.toHaveProperty('deadline');
   });
 
+  it('counts the deadline from the arrival, not from the time the body took to read: the clock is read once', async () => {
+    const { route, seen } = recordingRoute();
+    const arrival = new Date('2026-03-01T10:00:00.000Z');
+    let read = 0;
+
+    // A clock that moves a second at each reading, as time does while an upload is received.
+    const clock = { now: () => new Date(arrival.getTime() + 1000 * read++) };
+
+    await executeRoute({ ...route, admit: () => undefined }, request(), { requestTimeoutMs: 2_500, clock });
+
+    expect(seen.handed?.deadline).toEqual(new Date('2026-03-01T10:00:02.500Z'));
+    expect(read).toBe(1);
+  });
+
   it('runs the handler inside the execution scope, with the very context it hands over', async () => {
     const scope = new AsyncLocalStorageExecutionScope();
     const { route, seen } = recordingRoute(scope);

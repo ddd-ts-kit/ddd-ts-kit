@@ -53,9 +53,11 @@ export async function startHttpServer(served: Served, config: AppConfig): Promis
   mountExpress(app, served.fileRoutes, served.boundary);
 {{/if}}
 
-  // The bytes of a JSON body are kept for a controller that declares `rawBody` (a signed webhook).
+  // The bytes of a JSON body are kept for a controller that declares `rawBody` (a signed webhook). Any JSON
+  // value is read, an object or not (`strict: false`): the schema of the route decides, as on every framework.
   app.use(
     express.json({
+      strict: false,
       verify: (request, _response, bytes) => {
         Object.assign(request, { rawBody: bytes });
       },
@@ -74,7 +76,7 @@ export async function startHttpServer(served: Served, config: AppConfig): Promis
   // Instead of the final handler of Express, which answers HTML: a path no route serves, then an error, the
   // one written to stderr with the body it quotes.
   app.use(problemNotFoundHandler({ logger: served.logger }));
-  app.use(problemErrorHandler({ logger: served.logger }));
+  app.use(problemErrorHandler({ logger: served.logger, errorMapper: served.boundary.errorMapper }));
 
   const server = await listen(app, config.port);
 
