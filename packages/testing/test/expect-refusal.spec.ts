@@ -129,6 +129,32 @@ describe('expectRefusal', () => {
   });
 });
 
+describe('expectRefusal on a promise', () => {
+  const nothing = 'Expected a refusal with code ORDER_ALREADY_PAID, but nothing was refused.';
+
+  it('reads the Result an asynchronous action answers, as it reads the one a synchronous action returns', async () => {
+    const error = await expectRefusal(async () => err(OrderError.alreadyPaid('o-1', paidAt)), 'ORDER_ALREADY_PAID');
+
+    expect(error).toBeInstanceOf(OrderError);
+    await expect(expectRefusal(async () => ok(1), 'ORDER_ALREADY_PAID')).rejects.toThrow(nothing);
+  });
+
+  it('awaits a promise given in place of the action: its rejection is the refusal', async () => {
+    const error = await expectRefusal(Promise.reject(OrderError.alreadyPaid('o-1', paidAt)), 'ORDER_ALREADY_PAID', {
+      orderId: 'o-1',
+    });
+
+    expect(error).toBeInstanceOf(OrderError);
+  });
+
+  it('reads what a promise given in place of the action answers: a Result, or a success', async () => {
+    const refused = Promise.resolve(err(new EmptyOrder('Nothing to pay.')));
+
+    expect(await expectRefusal(refused, 'EMPTY_ORDER')).toBeInstanceOf(EmptyOrder);
+    await expect(expectRefusal(Promise.resolve('done'), 'ORDER_ALREADY_PAID')).rejects.toThrow(nothing);
+  });
+});
+
 describe('thenError with facts', () => {
   const paid = () => {
     const order = anOrder().build();
@@ -177,6 +203,36 @@ describe('expectProblem with facts', () => {
     expect(() => expectProblem(response, { status: 409, facts: { grid: 30 } })).toThrow();
     expect(() => expectProblem(response, { status: 409, facts: { patientId: 'p-1' } })).toThrow();
     expect(() => expectProblem({ ...response, body: { status: 409 } }, { status: 409, facts: { grid: 15 } })).toThrow();
+  });
+});
+
+describe('expectProblem, when the answer is another one', () => {
+  const invalid = {
+    status: 422,
+    headers: { 'content-type': 'application/problem+json; charset=utf-8' },
+    body: {
+      status: 422,
+      code: 'VALIDATION_FAILED',
+      detail: 'startsAt must be in the future',
+      errors: [{ path: 'startsAt' }],
+    },
+  };
+
+  it('shows the body, where the API says why, under what was expected and received', () => {
+    expect(failureOf(() => expectProblem(invalid, { status: 409, code: 'SLOT_TAKEN' }))).toBe(
+      [
+        'The answer is not the expected problem.',
+        "Expected: { contentType: 'application/problem+json', problem: { code: 'SLOT_TAKEN', status: 409 }, status: 409 }",
+        "Received: { contentType: 'application/problem+json', problem: { code: 'VALIDATION_FAILED', status: 422 }, status: 422 }",
+        "Body: { code: 'VALIDATION_FAILED', detail: 'startsAt must be in the future', errors: [ { path: 'startsAt' } ], status: 422 }",
+      ].join('\n'),
+    );
+  });
+
+  it('fails as an assertion does, with what was expected and received for the runner to compare', () => {
+    expect(() => expectProblem(invalid, { status: 409 })).toThrow(
+      expect.objectContaining({ name: 'AssertionError', operator: 'expectProblem' }),
+    );
   });
 });
 
