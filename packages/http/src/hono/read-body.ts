@@ -1,4 +1,5 @@
 import type { Context } from 'hono';
+import { isJsonContentType } from '../representation/is-json-content-type';
 import { mediaTypeOf } from '../representation/media-type-of';
 import { bodyTooLarge, type EdgeRefusal, MALFORMED_BODY } from '../error/edge-refusal';
 
@@ -6,16 +7,14 @@ export type ReadBody =
   | { readonly read: true; readonly value: unknown }
   | { readonly read: false; readonly refusal: EdgeRefusal };
 
-const JSON_MEDIA = /[/+]json\b/;
-
 /**
  * The JSON body of the request, `undefined` when there is none; a body in a media type the route
  * consumes (`consumes`), as text, for its representation to read; not read in any other media
  * type. Read chunk by chunk and given up beyond `limit` bytes, so that no body is held whole past it.
  */
 export async function readBody(context: Context, limit: number, consumed: readonly string[] = []): Promise<ReadBody> {
-  const contentType = context.req.header('content-type') ?? '';
-  const json = JSON_MEDIA.test(contentType);
+  const contentType = context.req.header('content-type');
+  const json = isJsonContentType(contentType);
 
   if (!json && !consumed.includes(mediaTypeOf(contentType) ?? '')) {
     return { read: true, value: undefined };

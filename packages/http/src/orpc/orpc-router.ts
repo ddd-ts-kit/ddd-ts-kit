@@ -46,7 +46,7 @@ export function orpcRouter(routes: readonly Route[], options: ExecuteOptions = {
   return Object.fromEntries(served.map((route) => [route.operationId, procedureOf(route, execute, mapper)]));
 }
 
-/** oRPC writes the answer: no representation is negotiated, and a list read as it comes stays the body, closed when refused. */
+/** oRPC writes the answer: no representation is negotiated, and a list read as it comes is written as JSON, closed when refused. */
 function withoutRepresentations({ representations, ...options }: ExecuteOptions): ExecuteOptions {
   return options;
 }

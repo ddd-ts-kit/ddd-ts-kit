@@ -1,4 +1,3 @@
-import { Writable } from 'node:stream';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { zodSchema } from '@ddd-ts-kit/validation/zod';
@@ -9,11 +8,11 @@ import {
   executeRoute,
   streamSchemaOf,
   type RawRequest,
+  type RouteResponse,
   type Route,
 } from '../src';
 import { AsyncLocalStorageExecutionScope } from '@ddd-ts-kit/kernel';
 import { iteratedWithin } from '../src/pipeline/iterated-within';
-import { writeStream } from '../src/pipeline/write-stream';
 import { SchemaNode } from '../src/schema/schema-node';
 
 const representations = Representations.standard();
@@ -31,6 +30,11 @@ async function* items<T>(...values: T[]): AsyncIterable<T> {
     await Promise.resolve();
     yield value;
   }
+}
+
+/** The chunks an adapter writes for a list read as it comes, in order. */
+function chunksOf({ payload }: RouteResponse): Promise<unknown[]> {
+  return all(payload.kind === 'stream' ? payload.stream : items());
 }
 
 async function all<T>(iterable: AsyncIterable<T>): Promise<T[]> {
@@ -100,74 +104,6 @@ describe('a node of a JSON Schema', () => {
   });
 });
 
-describe('writing a streamed list to a connection', () => {
-  function sink(highWaterMark: number): { target: Writable; written: string[] } {
-    const written: string[] = [];
-
-    const target = new Writable({
-      highWaterMark,
-      write(chunk: Buffer, _encoding, done) {
-        written.push(chunk.toString());
-        setImmediate(done);
-      },
-    });
-
-    return { target, written };
-  }
-
-  it('waits for a slow reader, then ends', async () => {
-    const { target, written } = sink(1);
-
-    await writeStream(
-      target,
-      (async function* () {
-        yield 'a';
-        yield 'b';
-        yield 'c';
-      })(),
-    );
-
-    expect(written).toEqual(['a', 'b', 'c']);
-    expect(target.writableEnded).toBe(true);
-  });
-
-  it('stops reading the list once the reader has left', async () => {
-    const { target, written } = sink(1024);
-    let read = 0;
-
-    target.destroy();
-
-    await writeStream(
-      target,
-      (async function* () {
-        read += 1;
-        yield 'a';
-        read += 1;
-        yield 'b';
-      })(),
-    );
-
-    expect(written).toEqual([]);
-    expect(read).toBe(1);
-  });
-
-  it('cuts the connection when the list fails half way', async () => {
-    const { target } = sink(1024);
-    const closed = new Promise((resolve) => target.on('error', resolve));
-
-    await writeStream(
-      target,
-      (async function* () {
-        yield 'a';
-        throw new Error('cursor lost');
-      })(),
-    );
-
-    expect(await closed).toMatchObject({ message: 'cursor lost' });
-    expect(target.destroyed).toBe(true);
-  });
-});
-
 describe('the pipeline with representations, at its edges', () => {
   const echo = defineRoute(
     {
@@ -195,7 +131,7 @@ describe('the pipeline with representations, at its edges', () => {
 
     expect(none.status).toBe(204);
     expect(none.headers['content-type']).toBeUndefined();
-    expect(await all(empty.stream ?? items())).toEqual(['id\r\n']);
+    expect(await chunksOf(empty)).toEqual(['id\r\n']);
   });
 
   it('leaves a binary body of the handler as it is', async () => {
@@ -304,7 +240,7 @@ describe('a list streamed after its handler returned', () => {
       withPrincipal: (_principal, work) => work(),
     });
 
-    expect(await all(response.stream ?? items())).toEqual(['[', '{"id":"c-42"}', ',{"id":"c-42"}', ']']);
+    expect(await chunksOf(response)).toEqual(['[', '{"id":"c-42"}', ',{"id":"c-42"}', ']']);
   });
 
   it('closes what it reads when the reader stops early', async () => {
