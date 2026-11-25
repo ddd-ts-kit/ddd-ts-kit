@@ -144,6 +144,14 @@ describe('Result', () => {
     expect(unwrap(ok(1))).toBe(1);
     expect(() => unwrap(err(new Error('boom')))).toThrow('boom');
   });
+
+  it('throws an Err that is not an error with what it held as the cause', () => {
+    const refused = { code: 'SLOT_TAKEN' };
+
+    expect(() => unwrap(err(refused))).toThrow(
+      expect.objectContaining({ message: 'unwrap() called on an Err result', cause: refused }),
+    );
+  });
 });
 
 describe('InMemoryEventBus', () => {
