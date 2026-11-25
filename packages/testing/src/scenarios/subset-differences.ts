@@ -1,4 +1,5 @@
 import { isDeepStrictEqual } from 'node:util';
+import { isPlainObject } from './is-plain-object';
 import { show } from './show';
 
 /** Where `actual` differs from the properties `expected` names, one line each: a plain object of `expected` is a subset. */
@@ -13,14 +14,4 @@ export function subsetDifferences(actual: unknown, expected: unknown, path: stri
   }
 
   return isDeepStrictEqual(actual, expected) ? [] : [`${path}: expected ${show(expected)}, recorded ${show(actual)}`];
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-
-  const prototype: unknown = Object.getPrototypeOf(value);
-
-  return prototype === Object.prototype || prototype === null;
 }

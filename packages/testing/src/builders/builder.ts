@@ -1,6 +1,7 @@
 import type { Buildable } from './buildable';
 import type { Defaults } from './defaults';
 import { isResolvable } from './is-resolvable';
+import { isPlainObject } from '../scenarios/is-plain-object';
 import { RESOLVE, type Resolvable } from './resolvable';
 
 /**
@@ -40,12 +41,8 @@ export abstract class Builder<Props extends object, Output> implements Resolvabl
    * payload of an API (`buildRequest()`). Each call draws its own lazy and sequence values.
    */
   protected props(): Props {
-    const values: Record<PropertyKey, unknown> = { ...this.defaults(), ...this.overrides };
-
-    const props = Object.fromEntries(Reflect.ownKeys(values).map((key) => [key, resolveValue(values[key])]));
-
-    // eslint-disable-next-line ddd-ts-kit/clean-no-escape-hatch -- every key of Props was resolved to its value type above, which the compiler cannot follow through Object.fromEntries
-    return props as Props;
+    // eslint-disable-next-line ddd-ts-kit/clean-no-escape-hatch -- every key of Props is resolved to its value type, which the compiler cannot follow through Object.fromEntries
+    return resolveEach({ ...this.defaults(), ...this.overrides }) as Props;
   }
 
   /** Adds items to an array property, after the ones already set or declared by default. */
@@ -81,14 +78,23 @@ export abstract class Builder<Props extends object, Output> implements Resolvabl
   }
 }
 
-// Arrays are walked so builders can sit in a list; plain objects are left alone because a
-// domain object must never be rewritten by the builder that carries it.
+// Lists and plain data are walked and copied, so builders can sit in them and no build hands out
+// an object of the defaults, which the next build would then share. An instance of a class is
+// handed as it is: a domain object must never be rewritten by the builder that carries it.
 function resolveValue(value: unknown): unknown {
   if (isResolvable(value)) {
     return resolveValue(value[RESOLVE]());
   }
 
-  return Array.isArray(value) ? value.map(resolveValue) : value;
+  if (Array.isArray(value)) {
+    return value.map(resolveValue);
+  }
+
+  return isPlainObject(value) ? resolveEach(value) : value;
+}
+
+function resolveEach(values: Record<PropertyKey, unknown>): Record<PropertyKey, unknown> {
+  return Object.fromEntries(Reflect.ownKeys(values).map((key) => [key, resolveValue(values[key])]));
 }
 
 function isList(value: unknown): value is readonly unknown[] {

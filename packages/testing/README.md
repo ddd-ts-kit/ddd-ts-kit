@@ -220,6 +220,9 @@ aLine().with('quantity', 3).build(); // { sku: 'sku-1', quantity: 3 }
   and inside arrays: `.with('lines', [aLine(), { sku: 'pen', quantity: 2 }])`.
 - `sequence('order')` yields `order-1`, `order-2`... at each build; `lazy(() => new Date())`
   computes a default at each build. A value given with `with` consumes nothing.
+- Plain data (an object literal, a list) is copied at each build, in the defaults and in what
+  `with` was given: changing a built value never changes the next one. An instance of a class (a
+  `Date`, a value object, an aggregate) is handed as it is.
 - Call `resetSequences()` in `beforeEach`, so a test does not depend on the ones before it.
 - The class form keeps `with`, `withMany` and `adding` protected on purpose: the public
   surface of an aggregate builder is the language of the domain, not its property names.

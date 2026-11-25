@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:4c97e3ed6dfdce56 -->
+<!-- translation-of: README.md sha256:3ffd5476e147e5dc -->
 
 # @ddd-ts-kit/testing
 
@@ -224,6 +224,9 @@ aLine().with('quantity', 3).build(); // { sku: 'sku-1', quantity: 3 }
   et dans les tableaux : `.with('lines', [aLine(), { sku: 'pen', quantity: 2 }])`.
 - `sequence('order')` donne `order-1`, `order-2`... à chaque construction ; `lazy(() => new Date())`
   calcule une valeur par défaut à chaque construction. Une valeur donnée par `with` ne consomme rien.
+- Une donnée simple (un objet littéral, une liste) est copiée à chaque construction, dans les valeurs
+  par défaut comme dans ce que `with` a reçu : modifier une valeur construite ne change jamais la
+  suivante. Une instance de classe (une `Date`, un objet-valeur, un agrégat) est remise telle quelle.
 - Appelez `resetSequences()` dans `beforeEach`, pour qu'un test ne dépende pas de ceux qui le précèdent.
 - La forme en classe garde `with`, `withMany` et `adding` protégées à dessein : la surface publique
   d'un *builder* d'agrégat est le langage du domaine, pas les noms de ses propriétés.
