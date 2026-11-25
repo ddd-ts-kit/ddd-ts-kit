@@ -357,7 +357,7 @@ the same with the arrangement as a function, replayed from a fresh aggregate at 
 
 | Assertion | Passes when |
 |---|---|
-| `thenEvents([...])` | exactly these events, in order; each described by its name, its class, or the properties that matter |
+| `thenEvents([...])` | exactly these events, in order; each described by its name, its class, or the properties that matter: a subset at any depth, an object of a list included (a list is read position by position and has the expected number of items). A matcher names at least one property: `{}` is refused, since any event would match it |
 | `thenEventNames([...])` | exactly these names, in order |
 | `thenNoEvent()` | nothing was recorded |
 | `thenError(code)`, `thenError(code, facts)` | the action refused with that code, whatever the class of the error, carrying these facts when given (it may carry others) |

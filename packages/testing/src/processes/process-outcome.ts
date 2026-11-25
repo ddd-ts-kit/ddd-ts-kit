@@ -2,6 +2,7 @@ import { AssertionError } from 'node:assert';
 import { isDeepStrictEqual } from 'node:util';
 import type { ProcessDecision, ProcessTimeout } from '@ddd-ts-kit/kernel';
 import { show } from '../scenarios/show';
+import { namingAProperty } from '../scenarios/naming-a-property';
 import { subsetDifferences } from '../scenarios/subset-differences';
 import type { CommandMatcher } from './command-matcher';
 
@@ -93,5 +94,5 @@ function commandMismatches(command: unknown, matcher: CommandMatcher, where: str
       : [`${where}: expected an instance of ${matcher.name}, decided ${show(command)}`];
   }
 
-  return subsetDifferences(command, matcher, where);
+  return subsetDifferences(command, namingAProperty(matcher, 'command', 'the class'), where);
 }

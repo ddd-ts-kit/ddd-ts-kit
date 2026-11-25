@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:515c5051faa6a28a -->
+<!-- translation-of: README.md sha256:b85ae5663b1b1f13 -->
 
 # @ddd-ts-kit/testing
 
@@ -361,7 +361,7 @@ le même `given(aggregate)` agirait sur ce que le premier a laissé, et lève un
 
 | Assertion | Passe quand |
 |---|---|
-| `thenEvents([...])` | exactement ces événements, dans l'ordre ; chacun décrit par son nom, sa classe, ou les propriétés qui comptent |
+| `thenEvents([...])` | exactement ces événements, dans l'ordre ; chacun décrit par son nom, sa classe, ou les propriétés qui comptent : un sous-ensemble à toute profondeur, objet d'une liste compris (une liste se lit position par position et a le nombre d'éléments attendu). Un *matcher* nomme au moins une propriété : `{}` est refusé, puisque tout événement lui correspondrait |
 | `thenEventNames([...])` | exactement ces noms, dans l'ordre |
 | `thenNoEvent()` | rien n'a été enregistré |
 | `thenError(code)`, `thenError(code, facts)` | l'action a refusé avec ce code, quelle que soit la classe de l'erreur, en portant ces faits s'ils sont donnés (elle peut en porter d'autres) |

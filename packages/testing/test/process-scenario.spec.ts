@@ -68,6 +68,16 @@ describe('a step of a process, given a state', () => {
     expect(() => givenProcess<Dunning>(undefined).when(issued).thenEnded()).toThrow(/expected the process to end/);
   });
 
+  it('refuses a command matcher that names no property, which any command would match', () => {
+    const outcome = givenProcess<Dunning>({ invoiceId: 'invoice-1', stage: 'waiting' }).when(paid);
+
+    expect(() => outcome.thenCommands([{}])).toThrow(
+      new TypeError(
+        'A command matcher names at least one property: {} would match any command. Give the class of the command to expect it whatever it carries.',
+      ),
+    );
+  });
+
   it('refuses a state that the JSON of the store would change', () => {
     const dated = (): ProcessDecision<{ readonly since: Date }> => ({ state: { since: due } });
 
