@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:3b47e27489008acf -->
+<!-- translation-of: README.md sha256:dfc37c6f40e46e36 -->
 
 # @ddd-ts-kit/auth
 
@@ -281,6 +281,11 @@ ceux qu'accepte `appliesTo`. L'acteur anonyme est refusé avant qu'aucune politi
 interrogée, avec `UnauthenticatedError` (401), comme sur le bus. Une politique est un simple
 objet : sa *spec* appelle `onlyIssuerVoidsSameDay.allows(actor, invoice, { now })` et n'a
 besoin de rien d'autre.
+
+`allows` est synchrone et répond `true`, `false` ou une décision (`{ allowed: false, reason }`),
+sur ce que le *handler* a chargé. Une réponse qui n'est ni l'un ni l'autre, la promesse d'un
+`allows` écrit `async` comprise, n'autorise personne : `Access` lève `AuthorizationSetupError`
+avec le nom de la politique, un défaut à corriger plutôt qu'un refus de l'acteur.
 
 Un cas d'usage protégé rencontre deux points de contrôle. La garde du bus décide de l'action,
 avant le gestionnaire et avant toute transaction ; `Access` décide de l'élément, une fois que le

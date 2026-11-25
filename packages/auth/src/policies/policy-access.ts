@@ -8,10 +8,12 @@ import type { CheckRequest } from '../authorization/check-request';
 import { ALLOWED, deny, type Decision } from '../authorization/decision';
 import { decisionRecordOf } from '../authorization/decision-record-of';
 import { DenialReason } from '../authorization/denial-reason';
+import { isDecision } from '../authorization/is-decision';
 import { isResourceRef } from '../authorization/is-resource-ref';
 import type { OnDecision } from '../authorization/on-decision';
 import type { ResourceRef } from '../authorization/resource-ref';
 import { workTenantOf } from '../authorization/work-tenant-of';
+import { AuthorizationSetupError } from '../errors/authorization-setup-error';
 import { ForbiddenError } from '../errors/forbidden-error';
 import { ListingNotSupportedError } from '../errors/listing-not-supported-error';
 import { UnauthenticatedError } from '../errors/unauthenticated-error';
@@ -134,16 +136,26 @@ interface Asking {
   readonly subject: unknown;
 }
 
+/**
+ * What the policy answers, read rather than trusted: a boolean, or a decision. Anything else, the
+ * promise of an `allows` written `async` included, is a defect of the policy, never a verdict.
+ */
 function verdictOf(policy: Policy<unknown>, { actor, subject }: Asking, context: PolicyContext): Decision {
   if (policy.appliesTo !== undefined && !policy.appliesTo(subject)) {
     return deny(DenialReason.subjectMismatch);
   }
 
-  const verdict = policy.allows(actor, subject, context);
+  const verdict: unknown = policy.allows(actor, subject, context);
 
-  if (typeof verdict !== 'boolean') {
-    return verdict;
+  if (typeof verdict === 'boolean') {
+    return verdict ? ALLOWED : deny(policy.name);
   }
 
-  return verdict ? ALLOWED : deny(policy.name);
+  if (!isDecision(verdict)) {
+    throw new AuthorizationSetupError(
+      `Policy "${policy.name}" answered neither a boolean nor a decision: allows is synchronous.`,
+    );
+  }
+
+  return verdict;
 }

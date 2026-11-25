@@ -274,6 +274,11 @@ accepts. The anonymous actor is refused before any policy is asked, with `Unauth
 (401), as on the bus. A policy is a plain object: its spec calls
 `onlyIssuerVoidsSameDay.allows(actor, invoice, { now })` and needs nothing else.
 
+`allows` is synchronous and answers `true`, `false` or a decision (`{ allowed: false, reason }`),
+on what the handler loaded. An answer that is neither, the promise of an `allows` written
+`async` included, allows nobody: `Access` raises `AuthorizationSetupError` with the name of the
+policy, a defect to fix rather than a refusal of the actor.
+
 A protected use case meets two checkpoints. The guard of the bus decides on the action, before
 the handler and before any transaction; `Access` decides on the element, once the handler has
 loaded it. Each refusal has its error, its code and its HTTP status:
