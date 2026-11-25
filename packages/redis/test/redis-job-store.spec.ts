@@ -124,8 +124,8 @@ describe.each(SERVERS)('RedisJobStore, %s', (_name, start) => {
       await store.add({ ...job, id });
     }
 
-    for (const { id, attempt } of await store.claim({ queue: 'billing', limit: 2, now: job.runAt, leaseMs: 1_000 })) {
-      await store.fail({ id, attempt }, { errorCode: 'LEDGER_DOWN', retryAt: null, at: job.runAt });
+    for (const { lease } of await store.claim({ queue: 'billing', limit: 2, now: job.runAt, leaseMs: 1_000 })) {
+      await store.fail(lease, { errorCode: 'LEDGER_DOWN', retryAt: null, at: job.runAt });
     }
 
     await new InMemoryUnitOfWork().run(async () => {

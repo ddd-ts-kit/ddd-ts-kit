@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { JobLease } from '@ddd-ts-kit/scheduling';
 import { claimedJobOfRecord } from '../src/jobs/claimed-job-of-record';
 import { parseJobRecord } from '../src/jobs/parse-job-record';
 import { queuedJobOfRecord } from '../src/jobs/queued-job-of-record';
@@ -16,6 +17,7 @@ const record = {
   seq: 1,
   status: 'running',
   attempts: 2,
+  claims: 3,
   runAt: 1_000,
   enqueuedAt: 500,
   checkpoint: '{"after":"c-1"}',
@@ -34,6 +36,7 @@ describe('a record of the Redis job store', () => {
       enqueuedBy: { correlationId: 'c', actor, tenantId: 't', traceparent: '00-a-b-01' },
       enqueuedAt: new Date(500),
       attempt: 2,
+      lease: { id: 'job-1', claim: 3 },
       checkpoint: { after: 'c-1' },
     });
   });
@@ -73,7 +76,7 @@ describe('a record of the Redis job store', () => {
 describe('RedisJobStore whose server is away', () => {
   it('rejects every call that reaches the server, and claims nothing without asking it', async () => {
     const store = new RedisJobStore(connectToNothing(), { namespace: 'billing' });
-    const lease = { id: 'job-1', attempt: 1 };
+    const lease = JobLease.ofClaim('job-1', 1);
     const now = new Date();
 
     const calls = [

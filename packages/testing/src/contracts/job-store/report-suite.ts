@@ -4,9 +4,11 @@ import { LEASE_MS, NOW, QUEUE } from './job-fixtures';
 import { later } from './later';
 import type { JobStoreUnderContract } from './job-store-under-contract';
 
-const FIRST = { id: 'job-1', attempt: 1 };
+const FIRST = { id: 'job-1', claim: 1 };
 
-/** What a worker reports of an attempt: progress and checkpoint, success, failure, release. Only the attempt that holds the job is heard. */
+const SECOND = { id: 'job-1', claim: 2 };
+
+/** What a worker reports of an attempt: progress and checkpoint, success, failure, release. Only the claim that holds the job is heard. */
 export class ReportSuite extends ContractSuite<JobStoreUnderContract> {
   protected tests(): void {
     this.progress();
@@ -14,6 +16,7 @@ export class ReportSuite extends ContractSuite<JobStoreUnderContract> {
     this.deadAndRevived();
     this.released();
     this.stale();
+    this.neverLeasedTwice();
   }
 
   private progress(): void {
@@ -134,10 +137,76 @@ export class ReportSuite extends ContractSuite<JobStoreUnderContract> {
       this.expect((await this.subject.find('job-1'))?.status).toBe('running');
 
       this.holds(
-        await this.subject.complete({ id: 'job-1', attempt: 2 }, later(LEASE_MS)),
+        await this.subject.complete(SECOND, later(LEASE_MS)),
         'the success reported by the attempt that took the lease over was refused',
       );
     });
+  }
+
+  private neverLeasedTwice(): void {
+    this.it(
+      'gives a released job a new lease: the run left behind is not heard, its attempt is given back',
+      async () => {
+        await this.claimFirst();
+        await this.subject.release(FIRST, NOW);
+
+        const [again] = await this.claim(NOW);
+
+        this.expect([again?.attempt, again?.lease]).toEqual([1, SECOND]);
+        await this.refusesTheFirstLease('of a run that released the job');
+
+        this.holds(
+          await this.subject.update(SECOND, { checkpoint: { after: 'c-2' } }, later(LEASE_MS)),
+          'the checkpoint reported by the claim that took a released job was refused',
+        );
+
+        this.expect((await this.claim(later(LEASE_MS)))[0]?.checkpoint).toEqual({ after: 'c-2' });
+      },
+    );
+
+    this.it('gives a revived job a new lease: the run that died with it is not heard', async () => {
+      await this.claimFirst();
+      await this.subject.fail(FIRST, { errorCode: 'LEDGER_DOWN', retryAt: null, at: NOW });
+      await this.subject.retryDead(['job-1'], NOW);
+
+      const [revived] = await this.claim(NOW);
+
+      this.expect([revived?.attempt, revived?.lease]).toEqual([1, SECOND]);
+      await this.refusesTheFirstLease('of a run from before the job was revived');
+
+      this.holds(
+        await this.subject.complete(SECOND, later(5_000)),
+        'the success reported by the claim that took a revived job was refused',
+      );
+    });
+  }
+
+  /** The job is held under its second lease: nothing the first one reports changes it. */
+  private async refusesTheFirstLease(run: string): Promise<void> {
+    this.holds(
+      !(await this.subject.heartbeat(FIRST, later(LEASE_MS * 2))),
+      `the heartbeat ${run} was accepted under the lease of the next claim`,
+    );
+
+    this.holds(
+      !(await this.subject.update(FIRST, { checkpoint: { after: 'c-1' } }, later(LEASE_MS * 2))),
+      `the checkpoint ${run} was accepted under the lease of the next claim`,
+    );
+
+    this.holds(
+      !(await this.subject.complete(FIRST, later(LEASE_MS))),
+      `the success ${run} was accepted under the lease of the next claim`,
+    );
+
+    this.holds(
+      !(await this.subject.fail(FIRST, { errorCode: 'X', retryAt: null, at: NOW })),
+      `the failure ${run} was accepted under the lease of the next claim`,
+    );
+
+    this.holds(
+      !(await this.subject.release(FIRST, NOW)),
+      `the release ${run} was accepted under the lease of the next claim`,
+    );
   }
 
   private async claimFirst(): Promise<void> {

@@ -98,7 +98,12 @@ export class PrismaJobStore<Tx extends PrismaRawQueries> implements JobStore {
 
       await this.jobs().updateMany({
         where: { id: { in: ids } },
-        data: { status: 'running', attempts: { increment: 1 }, leaseUntil: new Date(now.getTime() + leaseMs) },
+        data: {
+          status: 'running',
+          attempts: { increment: 1 },
+          claims: { increment: 1 },
+          leaseUntil: new Date(now.getTime() + leaseMs),
+        },
       });
 
       const order = new Map(ids.map((id, index) => [id, index]));
@@ -190,10 +195,10 @@ export class PrismaJobStore<Tx extends PrismaRawQueries> implements JobStore {
     return { waiting, running, dead };
   }
 
-  /** Changes the row only while this attempt holds it. */
+  /** Changes the row only while the claim of this lease holds it. */
   private async holding(lease: JobLease, data: PrismaJobUpdate): Promise<boolean> {
     const { count } = await this.jobs().updateMany({
-      where: { id: lease.id, status: 'running', attempts: lease.attempt },
+      where: { id: lease.id, status: 'running', claims: lease.claim },
       data,
     });
 

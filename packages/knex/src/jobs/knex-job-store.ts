@@ -76,6 +76,7 @@ export class KnexJobStore implements JobStore {
           .update({
             status: 'running',
             attempts: transaction.raw('?? + 1', ['attempts']),
+            claims: transaction.raw('?? + 1', ['claims']),
             lease_until: new Date(request.now.getTime() + request.leaseMs),
           });
       }
@@ -183,10 +184,10 @@ export class KnexJobStore implements JobStore {
       .limit(limit);
   }
 
-  /** Changes the row only while this attempt holds it. */
+  /** Changes the row only while the claim of this lease holds it. */
   private async holding(lease: JobLease, change: Readonly<Record<string, unknown>>): Promise<boolean> {
     const changed = await this.rows(this.context.executor())
-      .where({ id: lease.id, status: 'running', attempts: lease.attempt })
+      .where({ id: lease.id, status: 'running', claims: lease.claim })
       .update(change);
 
     return changed === 1;

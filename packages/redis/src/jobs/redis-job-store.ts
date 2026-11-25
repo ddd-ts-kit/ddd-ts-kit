@@ -33,8 +33,8 @@ interface Transition {
   readonly id: string;
   /** The statuses the record may be in, space separated. */
   readonly from: string;
-  /** The attempt that must hold the record, when one must. */
-  readonly attempt?: number;
+  /** The lease that must hold the record, when one must. */
+  readonly lease?: JobLease;
   readonly change: Change;
 }
 
@@ -255,11 +255,11 @@ export class RedisJobStore implements JobStore {
   }
 
   private holding(lease: JobLease, change: Change): Promise<boolean> {
-    return this.transition({ id: lease.id, from: 'running', attempt: lease.attempt, change });
+    return this.transition({ id: lease.id, from: 'running', lease, change });
   }
 
   /** The queue of a job never changes: it is read first, to name the keys the script may touch. */
-  private async transition({ id, from, attempt, change }: Transition): Promise<boolean> {
+  private async transition({ id, from, lease, change }: Transition): Promise<boolean> {
     const record = await this.record(id);
 
     if (record === undefined) {
@@ -272,7 +272,7 @@ export class RedisJobStore implements JobStore {
       this.key('finished'),
     ];
 
-    const held = attempt === undefined ? '' : String(attempt);
+    const held = lease === undefined ? '' : String(lease.claim);
 
     const applied = await this.client.eval(
       TRANSITION_JOB,

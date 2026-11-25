@@ -31,6 +31,8 @@ export async function createJobTable(knex: Knex, options: JobTableOptions = {}):
     columns.string('subject', INDEXABLE_LENGTH);
     columns.string('status', 16).notNullable().defaultTo('waiting');
     columns.integer('attempts').notNullable().defaultTo(0);
+    // The lease of the claim that holds the job: counted at each claim, never given back.
+    columns.integer('claims').notNullable().defaultTo(0);
     columns.datetime('run_at', INSTANT).notNullable();
     columns.datetime('lease_until', INSTANT);
     columns.jsonb('progress');

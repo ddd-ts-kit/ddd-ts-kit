@@ -2,11 +2,11 @@ import { and, eq, inArray, lt, lte, or, sql, type SQL, type TablesRelationalConf
 import type { PgQueryResultHKT, PgUpdateSetSource } from 'drizzle-orm/pg-core';
 import type { EnqueuedJob, QueuedJob } from '@ddd-ts-kit/kernel';
 import {
+  JobLease,
   tenantKeyOf,
   type ClaimedJob,
   type ClaimRequest,
   type JobFailure,
-  type JobLease,
   type JobStore,
   type JobStoreStats,
   type JobUpdate,
@@ -80,7 +80,12 @@ export class DrizzleJobStore<
 
       const claimed = await transaction
         .update(jobs)
-        .set({ status: 'running', attempts: sql`${jobs.attempts} + 1`, leaseUntil: new Date(now.getTime() + leaseMs) })
+        .set({
+          status: 'running',
+          attempts: sql`${jobs.attempts} + 1`,
+          claims: sql`${jobs.claims} + 1`,
+          leaseUntil: new Date(now.getTime() + leaseMs),
+        })
         .where(
           inArray(
             jobs.id,
@@ -214,7 +219,7 @@ export class DrizzleJobStore<
     );
   }
 
-  /** Changes the row only while this attempt holds it. */
+  /** Changes the row only while the claim of this lease holds it. */
   private async holding(lease: JobLease, change: Change): Promise<boolean> {
     const { jobs } = this;
 
@@ -222,13 +227,14 @@ export class DrizzleJobStore<
       .executor()
       .update(jobs)
       .set(change)
-      .where(and(eq(jobs.id, lease.id), eq(jobs.status, 'running'), eq(jobs.attempts, lease.attempt)))
+      .where(and(eq(jobs.id, lease.id), eq(jobs.status, 'running'), eq(jobs.claims, lease.claim)))
       .returning({ id: jobs.id });
 
     return changed.length === 1;
   }
 }
 
+/** A row as the worker receives it, read after the claim counted the attempt and the lease. */
 function claimedOf(row: JobRow): ClaimedJob {
   return {
     id: row.id,
@@ -238,6 +244,7 @@ function claimedOf(row: JobRow): ClaimedJob {
     enqueuedBy: row.enqueuedBy,
     enqueuedAt: row.enqueuedAt,
     attempt: row.attempts,
+    lease: JobLease.ofClaim(row.id, row.claims),
     ...(row.checkpoint === null ? {} : { checkpoint: row.checkpoint }),
   };
 }

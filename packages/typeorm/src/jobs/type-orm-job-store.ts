@@ -1,11 +1,11 @@
 import { In, LessThan, type EntityManager, type EntitySchema } from 'typeorm';
 import type { EnqueuedJob, QueuedJob } from '@ddd-ts-kit/kernel';
 import {
+  JobLease,
   tenantKeyOf,
   type ClaimedJob,
   type ClaimRequest,
   type JobFailure,
-  type JobLease,
   type JobStore,
   type JobStoreStats,
   type JobUpdate,
@@ -94,7 +94,12 @@ export class TypeOrmJobStore implements JobStore {
         await transaction.update(
           this.jobs,
           { id: In(due.map((row) => row.id)) },
-          { status: 'running', attempts: () => 'attempts + 1', leaseUntil: new Date(now.getTime() + leaseMs) },
+          {
+            status: 'running',
+            attempts: () => 'attempts + 1',
+            claims: () => 'claims + 1',
+            leaseUntil: new Date(now.getTime() + leaseMs),
+          },
         );
       }
 
@@ -196,17 +201,17 @@ export class TypeOrmJobStore implements JobStore {
     return { waiting: Number(row?.waiting ?? 0), running: Number(row?.running ?? 0), dead: Number(row?.dead ?? 0) };
   }
 
-  /** Changes the row only while this attempt holds it. */
+  /** Changes the row only while the claim of this lease holds it. */
   private async holding(lease: JobLease, change: Change): Promise<boolean> {
     const changed = await this.context
       .manager()
-      .update(this.jobs, { id: lease.id, status: 'running', attempts: lease.attempt }, change);
+      .update(this.jobs, { id: lease.id, status: 'running', claims: lease.claim }, change);
 
     return changed.affected === 1;
   }
 }
 
-/** A row as the worker receives it, the attempt of this claim counted. */
+/** A row read before its claim was written, as the worker receives it: the attempt and the lease of this claim counted. */
 function claimedOf(row: JobRow): ClaimedJob {
   return {
     id: row.id,
@@ -216,6 +221,7 @@ function claimedOf(row: JobRow): ClaimedJob {
     enqueuedBy: row.enqueuedBy,
     enqueuedAt: row.enqueuedAt,
     attempt: row.attempts + 1,
+    lease: JobLease.ofClaim(row.id, row.claims + 1),
     ...(row.checkpoint === null ? {} : { checkpoint: row.checkpoint }),
   };
 }

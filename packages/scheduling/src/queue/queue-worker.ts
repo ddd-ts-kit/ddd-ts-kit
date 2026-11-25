@@ -249,7 +249,7 @@ export class QueueWorker {
   private async giveBack(claimed: readonly ClaimedJob[]): Promise<void> {
     const now = this.options.clock.now();
 
-    await Promise.all(claimed.map((job) => this.options.store.release({ id: job.id, attempt: job.attempt }, now)));
+    await Promise.all(claimed.map((job) => this.options.store.release(job.lease, now)));
   }
 
   private launch(queue: QueueState, job: ClaimedJob): void {
