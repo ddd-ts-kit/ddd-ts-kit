@@ -12,8 +12,8 @@ import type { FastifyMountOptions } from './fastify-mount-options';
  * Registers the routes on a Fastify 5 instance. Validation stays in the shared pipeline. The
  * routes are registered in a context of their own: where they read JSON, an empty body reaches
  * them as absent, as on Express and Hono; those that read their body as a stream (an upload, a raw
- * body) in another, where no body parser runs. The rest of the instance keeps its parsers. A media
- * type a route consumes (`consumes`) is given a parser that hands the body over as text.
+ * body) in another, where no body parser runs. A media type a route consumes (`consumes`) is given, in
+ * that context too, a parser that hands the body over as text. The rest of the instance keeps its parsers.
  */
 export function mountFastify(
   instance: FastifyInstance,
@@ -27,10 +27,9 @@ export function mountFastify(
   const streamed = routes.filter(readsItsStream);
   const parsed = routes.filter((route) => !readsItsStream(route));
 
-  readAsText(instance, parsed);
-
   void instance.register(async (scope) => {
     readEmptyJsonAsAbsent(scope);
+    readAsText(scope, parsed);
     register(scope, parsed, options);
   });
 
@@ -69,11 +68,12 @@ function readEmptyJsonAsAbsent(scope: FastifyInstance): void {
   });
 }
 
-function readAsText(instance: FastifyInstance, routes: readonly Route[]): void {
+/** In the context of the routes only. A media type the application already parses is left to its parser. */
+function readAsText(scope: FastifyInstance, routes: readonly Route[]): void {
   const consumed = new Set(routes.flatMap((route) => route.consumes ?? []));
 
-  for (const mediaType of [...consumed].filter((type) => !instance.hasContentTypeParser(type))) {
-    instance.addContentTypeParser(mediaType, { parseAs: 'string' }, (_request, body, done) => {
+  for (const mediaType of [...consumed].filter((type) => !scope.hasContentTypeParser(type))) {
+    scope.addContentTypeParser(mediaType, { parseAs: 'string' }, (_request, body, done) => {
       done(null, body);
     });
   }
