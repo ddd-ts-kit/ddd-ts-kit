@@ -62,7 +62,8 @@ export class JobRunner {
   /*
    * The lock is not released when the run ends: an instance whose timer fires a little later
    * would take it and run the occurrence again. It is kept until this instance handles the next
-   * occurrence of the job, or until its time to live has passed.
+   * occurrence of the job, or until its time to live has passed. Letting it go then is at best: a
+   * lock that cannot be released ends at its time to live, and refuses nothing of the next one.
    */
   private async holds(job: RegisteredJob, { scheduledAt, manual }: Occurrence): Promise<boolean> {
     if (!job.policy.singleInstance || manual) {
@@ -73,7 +74,7 @@ export class JobRunner {
     const ttlMs = (timeoutMs ?? this.options.lockTtlMs) + jitterMs + this.options.lateAfterMs;
 
     try {
-      await job.held?.release();
+      await job.held?.release().catch(() => undefined);
       job.held = await this.options.lock.acquire(`job:${job.name}:${scheduledAt.toISOString()}`, { ttlMs });
     } catch (error) {
       throw new JobLockUnavailableError(job.name, { cause: error });
