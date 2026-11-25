@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DomainEventDispatcher } from '@ddd-ts-kit/kernel';
+import { DomainEventDispatcher, ranked } from '@ddd-ts-kit/kernel';
 import { contextModule, kernelModule } from '../src';
 import { createApplication, createTestApplication } from './support/on-container';
 import * as ledger from './fixtures/contexts/ledger/ledger.declarations';
@@ -17,7 +17,9 @@ describe('a projection fed by the event store', () => {
 
     expect(await app.get(Balances).get('account-1')).toBeUndefined();
 
-    await app.get(BalancesProjection).moved(new MoneyMoved('account-1', new Date('2026-10-10T12:00:00Z'), 500));
+    await app
+      .get(BalancesProjection)
+      .moved(ranked(new MoneyMoved('account-1', new Date('2026-10-10T12:00:00Z'), 500), 1));
 
     expect(await app.get(Balances).get('account-1')).toEqual({ accountId: 'account-1', cents: 500 });
   });

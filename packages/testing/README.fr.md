@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:0056fde891a2098b -->
+<!-- translation-of: README.md sha256:77e42d057795cd80 -->
 
 # @ddd-ts-kit/testing
 
@@ -55,11 +55,11 @@ class OrderAlreadyPaid extends DomainRefusal {
 
 class OrderPaid extends NamedDomainEvent('ordering.order.paid') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly amount: number,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

@@ -3,8 +3,8 @@ import { NamedDomainEvent } from '@ddd-ts-kit/kernel';
 /** A member left an organisation, or was removed from it. */
 export class MemberRemoved extends NamedDomainEvent('{{context.kebab}}.member.removed') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly facts: {
       readonly organisationId: string;
       readonly accountId: string;
@@ -12,6 +12,6 @@ export class MemberRemoved extends NamedDomainEvent('{{context.kebab}}.member.re
       readonly delegationId?: string;
     },
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }

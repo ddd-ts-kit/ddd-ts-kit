@@ -36,11 +36,11 @@ import { NamedDomainEvent } from '@ddd-ts-kit/kernel';
 // contexts/scheduling/domain/events/appointment-booked.event.ts (simplified)
 export class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly slot: Slot, // a type of the model, which consumers never see
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 ```
@@ -343,14 +343,7 @@ the context of the unit of work.
 import { NamedDomainEvent } from '@ddd-ts-kit/kernel';
 import { DomainEventHandler } from '@ddd-ts-kit/kernel/declarations';
 
-class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {}
 
 /** A board of free slots kept in a cache: refreshing it may fail without harm. */
 export abstract class AvailabilityBoard {
@@ -388,14 +381,7 @@ import { NamedDomainEvent,
   type DomainEvent,
 } from '@ddd-ts-kit/kernel';
 
-class SlotHeld extends NamedDomainEvent('scheduling.slot.held') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+class SlotHeld extends NamedDomainEvent('scheduling.slot.held') {}
 
 class Slot extends AggregateRoot {
   static hold(id: string, now: Date): Slot {
@@ -672,6 +658,11 @@ calling back defeats the autonomy the event was meant to give.
 
 ## What the kit provides
 
+- A domain event has a rank and an identity it does not write itself. The aggregate that records
+  it gives it its rank in its history, from 1 (`rankOf(event)`), and `eventIdOf(event)` is
+  `<name>:<aggregateId>:<rank>`: nothing is drawn, so the event a save dispatches and the same
+  event read back from a stream are one. `stampOf(event)` carries the rank as the version of the
+  row of a read model, which orders the events one command records at the same instant.
 - `defineIntegrationEvent` gives the payload type, validates what is published and what is
   consumed, and feeds the generated catalog and AsyncAPI document
   (`events/defined-in-published-language`).

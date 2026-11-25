@@ -294,14 +294,7 @@ export class AppointmentAlreadyCancelled extends DomainRefusal {
 }
 
 // The fact, in the past tense.
-export class AppointmentCancelled extends NamedDomainEvent('appointments.appointment.cancelled') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class AppointmentCancelled extends NamedDomainEvent('appointments.appointment.cancelled') {}
 
 type AppointmentStatus = 'booked' | 'cancelled';
 

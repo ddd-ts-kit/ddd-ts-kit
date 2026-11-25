@@ -6,6 +6,7 @@ import {
   PostgresReadModelRebuild,
   defineCriteria,
   isNewer,
+  ranked,
   stampOf,
   writeIfNewer,
   type DomainEvent,
@@ -42,14 +43,13 @@ describe('event stamps', () => {
       payload: {},
     };
 
-    const domain: DomainEvent = {
-      name: 'clinic.visit.scheduled',
-      aggregateId: 'visit-7',
-      occurredAt: new Date('2026-10-10T12:00:02.000Z'),
-    };
+    const domain: DomainEvent = ranked(
+      { name: 'clinic.visit.scheduled', aggregateId: 'visit-7', occurredAt: new Date('2026-10-10T12:00:02.000Z') },
+      3,
+    );
 
     expect(stampOf(integration)).toEqual(at('evt-1', 1));
-    expect(stampOf(domain)).toEqual(at('clinic.visit.scheduled:visit-7', 2));
+    expect(stampOf(domain)).toEqual(at('clinic.visit.scheduled:visit-7:3', 2, 3));
     expect(stampOf(integration, 12)).toEqual(at('evt-1', 1, 12));
   });
 

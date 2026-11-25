@@ -161,11 +161,11 @@ export class CannotRescheduleCancelled extends DomainRefusal {
 
 export class AppointmentRescheduled extends NamedDomainEvent('appointments.appointment.rescheduled') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly startsAt: Date,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 ```
@@ -306,14 +306,7 @@ type it handles from the contract of its upstream, `appointmentBookedV1.type`.
 import { NamedDomainEvent } from '@ddd-ts-kit/kernel';
 import { DomainEventHandler } from '@ddd-ts-kit/kernel/declarations';
 
-export class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+export class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {}
 
 // A port of the context, declared here so that the sample compiles alone.
 export abstract class Agenda {

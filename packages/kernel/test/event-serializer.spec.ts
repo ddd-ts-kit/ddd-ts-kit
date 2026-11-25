@@ -4,13 +4,13 @@ import {
   EventSerializer,
   InMemorySubjectKeyStore,
   PersonalDataCipher,
-  SequentialIdGenerator,
   StoredEventData,
   UnreadableEventError,
   defineStoredEvent,
   personalData,
+  ranked,
+  stampOf,
   storedDataOf,
-  storedStampOf,
   type DomainEvent,
   type EventToAppend,
   type StoredEvent,
@@ -20,10 +20,7 @@ import { accountEvents } from './support/bank/account-events';
 
 const keys = new InMemorySubjectKeyStore();
 
-const serializer = new EventSerializer<AccountEvent>(accountEvents, {
-  cipher: new PersonalDataCipher(keys),
-  ids: new SequentialIdGenerator('evt'),
-});
+const serializer = new EventSerializer<AccountEvent>(accountEvents, { cipher: new PersonalDataCipher(keys) });
 
 /** A value object of the domain, read from a text: it refuses a text that is not an address. */
 function domainOf(email: string): string {
@@ -48,11 +45,11 @@ function stored(event: EventToAppend, version = 1): StoredEvent {
 
 describe('EventSerializer', () => {
   it('stores an event in the current version of its shape, and reads it back as the same event', async () => {
-    const written = await serializer.serialize(new MoneyDeposited('a1', AT, 250));
+    const written = await serializer.serialize(ranked(new MoneyDeposited('a1', AT, 250), 4));
     const read = await serializer.deserialize(stored(written, 4));
 
     expect(written).toEqual({
-      id: 'evt-1',
+      id: 'bank.account.deposited:a1:4',
       type: 'bank.account.deposited',
       schemaVersion: 2,
       data: { amount: { cents: 250, currency: 'EUR' } },
@@ -61,7 +58,7 @@ describe('EventSerializer', () => {
     });
 
     expect(read).toEqual(new MoneyDeposited('a1', AT, 250));
-    expect(storedStampOf(read)).toEqual({ eventId: 'evt-1', occurredAt: AT, version: 4 });
+    expect(stampOf(read)).toEqual({ eventId: 'bank.account.deposited:a1:4', occurredAt: AT, version: 4 });
   });
 
   it('reads an event stored in an older version through its upcasters, never rewriting it', async () => {
@@ -114,18 +111,18 @@ describe('crypto-shredding', () => {
   });
 
   it('stores a personal value sealed with the key of its subject and reads it back in clear', async () => {
-    const written = await serializer.serialize(new AccountOpened('a7', AT, 'Ada Lovelace'));
+    const written = await serializer.serialize(ranked(new AccountOpened('a7', AT, 'Ada Lovelace'), 1));
 
     expect(JSON.stringify(written.data)).not.toContain('Ada');
     expect(await serializer.deserialize(stored(written))).toEqual(new AccountOpened('a7', AT, 'Ada Lovelace'));
   });
 
   it('reads the erased value once the subject was erased, and a later key never opens the older values', async () => {
-    const before = await serializer.serialize(new AccountOpened('a8', AT, 'Grace Hopper'));
+    const before = await serializer.serialize(ranked(new AccountOpened('a8', AT, 'Grace Hopper'), 1));
 
     expect(await keys.erase('a8')).toBe(true);
 
-    const after = await serializer.serialize(new AccountOpened('a8', AT, 'Grace H.'));
+    const after = await serializer.serialize(ranked(new AccountOpened('a8', AT, 'Grace H.'), 1));
 
     expect(await serializer.deserialize(stored(before))).toEqual(new AccountOpened('a8', AT, ERASED_PERSONAL_DATA));
     expect(await serializer.deserialize(stored(after))).toEqual(new AccountOpened('a8', AT, 'Grace H.'));
@@ -191,7 +188,7 @@ describe('crypto-shredding', () => {
 
   it('refuses to store or to read personal data without a cipher', async () => {
     const bare = new EventSerializer<AccountEvent>(accountEvents);
-    const sealed = await serializer.serialize(new AccountOpened('a9', AT, 'Alan'));
+    const sealed = await serializer.serialize(ranked(new AccountOpened('a9', AT, 'Alan'), 1));
 
     await expect(bare.serialize(new AccountOpened('a9', AT, 'Alan'))).rejects.toThrow('PersonalDataCipher');
     await expect(bare.deserialize(stored(sealed))).rejects.toThrow(UnreadableEventError);

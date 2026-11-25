@@ -174,11 +174,11 @@ export const appointmentBookedV2 = defineIntegrationEvent({
 // appointments/domain/events/appointment-booked.event.ts
 export class AppointmentBooked extends NamedDomainEvent('appointments.appointment.booked') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly slots: readonly { readonly startsAt: Date; readonly endsAt: Date }[],
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

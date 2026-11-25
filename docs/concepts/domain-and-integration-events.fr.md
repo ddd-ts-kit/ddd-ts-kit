@@ -1,5 +1,5 @@
 [English](domain-and-integration-events.md) · **Français**
-<!-- translation-of: domain-and-integration-events.md sha256:97ce9c0273ae0390 -->
+<!-- translation-of: domain-and-integration-events.md sha256:7ffff2b1e4c44300 -->
 
 # Événements du domaine et événements d'intégration
 
@@ -39,11 +39,11 @@ import { NamedDomainEvent } from '@ddd-ts-kit/kernel';
 // contexts/scheduling/domain/events/appointment-booked.event.ts (simplifié)
 export class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly slot: Slot, // un type du modèle, que les consommateurs ne voient jamais
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 ```
@@ -352,14 +352,7 @@ s'exécutent dans le contexte de l'unité de travail.
 import { NamedDomainEvent } from '@ddd-ts-kit/kernel';
 import { DomainEventHandler } from '@ddd-ts-kit/kernel/declarations';
 
-class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+class AppointmentBooked extends NamedDomainEvent('scheduling.appointment.booked') {}
 
 /** Un tableau des créneaux libres gardé dans un cache : le rafraîchir peut échouer sans dommage. */
 export abstract class AvailabilityBoard {
@@ -397,14 +390,7 @@ import { NamedDomainEvent,
   type DomainEvent,
 } from '@ddd-ts-kit/kernel';
 
-class SlotHeld extends NamedDomainEvent('scheduling.slot.held') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+class SlotHeld extends NamedDomainEvent('scheduling.slot.held') {}
 
 class Slot extends AggregateRoot {
   static hold(id: string, now: Date): Slot {
@@ -691,6 +677,12 @@ défait l'autonomie que l'événement devait apporter.
 
 ## Ce que fournit le kit
 
+- Un événement du domaine a un rang et une identité qu'il n'écrit pas lui-même. L'agrégat qui
+  l'enregistre lui donne son rang dans son histoire, à partir de 1 (`rankOf(event)`), et
+  `eventIdOf(event)` vaut `<name>:<aggregateId>:<rang>` : rien n'est tiré, si bien que l'événement
+  qu'une sauvegarde distribue et le même événement relu depuis un flux n'en font qu'un.
+  `stampOf(event)` porte le rang comme version de la ligne d'un modèle de lecture, ce qui ordonne
+  les événements qu'une commande enregistre au même instant.
 - `defineIntegrationEvent` donne le type de la charge utile, valide ce qui est publié et ce qui
   est consommé, et alimente le catalogue et le document AsyncAPI générés
   (`events/defined-in-published-language`).

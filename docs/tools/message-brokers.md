@@ -51,11 +51,11 @@ import { z } from 'zod';
 // contexts/appointments/domain/events/appointment-booked.event.ts
 export class AppointmentBooked extends NamedDomainEvent('appointments.appointment.booked') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly startsAt: Date,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 

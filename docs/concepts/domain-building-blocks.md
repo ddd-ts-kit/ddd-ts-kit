@@ -32,14 +32,19 @@ interface CancellationReason {
 
 export class AppointmentCancelled extends NamedDomainEvent('appointments.appointment.cancelled') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly reason: CancellationReason,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 ```
+
+The base carries what every event says: the id of its aggregate, kept as text whatever the type of
+that id, and the instant. An event that says nothing more needs no constructor, `class
+AppointmentBooked extends NamedDomainEvent('..') {}` is built `new AppointmentBooked(id, at)`; one
+that carries facts declares them after the two and hands those to `super`.
 
 The name is written once, in `extends NamedDomainEvent('..')`: the class carries it as `eventName` and every event as `name`, both typed with the literal, and every reaction is
 attached by it, `@DomainEventHandler(AppointmentCancelled)` reads it from the class it is given
@@ -61,11 +66,11 @@ import { AggregateRoot, DomainRefusal, NamedDomainEvent } from '@ddd-ts-kit/kern
 
 class AppointmentCancelled extends NamedDomainEvent('appointments.appointment.cancelled') {
   constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
+    aggregateId: string,
+    occurredAt: Date,
     readonly reason: string,
   ) {
-    super();
+    super(aggregateId, occurredAt);
   }
 }
 
@@ -389,14 +394,7 @@ The constructor is private so that these are the only ways in:
 // contexts/appointments/domain/aggregates/appointment.aggregate.ts (the ways in)
 import { AggregateRoot, DomainRefusal, NamedDomainEvent } from '@ddd-ts-kit/kernel';
 
-class AppointmentBooked extends NamedDomainEvent('appointments.appointment.booked') {
-  constructor(
-    readonly aggregateId: string,
-    readonly occurredAt: Date,
-  ) {
-    super();
-  }
-}
+class AppointmentBooked extends NamedDomainEvent('appointments.appointment.booked') {}
 
 // appointments.codes.ts
 const AppointmentsCodes = {
