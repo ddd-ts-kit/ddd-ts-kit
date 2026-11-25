@@ -116,6 +116,80 @@ describe('import scanner', () => {
   });
 });
 
+describe('a statement read from its keyword to its specifier', () => {
+  it('reads a specifier whatever stands between it and its keyword: a comment, an indentation, a long list', () => {
+    const names = Array.from({ length: 800 }, (_, index) => `name${index}`);
+
+    const source = [
+      'const a = await import(/* webpackChunkName: "a" */ \'a\');',
+      "const b = require(/* the adapter */ 'b');",
+      `import { c } from /* ${'far '.repeat(20)} */ 'c';`,
+      "import /* a side effect, said at length */ 'd';",
+      `${' '.repeat(40)}const e = await import(`,
+      `${' '.repeat(44)}'e'`,
+      `${' '.repeat(40)});`,
+      `import { ${names.join(', ')} } from 'f';`,
+      "export { g } from // the module\n  'g';",
+    ].join('\n');
+
+    expect(specifiers(source)).toEqual([
+      'dynamic:a',
+      'require:b',
+      'import:c',
+      'side-effect:d',
+      'dynamic:e',
+      'import:f',
+      'export:g',
+    ]);
+
+    expect(scan(source).imports[5]?.names).toEqual(names);
+  });
+
+  it('reads a binding named by a string', () => {
+    const [imported, exported] = scan(
+      'import { "a-b" as ab, c, type "d-e" as De } from \'a\';\nexport { x as "y-z" } from \'x\';\n',
+    ).imports;
+
+    expect(imported).toMatchObject({ kind: 'import', specifier: 'a', names: ['ab', 'c', 'De'], typeNames: ['De'] });
+    expect(exported).toMatchObject({ kind: 'export', specifier: 'x', line: 2 });
+  });
+
+  it('reads the forms a clause may take', () => {
+    const source = [
+      "export * as h from 'h';",
+      "export type * from 'i';",
+      "import defer * as j from 'j';",
+      "import k, * as l from 'k' with { type: 'json' };",
+      "import m\n  from\n  'm';",
+      "export import n = require('n');",
+      "import{o}from'o';",
+    ].join('\r\n');
+
+    expect(specifiers(`\uFEFF${source}`)).toEqual([
+      'export:h',
+      'export:i',
+      'import:j',
+      'import:k',
+      'import:m',
+      'require:n',
+      'import:o',
+    ]);
+  });
+
+  it('takes no statement for a specifier when none reaches it', () => {
+    const source = [
+      'export default handler',
+      "import a from 'a'",
+      "export enum Kind { a, b }\nconst from = 'b';",
+      "const options = { import: 'c', require: 'd', from: 'e' };",
+      "export class Reader { from = 'f'; }",
+      "import('g' + suffix); import(`h${suffix}`);",
+    ].join('\n');
+
+    expect(specifiers(source)).toEqual(['import:a', 'dynamic:g']);
+  });
+});
+
 describe('the literals a scan blanks', () => {
   it('ends a string left open at the end of its line, and reads the next line as code', () => {
     const scanned = scan("const a = 'open\nconst b = 'two';");

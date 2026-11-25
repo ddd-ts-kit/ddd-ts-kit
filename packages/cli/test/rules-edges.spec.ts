@@ -152,6 +152,26 @@ describe('the layer and naming rules of the checker, on code written otherwise t
     ]);
   });
 
+  it('layer/domain-purity reads an import behind a comment, a deep indentation, a long list or a string name', () => {
+    const adapter = '@/contexts/billing/infrastructure/persistence/knex-invoice.repository';
+    const names = Array.from({ length: 600 }, (_, index) => `name${index}`).join(', ');
+
+    const root = projectWith({
+      [AGGREGATE]: lines(
+        `const commented = await import(/* webpackChunkName: "adapter" */ '${adapter}');`,
+        `${' '.repeat(20)}const indented = await import(`,
+        `${' '.repeat(24)}'${adapter}'`,
+        `${' '.repeat(20)});`,
+        `import { ${names} } from '${adapter}';`,
+        `import { "knex-invoice" as adapter } from '${adapter}';`,
+        'export class Invoice {}',
+      ),
+      [`${BILLING}/infrastructure/persistence/knex-invoice.repository.ts`]: 'export class KnexInvoiceRepository {}\n',
+    });
+
+    expect(reported(root, 'layer/domain-purity').map(({ line }) => line)).toEqual([1, 2, 5, 6]);
+  });
+
   it('naming/business-name suggests the element of the collection a loop walks when it names no concept', () => {
     const root = projectWith({
       [`${BILLING}/domain/services/reminding.ts`]: lines(
