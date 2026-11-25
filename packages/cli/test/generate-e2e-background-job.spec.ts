@@ -11,6 +11,7 @@ import { readJson } from './support/read-json';
 const SPEC = 'test/e2e/cancel-invoice.e2e.spec.ts';
 const SPEC_OF_THE_JOB = 'test/e2e/cancel-invoice-void-overdue.e2e.spec.ts';
 const SUPPORT = 'test/e2e/support/start-application.ts';
+const CANCEL = 'src/contexts/billing/application/commands/cancel-invoice/cancel-invoice.handler.ts';
 const PLATFORM = 'src/platform';
 
 const BACKGROUND = [
@@ -55,7 +56,11 @@ describe('generate e2e for a use case a background job starts', () => {
     const spec = read(root, SPEC);
 
     expect(created).toEqual([SPEC]);
-    expect(notes).toEqual([]);
+
+    // The use case the job starts is still as generated: the spec fails until it is written, and the output says so.
+    expect(notes).toEqual([
+      `${CANCEL} still refuses (its TODO(domain)): the end-to-end spec fails until it is written.`,
+    ]);
 
     expect(spec).toContain(
       "import { afterAll, beforeAll, beforeEach, describe, expect, it, onTestFailed } from 'vitest';",
@@ -166,9 +171,11 @@ describe('generate e2e for a use case a background job starts', () => {
 
     const { notes } = done(project, 'generate', 'e2e', 'billing', 'CancelInvoice');
 
-    expect(notes).toHaveLength(1);
-    expect(notes[0]).toContain(`${SUPPORT} has no runDueJobs(): add \`runDueJobs(): Promise<string[]>;\``);
-    expect(notes[0]).toContain('`await worker.stop()`, then `await worker.runDue()`');
+    const [support, ...others] = notes.filter((note) => note.startsWith(SUPPORT));
+
+    expect(others).toEqual([]);
+    expect(support).toContain(`${SUPPORT} has no runDueJobs(): add \`runDueJobs(): Promise<string[]>;\``);
+    expect(support).toContain('`await worker.stop()`, then `await worker.runDue()`');
   });
 });
 
@@ -196,7 +203,7 @@ describe('generate e2e for a use case a scheduled job and a background job both 
     const { notes } = done(root, 'generate', 'e2e', 'billing', 'RemindInvoices');
     const spec = read(root, 'test/e2e/remind-invoices.e2e.spec.ts');
 
-    expect(notes).toEqual([]);
+    expect(notes.filter((note) => !note.includes('still refuses'))).toEqual([]);
     expect(spec).toContain("import { afterAll, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';");
 
     expect(spec).toContain(
@@ -223,7 +230,9 @@ describe('generate e2e for a use case a scheduled job and a background job both 
 
     const { notes } = done(root, 'generate', 'e2e', 'billing', 'RemindInvoices', '--force');
 
-    expect(notes.map((note) => note.slice(0, note.indexOf(':')))).toEqual([
+    const said = notes.filter((note) => note.startsWith(SUPPORT));
+
+    expect(said.map((note) => note.slice(0, note.indexOf(':')))).toEqual([
       `${SUPPORT} has no runJob(name)`,
       `${SUPPORT} has no runDueJobs()`,
     ]);

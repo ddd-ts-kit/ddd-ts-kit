@@ -2,9 +2,8 @@ import { treeOf, wiringFilesOf } from '../../model-modules';
 import { classesOf } from '../declarations/classes-of';
 import type { DeclaredClass } from '../declarations/declared-class';
 import { optionOf } from '../declarations/option-of';
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { SourceFile } from '../model/source-file';
-import { sourceAt } from '../project/source-at';
 import { inLayer } from '../support/in-layer';
 import type { EventHandler } from './event-handler';
 import type { HandlerDependency } from './handler-dependency';
@@ -20,7 +19,7 @@ const AFTER_COMMIT = 'after-commit';
  * and of `application/integration/publishers/*.publisher.ts`. A declared class says its phase in
  * its decorator; any other is registered by the module file of its context.
  */
-export function eventHandlersOf(project: Project, file: SourceFile): EventHandler[] {
+export function eventHandlersOf(project: ProjectFacts, file: SourceFile): EventHandler[] {
   if (file.isTest || file.location.area !== 'context') {
     return [];
   }
@@ -58,8 +57,8 @@ export function eventHandlersOf(project: Project, file: SourceFile): EventHandle
 }
 
 /** The module file of the context, then the one of each module of its model that exists. */
-function moduleFiles(project: Project, context: string): SourceFile[] {
-  return wiringFilesOf(treeOf(project.config, context), context).flatMap((path) => sourceAt(project, path) ?? []);
+function moduleFiles(project: ProjectFacts, context: string): SourceFile[] {
+  return wiringFilesOf(treeOf(project.config, context), context).flatMap((path) => project.sourceAt(path) ?? []);
 }
 
 /** The module file that registers a class: the first that names it, else the module file of the context. */

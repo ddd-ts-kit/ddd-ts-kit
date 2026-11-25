@@ -9,12 +9,12 @@ import { Unreachable } from './support/unreachable';
  * The classes of the kit keep their state in TypeScript `private` members, which are ordinary
  * properties and methods once compiled: an aspect cannot tell them from the public ones, so it
  * advises the calls that come from outside and leaves alone the ones an instance makes on itself.
- * Both ways an aspect stands around an instance are specified: own methods on an extensible
- * instance, a proxy in front of a frozen one.
+ * The wrapper stands in front of an extensible instance as it does in front of a frozen one: both
+ * are specified.
  */
 const STANDINGS: readonly [string, <T extends object>(instance: T) => T][] = [
-  ['an extensible instance, wrapped in place', (instance) => instance],
-  ['a frozen instance, fronted by a proxy', (instance) => Object.freeze(instance)],
+  ['an extensible instance', (instance) => instance],
+  ['a frozen instance', (instance) => Object.freeze(instance)],
 ];
 
 describe.each(STANDINGS)('an aspect around a class with private members: %s', (_standing, prepared) => {
@@ -81,7 +81,7 @@ describe.each(STANDINGS)('an aspect around a class with private members: %s', (_
 });
 
 describe('an aspect around a frozen instance', () => {
-  it('fronts it with a proxy of the same type', async () => {
+  it('answers a wrapper of the same class, as around any instance', async () => {
     const journal: string[] = [];
     const frozen = Object.freeze(new QuoteGateway());
 

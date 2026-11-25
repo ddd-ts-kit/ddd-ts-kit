@@ -128,7 +128,7 @@ const people = authorizationMiddleware({
  */
 export function arrangeIdentity() {
   const ports = fakePorts();
-  const buses = createTestBuses({ eventBusFailures: 'as-thrown' });
+  const buses = createTestBuses();
   const wired = { buses, ports, repositories: dispatchedBy(buses, ports), access: accessOn(buses) };
 
   buses.commandBus.use(people);

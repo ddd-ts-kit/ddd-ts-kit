@@ -3,7 +3,6 @@ import type { ListAnswers } from '../../read-models/list-answers';
 import type { ImportedClass, ListedEntry, NamedStore, ReadModelList } from '../../read-models/read-model-list';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import { sourceAt } from '../project/source-at';
 import { escapeRegExp } from '../text/escape-reg-exp';
 
 const ENTRY_FIX =
@@ -95,10 +94,10 @@ function importBehind(list: ReadModelList, classes: DeclaredClasses, local: stri
 
 /** What the import of a class leads to when it is not that class: no file, or one that neither names it nor re-exports anything. */
 function whatIsMissing(project: Project, name: string, file: string): string | undefined {
-  const source = sourceAt(project, file);
+  const source = project.sourceAt(file);
 
   if (source === undefined) {
-    return sourceAt(project, file.replace(/\.ts$/, '/index.ts')) === undefined ? 'which does not exist' : undefined;
+    return project.sourceAt(file.replace(/\.ts$/, '/index.ts')) === undefined ? 'which does not exist' : undefined;
   }
 
   const answers =

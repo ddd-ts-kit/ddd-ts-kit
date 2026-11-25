@@ -199,7 +199,7 @@ describe('the composition root init writes, by hand', () => {
     );
 
     expect(platform(root, 'composition/create-platform.ts')).toContain(
-      'access: new PolicyAccess({ authorizer, clock, policies: accessPolicies, onDecision }),',
+      'access: new PolicyAccess({ authorizer, clock, scope, policies: accessPolicies, onDecision }),',
     );
 
     expect(platform(root, 'composition/compose-application.ts')).toContain('billingModule,');

@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { cli, exists, read, tempDir } from './helpers';
-import { failure } from './reports';
+import { failure, report } from './reports';
 
 const STATUS = 'src/contexts/billing/domain/vocabularies/invoice-status.vocabulary.ts';
 
@@ -16,7 +16,14 @@ describe('generate vocabulary', () => {
   it('writes the values as an object `as const` and the union type of the same name', () => {
     const values = ['--value', 'draft', '--value', 'issued', '--value', 'paid-late'];
 
-    expect(cli(root, 'generate', 'vocabulary', 'billing', 'InvoiceStatus', ...values).code).toBe(0);
+    const generated = cli(root, 'generate', 'vocabulary', 'billing', 'InvoiceStatus', ...values, '--json');
+
+    expect(generated.code).toBe(0);
+
+    // No spec holds a list of values: until something reads it, the dead code check names the file, and the output says so.
+    expect(report(generated).notes).toEqual([
+      `InvoiceStatus is read by nothing yet: \`pnpm run deadcode\` reports ${STATUS} as unused until a value object, an aggregate or a schema names it.`,
+    ]);
 
     expect(read(root, STATUS)).toBe(
       [
@@ -33,9 +40,21 @@ describe('generate vocabulary', () => {
   });
 
   it('adds the values the file does not hold yet, and keeps the others', () => {
-    expect(
-      cli(root, 'generate', 'vocabulary', 'billing', 'InvoiceStatus', '--value', 'issued', '--value', 'void').code,
-    ).toBe(0);
+    const again = cli(
+      root,
+      'generate',
+      'vocabulary',
+      'billing',
+      'InvoiceStatus',
+      '--value',
+      'issued',
+      '--value',
+      'void',
+      '--json',
+    );
+
+    expect(again.code).toBe(0);
+    expect(report(again).notes).toEqual([]);
 
     expect(read(root, STATUS)).toContain("  PaidLate: 'paid-late',\n  Void: 'void',\n} as const;");
     expect(read(root, STATUS).match(/Issued:/g)).toHaveLength(1);

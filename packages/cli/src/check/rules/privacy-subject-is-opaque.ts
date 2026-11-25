@@ -1,5 +1,6 @@
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
+import { JUDGED_ONLY_WHEN_ON } from '../privacy/judged-only-when-on';
 import { personalDeclarationsOf } from '../privacy/personal-declarations-of';
 import { personalTermOf } from '../privacy/personal-term-of';
 import { privacyJudged } from '../privacy/privacy-judged';
@@ -17,12 +18,18 @@ const FIX =
  * a person), never one of the personal fields. The kernel refuses a subject listed among the
  * fields at start-up; the rule says it, and the vocabulary, before. Silent with `stack.privacy` off.
  */
-export const privacySubjectIsOpaque: Rule = {
+export const privacySubjectIsOpaque: ProjectRule = {
   id: 'privacy/subject-is-opaque',
   description:
     'The subject of a personalFields declaration or of the personal option of an integration event is an opaque identifier, never personal data itself.',
+  severity: 'warn',
+  doc: {
+    why: `The subject names the person whose data a declaration or an event holds: the erasure looks the rows up by it and leaves it in place, the export and the audit trail name the person by it, the event store keys its cipher by it. An identifier that is itself personal data (an email, a phone number) survives the erasure of the person and is copied everywhere the person is named. Judged on the subject of every personalFields call of a context and of the personal option of every integration event: neither a word of the vocabulary nor one of the personal fields (the kernel refuses the second at start-up). ${JUDGED_ONLY_WHEN_ON}`,
+    bad: `personalFields(TABLE, { subject: 'email', fields: ['display_name'], erasure: 'row' });`,
+    good: `personalFields(TABLE, { subject: 'person_id', fields: ['email', 'display_name'], erasure: 'row' });`,
+  },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!privacyJudged(project)) {
       return [];
     }

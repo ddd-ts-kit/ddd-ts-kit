@@ -6,6 +6,7 @@ import type { ExecutionScope } from '../../application/ports/execution-scope';
 import type { PersonalDataExport } from '../../application/ports/personal-data-export';
 import type { SubjectKeyStore } from '../../application/ports/subject-key-store';
 import { PersonalDataCipher } from './personal-data-cipher';
+import { aggregateIdOf } from './aggregate-id-of';
 
 export interface EventStorePersonalDataExportOptions {
   /** The events whose sealed values are read. */
@@ -88,13 +89,6 @@ export class EventStorePersonalDataExport implements PersonalDataExport {
       }
     }
   }
-}
-
-/** The aggregate the event belongs to, as the serializer reads it: its metadata, else its stream. */
-function aggregateIdOf(event: StoredEvent): string {
-  const declared = event.metadata['aggregateId'];
-
-  return typeof declared === 'string' ? declared : event.stream;
 }
 
 /** The lookup of a key that reads each one once, however many values it sealed. */

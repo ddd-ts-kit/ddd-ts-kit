@@ -17,6 +17,9 @@ export abstract class FactualRefusal extends DomainError {
   protected constructor(message: string, facts: RefusalFacts) {
     super(message);
     this.facts = facts;
+    // Private to the process: neither is written by a spread or a structured logger, `toJSON` says what leaves.
+    Object.defineProperty(this, 'facts', { enumerable: false });
+    Object.defineProperty(this, 'exposedNames', { enumerable: false });
   }
 
   /** The facts a client may read: the ones the factory named, none by default. */

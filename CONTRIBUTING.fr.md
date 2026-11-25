@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:e20589b4e0da5a5a -->
+<!-- translation-of: CONTRIBUTING.md sha256:028fc0f6e7610e96 -->
 
 # Contribuer
 
@@ -121,10 +121,18 @@ bout prend 2,5 à 7 Go, et plusieurs à la fois (plusieurs sessions de code, un 
   request annote chaque ligne qu'elle ajoute (`pipeline/monorepo/asymmetries.mjs`), et dans
   Claude Code le hook de `.claude/settings.json` demande avant toute modification de ces
   fichiers, quel que soit le mode de permission.
-- Une nouvelle règle de vérification vient avec une fixture qui passe et une fixture qui
-  échoue, une phrase `fix` et une entrée `explain`.
+- Une règle de vérification est un fichier de `packages/cli/src/check/rules/`, nommé d'après son
+  id, qui dit tout de la règle : son `id` et sa `description`, sa `severity` par défaut, sa `doc`
+  (la raison et les deux exemples que montre `ddd-ts-kit explain`), son `scope` et son `judge`.
+  Une règle `file` juge une source à la fois, `judge(file, project)`, et répond des constats ; le
+  moteur parcourt les sources. Elle peut demander au projet la config, la place d'un fichier et
+  une source qu'elle importe, jamais l'arbre, pour que `check-file` et `check` soient d'accord :
+  ce qui a besoin de toutes les sources est son `acrossProject`, ou une règle `project`.
+  `standalone: true` dit que la règle juge une source quel que soit le projet autour
+  (`check --clean-only`). Une nouvelle règle est listée dans `catalogue/architecture-rules.ts` et
+  vient avec une fixture qui passe, une fixture qui échoue et une phrase `fix`.
 - Avant 1.0, une règle qui prévient un problème est une erreur tout de suite : une nouvelle règle
-  prend `error` par défaut (rien dans `default-severities.ts` pour `ddd-ts-kit check`,
+  prend `error` par défaut (`severity: 'error'` dans le fichier de la règle pour `ddd-ts-kit check`,
   `recommended: 'error'` pour la règle ESLint), et ce qu'une règle juge de plus aussi. Il n'y a
   pas d'avertissement d'abord, ni de version où elle deviendrait une erreur plus tard : une règle
   laissée en avertissement pour adoucir une montée de version est une règle qu'un projet apprend

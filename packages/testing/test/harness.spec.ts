@@ -170,12 +170,8 @@ describe('createTestBuses, when a handler of an event fails', () => {
     ]);
   };
 
-  it('rejects with an AggregateError holding the failure by default', async () => {
-    await expect(publishRefused(createTestBuses())).rejects.toMatchObject({ errors: [refusal] });
-  });
-
-  it('rejects with the failure as it is when failures are delivered as thrown', async () => {
-    await expect(publishRefused(createTestBuses({ eventBusFailures: 'as-thrown' }))).rejects.toBe(refusal);
+  it('rejects with the failure as it is', async () => {
+    await expect(publishRefused(createTestBuses())).rejects.toBe(refusal);
   });
 });
 

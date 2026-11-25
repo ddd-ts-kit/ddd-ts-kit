@@ -70,11 +70,14 @@ describe('A spec the kit generates, what it asserts', () => {
     expect(spec).not.toContain('built without argument');
   });
 
-  it('holds the translator to the empty record it answers until its mapping is written', () => {
+  it('holds the translator to refusing every record until its mapping is written', () => {
+    const translator = read(root, 'src/contexts/billing/infrastructure/anti-corruption/carrier.translator.ts');
     const spec = read(root, `${BILLING}/integration/carrier.translator.spec.ts`);
 
-    expect(spec).toContain("it('answers an empty record of billing as long as its mapping is not written', () => {");
-    expect(spec).toContain('expect(new CarrierTranslator().translate({})).toEqual({});');
+    expect(translator).toContain("throw undecided('how a record of Carrier reads in billing');");
+    expect(translator).not.toContain('return {};');
+    expect(spec).toContain("it('refuses a record until its mapping is written', () => {");
+    expect(spec).toContain("it.todo('maps every field to the vocabulary of billing');");
   });
 
   it('holds the domain service to taking nothing when it is built, a port or a store being no part of it', () => {

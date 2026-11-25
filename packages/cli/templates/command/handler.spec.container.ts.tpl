@@ -18,8 +18,8 @@ import { anActor, holdersOf } from '@ddd-ts-kit/auth/testing';
 {{/unless}}
 {{spec.contextImports}}
 {{/unless}}
-{{#if access.protected}}
-import { KitCodes } from '@ddd-ts-kit/kernel';
+{{#if spec.readsKernel}}
+import { {{spec.kernelNames}} } from '@ddd-ts-kit/kernel';
 {{/if}}
 {{#unless world.through}}
 import { platformTestModule } from '{{alias.platform}}/composition/platform-test.module{{alias.ext}}';
@@ -51,6 +51,7 @@ const authorization = authorizationModule({ authorizer: new RoleBasedAuthorizer(
 
 describe('{{name.title}}', () => {
 {{#if command.births}}
+{{#unless access.policyApplies}}
   it('saves the {{aggregate.words}} and answers its identifier', async () => {
     const { application, {{aggregate.camel}}Repository } = {{world.await}}arrange();
 
@@ -59,13 +60,26 @@ describe('{{name.title}}', () => {
     expect(id).toBe('{{aggregate.kebab}}-1');
     expect(await {{aggregate.camel}}Repository.findById(id)).toBeDefined();
   });
-{{/if}}
-{{#unless command.births}}
-  it('completes without answering anything', async () => {
+{{/unless}}
+{{#if access.policyApplies}}
+  // TODO(domain): a policy refines the permission {{access.permission}}, and a generated policy refuses everybody until its rule is written: once it is, replace this test by one per case of the policy, the first for an actor it lets through, the {{aggregate.words}} saved and its identifier answered.
+  it('is refused to an actor the policy of {{access.permission}} does not let through', async () => {
     const { application } = {{world.await}}arrange();
     const command = new {{name.pascal}}Command({{access.holder}});
 
-    await expect(application.commandBus.execute(command)).resolves.toBeUndefined();
+    await expect(application.commandBus.execute(command)).rejects.toMatchObject({ code: KitCodes.Forbidden });
+  });
+
+  it.todo('saves the {{aggregate.words}} and answers its identifier, for an actor the policy lets through');
+{{/if}}
+{{/if}}
+{{#unless command.births}}
+  // TODO(domain): a generated handler refuses until its decision is written: once it is, replace this test by the entries below.
+  it('is refused until what "{{name.words}}" does is written', async () => {
+    const { application } = {{world.await}}arrange();
+    const command = new {{name.pascal}}Command({{access.holder}});
+
+    await expect(application.commandBus.execute(command)).rejects.toMatchObject({ code: NOT_IMPLEMENTED });
   });
 {{/unless}}
 {{#if access.protected}}

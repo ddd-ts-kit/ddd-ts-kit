@@ -10,7 +10,7 @@ export interface PassportPrincipalOptions {
   /**
    * Whether the request presents a credential at all. A strategy that fails a request that does
    * refuses it (401); one that fails a request that does not lets it through anonymous, for the
-   * guards of the route to decide. Left out: an `Authorization` header.
+   * guards of the route to decide. Left out: an `Authorization` header, an empty one included.
    */
   readonly presented?: (raw: unknown) => boolean;
   /** How long a strategy may take to answer before the call is refused. Left out: 10 seconds. */

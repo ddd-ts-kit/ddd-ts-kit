@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { RULE_DOCS } from '../src/check/explain/rule-docs';
+import { documentedRule } from '../src/check/explain/documented-rule';
 import { AGGREGATE, changeConfig, checkJsonOf, errorFixOf, HANDLER, isRecord } from './check-support';
 import { cli, read, scaffoldEverything, tempDir, write, type CliResult } from './helpers';
 import { committedProject } from './support/committed-project';
@@ -209,7 +209,7 @@ describe('check and the config', () => {
 
 describe('check --explain', () => {
   const PURITY = ['--rule', 'layer/domain-purity'];
-  const why = RULE_DOCS['layer/domain-purity']?.why ?? '';
+  const { why } = documentedRule('layer/domain-purity');
   let root: string;
 
   beforeAll(() => {

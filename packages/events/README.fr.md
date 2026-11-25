@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:751e1117aa72432c -->
+<!-- translation-of: README.md sha256:9972c453464f5508 -->
 
 # @ddd-ts-kit/events
 
@@ -369,7 +369,8 @@ parcours :
 Le délai vaut `min(maxMs, baseMs * factor ** (attempts - 1))` ; passez
 `backoff: { baseMs, factor, maxMs }` pour le changer. `code` est le `code` de l'erreur quand il a
 la forme d'un identifiant, sinon le nom de sa classe : jamais son message, qui peut citer la
-charge utile, si bien que `onFailure` peut être journalisé tel quel.
+charge utile, si bien que `onFailure` peut être journalisé tel quel. Ce que lève `onFailure` est
+abandonné : un hook qui échoue n'interrompt jamais un tick et n'arrête jamais le relais.
 
 **Le traçage à travers l'outbox.** L'enveloppe porte `traceparent`, et chaque stockage d'outbox
 le persiste et le restitue exactement (la suite de contrat le vérifie). Avec
@@ -428,12 +429,12 @@ antérieur de même clé est encore en attente ou en échec. Le prix est le bloc
 suivants de sa clé (et de sa clé seulement) jusqu'à ce qu'il parte ou soit mort. Les événements
 pour lesquels `keyOf` donne `undefined` ne sont pas ordonnés.
 
-![Cinq enregistrements dans l'outbox, dans l'ordre de leur ajout : A1, A2, B1, A3, B2, où A est la clé order-1 et B la clé order-2, et la publication de A1 échoue. Avec l'ordre par défaut, A2, B1, A3 et B2 sont publiés dans le même tour et A1 est retenté plus tard, si bien que A2 et A3 doublent A1. Avec l'ordre per-key, B1 et B2 sont publiés, A2 et A3 sont retenus avec le code OUTBOX_HELD_FOR_ORDER, et une fois A1 parti lors de sa nouvelle tentative, A2 puis A3 suivent dans l'ordre](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/events-package-per-key-ordering.fr.svg)
+![Cinq enregistrements dans l'outbox, dans l'ordre de leur ajout : A1, A2, B1, A3, B2, où A est la clé order-1 et B la clé order-2, et la publication de A1 échoue. Avec l'ordre par défaut, A2, B1, A3 et B2 sont publiés dans le même tour et A1 est retenté plus tard, si bien que A2 et A3 doublent A1. Avec l'ordre per-key, B1 et B2 sont publiés, A2 et A3 sont retenus, reportés avec A1, et une fois A1 parti lors de sa nouvelle tentative, A2 puis A3 suivent dans l'ordre](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/events-package-per-key-ordering.fr.svg)
 
 Ce sur quoi il repose, et ce qu'il ne donne pas :
 
 - **Faites tourner un seul relais.** La mémoire de quel enregistrement bloque quelle clé vit dans
-  le relais, pas dans le stockage : le port `OutboxStore` est inchangé, et `claimBatch` seul ne
+  le relais, pas dans le stockage : le port `OutboxStore` ne garde aucune clé, et `claimBatch` seul ne
   peut pas savoir qu'un enregistrement antérieur attend sa nouvelle tentative. Deux relais côte à
   côte publient en concurrence.
 - **Un redémarrage l'oublie.** Si le processus redémarre pendant qu'un enregistrement est en
@@ -441,9 +442,10 @@ Ce sur quoi il repose, et ce qu'il ne donne pas :
   premier est publié le premier, une fois. Un ordre strict à travers les redémarrages exige la
   clé stockée avec l'enregistrement et une réclamation qui saute les clés ayant une ligne
   antérieure non publiée : un changement du port et de la table, qui n'est pas fait ici.
-- Un enregistrement retenu est replanifié avec la tête de sa clé et apparaît dans
-  `stats().failed` avec le code `OUTBOX_HELD_FOR_ORDER` ; les réclamations qu'il passe à attendre
-  ne sont pas comptées comme des tentatives de livraison par ce relais.
+- Un enregistrement retenu est reporté avec la tête de sa clé (`store.postpone(id, until)`) : il
+  attend, il n'a pas échoué. Les réclamations qu'il passe à attendre ne sont pas des tentatives,
+  et il n'apparaît pas dans `stats().failed`, sauf si l'une de ses propres publications a échoué
+  auparavant.
 - Un enregistrement **mort** cesse de bloquer sa clé (`onFailure` le signale avec `dead: true`).
   Réglez `maxAttempts: Infinity` si une clé doit plutôt rester bloquée que sauter un événement.
 - Le *broker* et le consommateur doivent eux aussi garder l'ordre : une partition ou une file
@@ -644,9 +646,8 @@ ce qu'il ne garantit pas.
   `wakeOn` (le signal en mémoire, ou `LISTEN/NOTIFY` sur PostgreSQL) et gardez un long intervalle
   comme filet de sécurité.
 - **Exigences du publisher.** Aucune au-delà du port. Le bus en mémoire exécute les gestionnaires
-  dans `publish` et rejette quand l'un d'eux échoue, avec une `AggregateError` par défaut ;
-  construit avec `{ failures: 'as-thrown' }`, il rejette avec l'erreur du seul gestionnaire en
-  échec telle quelle, et le relais enregistre son `code` (`CONCURRENCY_CONFLICT`) comme
+  dans `publish` et rejette quand l'un d'eux échoue, avec l'erreur du seul gestionnaire en
+  échec telle quelle : le relais enregistre son `code` (`CONCURRENCY_CONFLICT`) comme
   `lastErrorCode`. Le relais retente alors l'enregistrement, si bien que la politique de nouvelles
   tentatives des consommateurs EST l'attente exponentielle du relais.
 - **Exigences du consommateur.** `consume` avec le stockage des événements traités et l'unité de
@@ -739,7 +740,7 @@ const relay = new OutboxRelay({ store, publisher: broker, clock, metrics });
 | Signal | Sens | Réaction |
 |---|---|---|
 | `dead > 0` | des enregistrements ont abandonné après `maxAttempts` | alerte ; corrigez la cause, puis `retryDead` |
-| `failed > 0` longtemps | le fournisseur refuse ou est hors service ; sous `per-key`, les enregistrements retenus comptent aussi ici (`OUTBOX_HELD_FOR_ORDER`) | regardez les codes donnés à `onFailure` |
+| `failed > 0` longtemps | le fournisseur refuse ou est hors service ; un enregistrement retenu pour l'ordre derrière un échec ne compte pas ici | regardez les codes donnés à `onFailure` |
 | `pending` qui grossit | le relais est plus lent que les producteurs, ou arrêté | vérifiez qu'il tourne ; augmentez `batchSize` |
 | âge de l'enregistrement en attente le plus ancien | le vrai délai de livraison | alerte au-delà de votre tolérance ; c'est une requête sur la table (`min(created_at) where status = 'pending'`), `stats()` ne le porte pas |
 | `onFailure({ kind: 'tick' })` | le stockage lui-même a échoué | santé de la base de données |

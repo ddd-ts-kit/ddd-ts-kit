@@ -24,10 +24,10 @@ describe('The timeout of {{name.words}}, when its job runs', () => {
   it('runs the step of the deadline once it is due, and not before', async () => {
     const application = {{world.await}}arrange();
     const deadline = new Date(application.clock.now().getTime() + HOUR);
-    const process = new {{name.pascal}}Process();
+    const {{name.camel}} = new {{name.pascal}}Process();
     const id = '{{name.kebab}}-1';
 
-    await application.get(ProcessRunner).run({{name.pascal}}Process, id, (current) => process.started(id, deadline, current));
+    await application.get(ProcessRunner).run({{name.pascal}}Process, id, (current) => {{name.camel}}.started(id, deadline, current));
 
     expect(await application.backgroundJobs.runDue()).toEqual([]);
 

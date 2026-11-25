@@ -31,6 +31,11 @@ export const vocabularyKind: Kind = {
 
     if (existing === undefined) {
       request.ws.create(file, text);
+
+      // Every other kind of the domain is held by its spec; a list of values has none, and nothing reads it yet.
+      request.ws.note(
+        `${name.pascal} is read by nothing yet: \`npm run deadcode\` reports ${file} as unused until a value object, an aggregate or a schema names it.`,
+      );
     } else {
       request.ws.update(file, text);
     }

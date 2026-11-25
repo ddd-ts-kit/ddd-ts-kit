@@ -10,6 +10,7 @@ import type { DomainEvent } from '../../domain/domain-event';
 import { UuidGenerator } from '../id/uuid-generator';
 import { PersonalDataCipher } from './personal-data-cipher';
 import { storedOrigins } from './stored-origins';
+import { aggregateIdOf } from './aggregate-id-of';
 
 export interface EventSerializerOptions {
   /** Seals and opens the personal values; without one, data holding a personal value is refused. */
@@ -143,10 +144,4 @@ function upcast(declared: StoredEventType<DomainEvent>, data: StoredData, stored
   }
 
   return current;
-}
-
-function aggregateIdOf(stored: StoredEvent): string {
-  const declared = stored.metadata['aggregateId'];
-
-  return typeof declared === 'string' ? declared : stored.stream;
 }

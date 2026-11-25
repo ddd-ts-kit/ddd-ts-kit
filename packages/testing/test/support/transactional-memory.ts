@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { unitOfWorkOver, type IntegrationEvent, type UnitOfWork } from '@ddd-ts-kit/kernel';
 import type { UnitOfWorkUnderContract } from '../../src/contracts';
+import { claimed } from './claimed';
 
 interface Written {
   readonly rows: string[];
@@ -28,7 +29,7 @@ export class TransactionalMemory implements UnitOfWorkUnderContract {
 
   readonly outbox: UnitOfWorkUnderContract['outbox'] = {
     append: async (events) => void this.target().events.push(...events),
-    claimBatch: async () => this.committed.events.map((event) => ({ event, status: 'pending', attempts: 1 })),
+    claimBatch: async () => this.committed.events.map((event) => claimed(event)),
     stats: async () => ({ pending: this.committed.events.length, failed: 0, dead: 0 }),
   };
 

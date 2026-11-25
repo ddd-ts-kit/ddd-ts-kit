@@ -1,4 +1,4 @@
-import { isAnonymous, isSystem, isTenantId, isTenantMember, tenantsOf, type Actor } from '@ddd-ts-kit/kernel';
+import { isAnonymous, isSystem, type Actor } from '@ddd-ts-kit/kernel';
 import type { AccessScope } from '../authorization/access-scope';
 import type { Authorizer } from '../authorization/authorizer';
 import type { CheckRequest } from '../authorization/check-request';
@@ -10,41 +10,35 @@ import { Trace } from '../authorization/trace';
 import { AuthorizationSetupError } from '../errors/authorization-setup-error';
 import type { Permission } from '../permissions/permission';
 import { RoleGrants, type CoveringGrant, type RoleGrantsDefinition } from './role-grants';
-import { tenantCheck, type TenantOf } from './tenant-check';
 
 export interface RoleBasedAuthorizerOptions extends RoleGrantsDefinition {
-  /**
-   * Turns the tenant check on: the tenant the request targets, or `undefined` when it targets
-   * none. A request about a tenant the actor does not belong to (its `tenantId` or its `tenants`),
-   * or about another tenant than the one the work runs in, is refused. See `tenantOfContext`.
-   */
-  readonly tenantOf?: TenantOf;
-  /** Roles that act across tenants, such as a platform operator. Requires `tenantOf`. */
-  readonly crossTenantRoles?: readonly string[];
   /**
    * The role given to actors of type `system`, which carry none. Default: no role. Only a system
    * actor holds it: the roles of any other actor that name it are read without it, so a token
    * cannot hand a user what the system holds, and a role that inherits it, at any distance, is
-   * refused at construction. Under `tenantOf`, a system actor belongs to the tenant its work runs
-   * in (a per-tenant job, an event of a tenant), and to none outside of one.
+   * refused at construction.
    */
   readonly systemRole?: string;
 }
 
-/** RBAC: an actor may do what one of its roles grants. It decides on actions, not on elements. */
+/**
+ * RBAC: an actor may do what one of its roles grants. It decides on actions, not on elements, and
+ * knows no tenant: `TenantBoundAuthorizer` holds it, like any model, to the tenants of the actor.
+ */
 export class RoleBasedAuthorizer implements Authorizer {
   private readonly grants: RoleGrants;
 
   constructor(private readonly options: RoleBasedAuthorizerOptions) {
+    assertNoTenancyOption(options);
     this.grants = new RoleGrants(options);
-    assertTenancyOptions(options, this.grants);
+    assertSystemRole(options, this.grants);
   }
 
   async check(request: CheckRequest): Promise<Decision> {
     return (await this.explain(request)).decision;
   }
 
-  /** Why: what each role of the actor grants and, when tenants are checked, where the request may act. */
+  /** Why: what each role of the actor grants. */
   async explain(request: CheckRequest): Promise<Explanation> {
     const trace = new Trace();
 
@@ -52,34 +46,14 @@ export class RoleBasedAuthorizer implements Authorizer {
       return { decision: deny(DenialReason.anonymous), trace: trace.lines };
     }
 
-    if (!this.someRoleGrants(request.actor, request.permission, trace)) {
-      return { decision: deny(DenialReason.noMatchingRole), trace: trace.lines };
-    }
+    const granted = this.someRoleGrants(request.actor, request.permission, trace);
 
-    const inTenant = await this.staysInATenantOfTheActor(request, trace);
-
-    return { decision: inTenant ? ALLOWED : deny(DenialReason.tenantMismatch), trace: trace.lines };
+    return { decision: granted ? ALLOWED : deny(DenialReason.noMatchingRole), trace: trace.lines };
   }
 
-  /**
-   * Constant time: everything, nothing, or the rows of one tenant: the tenant of the work when the
-   * actor belongs to it, else the one tenant of an actor that has one. An actor of several tenants
-   * outside of a tenant's work reads nothing: a filter names one tenant.
-   */
-  async listAccessible(request: ListRequest): Promise<AccessScope> {
-    const { actor, permission } = request;
-
-    if (isAnonymous(actor) || !this.holds(actor, permission)) {
-      return { kind: 'none' };
-    }
-
-    if (this.options.tenantOf === undefined || this.crossingRoleOf(actor) !== undefined) {
-      return { kind: 'all' };
-    }
-
-    const tenantId = listedTenantOf(request);
-
-    return tenantId === undefined ? { kind: 'none' } : { kind: 'filter', filter: { tenantId } };
+  /** Constant time: everything a role grants, or nothing. */
+  async listAccessible({ actor, permission }: ListRequest): Promise<AccessScope> {
+    return !isAnonymous(actor) && this.holds(actor, permission) ? { kind: 'all' } : { kind: 'none' };
   }
 
   /** Every role of the actor is visited, one line each, so a refusal says what each one grants. */
@@ -119,31 +93,8 @@ export class RoleBasedAuthorizer implements Authorizer {
     return trace.yes(`${role} grants ${coveringText(covering, permission)}`, 1);
   }
 
-  /** Nothing to say when tenants are not checked; a role that acts across tenants settles it. */
-  private async staysInATenantOfTheActor(request: CheckRequest, trace: Trace): Promise<boolean> {
-    const { tenantOf } = this.options;
-
-    if (tenantOf === undefined) {
-      return true;
-    }
-
-    const crossing = this.crossingRoleOf(request.actor);
-
-    if (crossing !== undefined) {
-      return trace.yes(`${crossing} acts across tenants`);
-    }
-
-    return tenantCheck(request, tenantOf, trace);
-  }
-
   private holds(actor: Actor, permission: Permission): boolean {
     return this.rolesOf(actor).some((role) => this.grants.coveringOf(role, permission) !== undefined);
-  }
-
-  private crossingRoleOf(actor: Actor): string | undefined {
-    const crossing = this.options.crossTenantRoles ?? [];
-
-    return this.rolesOf(actor).find((role) => crossing.includes(role));
   }
 
   /** The system role is held by a system actor only: named among the roles of another actor, it is left out. */
@@ -183,49 +134,38 @@ function coveringText({ pattern, through }: CoveringGrant, permission: Permissio
   return through === undefined ? `${pattern}${covers}` : `${pattern}${covers}, through ${through}`;
 }
 
-/** The one tenant a list is read in, when the actor belongs to it. */
-function listedTenantOf({ actor, workTenantId }: ListRequest): string | undefined {
-  if (workTenantId !== undefined) {
-    return belongsTo(actor, workTenantId) ? workTenantId : undefined;
+const LEFT_TO_THE_TENANT_BOUND = ['tenantOf', 'crossTenantRoles'];
+
+/** The tenant rule left this authorizer: an option that names it would silently hold nobody to a tenant. */
+function assertNoTenancyOption(options: object): void {
+  const left = LEFT_TO_THE_TENANT_BOUND.find((option) => option in options);
+
+  if (left !== undefined) {
+    throw new AuthorizationSetupError(
+      `${left} is not an option of RoleBasedAuthorizer: give it to a TenantBoundAuthorizer around it, which holds any model to the tenants of the actor.`,
+    );
   }
-
-  const tenants = tenantsOf(actor).filter(isTenantId);
-
-  return tenants.length === 1 ? tenants[0] : undefined;
-}
-
-/** Whether the actor may work in the tenant of the work: a member, or a system actor, which runs the work of that tenant. */
-function belongsTo(actor: Actor, workTenantId: string): boolean {
-  return isTenantMember(actor, workTenantId) || isSystem(actor);
 }
 
 /**
- * A tenancy option that would silently do nothing, and a role that would hand another actor what
- * the system holds, are refused at construction, like an unknown inherited role.
+ * A system role that no role declares would silently do nothing, and a role that inherits it would
+ * hand another actor what the system holds: both are refused at construction, like an unknown
+ * inherited role.
  */
-function assertTenancyOptions(
-  { tenantOf, crossTenantRoles = [], systemRole }: RoleBasedAuthorizerOptions,
-  grants: RoleGrants,
-): void {
-  const unknown = [...crossTenantRoles, ...(systemRole === undefined ? [] : [systemRole])].find(
-    (role) => !grants.declares(role),
-  );
-
-  if (unknown !== undefined) {
-    throw new AuthorizationSetupError(`Role "${unknown}" is named in the options but declared in no role.`);
+function assertSystemRole({ systemRole }: RoleBasedAuthorizerOptions, grants: RoleGrants): void {
+  if (systemRole === undefined) {
+    return;
   }
 
-  const heir = systemRole === undefined ? undefined : grants.includersOf(systemRole)[0];
+  if (!grants.declares(systemRole)) {
+    throw new AuthorizationSetupError(`Role "${systemRole}" is named in the options but declared in no role.`);
+  }
+
+  const heir = grants.includersOf(systemRole)[0];
 
   if (heir !== undefined) {
     throw new AuthorizationSetupError(
       `Role "${heir}" inherits "${systemRole}", the role of the system: only a system actor holds what it grants.`,
-    );
-  }
-
-  if (tenantOf === undefined && crossTenantRoles.length > 0) {
-    throw new AuthorizationSetupError(
-      'crossTenantRoles has no effect without tenantOf: give tenantOf (tenantOfContext) to turn the tenant check on.',
     );
   }
 }

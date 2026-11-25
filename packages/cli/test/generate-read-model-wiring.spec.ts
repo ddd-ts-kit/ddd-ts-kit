@@ -179,19 +179,20 @@ describe('the generators around a read model', () => {
     expect(refused.fix).toContain('ddd-ts-kit generate read-model billing InvoiceSummaries');
   });
 
-  it('generate projection names the command that writes the read model it keeps, in its note and in its file', () => {
+  it('generate projection names the read model it keeps, which exists, in its note and in its file', () => {
     expectOk(cli(root, 'generate', 'integration-event', 'billing', 'Invoice', 'Issued', '--allow-name'));
 
     const generated = report(
       cli(root, 'generate', 'projection', 'billing', 'InvoiceSummaries', 'billing.invoice.issued', '--json'),
     );
 
+    const projection = read(root, `${BILLING}/application/projections/invoice-summaries.projection.ts`);
+
     expect(generated.notes.join('\n')).toContain(
-      'InvoiceSummariesProjection keeps a read model: `ddd-ts-kit generate read-model billing <Name> --field <name>:<type>`',
+      'InvoiceSummariesProjection keeps the read model InvoiceSummaries (application/ports/invoice-summaries.port.ts)',
     );
 
-    expect(read(root, `${BILLING}/application/projections/invoice-summaries.projection.ts`)).toContain(
-      '`ddd-ts-kit generate read-model billing <Name> --field <name>:<type>` writes it with its table, its store adapter and its fake',
-    );
+    expect(projection).toContain('  constructor(private readonly invoiceSummaries: InvoiceSummaries) {}');
+    expect(projection).not.toContain('generate read-model');
   });
 });

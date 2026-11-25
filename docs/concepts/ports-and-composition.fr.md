@@ -1,5 +1,5 @@
 [English](ports-and-composition.md) · **Français**
-<!-- translation-of: ports-and-composition.md sha256:d2188a547c96ca8e -->
+<!-- translation-of: ports-and-composition.md sha256:9e683317ca438529 -->
 
 # Ports et composition
 
@@ -267,7 +267,7 @@ export abstract class PersonDirectoryGateway {
 
 @Gateway(PersonDirectoryGateway)
 export class InProcessPersonDirectoryGateway implements PersonDirectoryGateway {
-  constructor(readonly upstream: PersonDirectoryContract) {}
+  constructor(private readonly upstream: PersonDirectoryContract) {}
 
   async namesOf(personIds: readonly string[]): Promise<ReadonlyMap<string, { readonly displayName: string }>> {
     const cards = await this.upstream.byIds(personIds);

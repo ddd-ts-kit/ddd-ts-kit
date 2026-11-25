@@ -1,4 +1,9 @@
+{{#if tenancy.any}}
+import { PolicyAccess, TenantBoundAuthorizer } from '@ddd-ts-kit/auth';
+{{/if}}
+{{#unless tenancy.any}}
 import { PolicyAccess } from '@ddd-ts-kit/auth';
+{{/unless}}
 import {
   InMemoryDomainEventDispatcher,
 {{#if files.any}}
@@ -64,8 +69,15 @@ export function createPlatform(persistence: Persistence, options: PlatformOption
   const afterCommitFailed = reportAfterCommitFailures({ reporter: foundations.errors, logger, scope });
 {{/if}}
   const domainEvents = traced.domainEvents(new InMemoryDomainEventDispatcher(afterCommitFailed));
+{{#if tenancy.any}}
+  // The model, and whatever stands in front of it, held to the tenants of the actor: the
+  // repositories keep the rows to the tenant of the work, so its scope stays as it is.
+  const authorizer = new TenantBoundAuthorizer({ model: createAuthorizer(), rowsConfinedBy: 'stores' });
+{{/if}}
+{{#unless tenancy.any}}
   const authorizer = createAuthorizer();
-  const protection = new UseCaseProtection(authorizer, onDecision);
+{{/unless}}
+  const protection = new UseCaseProtection(authorizer, onDecision, scope);
   const adapter = adapterOf(options.resilience ?? defaultResilienceSettings, { traced, domainEvents, scope });
 {{#if files.any}}
   const files = filesOf(options, foundations);
@@ -84,7 +96,7 @@ export function createPlatform(persistence: Persistence, options: PlatformOption
 {{#if persistence.hasDatabase}}
     readModelTables: (contexts) => readModelTables(persistence, contexts),
 {{/if}}
-    access: new PolicyAccess({ authorizer, clock, policies: accessPolicies, onDecision }),
+    access: new PolicyAccess({ authorizer, clock, scope, policies: accessPolicies, onDecision }),
     actors: new ScopedActorContext(scope, foundations.ids),
     adapter,
     selfGoverned: (instance, info) => adapter(ownPolicy()(instance, info), info),

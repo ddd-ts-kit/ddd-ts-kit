@@ -32,11 +32,11 @@ starts, so a business rule never changes with a library.
 | Domain | `Entity`, `AggregateRoot` (version, recorded events), `ValueObject`, `DomainEvent`, `DomainError` with a stable `code`, `ConceptError` (the errors of one concept, each built by a static factory: see "Domain errors"), `DomainRefusal` (one class per refusal, built by static factories), `FactualRefusal`, `isRefusal`, `CodeOf`, `RefusalOf`, `Refusal`, `RefusalFacts`, the generic `InvariantViolation`, `NotFoundError`, `ConflictError` (and `UniqueViolationError`, a value a unique constraint keeps already held), `ConcurrencyError`, `PreconditionFailedError`, `Result` with `ok`, `err`, `unwrap` |
 | Ports | `Clock`, `IdGenerator`, `UnitOfWork`, `Repository` (abstract classes: each one is its own injection token), `UseCase`, `DependencyKind` (the roles a binding declares, read by di, tracing and aspects: `repository`, `gateway`, `external`, `use-case`, `publisher`, `consumer`, `domain-event-handler`, `job`) |
 | Buses | `Command`, `Query`, `CommandBus`, `QueryBus`, `BusMiddleware`, the in-process `InMemoryCommandBus` and `InMemoryQueryBus` (`register(type, handler, { context })` names the bounded context in `MessageInfo`), `unitOfWorkMiddleware` |
-| Events | `IntegrationEvent`, `IntegrationEventPublisher`, `IntegrationEventSubscriber`, `EventBus` (both at once), `EventSubscribers` (the subscriber of each bounded context), `ProcessedEventStore`, `idempotent`, `InMemoryEventBus` (runs every handler of an event, then rejects with an `AggregateError` of the failures; with `{ failures: 'as-thrown' }`, the default in a later minor version, the failure of a single handler is rethrown as it is, with its `code`; an event is delivered and logged in `published` as a broker carries it, as JSON: a copy, a `Date` as its text, an event JSON cannot carry refused), `EventBusFailures`, `DomainEventDispatcher`, `IntegrationEventCallback` and `DomainEventCallback` (the functions a subscriber and a dispatcher are given), `executionContextOfEvent`, `inEventScope`, `scopedPublisher`, `EventDelivery` (what a provider says of one delivery: attempt, last attempt, transport, source, consumer), `messagingSystemOf` |
+| Events | `IntegrationEvent`, `IntegrationEventPublisher`, `IntegrationEventSubscriber`, `EventBus` (both at once), `EventSubscribers` (the subscriber of each bounded context), `ProcessedEventStore`, `idempotent`, `InMemoryEventBus` (runs every handler of an event, then rejects with the failure of a single handler as it is, with its `code`, and with an `AggregateError` of several; an event is delivered and logged in `published` as a broker carries it, as JSON: a copy, a `Date` as its text, an event JSON cannot carry refused), `DomainEventDispatcher`, `IntegrationEventCallback` and `DomainEventCallback` (the functions a subscriber and a dispatcher are given), `executionContextOfEvent`, `inEventScope`, `scopedPublisher`, `EventDelivery` (what a provider says of one delivery: attempt, last attempt, transport, source, consumer), `messagingSystemOf` |
 | Domain events and the unit of work | `dispatchingOnSave` (the wrapper that makes a repository hand over what the aggregates it is given recorded), `announceDomainEvents`, `unitOfWorkOver` (what every `UnitOfWork` is built on: queue, dispatch before the commit, `after-commit` phase), `UnscopedUnitOfWorkError`, `UnitOfWorkAbortedError`, `unitOfWorkStage` and `UnitOfWorkStage`, `DomainEventPhase`, `DomainEventSubscription`, `SaveAfterCommitError`, `AfterCommitFailure`, `reportAfterCommitFailures`, `InMemoryDomainEventDispatcher` |
 | State machines | `defineStateMachine`, `StateMachine`, `TransitionError`, `InvalidStateMachineError`, `mermaidOfStateMachine` (see "State machines") |
 | Actor | `Actor`, `AuthorizedCommand`, `AuthorizedQuery`, `ActorContext`, `systemActor` |
-| Standard interfaces | `Session`, `ExecutionContext` and `ExecutionScope`, `Logger`, `Metrics`, `ErrorReporter`, `Cache`, `CacheInvalidation` and `CachePurger` (with `cacheTag`, `tenantCacheTags`, `CachePurgeRequest`, `PublishedCacheInvalidation`, `PurgingPublisher`, `RepeatedCachePurger`: see "Purging the HTTP caches"), `Lock`, `RateLimiter`, `Page` and `PageRequest`, `AuditStamp`, `TenantScoped`, `AuditTrail`, `AuditReader` and `AuditEntry` |
+| Standard interfaces | `Session`, `ExecutionContext` and `ExecutionScope`, `Logger`, `Metrics`, `ErrorReporter`, `Cache`, `CacheInvalidation` and `CachePurger` (with `cacheTag`, `tenantCacheTags`, `CachePurgeRequest`, `PublishedCacheInvalidation`, `PurgingPublisher`, `RepeatedCachePurger`: see "Purging the HTTP caches"), `Lock`, `RateLimiter`, `Page` and `PageRequest`, `AuditStamp`, `TenantScoped`, `AuditTrail`, `AuditReader` and `AuditEntry`, `safely` (runs a hook, a logger or a meter and drops what it throws: observation never breaks what it observes) |
 | Scheduled jobs | `JobScheduler`, `ScheduledJob`, `JobExecution`, `JobSchedule`, `JobOptions`, `JobDefinition`, `JobRun`, `JobDescription`, `parseJobSchedule`, `describeJobSchedule`, `jobPolicy`, `executionContextOfJob` |
 | Background jobs | `JobQueue`, `BackgroundJob`, `BackgroundJobExecution`, `BackgroundJobPayloadSchema`, `processTimeoutDuePayload`, `EnqueueOptions`, `QueuedJob`, `QueuedJobStatus`, `backgroundJobPolicy`, `retryDelayMs`, `executionContextOfBackgroundJob`, `whenCommitted` (see "JobQueue") |
 | Process managers | `ProcessManager`, `ProcessDecision`, `ProcessRunner`, `ProcessStore`, `InMemoryProcessStore`, `UnreadableProcessStateError` (see "ProcessRunner and ProcessStore") |
@@ -45,7 +45,7 @@ starts, so a business rule never changes with a library.
 | Event sourcing | `EventSourcedAggregate`, `EventStore`, `defineStoredEvent`, `EventSerializer`, `EventSourcedRepository`, `SnapshotPolicy`, `personalData`, `PersonalDataCipher`, `CatchUpSubscription`, `EventStoreProjectionRebuild`, `InMemoryEventStore`, `PostgresEventStore` (see "Event sourcing") |
 | Personal data | `personalFields`, `PersonalDataErasure`, `PersonalDataExport`, `eraseDataSubject`, `exportDataSubject`, `PersonalDataExportDocument`, `inEachTenant`, `recordsInEachTenant`, `isDataSubjectId`, `PersonalDataRecord`, `InMemoryPersonalData` (see "Personal data") |
 | Read side | `Criteria`, `defineCriteria`, `validateCriteria`, `scoped`, `planCriteria`, `evaluateCriteria`, `pageOfPlan`, `hydrate`, `ReadModelStore`, `stampOf`, `TableReadModelStore`, `ProjectionRebuild`, `InMemoryReadModelStore` (see "Criteria", "Hydration" and "Projections") |
-| Persistence helpers | `optimisticUpdate`, `expectVersion` (the version a caller read, `If-Match` over HTTP, still the current one, else `PreconditionFailedError`: 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
+| Persistence helpers | `optimisticUpdate`, `expectVersion` (the version a caller read, `If-Match` over HTTP, still the current one, else `PreconditionFailedError`: 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `restamped`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
 | Error reporting | `ErrorReporter`, `ErrorReport`, `errorReportOf`, `reportOnce`, `isUnexpectedError`, `errorReportingMiddleware`, `DeadLetterReports`, `reportProcessFailures`, `NoopErrorReporter` |
 | Doubles | `FixedClock`, `SequentialIdGenerator`, `InMemoryUnitOfWork`, `FixedActorContext`, `FixedExecutionScope`, `InMemoryLogger`, `InMemoryMetrics`, `InMemoryErrorReporter`, `InMemoryCache`, `InMemoryCacheInvalidation`, `InMemoryCachePurger`, `InMemoryLock`, `InMemoryRateLimiter` |
 | Testing (`@ddd-ts-kit/kernel/testing`) | `RecordingCommandBus`, `RecordingQueryBus`: buses that keep every message they are handed, in order (`executed`), and answer what the spec told them (`answering(type, answer)`), nothing otherwise (see "The spec of a reaction") |
@@ -181,7 +181,7 @@ new OrderLine('p-7', Quantity.create(1)).equals(new OrderLine('p-7', Quantity.cr
 | Block | What the kernel gives it |
 |---|---|
 | `Entity<Id>` | `id` and `equals`: two entities are equal when their class and their id are |
-| `ValueObject<Props>` | frozen `props`, `equals` by value (dates by their time, lists and records deeply), `toJSON` |
+| `ValueObject<Props>` | a copy of its `props` frozen in depth (`ValueObjectProps`: primitives, dates, value objects, lists and plain records of those), `equals` by value (dates by their time, lists and records deeply, a value object it holds by its own `equals`), `toJSON` |
 | `AggregateRoot<Id>` | an entity with `version`, the optimistic concurrency token its repository adapter manages, `record(event)` for its methods and `pullEvents()`. The recorded events are not enumerable: spreading, comparing or serialising an aggregate never sees them |
 | `DomainEvent` | an interface: `name`, `occurredAt`, `aggregateId` |
 
@@ -283,7 +283,7 @@ The codes the packages of the kit raise are a list too, `KitCodes`, with its typ
 `NotFound`, `Conflict`, `InvariantViolation`, `Unauthorized`, `NotAcceptable`, `ConcurrencyConflict`,
 `InvalidCriteria`, `InvalidPageRequest`, `Timeout`, `CircuitOpen`, `BulkheadFull`, `AttemptsExhausted`,
 `ServiceUnavailable`, `PreconditionFailed`, `PreconditionRequired`, `FileTooLarge`, `UnsupportedMediaType`,
-`FileNotFound`, `FileRejected` and `InvalidFileKey`. A route names them in `errors` and a test expects them
+`FileNotFound`, `FileRejected`, `InvalidFileKey`, `InvalidFileUrlExpiry` and `ForbiddenTransition`. A route names them in `errors` and a test expects them
 (`rejects.toMatchObject({ code: KitCodes.Forbidden })`) without writing the string: the editor completes
 the key, and a misspelled one does not compile.
 
@@ -1146,7 +1146,8 @@ What every unit of work carries, whatever started it: `correlationId`, `causatio
 `locale?`, `deadline?`, `scheduledAt?` (for a scheduled job, the instant it was due), `origin`
 (`http`, `event`, `schedule`, `queue` for a background job, `cli`, or a string of the project)
 and `extensions`. `executionContext(init)` builds one and takes the tenant of the actor;
-`withActor(context, actor)` is the same work seen as another actor.
+`withActor(context, actor)` is the same work seen as another actor, without the session and
+the elevation of the previous one.
 
 `ExecutionScope` (`current()`, `require()`, `run(context, work)`) gives the context of the work
 in progress to code that is not handed it. The boundary sets it once:
@@ -1674,7 +1675,7 @@ const row = { ...toRow(order), ...tenantScopeOf(scope), ...stampCreation(scope, 
 await update({ ...toRow(order), ...stampUpdate(scope, clock) }, { id: order.id, ...tenantScopeOf(scope) });
 ```
 
-`stampUpdate(stamp, scope, clock)` is the form for an adapter that holds the stored stamp (a
+`restamped(stamp, scope, clock)` is for an adapter that holds the stored stamp (a
 document store rewriting the whole record): it answers it whole, creation untouched.
 `tenantScopeOf` raises `NoCurrentTenantError` for work that names no tenant, so a statement can
 never run unscoped by omission. Every adapter package names the columns the same way:

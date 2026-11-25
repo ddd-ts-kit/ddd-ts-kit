@@ -173,7 +173,7 @@ export abstract class PersonDirectoryGateway {
 // scheduling/infrastructure/external/in-process-person-directory.gateway.ts: identity in the same process
 @Gateway(PersonDirectoryGateway)
 export class InProcessPersonDirectoryGateway implements PersonDirectoryGateway {
-  constructor(readonly upstream: PersonDirectoryContract) {}
+  constructor(private readonly upstream: PersonDirectoryContract) {}
 
   async namesOf(personIds: readonly string[]): Promise<ReadonlyMap<string, { readonly displayName: string }>> {
     const cards = await this.upstream.byIds(personIds);

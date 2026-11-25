@@ -122,7 +122,7 @@ line the command changed, written in no file, also gives its whole `text`:
     {
       "file": "contexts/ordering/application/commands/place-order/place-order.handler.ts",
       "line": 12,
-      "gist": "\"place order\" changes Orders that exist and writes nothing until you decide..."
+      "gist": "\"place order\" changes Orders that exist and refuses until you decide how"
     },
     {
       "file": "contexts/ordering/test/unit/place-order.handler.spec.ts",
@@ -184,7 +184,7 @@ policies, the jobs and the contracts. `todo --brief` answers one line per marker
 (without `--brief`, its kind and its whole text):
 
 ```text
-src/contexts/ordering/application/commands/place-order/place-order.handler.ts:12  "place order" changes Orders that exist and writes nothing until you decide...
+src/contexts/ordering/application/commands/place-order/place-order.handler.ts:12  "place order" changes Orders that exist and refuses until you decide how
 src/contexts/ordering/test/unit/place-order.handler.spec.ts:37  applies the business decision to the order
 ```
 

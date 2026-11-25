@@ -1,0 +1,24 @@
+**A value object compares and freezes all it holds, and its props hold values only.** `ValueObject.equals` answered true for values that differ: two different `Map`, `Set`, `RegExp` or `URL`, a `Date` and an empty record, a list and a record of its indexes, and a value object holding a value object of another class with the same props. It now asks a nested value object its own `equals`, so the class counts at every depth, tells a date, a list and a plain record apart, reads `0` and `-0` as one number, and throws a `TypeError` for a value it cannot compare instead of finding two of them equal. A value object keeps a copy of its props, frozen in depth, with its dates copied: the list, the record or the date it was built from, and what `toJSON()` hands out, no longer change it; props that hold themselves are refused. The props are a `ValueObjectProps`: each one a primitive, a `Date`, a value object, or a list or a plain record of those (`PropValue`); a `Map`, a `Set`, a function, an entity or `unknown` does not compile. `StoredFile` is a `type`, so that a value object holds it. A `Date` cannot be frozen: a getter that hands one out still hands the date the value object keeps.
+
+To move: a value object whose props hold a `Map`, a `Set`, a function, an entity, `unknown` or an instance of another class holds its content as plain data instead (a list of pairs for a `Map`, a list for a `Set`, the text for a `URL` or a `RegExp`). A record nested in the props is declared as a `type`, not an `interface`, as the props themselves already were. Code that changed a list or a record of the props in place (`this.props.lines.push(..)`) builds a new value object.
+
+**The building blocks of `@ddd-ts-kit/kernel` behave as they say.**
+
+- `FixedClock.now()` answers a date of its own at each call: changing the date it answered, or the one it was built with, no longer moves the clock. The anonymous session and a system session answer a date of their own as `issuedAt`.
+- A `StateMachine` keeps a frozen copy of its declaration: a declaration changed after `defineStateMachine` is not followed, and `describe()` hands lists that cannot be changed. `next` and `can` throw `InvalidStateMachineError` for a name that is not a transition of the machine, where the runtime threw a `TypeError`.
+- `InMemoryEventStore.append` stores its whole batch or nothing.
+- `InMemoryCommandBus.execute` and `InMemoryQueryBus.execute` reject whenever a handler fails and never throw, with or without a middleware.
+- `KitCodes` names `ForbiddenTransition` (`FORBIDDEN_TRANSITION`, the default refusal of a state machine) and `InvalidFileUrlExpiry` (`INVALID_FILE_URL_EXPIRY`), and `errors/known-code` knows both.
+- `idempotent` rejects with an `AggregateError` of both failures, the one of the handler first, when the handler failed and its mark could not be released; the caller saw the failure of `release` alone.
+- `unwrap` of an `Err` that holds no `Error` throws with what it held as the `cause`.
+- `InMemoryProcessStore` keeps apart two instances whose name and id join to one text (`billing:dunning` with `invoice-1`, `billing` with `dunning:invoice-1`).
+- `Object.keys` of a refusal lists its `code` alone: its `name`, its `facts` and the names it exposes are out of enumeration, so a spread or a structured logger no longer writes them. `error.name`, `error.facts` and `toJSON()` are unchanged.
+- `withActor(context, actor)` answers a context without the elevation of the context it was given: like the session, the elevation goes with the actor it was opened for.
+
+**`InMemoryEventBus` rethrows the failure of a single handler as it is, and its `failures` option is removed.** `publish` runs every handler, then rejects with the failure of the one handler that failed, so its class and its `code` reach the caller: a `ConcurrencyError` is answered 409, where the `AggregateError` that wrapped it by default was answered 500. Several failures still come together in an `AggregateError`. The type `EventBusFailures` and the option `eventBusFailures` of `kernelModule`, `createTestApplication` and `createTestBuses` are removed, and `init` no longer writes them.
+
+To move: replace `new InMemoryEventBus({ failures: 'as-thrown' })` by `new InMemoryEventBus()` (`src/platform/events/in-process-events.ts` of a generated project), and remove `eventBusFailures: 'as-thrown'` from the worlds (`test/worlds/*.world.ts`) and from any `kernelModule`, `createTestApplication` or `createTestBuses`. A test that expected an `AggregateError` from `publish` for one failed handler expects the failure itself.
+
+**`stampUpdate` takes the scope and the clock only; the form that took the stored stamp is `restamped`.**
+
+To move: replace `stampUpdate(stamp, scope, clock)` by `restamped(stamp, scope, clock)`. `stampUpdate(scope, clock)` is unchanged.

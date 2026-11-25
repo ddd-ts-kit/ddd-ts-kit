@@ -4,11 +4,10 @@ import { aliasRoots, neighbourSuffix, specifierSuffix, toAlias, type AliasRoot }
 import { CONFIG_FILE } from '../../config';
 import type { Finding } from '../model/finding';
 import type { Flaw } from '../model/flaw';
-import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectFacts } from '../model/project';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { besideTheSources } from '../project/beside-the-sources';
-import { perFile } from '../support/per-file';
 import { reporter } from '../support/reporter';
 import { toViolations } from '../support/to-violations';
 
@@ -30,15 +29,27 @@ const EXTENSION = /\.(?:[cm]?js|[cm]?ts)$/;
 /** The source the compiler emits a JavaScript file from, by their extensions. */
 const SOURCE_OF: Readonly<Record<string, string>> = { '.js': '.ts', '.mjs': '.mts', '.cjs': '.cts' };
 
-export const importsAliasOnly: Rule = {
+export const importsAliasOnly: FileRule = {
   id: 'imports/alias-only',
   description:
     'A file of the project is imported by its alias (`@/...`), never by a relative path, the same directory included; an alias path holds no `.` or `..` segment. Holds under the source root, `test/` and `scripts/`; the files directly under `test/support/`, which a test runner loads before any alias exists, import one another by `./<name>`, ending with `.ts` under `js`.',
+  severity: 'error',
+  doc: {
+    why: 'An alias names a file from the root of the project: the import reads the same from every file, says which context and which layer it reaches without counting "../", and does not change when the importing file moves. One way of writing an import also means one thing to review and one thing for the boundary rules to read: the checker, ESLint and dependency-cruiser resolve an alias exactly as they resolve a relative path, so no boundary is crossed by choosing the other spelling. The rule holds under the source root, test/ and scripts/, the same directory included, for import, export ... from and import(). The alias is declared once, under "paths" in tsconfig.json, and the build rewrites it into a relative path in the compiled output, which runs with plain `node`. An alias path with a "." or ".." segment is refused too, since it could name a file outside its directory. The compiler reports an alias that names no file; a JavaScript file at the project root (a config, a migration) is not judged. One relative path stands: a file directly under test/support/ imports its neighbour by "./<name>", because a test runner loads its global setup, and what that file imports, before any alias exists. That path names a file: "./.", "./.." and a directory of test/support/ are refused as any relative path. Its name is judged too, against the files on disk: a ".ts" source without its extension under "importExtension": "none"; under "js" the name of the source ("./x.ts" for "./x" and "./x.js", "./x.mts" for "./x.mjs"), where the runner finds the file under the name it has and a ".js" passes the type check, then stops the run on a module that cannot be found. A file that exists as it is named (a JSON file, a JavaScript file) is left alone. ESLint fixes the import (`eslint --fix`) and writes it with the ending "importExtension" asks for, which `imports/extension` holds.',
+    bad: `// src/contexts/billing/application/commands/issue-invoice/issue-invoice.handler.ts
+import { Invoice } from '../../../domain/aggregates/invoice.aggregate';
+import { IssueInvoiceCommand } from './issue-invoice.command';`,
+    good: `// src/contexts/billing/application/commands/issue-invoice/issue-invoice.handler.ts
+import { IssueInvoiceCommand } from '@/contexts/billing/application/commands/issue-invoice/issue-invoice.command';
+import { Invoice } from '@/contexts/billing/domain/aggregates/invoice.aggregate';
+// test/e2e/issue-invoice.e2e.spec.ts
+import { startApplication } from '$test/e2e/support/start-application';
+// test/support/test-database-setup.ts: a test runner loads its global setup, and what it imports, before any alias exists
+import { openRun } from './test-database-run'; // './test-database-run.ts' under "importExtension": "js"`,
+  },
   scope: 'file',
-  run(project) {
-    const written = writtenBy(project);
-
-    return perFile(project, this.id, (file) => findingsIn(written, file));
+  judge(file, project) {
+    return findingsIn(writtenBy(project), file);
   },
   acrossProject(project) {
     const written = writtenBy(project);
@@ -57,7 +68,7 @@ interface Written {
   readonly neighbourSuffix: string;
 }
 
-function writtenBy({ root, config }: Project): Written {
+function writtenBy({ root, config }: ProjectFacts): Written {
   return {
     root,
     roots: aliasRoots(config),
