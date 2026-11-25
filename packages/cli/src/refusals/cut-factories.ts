@@ -1,5 +1,5 @@
 import { scan } from '../check/scan/scan';
-import { classBody } from '../generate/errors/class-body';
+import { classBody } from '../source-text';
 import type { ConceptFactory } from './concept-error-class';
 import { importsUsedBy } from './imports-used-by';
 
@@ -19,7 +19,7 @@ export function cutFactories(source: string, className: string, moved: readonly 
     }, source);
 
   const scanned = scan(cut);
-  const body = classBody(scanned, className);
+  const body = classBody(scanned.code, className);
   const inside = body === undefined ? '' : cut.slice(body.open + 1, body.close);
 
   if (body === undefined || inside.trim() === '') {

@@ -21,7 +21,7 @@ export function writePersonalEvents(ws: Workspace, config: Config, contexts: rea
   const existing = ws.read(file);
 
   const next = replaceRegion(
-    existing ?? readTemplate('init/platform/privacy/personal-events.ts.tpl'),
+    existing ?? ws.spoken(readTemplate('init/platform/privacy/personal-events.ts.tpl')),
     'personal-events',
     personalEventLines(contexts),
   );
