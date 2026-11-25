@@ -248,14 +248,14 @@ declare class ConfirmationDeadlineProcess {
 /** The step of the deadline of an appointment that is booked, in the unit of work that booked it. */
 @DomainEventHandler(AppointmentBooked)
 export class ConfirmationDeadlineOnBookedEventHandler implements DomainEventHandler<AppointmentBooked> {
-  private readonly process = new ConfirmationDeadlineProcess();
+  private readonly confirmationDeadline = new ConfirmationDeadlineProcess();
 
   constructor(private readonly processes: ProcessRunner) {}
 
   async handle(event: AppointmentBooked): Promise<void> {
     // The correlation key: one instance of the process per appointment.
     await this.processes.run(ConfirmationDeadlineProcess, event.aggregateId, (current) =>
-      this.process.requested(event, current),
+      this.confirmationDeadline.requested(event, current),
     );
   }
 }
@@ -270,14 +270,14 @@ export class ConfirmationDeadlineTimeoutBackgroundJob implements BackgroundJob<P
 
   static readonly payload = processTimeoutDuePayload;
 
-  private readonly process = new ConfirmationDeadlineProcess();
+  private readonly confirmationDeadline = new ConfirmationDeadlineProcess();
 
   constructor(private readonly processes: ProcessRunner) {}
 
   async run(due: ProcessTimeoutDue, execution: BackgroundJobExecution): Promise<void> {
     // The runner runs the step only while this very job is the armed one.
     await this.processes.timeout(ConfirmationDeadlineProcess, { ...due, jobId: execution.jobId }, (current) =>
-      this.process.timedOut(due.timeout, current),
+      this.confirmationDeadline.timedOut(due.timeout, current),
     );
   }
 }
