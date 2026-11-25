@@ -7,8 +7,8 @@ import { selectAffected } from '../affected/select-affected';
 import type { Selection } from '../affected/selection';
 import { CliError } from '../cli-error';
 import { readConfig, type Config } from '../config';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import type { Arguments } from './arguments';
+import { defineCommand } from './command';
 
 const FORMATS = ['text', 'json', 'github', 'env'];
 
@@ -22,29 +22,31 @@ const FORMATS = ['text', 'json', 'github', 'env'];
  * that script of the project on the selection, as the pipeline does: the pre-push hook of a
  * project tests the contexts its branch reaches, not every context.
  */
-export const affectedCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
+export const affectedCommand = defineCommand({
+  name: 'affected',
+  options: {
     base: { type: 'string' },
     head: { type: 'string' },
     format: { type: 'string' },
     run: { type: 'string' },
-  });
+  },
+  run(args, io) {
+    const format = args.format(FORMATS, 'text');
 
-  const format = args.format(FORMATS, 'text');
+    const root = args.projectRoot;
+    const { config } = readConfig(root);
+    const selection = selectionFor(root, config, args);
+    const script = args.text('run');
 
-  const root = args.projectRoot;
-  const { config } = readConfig(root);
-  const selection = selectionFor(root, config, args);
-  const script = args.text('run');
+    if (script !== undefined) {
+      return runAffected({ root, manager: config.stack.packageManager, selection, script }, io);
+    }
 
-  if (script !== undefined) {
-    return runAffected({ root, manager: config.stack.packageManager, selection, script }, io);
-  }
+    io.out(formatSelection(selection, format));
 
-  io.out(formatSelection(selection, format));
-
-  return 0;
-};
+    return 0;
+  },
+});
 
 function selectionFor(root: string, config: Config, args: Arguments): Selection {
   const base = args.text('base');

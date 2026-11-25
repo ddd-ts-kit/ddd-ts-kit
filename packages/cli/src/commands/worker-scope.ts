@@ -3,8 +3,7 @@ import { formatResume } from '../worker/format-resume';
 import { openWorkerScope } from '../worker/open-worker-scope';
 import { resumeWorker } from '../worker/resume-worker';
 import type { WorkerScope } from '../worker/worker-scope';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import { knownContext } from './known-context';
 import { rowsOption } from './rows-option';
 import { stdoutJson } from '../json/stdout-json';
@@ -13,44 +12,46 @@ import { stdoutJson } from '../json/stdout-json';
  * Prepares the place of one worker of a parallel build (worktree, branch, dependencies, scope file) and prints its briefing.
  * With `--resume`, reads where a stopped worker stands and prints the message or the briefing that resumes it, creating nothing.
  */
-export const workerScopeCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
+export const workerScopeCommand = defineCommand({
+  name: 'worker-scope',
+  options: {
     worktree: { type: 'string' },
     branch: { type: 'string' },
     base: { type: 'string' },
     rows: { type: 'string' },
-    'dry-run': { type: 'boolean', default: false },
-    'no-install': { type: 'boolean', default: false },
-    resume: { type: 'boolean', default: false },
-    fresh: { type: 'boolean', default: false },
-    here: { type: 'boolean', default: false },
-  });
+    'dry-run': { type: 'boolean' },
+    'no-install': { type: 'boolean' },
+    resume: { type: 'boolean' },
+    fresh: { type: 'boolean' },
+    here: { type: 'boolean' },
+  },
+  run(args, io) {
+    const root = args.projectRoot;
+    const { config } = readConfig(root);
+    const context = knownContext(config, args.positionals[0]);
 
-  const root = args.projectRoot;
-  const { config } = readConfig(root);
-  const context = knownContext(config, args.positionals[0]);
+    if (args.flag('resume')) {
+      const resume = resumeWorker(root, { context, ...args.texts(['worktree', 'branch']), fresh: args.flag('fresh') });
 
-  if (args.flag('resume')) {
-    const resume = resumeWorker(root, { context, ...args.texts(['worktree', 'branch']), fresh: args.flag('fresh') });
+      io.out(args.json ? stdoutJson(resume) : formatResume(resume));
 
-    io.out(args.json ? stdoutJson(resume) : formatResume(resume));
+      return 0;
+    }
+
+    const scope = openWorkerScope(root, config, {
+      context,
+      ...args.texts(['worktree', 'branch', 'base']),
+      ...rowsOption(args.text('rows')),
+      dryRun: args.flag('dry-run'),
+      install: !args.flag('no-install'),
+      here: args.flag('here'),
+    });
+
+    io.out(args.json ? stdoutJson(scope) : formatScope(scope));
 
     return 0;
-  }
-
-  const scope = openWorkerScope(root, config, {
-    context,
-    ...args.texts(['worktree', 'branch', 'base']),
-    ...rowsOption(args.text('rows')),
-    dryRun: args.flag('dry-run'),
-    install: !args.flag('no-install'),
-    here: args.flag('here'),
-  });
-
-  io.out(args.json ? stdoutJson(scope) : formatScope(scope));
-
-  return 0;
-};
+  },
+});
 
 function formatScope(scope: WorkerScope): string {
   const would = scope.dryRun ? 'would be ' : '';
