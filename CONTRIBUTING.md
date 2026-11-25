@@ -94,7 +94,10 @@ restarted a desktop. Two things bound them:
   the generator and the checker never disagree.
 - The members of a family of packages (the four ORM, the brokers, the loggers) are at parity:
   an option, or a capability of a contract, that one member has, the others have too, or
-  `pipeline/monorepo/families.mjs` says, member by member, why not. `npm run check:parity` fails
+  `pipeline/monorepo/families.mjs` says, member by member, why not. An option the members share
+  also means the same in each: the same words when it takes a closed list of them, the same
+  default when the sources write one as a literal, or the tables `wordsApart` and `defaultsApart`
+  of a port say, member by member, why not. `npm run check:parity` fails
   on an asymmetry nobody wrote down, and on a written one that is no longer true. A behaviour of
   an adapter is proven by the contract of its port in `@ddd-ts-kit/testing`, never by a spec of
   one package alone: a new option comes with the capability of the contract that proves it,

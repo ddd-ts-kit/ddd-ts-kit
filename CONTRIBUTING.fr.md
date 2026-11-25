@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:e20589b4e0da5a5a -->
+<!-- translation-of: CONTRIBUTING.md sha256:0a82b66c3c4c9e96 -->
 
 # Contribuer
 
@@ -99,7 +99,11 @@ bout prend 2,5 à 7 Go, et plusieurs à la fois (plusieurs sessions de code, un 
   rester vert : le générateur et le checker ne sont jamais en désaccord.
 - Les membres d'une famille de paquets (les quatre ORM, les brokers, les loggers) sont à
   parité : une option, ou une capacité d'un contrat, qu'un membre a, les autres l'ont aussi, ou
-  `pipeline/monorepo/families.mjs` dit, membre par membre, pourquoi non. `npm run check:parity`
+  `pipeline/monorepo/families.mjs` dit, membre par membre, pourquoi non. Une option que les
+  membres partagent veut aussi dire la même chose chez chacun : les mêmes mots quand elle en
+  prend une liste fermée, la même valeur par défaut quand les sources en écrivent une sous forme
+  de littéral, ou les tables `wordsApart` et `defaultsApart` d'un port disent, membre par membre,
+  pourquoi non. `npm run check:parity`
   échoue sur une asymétrie que personne n'a écrite, et sur une asymétrie écrite qui n'est plus
   vraie. Un comportement d'un adaptateur est prouvé par le contrat de son port dans
   `@ddd-ts-kit/testing`, jamais par une spec d'un seul paquet : une nouvelle option vient avec la

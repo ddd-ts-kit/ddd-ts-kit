@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:b1f55f1dac1314e9 -->
+<!-- translation-of: README.md sha256:63b4610e186be294 -->
 
 # @ddd-ts-kit/nats
 
@@ -322,7 +322,7 @@ une seule copie, parce que la copie a son propre identifiant de message
 Sur une connexion perdue, le client se reconnecte de lui-même et ses consommateurs *pull*
 reprennent : les flux et les consommateurs durables vivent sur le serveur, rien n'est à déclarer
 à nouveau. Tant que le serveur est absent, `publish` rejette aussitôt avec `BROKER_UNAVAILABLE`,
-et une publication en cours rejette après `publishTimeoutMs` (5 s par défaut) avec
+et une publication en cours rejette après `publishTimeoutMs` (30 s par défaut, comme sur RabbitMQ et Kafka) avec
 `PUBLISH_NOT_ACKNOWLEDGED`, si bien que le relais de l'outbox garde les enregistrements et les
 retente. Les messages qui étaient en cours de traitement sont livrés à nouveau après
 `ackWaitMs`. Le bus ouvre lui-même la première connexion, avec un recul exponentiel

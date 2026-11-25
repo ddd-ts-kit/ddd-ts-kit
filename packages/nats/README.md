@@ -309,7 +309,7 @@ has a message id of its own (`<durable>.<sequence>`).
 On a lost connection the client reconnects by itself and its pull consumers resume: streams
 and durable consumers live on the server, nothing has to be declared again. While the server
 is away `publish` rejects at once with `BROKER_UNAVAILABLE`, and a publication in flight
-rejects after `publishTimeoutMs` (5 s by default) with `PUBLISH_NOT_ACKNOWLEDGED`, so the
+rejects after `publishTimeoutMs` (30 s by default, as on RabbitMQ and Kafka) with `PUBLISH_NOT_ACKNOWLEDGED`, so the
 outbox relay keeps the records and retries them. Messages that were being handled are
 delivered again after `ackWaitMs`. The bus opens the first connection itself, with an
 exponential backoff (`reconnect`, 200 ms doubling up to 30 s), and a new one if the client

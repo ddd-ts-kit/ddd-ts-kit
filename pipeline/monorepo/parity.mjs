@@ -6,6 +6,11 @@
 // with its reason, so that an option or a tested behaviour added to one member alone, or an
 // option two members name alike and mean differently, fails here.
 //
+// Beside the tables `families.mjs` describes, a port may carry two more, read here:
+// - `wordsApart`: option -> member -> why that member takes other words than the others;
+// - `defaultsApart`: option -> member -> why that member gives the option another default.
+// A member listed there is left out of the comparison, and its line fails once it agrees again.
+//
 //   node pipeline/monorepo/parity.mjs --check
 
 import fs from 'node:fs';

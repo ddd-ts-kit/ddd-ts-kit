@@ -57,6 +57,8 @@ describe('NatsEventBus: a pull the server refuses', { timeout: 30_000 }, () => {
       connection: network.url,
       onFailure: failuresOf(reported),
       retry: { delayMs: 20, maxAttempts: 1 },
+      // A publication written while the connection is away is given up after this long.
+      publishTimeoutMs: 1_000,
     });
 
     bus.subscribe(PLACED, async () => {

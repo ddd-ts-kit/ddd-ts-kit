@@ -42,7 +42,7 @@ describe('the settings of a bus', () => {
       replicas: 1,
       duplicateWindowMs: 120_000,
       ackWaitMs: 30_000,
-      publishTimeoutMs: 5_000,
+      publishTimeoutMs: 30_000,
       retry: { maxAttempts: 5, delayMs: 5_000 },
       reconnect: { initialMs: 200, factor: 2, maxMs: 30_000 },
     });

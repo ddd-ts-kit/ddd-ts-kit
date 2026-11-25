@@ -21,7 +21,7 @@ export function settingsOf(
     replicas: options.replicas ?? 1,
     duplicateWindowMs: options.duplicateWindowMs ?? 120_000,
     ackWaitMs: options.ackWaitMs ?? 30_000,
-    publishTimeoutMs: options.publishTimeoutMs ?? 5_000,
+    publishTimeoutMs: options.publishTimeoutMs ?? 30_000,
     retry: retryOf(options.retry),
     reconnect,
     onFailure: guarded(options.onFailure),
