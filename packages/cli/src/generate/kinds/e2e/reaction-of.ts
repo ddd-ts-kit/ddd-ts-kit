@@ -17,6 +17,8 @@ import { declaredModules, wiringTextOf } from '../../../model-modules';
 export interface Reaction {
   readonly upstream: RenderContext;
   readonly e2e: RenderContext;
+  /** The file of the handler that receives the event. */
+  readonly handler: string;
 }
 
 /** What an end-to-end spec runs to start a use case no route reaches and no handler does, or the one `--job` names: the jobs that send its command. */
@@ -57,6 +59,7 @@ export function reactionOf(scope: Scope, name: Name, routeFile: string): Reactio
   return {
     upstream: upstreamVars(scope, event),
     e2e: { reads: reads.join(', '), readable: reads.length > 0, handlers: handlersOf(consumed, event.type) },
+    handler: event.file,
   };
 }
 

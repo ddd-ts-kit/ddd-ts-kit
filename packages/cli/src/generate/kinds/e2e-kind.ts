@@ -44,14 +44,19 @@ function startedSpec(scope: Scope, name: Name, routeFile: string): readonly Supp
     const { file, content, needs } = jobSpec(scope, name, reaction);
 
     scope.ws.create(file, content);
+    noteUndecided(scope, name);
 
     return needs;
   }
 
+  const { handler, ...read } = reaction;
+
   scope.ws.create(
     `test/e2e/${name.kebab}.e2e.spec.ts`,
-    renderTemplate('e2e/e2e-reaction.spec.ts.tpl', vars(scope, { name: named(name), ...reaction })),
+    renderTemplate('e2e/e2e-reaction.spec.ts.tpl', vars(scope, { name: named(name), ...read })),
   );
+
+  noteUndecided(scope, name, handler);
 
   return ['publish'];
 }
@@ -72,6 +77,8 @@ function routeSpec(scope: Scope, name: Name, endpoint: Endpoint): readonly Suppo
       vars(scope, { name: named(name), e2e: { ...endpoint, ...traced, tree, ...actor } }),
     ),
   );
+
+  noteUndecided(scope, name);
 
   return [];
 }
@@ -206,4 +213,17 @@ function controllerOf(scope: Scope, name: Name): Declared | undefined {
     status: response.status,
     isProtected: !route.guards.includes('Public'),
   };
+}
+
+/** What starts or carries out the use case and is still as its generator left it refuses: the spec written here fails until it is decided, and the output says so. */
+function noteUndecided(scope: Scope, name: Name, reaction?: string): void {
+  const handlers = ['commands', 'queries'].map(
+    (folder) => `${scope.dir}/application/${folder}/${name.kebab}/${name.kebab}.handler.ts`,
+  );
+
+  for (const file of [...(reaction === undefined ? [] : [reaction]), ...handlers]) {
+    if (scope.ws.read(file)?.includes('throw undecided(') === true) {
+      scope.ws.note(`${file} still refuses (its TODO(domain)): the end-to-end spec fails until it is written.`);
+    }
+  }
 }

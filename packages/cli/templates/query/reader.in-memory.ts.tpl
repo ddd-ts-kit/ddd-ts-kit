@@ -1,3 +1,4 @@
+import { undecided } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 import { {{name.pascal}}Reader } from '{{alias.context}}/application/ports/{{name.kebab}}-reader.port{{alias.ext}}';
@@ -12,10 +13,8 @@ import type { {{name.pascal}}Result } from '{{alias.context}}/application/querie
 @Repository({{name.pascal}}Reader)
 {{/if}}
 export class InMemory{{name.pascal}}Reader implements {{name.pascal}}Reader {
-  protected readonly answer: {{name.pascal}}Result = {};
-
   async read(query: {{name.pascal}}Query): Promise<{{name.pascal}}Result> {
-    // TODO(domain): replace this canned answer by a real read of the projection, filtered by `query`; a production adapter (SQL view, search index) implements the same port next to this file.
-    return this.answer;
+    // TODO(domain): read the projection, filtered by `query`, here while its lines are kept in memory or in a production adapter (SQL view, search index) that implements the same port next to this file. Until then the query is refused.
+    throw undecided('what "{{name.words}}" reads');
   }
 }

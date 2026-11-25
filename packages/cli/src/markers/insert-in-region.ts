@@ -35,17 +35,21 @@ export function insertInRegion(content: string, region: string, block: string): 
         inside.map((line) => line.trim()),
         written,
       ).map(indented)
-    : [...inside, ...added(inside, additionTo(region, written, indent)).map(indented)];
+    : [...inside, ...added(inside, additionTo(region, written, indent), lines.slice(0, open)).map(indented)];
 
   lines.splice(open + 1, close - open - 1, ...merged);
 
   return lines.join('\n');
 }
 
+const COMMENT = /^\s*(?:\/\/|\/\*|\*)/;
+
 interface Addition {
   readonly lines: readonly string[];
   /** Set apart from what the region already holds by a blank line. */
   readonly isParagraph: boolean;
+  /** Opens with a statement on several lines, which the layout rules set apart from the statement before it, wherever that one stands. */
+  readonly opensBroken: boolean;
 }
 
 /** What a block adds once laid out for the width left at the indentation of the region: a block of statements, or a statement that takes several lines, is a paragraph. */
@@ -53,11 +57,23 @@ function additionTo(region: string, written: readonly string[], indent: string):
   const lines = fitBlock(written, indent);
   const isBrokenStatement = lines.length > 1 && lines.at(-1)?.endsWith(';') === true;
 
-  return { lines, isParagraph: PARAGRAPHS.has(region) || written.length > 1 || isBrokenStatement };
+  const opening = lines.find((line) => !COMMENT.test(line)) ?? '';
+
+  return {
+    lines,
+    isParagraph: PARAGRAPHS.has(region) || written.length > 1 || isBrokenStatement,
+    opensBroken: opening !== '' && !/[;,]$/.test(opening),
+  };
 }
 
-/** The lines a block adds to a region: none when its lines are already there, in order; a blank line first when the block is a paragraph. */
-function added(inside: readonly string[], { lines, isParagraph }: Addition): string[] {
+/**
+ * The lines a block adds to a region: none when its lines are already there, in order; a blank
+ * line first when the block is a paragraph that follows what the region holds, or a statement on
+ * several lines that opens the region right under a statement.
+ */
+function added(inside: readonly string[], addition: Addition, above: readonly string[]): string[] {
+  const { lines, isParagraph, opensBroken } = addition;
+
   const written = (rows: readonly string[]): string =>
     rows
       .map((line) => line.trim())
@@ -68,7 +84,16 @@ function added(inside: readonly string[], { lines, isParagraph }: Addition): str
     return [];
   }
 
-  return [...(isParagraph && inside.some((line) => line.trim() !== '') ? [''] : []), ...lines];
+  const follows = inside.some((line) => line.trim() !== '') ? isParagraph : opensBroken && endsWithAStatement(above);
+
+  return [...(follows ? [''] : []), ...lines];
+}
+
+/** Whether the last line that is no comment is a statement that ends there: not a blank line, nor the opening of a block. */
+function endsWithAStatement(above: readonly string[]): boolean {
+  const last = above.findLast((line) => !COMMENT.test(line))?.trim() ?? '';
+
+  return last.endsWith(';');
 }
 
 function trimBlankEdges(lines: readonly string[]): string[] {

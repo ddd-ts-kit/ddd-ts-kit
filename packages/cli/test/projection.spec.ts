@@ -6,6 +6,8 @@ import { failure, report } from './reports';
 const SHIPPING = 'src/contexts/shipping';
 const PROJECTION = `${SHIPPING}/application/projections/invoices-to-ship.projection.ts`;
 const SPEC = `${SHIPPING}/test/unit/invoices-to-ship.projection.spec.ts`;
+// One running test says what the fresh projection does, so that a generated project covers it as generated.
+const REFUSED = 'await expect(projection.issued(fact)).rejects.toMatchObject({ code: NOT_IMPLEMENTED });';
 
 let root: string;
 
@@ -31,7 +33,7 @@ describe('generate projection', () => {
       "import { invoiceIssuedV2, type InvoiceIssuedV2 } from '@/contexts/billing/published-language';",
     );
 
-    expect(read(root, SPEC)).toContain('await expect(projection.issued(fact)).resolves.toBeUndefined();');
+    expect(read(root, SPEC)).toContain(REFUSED);
 
     expect(read(root, `${SHIPPING}/application/application.declarations.ts`)).toContain(
       "export * from '@/contexts/shipping/application/projections/invoices-to-ship.projection';",
@@ -111,7 +113,7 @@ describe('generate projection', () => {
     );
 
     expect(module).toContain('builder.include(InvoicesToShipProjection);');
-    expect(read(explicit, SPEC)).toContain('await expect(projection.issued(fact)).resolves.toBeUndefined();');
+    expect(read(explicit, SPEC)).toContain(REFUSED);
 
     expect(
       checkJsonOf(cli(explicit, 'check', '--json')).violations.filter(({ file }) => file.includes('projection')),

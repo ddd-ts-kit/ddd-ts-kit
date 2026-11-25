@@ -170,7 +170,7 @@ describe('generate test-world, and the reader of a query', () => {
 
     const fake = read(project, `${BILLING}/test/fakes/get-invoice-reader.fake.ts`);
 
-    expect(fake).toContain('export class FakeGetInvoiceReader extends InMemoryGetInvoiceReader {');
+    expect(fake).toContain('export class FakeGetInvoiceReader implements GetInvoiceReader {');
 
     expect(report(cli(project, 'generate', 'test-world', 'billing', '--json')).notes).toContain(
       'Not in the world: FakeGetInvoiceReader needs constructor arguments: a spec builds it with what it should answer.',

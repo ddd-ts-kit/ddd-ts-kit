@@ -18,8 +18,8 @@ import { anActor, holdersOf } from '@ddd-ts-kit/auth/testing';
 {{/unless}}
 {{spec.contextImports}}
 {{/unless}}
-{{#if access.protected}}
-import { KitCodes } from '@ddd-ts-kit/kernel';
+{{#if spec.readsKernel}}
+import { {{spec.kernelNames}} } from '@ddd-ts-kit/kernel';
 {{/if}}
 {{#unless world.through}}
 import { platformTestModule } from '{{alias.platform}}/composition/platform-test.module{{alias.ext}}';
@@ -61,11 +61,12 @@ describe('{{name.title}}', () => {
   });
 {{/if}}
 {{#unless command.births}}
-  it('completes without answering anything', async () => {
+  // TODO(domain): a generated handler refuses until its decision is written: once it is, replace this test by the entries below.
+  it('is refused until what "{{name.words}}" does is written', async () => {
     const { application } = {{world.await}}arrange();
     const command = new {{name.pascal}}Command({{access.holder}});
 
-    await expect(application.commandBus.execute(command)).resolves.toBeUndefined();
+    await expect(application.commandBus.execute(command)).rejects.toMatchObject({ code: NOT_IMPLEMENTED });
   });
 {{/unless}}
 {{#if access.protected}}

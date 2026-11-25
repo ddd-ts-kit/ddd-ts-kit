@@ -8,8 +8,8 @@ import { AuthorizationMap, authorizationMiddleware, requires } from '@ddd-ts-kit
 {{/unless}}
 import { anActor, holdersOf } from '@ddd-ts-kit/auth/testing';
 {{/if}}
-{{#if access.protected}}
-import { KitCodes } from '@ddd-ts-kit/kernel';
+{{#if spec.readsKernel}}
+import { {{spec.kernelNames}} } from '@ddd-ts-kit/kernel';
 {{/if}}
 {{#unless world.through}}
 import { createTestBuses } from '@ddd-ts-kit/testing';
@@ -49,11 +49,12 @@ describe('{{name.title}}', () => {
   });
   {{/if}}
   {{#unless command.births}}
-  it('completes without answering anything', async () => {
+  // TODO(domain): a generated handler refuses until its decision is written: once it is, replace this test by the entries below.
+  it('is refused until what "{{name.words}}" does is written', async () => {
     const { commandBus } = {{world.await}}arrange();
     const command = new {{name.pascal}}Command({{access.holder}});
 
-    await expect(commandBus.execute(command)).resolves.toBeUndefined();
+    await expect(commandBus.execute(command)).rejects.toMatchObject({ code: NOT_IMPLEMENTED });
   });
   {{/unless}}
   {{#if access.protected}}

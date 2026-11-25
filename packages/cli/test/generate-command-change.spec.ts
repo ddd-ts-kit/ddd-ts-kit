@@ -35,7 +35,7 @@ function billing(...init: readonly string[]): string {
 }
 
 describe('generate command --aggregate, birth or change', () => {
-  it('writes a handler that changes an existing aggregate and writes nothing, unless --creates says it is a birth', () => {
+  it('writes a handler that changes an existing aggregate and refuses until it is decided, unless --creates says it is a birth', () => {
     const root = billing('--di', 'manual');
 
     expectOk(
@@ -58,6 +58,7 @@ describe('generate command --aggregate, birth or change', () => {
     expect(handler).not.toContain('.save(');
     expect(handler).not.toContain('IdGenerator');
     expect(handler).toContain('TODO(domain)');
+    expect(handler).toContain('    throw undecided(\'what "void invoice" does\');\n  }');
     expect(handler).toContain('Promise<void>');
     expect(handler).toContain('private readonly invoiceRepository: InvoiceRepository');
     expect(read(root, COMMAND('void-invoice'))).toContain('AuthorizedCommand<void>');
@@ -66,6 +67,14 @@ describe('generate command --aggregate, birth or change', () => {
     expect(read(root, 'src/contexts/billing/billing.module.ts')).not.toContain(
       'new VoidInvoiceHandler(invoiceRepository, ',
     );
+
+    const spec = read(root, 'src/contexts/billing/test/unit/void-invoice.handler.spec.ts');
+
+    // One running test says what the fresh handler does, so that a generated project covers it as generated.
+    expect(spec).toContain(`it('is refused until what "void invoice" does is written', async () => {`);
+    expect(spec).toContain('rejects.toMatchObject({ code: NOT_IMPLEMENTED });');
+    expect(spec).toContain("import { KitCodes, NOT_IMPLEMENTED } from '@ddd-ts-kit/kernel';");
+    expect(spec).not.toContain('resolves.toBeUndefined()');
   });
 
   it('writes the birth, with its identifier answered, when --creates is given', () => {

@@ -11,7 +11,7 @@ import type { UseCaseContext } from './use-case-context';
  * What the templates of a command read. `asksPolicy`: a policy refines its permission, so the
  * handler receives `Access` and asks it, about the command until the element is loaded. `births`:
  * `--creates` states that the command gives birth to its aggregate; otherwise a command on an aggregate
- * changes one that exists, and its handler writes nothing until the domain is decided.
+ * changes one that exists, and its handler refuses until the domain is decided.
  */
 export function commandContext(
   scope: Scope,
@@ -22,7 +22,8 @@ export function commandContext(
   const reference = `${scope.context.camel}Permissions['${scope.flags.permission ?? ''}']`;
   const required = accessVars(scope, { name, kind: 'Command' });
   const access = { ...required, policy: asksPolicy, reference };
-  const spec = specVars(scope, access);
+  const refused = [...(required['protected'] === true ? ['KitCodes'] : []), ...(births ? [] : ['NOT_IMPLEMENTED'])];
+  const spec = { ...specVars(scope, access), readsKernel: refused.length > 0, kernelNames: refused.join(', ') };
 
   const world = worldArrangement(scope, spec, {
     repository: aggregate,

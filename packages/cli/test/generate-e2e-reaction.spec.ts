@@ -28,7 +28,7 @@ function sendsShipParcel(file: string): void {
     root,
     file,
     read(root, file).replace(
-      /async handle\(event: (\w+)\): Promise<void> \{\n.*\n {2}\}/,
+      /async handle\(event: (\w+)\): Promise<void> \{\n.*\n.*\n {2}\}/,
       'async handle(event: $1): Promise<void> {\n    await this.commands.execute(new ShipParcelCommand(this.actor, { parcelId: event.id }));\n  }',
     ),
   );
