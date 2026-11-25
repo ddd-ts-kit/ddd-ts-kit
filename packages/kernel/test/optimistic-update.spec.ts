@@ -1,16 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import {
+  AggregateRoot,
   ConcurrencyError,
   ConflictError,
+  loadedAt,
   optimisticUpdate,
   schemaNameOf,
   UniqueViolationError,
   type VersionStep,
 } from '../src';
 
+class Invoice extends AggregateRoot<string | number> {
+  constructor(id: string | number) {
+    super(id);
+  }
+}
+
 describe('optimisticUpdate', () => {
   it('asks for an insert at version 0 and gives the aggregate version 1', async () => {
-    const aggregate = { id: 'invoice-1', version: 0 };
+    const aggregate = loadedAt(new Invoice('invoice-1'), 0);
     const steps: VersionStep[] = [];
 
     await optimisticUpdate(aggregate, async (step) => {
@@ -24,7 +32,7 @@ describe('optimisticUpdate', () => {
   });
 
   it('expects the current version and writes the following one', async () => {
-    const aggregate = { id: 42, version: 7 };
+    const aggregate = loadedAt(new Invoice(42), 7);
     const steps: VersionStep[] = [];
 
     await optimisticUpdate(aggregate, async (step) => {
@@ -38,7 +46,7 @@ describe('optimisticUpdate', () => {
   });
 
   it('can save the same aggregate again after a success', async () => {
-    const aggregate = { id: 'invoice-1', version: 0 };
+    const aggregate = loadedAt(new Invoice('invoice-1'), 0);
     const steps: VersionStep[] = [];
 
     const write = async (step: VersionStep): Promise<number> => {
@@ -57,7 +65,7 @@ describe('optimisticUpdate', () => {
   });
 
   it('raises a ConcurrencyError and keeps the version when no row was written', async () => {
-    const aggregate = { id: 'invoice-1', version: 3 };
+    const aggregate = loadedAt(new Invoice('invoice-1'), 3);
 
     const saving = optimisticUpdate(aggregate, async () => 0);
 
@@ -66,14 +74,14 @@ describe('optimisticUpdate', () => {
   });
 
   it('raises a ConcurrencyError when more than one row was written', async () => {
-    const aggregate = { id: 'invoice-1', version: 3 };
+    const aggregate = loadedAt(new Invoice('invoice-1'), 3);
 
     await expect(optimisticUpdate(aggregate, async () => 2)).rejects.toBeInstanceOf(ConcurrencyError);
     expect(aggregate.version).toBe(3);
   });
 
   it('lets the failure of the write through and keeps the version', async () => {
-    const aggregate = { id: 'invoice-1', version: 3 };
+    const aggregate = loadedAt(new Invoice('invoice-1'), 3);
     const failure = new TypeError('connection lost');
 
     const saving = optimisticUpdate(aggregate, async () => {
@@ -102,7 +110,7 @@ describe('optimisticUpdate', () => {
     ],
   ] as const) {
     it(`raises a UniqueViolationError, a conflict and not a lost update, for a unique value refused ${what}`, async () => {
-      const aggregate = { id: 'member-2', version: 0 };
+      const aggregate = loadedAt(new Invoice('member-2'), 0);
 
       const failure = await optimisticUpdate(aggregate, () => Promise.reject(violation)).catch(
         (error: unknown) => error,
@@ -118,7 +126,7 @@ describe('optimisticUpdate', () => {
   }
 
   it('lets another raw constraint of SQLite through as it is: a NOT NULL is no unique violation', async () => {
-    const aggregate = { id: 'member-2', version: 0 };
+    const aggregate = loadedAt(new Invoice('member-2'), 0);
 
     const notNull = {
       code: 'SQLITE_CONSTRAINT',
@@ -129,7 +137,7 @@ describe('optimisticUpdate', () => {
   });
 
   it('lets a refusal through as it is, whatever its cause', async () => {
-    const aggregate = { id: 'member-2', version: 1 };
+    const aggregate = loadedAt(new Invoice('member-2'), 1);
     const refusal = new ConflictError('Email taken', { cause: { code: '23505' } });
 
     await expect(optimisticUpdate(aggregate, () => Promise.reject(refusal))).rejects.toBe(refusal);

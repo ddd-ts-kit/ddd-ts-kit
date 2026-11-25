@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AggregateRoot } from '../src';
+import { AggregateRoot, takeRecordedEvents } from '../src';
 
 interface OrderSnapshot {
   readonly id: string;
@@ -52,16 +52,16 @@ describe('the events an aggregate has yet to announce', () => {
 
     expect(shippedNow).toEqual(loadedShipped);
     expect(shippedNow).toStrictEqual(loadedShipped);
-    expect(loadedShipped.pullEvents()).toEqual([]);
-    expect(shippedNow.pullEvents()).toHaveLength(2);
+    expect(takeRecordedEvents(loadedShipped)).toEqual([]);
+    expect(takeRecordedEvents(shippedNow)).toHaveLength(2);
   });
 
   it('are not serialised, spread or listed', () => {
     const order = Order.place('o1', 'book');
 
-    expect(JSON.stringify(order)).toBe('{"id":"o1","version":0,"sku":"book","shipped":false}');
-    expect({ ...order }).toEqual({ id: 'o1', sku: 'book', version: 0, shipped: false });
-    expect(Object.keys(order)).not.toContain('events');
+    expect(JSON.stringify(order)).toBe('{"id":"o1","sku":"book","shipped":false}');
+    expect({ ...order }).toEqual({ id: 'o1', sku: 'book', shipped: false });
+    expect(Object.getOwnPropertySymbols({ ...order })).toEqual([]);
   });
 
   it('are still handed over once, in the order they were recorded', () => {
@@ -69,19 +69,19 @@ describe('the events an aggregate has yet to announce', () => {
 
     order.ship();
 
-    expect(order.pullEvents().map((event) => event.name)).toEqual(['shop.order.placed', 'shop.order.shipped']);
-    expect(order.pullEvents()).toEqual([]);
+    expect(takeRecordedEvents(order).map((event) => event.name)).toEqual(['shop.order.placed', 'shop.order.shipped']);
+    expect(takeRecordedEvents(order)).toEqual([]);
 
     order.ship();
 
-    expect(order.pullEvents().map((event) => event.name)).toEqual(['shop.order.shipped']);
+    expect(takeRecordedEvents(order).map((event) => event.name)).toEqual(['shop.order.shipped']);
   });
 
   it('leave the fields a subclass adds as they were: enumerable, compared and serialised', () => {
     const book = Order.rehydrate({ id: 'o1', sku: 'book', shipped: false });
     const pen = Order.rehydrate({ id: 'o1', sku: 'pen', shipped: false });
 
-    expect(Object.keys(book)).toEqual(['id', 'version', 'sku', 'shipped']);
+    expect(Object.keys(book)).toEqual(['id', 'sku', 'shipped']);
     expect(book).not.toEqual(pen);
     expect(book.isShipped).toBe(false);
   });

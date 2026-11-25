@@ -1,4 +1,10 @@
-import { ConcurrencyError, type AggregateRoot, type ExecutionScope, type Repository } from '@ddd-ts-kit/kernel';
+import {
+  loadedAt,
+  optimisticUpdate,
+  type AggregateRoot,
+  type ExecutionScope,
+  type Repository,
+} from '@ddd-ts-kit/kernel';
 import { UNCONFINED, confinedTo, type Confinement, type Owner } from './confinement';
 import type { SnapshotCodec } from './snapshot-codec';
 
@@ -28,7 +34,7 @@ interface Entry<A> {
 /**
  * A working repository over a Map: the fake of any aggregate repository port. Use it as is or
  * extend it to add the finders of the port. It enforces optimistic concurrency on `version`
- * like a real adapter, and passes the same `repositoryContract`. Confined to a scope, it keeps
+ * through the `optimisticUpdate` and `loadedAt` of a real adapter, and passes the same `repositoryContract`. Confined to a scope, it keeps
  * each tenant to what it saved, under ids all tenants share as the rows of one table do, and
  * passes `tenantIsolationContract`.
  */
@@ -55,18 +61,19 @@ export class InMemoryRepository<A extends AggregateRoot<Id>, Id extends string |
 
   async save(aggregate: A): Promise<void> {
     const owner = this.confinement.writer();
-    const held = this.entries.get(aggregate.id);
-    const current = held?.version ?? 0;
 
-    // What another tenant holds is refused as a stale save is: the id is taken and the row is not the writer's.
-    if (aggregate.version !== current || (held !== undefined && held.owner !== owner)) {
-      throw new ConcurrencyError(aggregate.id);
-    }
+    await optimisticUpdate(aggregate, async ({ expected, next }) => {
+      const held = this.entries.get(aggregate.id);
 
-    const version = current + 1;
+      // What another tenant holds is refused as a stale save is: the id is taken and the row is not the writer's.
+      if ((held?.version ?? 0) !== expected || (held !== undefined && held.owner !== owner)) {
+        return 0;
+      }
 
-    this.entries.set(aggregate.id, { load: this.keep(aggregate), version, owner });
-    aggregate.version = version;
+      this.entries.set(aggregate.id, { load: this.keep(aggregate), version: next, owner });
+
+      return 1;
+    });
   }
 
   /** Copies of every stored aggregate the work in progress may read, in insertion order, for assertions and finders. */
@@ -96,11 +103,7 @@ export class InMemoryRepository<A extends AggregateRoot<Id>, Id extends string |
   }
 
   private revive(entry: Entry<A>): A {
-    const aggregate = entry.load();
-
-    aggregate.version = entry.version;
-
-    return aggregate;
+    return loadedAt(entry.load(), entry.version);
   }
 }
 

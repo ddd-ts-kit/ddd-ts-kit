@@ -1,6 +1,4 @@
-import type { DomainEvent } from '@ddd-ts-kit/kernel';
+import type { AggregateRoot } from '@ddd-ts-kit/kernel';
 
-/** What a scenario needs from an aggregate: the events it recorded. */
-export interface EventSource {
-  pullEvents(): DomainEvent[];
-}
+/** What a scenario is given: an aggregate, whose recorded events the test kit reads for the spec. */
+export type EventSource = Pick<AggregateRoot<string | number>, 'id' | 'version'>;

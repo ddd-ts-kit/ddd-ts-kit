@@ -1,4 +1,4 @@
-import { InMemoryUnitOfWork, UnitOfWorkAbortedError } from '@ddd-ts-kit/kernel';
+import { InMemoryUnitOfWork, UnitOfWorkAbortedError, recordedEventsOf } from '@ddd-ts-kit/kernel';
 import { ContractSuite } from '../contract-suite';
 import { failureOf } from '../../scenarios/failure-of';
 import { Parcel } from './parcel';
@@ -47,7 +47,7 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
         );
 
         this.expect(bench.journal).toEqual([]);
-        this.expect([inside.pullEvents().length, outside.pullEvents().length]).toEqual([1, 1]);
+        this.expect([recordedEventsOf(inside).length, recordedEventsOf(outside).length]).toEqual([1, 1]);
         this.expect(await bench.pending()).toBe(0);
       },
     );
@@ -112,7 +112,7 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
         }),
       );
 
-      this.expect(first.pullEvents()).toEqual([]);
+      this.expect(recordedEventsOf(first)).toEqual([]);
 
       await bench.run(() => bench.register('p1'));
 
