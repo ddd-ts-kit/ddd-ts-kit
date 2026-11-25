@@ -84,7 +84,7 @@ export class JobRecorder {
   private record(job: RegisteredJob, run: JobRun, detail: Detail): JobRun {
     const { correlationId } = detail;
 
-    job.lastRun = run;
+    job.handled(run);
 
     safely(() => {
       this.measure(run);

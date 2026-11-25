@@ -10,6 +10,7 @@ import type {
 import { ATTEMPT_HEADER } from './codec/headers';
 import { republication } from './codec/republication';
 import { BrokerLink } from './connection/broker-link';
+import { answeredWithin } from './connection/answered-within';
 import { within } from './connection/within';
 import { Consumption } from './consumption/consumption';
 import { ConsumerNameRequiredError } from './errors/consumer-name-required-error';
@@ -144,20 +145,24 @@ export class RabbitMqEventBus implements EventBus {
 
   /**
    * Moves up to `limit` messages from the dead queue of a consumer back to its work queue,
-   * with a fresh attempt budget. Returns how many were moved. A copy the broker does not
-   * confirm within `publishTimeoutMs` rejects the replay, and its message stays dead.
+   * with a fresh attempt budget. Returns how many were moved. Each wait is bounded by
+   * `publishTimeoutMs`: a copy the broker does not confirm in time rejects the replay with
+   * `PUBLISH_NOT_CONFIRMED`, a channel or a message it does not hand over in time with
+   * `BROKER_UNAVAILABLE` (`REQUEST_TIMEOUT`), and the message stays dead.
    */
   async replayDead(binding: ConsumerBinding, limit = 100): Promise<number> {
     const { work, dead } = queueNamesOf(binding);
-    const channel = await (await this.link.opened()).createConfirmChannel();
-    const confirmations = new Confirmations(this.settings.publishTimeoutMs);
+    const { publishTimeoutMs } = this.settings;
+    const model = await this.link.opened();
+    const channel = await answeredWithin(publishTimeoutMs, model.createConfirmChannel());
+    const confirmations = new Confirmations(publishTimeoutMs);
 
     channel.on('error', () => undefined);
     let replayed = 0;
 
     try {
       for (; replayed < limit; replayed += 1) {
-        const message = await channel.get(dead, { noAck: false });
+        const message = await answeredWithin(publishTimeoutMs, channel.get(dead, { noAck: false }));
 
         if (message === false) {
           break;
@@ -167,9 +172,9 @@ export class RabbitMqEventBus implements EventBus {
         channel.ack(message);
       }
     } finally {
-      // Closing hands back a message whose copy was not confirmed: it stays dead.
+      // Closing hands back a message whose copy was not confirmed, or handed over too late: it stays dead.
       await within(
-        this.settings.publishTimeoutMs,
+        publishTimeoutMs,
         channel.close().catch(() => undefined),
       );
     }

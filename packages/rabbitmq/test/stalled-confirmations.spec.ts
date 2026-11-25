@@ -9,8 +9,8 @@ import { unique } from './support/unique';
 import { eventually, pause } from './support/waiting';
 
 // The in-memory broker alone: a relay that holds the replies of a real broker would hold its
-// deliveries and the answer to a `get` too, not only its confirmations.
-describe('RabbitMqEventBus: a broker that stopped confirming', { timeout: 30_000 }, () => {
+// deliveries, its answer to a `get` and the opening of a channel all at once, not one of them.
+describe('RabbitMqEventBus: a broker that stopped confirming or answering', { timeout: 30_000 }, () => {
   let broker: Broker;
 
   beforeEach(async () => {
@@ -69,4 +69,31 @@ describe('RabbitMqEventBus: a broker that stopped confirming', { timeout: 30_000
     network.restore();
     await network.close();
   });
+
+  for (const request of ['channel', 'get'] as const) {
+    it(`rejects a replay when the broker never answers its ${request}, and leaves the message dead`, async () => {
+      const network = await broker.network();
+      const consumer = unique('billing');
+      const bus = broker.bus({ connection: network.connection, consumer, publishTimeoutMs: 100 });
+      const subscription = bus.subscribe(PLACED, recorder(MAX_ATTEMPTS).handler);
+      const { dead } = queueNamesOf({ consumer, type: PLACED });
+
+      await bus.publish([anEvent('evt-1')]);
+      await broker.settled(bus);
+      subscription.unsubscribe();
+      network.stopAnswering(request);
+
+      const replay = bus.replayDead({ consumer, type: PLACED }).catch((error: unknown) => error);
+
+      expect(await Promise.race([replay, pause(2_000).then(() => 'still replaying')])).toMatchObject({
+        code: 'BROKER_UNAVAILABLE',
+        reason: 'REQUEST_TIMEOUT',
+      });
+
+      expect(await broker.readyIn(dead)).toBe(1);
+
+      network.restore();
+      await network.close();
+    });
+  }
 });

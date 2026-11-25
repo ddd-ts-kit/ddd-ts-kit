@@ -460,7 +460,7 @@ test('the scope of a worker is pinned at its first call: a scope file its code r
   assert.equal(decision(refused), 'deny');
   assert.match(
     reason(refused),
-    /^ddd-ts-kit: The scope file changed: \.ddd-ts-kit\/worker\.json of your worktree named the context "ordering" at your first call and now is gone/,
+    /^ddd-ts-kit \[scope-changed\]: The scope file changed: \.ddd-ts-kit\/worker\.json of your worktree named the context "ordering" at your first call and now is gone/,
   );
   const inside = run('pre-write', write(join(root, 'src/contexts/ordering/CONTEXT.md'), agent));
   assert.match(reason(inside), /The scope file changed: .* report to the conductor, who restores it/);

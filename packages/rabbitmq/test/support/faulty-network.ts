@@ -1,5 +1,6 @@
 import { createConnection, createServer, type Server, type Socket } from 'node:net';
 import type { AddressInfo } from 'node:net';
+import type { BrokerRequest } from './amqp/model';
 import type { Network } from './network';
 
 /**
@@ -46,6 +47,10 @@ export class FaultyNetwork implements Network {
 
   holdReplies(): void {
     this.repliesHeld = true;
+  }
+
+  stopAnswering(request: BrokerRequest): void {
+    throw new Error(`A relay in front of a real broker holds every reply or none, not the answer to a ${request}`);
   }
 
   beginClosing(): void {

@@ -5,13 +5,14 @@ import assert from 'node:assert/strict';
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { bash, committed, decision, git, project, reason, run, worker } from './support.mjs';
+import { bash, committed, decision, git, project, reason, rule, run, worker } from './support.mjs';
 
 test('a sub-agent reads a briefing of worker-scope, and only the conductor prepares a worktree', () => {
   const root = project();
   const reviewer = { agent_type: 'ddd-ts-kit:architecture-reviewer' };
   const preparing = run('pre-bash', bash(root, 'npx ddd-ts-kit worker-scope ordering --rows 3', reviewer));
   assert.equal(decision(preparing), 'deny');
+  assert.equal(rule(preparing), 'worker-place');
   assert.match(reason(preparing), /--dry-run/);
   const reading = 'npx ddd-ts-kit worker-scope ordering --rows 3 --dry-run --json';
   assert.equal(run('pre-bash', bash(root, reading, reviewer)).output, undefined);
@@ -151,8 +152,10 @@ const HOOKS_KEPT = [
 test('a git command that skips the hooks of the project is refused, with the hooks as the local gate', () => {
   const root = project();
   for (const command of HOOKS_SKIPPED) {
-    assert.equal(decision(run('pre-bash', bash(root, command))), 'deny', command);
-    assert.match(reason(run('pre-bash', bash(root, command))), /local gate of the pipeline/, command);
+    const refused = run('pre-bash', bash(root, command));
+    assert.equal(decision(refused), 'deny', command);
+    assert.equal(rule(refused), 'hooks-skipped', command);
+    assert.match(reason(refused), /local gate of the pipeline/, command);
   }
   for (const command of HOOKS_KEPT) {
     assert.equal(run('pre-bash', bash(root, command)).output, undefined, command);
@@ -263,7 +266,9 @@ test('the reviewer, the explorer and the verifier change no file of a project by
       'git stash',
       'git reset --hard HEAD~1',
     ]) {
-      assert.equal(decision(run('pre-bash', bash(root, command, reader))), 'deny', `${agent} ${command}`);
+      const refused = run('pre-bash', bash(root, command, reader));
+      assert.equal(decision(refused), 'deny', `${agent} ${command}`);
+      assert.equal(rule(refused), 'read-only', `${agent} ${command}`);
     }
     for (const command of [
       'git show HEAD:src/main.ts',

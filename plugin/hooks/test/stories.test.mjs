@@ -328,7 +328,7 @@ test('a CLI that answers no report to the build gate leaves the rest of the call
   const code = '*** Add File: src/contexts/ordering/domain/order-number.ts\n+export const next = 1;';
   const rules = '*** Add File: biome.json\n+{}';
   const said = run('pre-write', patch(root, code, rules)).output;
-  assert.match(said.systemMessage, /^ddd-ts-kit: biome\.json holds the rules or the pipeline/);
+  assert.match(said.systemMessage, /^ddd-ts-kit \[governed-file\]: biome\.json holds the rules or the pipeline/);
 });
 
 test('the scope of a story is read once a run: a stop that saw it keeps it to the end', () => {
@@ -664,7 +664,7 @@ test('the scope file of a story is removed with no folder above it, by rm, find,
   }
   assert.match(
     reason(run('pre-bash', bash(root, 'git clean -fdx'))),
-    /^ddd-ts-kit: git clean: \.ddd-ts-kit\/story\.json is a shared file/,
+    /^ddd-ts-kit \[scope-file\]: git clean: \.ddd-ts-kit\/story\.json is a shared file/,
   );
   const elsewhere = ['git clean -f', 'git clean -fdx src', 'find src -delete', 'rm -rf src', 'rm a/{}'];
   const otherNames = ["find . -name '*.orig' -delete", "find . -type f -name '*.rej' -exec rm {} +"];

@@ -30,7 +30,7 @@ test('a field of the config of the wrong type falls back to its default', () => 
   assert.equal(decision(refused), 'deny');
   assert.match(
     reason(refused),
-    /^ddd-ts-kit: src\/contexts\/ordering\/application\/application\.declarations\.ts holds/,
+    /^ddd-ts-kit \[generated-file\]: src\/contexts\/ordering\/application\/application\.declarations\.ts holds/,
   );
 });
 

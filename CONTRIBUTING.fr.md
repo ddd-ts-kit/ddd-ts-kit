@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:552f3e4ea2cb145e -->
+<!-- translation-of: CONTRIBUTING.md sha256:cbb5a0f30c24a697 -->
 
 # Contribuer
 
@@ -29,7 +29,10 @@ une règle. Cette page dit comment commencer, puis les règles que suit chaque c
    une branche qu'aucune entrée de *hook* ne peut atteindre est retirée. La garde, c'est
    `plugin/hooks/guard.mjs`, l'entrée qui tient les modes et l'ordre des règles, et les modules à
    côté, chacun ouvrant sur ce qu'il tient ; tous sont chargés avec elle, sauf `shell-commands.mjs`
-   et `builder-runs.mjs`, chargés quand un appel en a besoin. Le tableau nomme le fichier,
+   et `builder-runs.mjs`, chargés quand un appel en a besoin. Une règle est une ligne
+   `{ id, applies?, reason }` d'une table que lit `firstRefusal` (`rule-table.mjs`) : l'ordre est celui
+   de la table, dans l'entrée pour une écriture et dans `shell-rules.mjs` pour une commande. Le tableau
+   de la couverture nomme le fichier,
    pas la branche : `node pipeline/monorepo/uncovered-branches.mjs coverage/plugin.lcov` nomme chaque
    branche que le passage n'a pas prise, depuis le lcov qu'il a écrit.
 4. **Ouvrir une pull request.** Son titre est un sujet de commit conventionnel ; son modèle

@@ -422,7 +422,8 @@ default of `RUN_JOBS` off for the API.
 `application.stop()` stops it first. `stop()` starts no new run, waits for the runs in
 progress up to `graceMs` (30 s by default), then aborts their signals with a `JobAbortedError`
 and returns; a run that waited in a queue is dropped and recorded `missed`. Set the grace
-below the termination grace of the platform.
+below the termination grace of the platform. A `start()` asked before a `stop()` returned
+begins once the stop ended, so that each job keeps one timer.
 
 ### Replacing the scheduler
 

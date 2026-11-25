@@ -115,4 +115,27 @@ describe('stopping', () => {
 
     expect(job.scheduledAt).toEqual(['2026-03-02T11:00:00.000Z']);
   });
+
+  it('is joined by a start asked before it ended: one timer per job, and nothing runs after the next stop', async () => {
+    const checkpoints = new GatedCheckpoints();
+    const { scheduler } = aBench({ checkpoints });
+    const job = new RecordingJob();
+
+    scheduler.register({ name: EXPORT, schedule: { every: '1m' }, run: job.run });
+    await scheduler.start();
+    await scheduler.advance(30_000);
+
+    const stopping = scheduler.stop();
+    const starting = scheduler.start();
+
+    checkpoints.open();
+    await Promise.all([stopping, starting]);
+    expect(scheduler.timers.pending).toBe(1);
+
+    await scheduler.stop();
+    await scheduler.advance(HOUR);
+
+    expect(scheduler.timers.pending).toBe(0);
+    expect(job.scheduledAt).toEqual(['2026-03-02T09:59:00.000Z']);
+  });
 });

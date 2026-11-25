@@ -211,10 +211,11 @@ function replacedText(tool) {
   return [tool.old_string ?? '', tool.old_str ?? '', tool.oldString ?? '', ...edits].join('\n');
 }
 
-// Each host reads the decision in its own shape. Codex cannot put a question to the user: what
-// Claude Code asks is said to the user there, and left to the checks of the pipeline.
-export function decide(input, permissionDecision, reason) {
-  const permissionDecisionReason = `ddd-ts-kit: ${reason}`;
+// Each host reads the decision in its own shape, which opens with the id of the rule that took it.
+// Codex cannot put a question to the user: what Claude Code asks is said to the user there, and left
+// to the checks of the pipeline.
+export function decide(input, { decision: permissionDecision, id, reason }) {
+  const permissionDecisionReason = `ddd-ts-kit [${id}]: ${reason}`;
   const host = hostOf(input);
   if (host === 'copilot') {
     return emit({ permissionDecision, permissionDecisionReason });
