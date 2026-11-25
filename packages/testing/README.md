@@ -221,11 +221,18 @@ aLine().with('quantity', 3).build(); // { sku: 'sku-1', quantity: 3 }
   and inside arrays: `.with('lines', [aLine(), { sku: 'pen', quantity: 2 }])`.
 - `sequence('order')` yields `order-1`, `order-2`... at each build; `lazy(() => new Date())`
   computes a default at each build. A value given with `with` consumes nothing.
+- Plain data (an object literal, a list) is copied at each build, in the defaults and in what
+  `with` was given: changing a built value never changes the next one. An instance of a class (a
+  `Date`, a value object, an aggregate) is handed as it is.
 - A test does not depend on the ones before it: the runner config `init` writes lists the setup
   entry of the package, `setupFiles: ['@ddd-ts-kit/testing/setup/vitest']` or
   `setupFilesAfterEnv: ['@ddd-ts-kit/testing/setup/jest']`, which calls `restartTestData()` before
   each test: every sequence starts again at 1 and the data generator of `/faker` at its seed.
   Without the entry, call `resetSequences()` in `beforeEach`, as the sample above does.
+- What a build needs is a property of the builder's props. A step copies the builder without
+  running its constructor: a field declared `private` or `readonly` follows the copy, a JavaScript
+  `#private` field does not and throws a `TypeError` when the copy reads it, so a builder class
+  declares none.
 - The class form keeps `with`, `withMany` and `adding` protected on purpose: the public
   surface of an aggregate builder is the language of the domain, not its property names.
 
@@ -342,17 +349,20 @@ it('refuses to pay an order twice', () => {
   given(anOrder().paid())
     .when((order) => order.pay())
     .thenError('ORDER_ALREADY_PAID')
+    .thenNoEvent()
     .thenState((order) => expect(order.status).toBe('paid'));
 });
 ```
 
 `given` takes an aggregate or its builder and discards the events of the arrangement
 (`pullEvents()`), so only the events of `when` are asserted. `scenario(() => aggregate)` is
-the same with the arrangement as a function, replayed from a fresh aggregate at each `when`.
+the same with the arrangement as a function, replayed from a fresh aggregate at each `when`, as
+`given(builder)` is. An aggregate already built is given to one `when`: a second `when` on the same
+`given(aggregate)` would act on what the first one left, and throws a `TypeError` that says so.
 
 | Assertion | Passes when |
 |---|---|
-| `thenEvents([...])` | exactly these events, in order; each described by its name, its class, or the properties that matter |
+| `thenEvents([...])` | exactly these events, in order; each described by its name, its class, or the properties that matter: a subset at any depth, an object of a list included (a list is read position by position and has the expected number of items). A matcher names at least one property: `{}` is refused, since any event would match it |
 | `thenEventNames([...])` | exactly these names, in order |
 | `thenNoEvent()` | nothing was recorded |
 | `thenError(code)`, `thenError(code, facts)` | the action refused with that code, whatever the class of the error, carrying these facts when given (it may carry others) |
@@ -361,7 +371,9 @@ the same with the arrangement as a function, replayed from a fresh aggregate at 
 
 Failures are `AssertionError`s of `node:assert` with the expected and recorded events side by
 side, so they read well under any runner. An error raised by `when` is never swallowed: every
-assertion but `thenError` fails on it. When `when` (or the arrangement) is asynchronous, the
+assertion but `thenError` fails on it. Once `thenError` asserted it, the others read what the action
+left behind, the events recorded before the throw included: `.thenError('ORDER_ALREADY_PAID').thenNoEvent()`
+is a refusal that recorded nothing. When `when` (or the arrangement) is asynchronous, the
 chain is a promise: `await given(order).when(async (o) => ...).thenEventNames([...])`.
 
 ### An event-sourced aggregate
@@ -396,7 +408,9 @@ A step of a process manager is a function of its state and of what happened: `gi
 (or `undefined` for an instance that does not exist) runs it and asserts its decision without a
 store, a queue or a bus. `thenIgnored()`, `thenState(state)`, `thenCommands([...])` (each by its
 class or by the properties that matter), `thenTimeouts([...])`, `thenCancelled([...])` and
-`thenEnded()` chain; a failure is an `AssertionError` that says what differs.
+`thenEnded()` chain; a failure is an `AssertionError` that reads as the one of a scenario does: a
+sentence, then the commands or the timeouts expected and decided side by side, and where they
+differ, positions counted from 1 (`command 1.invoiceId: expected 'invoice-2', decided 'invoice-1'`).
 
 ## Refusals
 
@@ -412,7 +426,9 @@ await expectRefusal(() => commands.execute(command), 'SLOT_TAKEN', { calendarId:
 ```
 
 `expectRefusal(subject, code, facts?)` reads an action, which it runs, a `Result`, or an error
-already caught. An action that returns a promise gives a promise to await. It answers the
+already caught. A promise, the one an action returns or one given in its place
+(`await expectRefusal(commands.execute(command), 'SLOT_TAKEN')`), is awaited and what it answers is
+read the same way, a `Result` included: the assertion is then a promise to await. It answers the
 error, and fails with an `AssertionError` that names what was refused instead, or the facts
 that differ, one line each. The facts given must be carried with those values; the refusal may
 carry others.
@@ -688,10 +704,10 @@ afterAll(() => server.close());
 | `client.get / post / put / patch / delete` | JSON in, `{ status, headers, body }` out; `body` is parsed when the content type is JSON, text otherwise; a 4xx or 5xx is a response, not an exception |
 | `client.post(path, body, { headers })`, `client.withHeaders(headers)` | headers for one call, or a client for another caller |
 | `expectStatus(response, 201)` | hands the response back, or fails showing the body, where the API says why |
-| `expectProblem(response, { status, code, facts })` | asserts an RFC 9457 `application/problem+json` answer and returns the document; `code` and `facts` are optional, and `facts` names the facts the document must expose, as JSON writes them (a date is its ISO text) |
+| `expectProblem(response, { status, code, facts })` | asserts an RFC 9457 `application/problem+json` answer and returns the document; `code` and `facts` are optional, and `facts` names the facts the document must expose, as JSON writes them (a date is its ISO text). When it fails, it shows what was expected, what was received and the body, where the API says why |
 | `settled(sources, { timeoutMs = 2000, intervalMs = 10 })` | resolves as soon as every source counts no pending work; when the time is up, fails naming each source still pending, how much it holds and how much of it failed |
 | `eventually(assertion, { timeoutMs = 2000, intervalMs = 20 })` | retries until the assertion passes; when the time is up, fails quoting the last error |
-| `pending(body)` | holds an acceptance scenario written before its code: passes while an assertion of `body` fails, fails once `body` passes (remove the wrapper) or stops on anything but an assertion (the scenario is broken); `it('#US5.02 AC1 ...', pending(async () => { ... }))`. An assertion is read by its shape, never by `instanceof Error`: an `AssertionError` of `node:assert`, which Jest loads in another realm than the spec, or a failed matcher of Vitest or Jest, also as the cause of the failure of `eventually` |
+| `pending(body)` | holds an acceptance scenario written before its code: passes while an assertion of `body` fails, fails once `body` passes (remove the wrapper) or stops on anything but an assertion (the scenario is broken); `it('#US5.02 AC1 ...', pending(async () => { ... }))`. An assertion is read by its shape, never by `instanceof Error`: an `AssertionError` of `node:assert`, which Jest loads in another realm than the spec, or a failed matcher of Vitest or Jest, also as the cause of the failure of `eventually`. A wait `until` or `settled` gives up fails as an assertion, so a scenario that waits for a projection or for the outbox is held like any other |
 | `collectEvents(subscriber, types)` | records published integration events: `received(type?)`, `waitFor(type, predicate?, options?)`, `stop()` |
 
 The assertions are those of `node:assert`: they read the same under any runner.

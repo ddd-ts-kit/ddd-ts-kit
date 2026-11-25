@@ -2,7 +2,7 @@ import type { IntegrationEvent } from '@ddd-ts-kit/kernel';
 import type { Awaitable } from './awaitable';
 import type { ContractRunner } from './contract-runner';
 import { ContractSuite } from './contract-suite';
-import { failureOf } from './failure-of';
+import { failureOf } from '../scenarios/failure-of';
 import { fullEnvelope } from './full-envelope';
 import { OutboxErasureSuite } from './outbox-store/outbox-erasure-suite';
 import type { OutboxStoreUnderContract } from './outbox-store/outbox-store-under-contract';

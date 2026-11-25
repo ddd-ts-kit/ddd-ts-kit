@@ -9,7 +9,7 @@ import { asTenant } from '../execution/as-tenant';
 import type { Awaitable } from './awaitable';
 import type { ContractRunner } from './contract-runner';
 import { ContractSuite } from './contract-suite';
-import { failureOf } from './failure-of';
+import { failureOf } from '../scenarios/failure-of';
 
 export interface TenantIsolationContractOptions<A extends AggregateRoot<Id>, Id extends string | number> {
   /** The strategy and the adapter: `KnexInvoiceRepository, shared tables`. */

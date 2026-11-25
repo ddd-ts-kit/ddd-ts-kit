@@ -19,7 +19,7 @@ import { IGNORING_CASE_CASES } from './criteria/ignoring-case-cases';
 import { OPERATOR_CASES } from './criteria/operator-cases';
 import { SCOPE_CASES } from './criteria/scope-cases';
 import { SORT_CASES } from './criteria/sort-cases';
-import { failureOf } from './failure-of';
+import { failureOf } from '../scenarios/failure-of';
 
 /** What the contract reads through: the `search` of a read port over the rows it was given. */
 export interface ReadModelUnderContract {

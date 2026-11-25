@@ -1,6 +1,6 @@
 import { ProjectionRebuild, type ProjectionRebuildReport } from '@ddd-ts-kit/kernel';
 import type { CriteriaContractRow } from '../criteria/criteria-contract-row';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
 import type { ReadModelStoreUnderContract } from './read-model-store-under-contract';
 import { ReadModelStoreSuite } from './read-model-store-suite';
 import { rowOf as row } from './row-of';

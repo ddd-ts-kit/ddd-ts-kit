@@ -1,6 +1,6 @@
 import { ReadModelKeyHeldElsewhereError } from '@ddd-ts-kit/kernel';
 import type { ContractRunner } from '../contract-runner';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
 import type { Awaitable } from '../awaitable';
 import { ReadModelStoreSuite } from './read-model-store-suite';
 import type { ReadModelRowsUnderContract } from './read-model-rows-under-contract';

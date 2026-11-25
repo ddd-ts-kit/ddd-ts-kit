@@ -2,7 +2,7 @@ import type { EventBus, IntegrationEvent } from '@ddd-ts-kit/kernel';
 import type { Awaitable } from './awaitable';
 import type { ContractRunner } from './contract-runner';
 import { ContractSuite } from './contract-suite';
-import { failureOf } from './failure-of';
+import { failureOf } from '../scenarios/failure-of';
 import { tenantEnvelope } from './tenant-envelope';
 
 export interface EventBusUnderContract {

@@ -9,7 +9,7 @@ import type { AdvisoryLockUnderContract } from './advisory-lock/advisory-lock-un
 import type { Awaitable } from './awaitable';
 import type { ContractRunner } from './contract-runner';
 import { ContractSuite } from './contract-suite';
-import { failureOf } from './failure-of';
+import { failureOf } from '../scenarios/failure-of';
 
 export interface AdvisoryLockContractOptions {
   readonly name: string;

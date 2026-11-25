@@ -1,5 +1,5 @@
 import { InMemoryLogger, ReadModelTables, ReadModelTablesNotReadyError } from '@ddd-ts-kit/kernel';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
 import { READ_MODEL_TABLE_SHAPES as TABLES } from './read-model-table-shapes';
 import { ReadModelTablesSuite } from './read-model-tables-suite';
 

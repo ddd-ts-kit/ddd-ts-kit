@@ -1,5 +1,5 @@
 import { ContractSuite } from '../contract-suite';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
 import { aJob } from './a-job';
 import { LEASE_MS, NOW, QUEUE } from './job-fixtures';
 import type { JobStoreUnderContract } from './job-store-under-contract';
