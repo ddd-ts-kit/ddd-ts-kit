@@ -4,6 +4,7 @@ import type { Io } from './commands/io';
 import { acceptanceCommand } from './commands/acceptance';
 import { affectedCommand } from './commands/affected';
 import { buildAliasesCommand } from './commands/build-aliases';
+import { takingTheLock } from './commands/taking-the-lock';
 import { tscCommand } from './commands/tsc';
 import { checkFileCommand, explainCommand, rulesCommand } from './commands/check';
 import { checksCommand } from './commands/checks';
@@ -53,17 +54,18 @@ import { refuseWindowsShell } from './refuse-windows-shell';
 import { VERSION } from './version';
 import { stdoutJson } from './json/stdout-json';
 
+/** Every command of the CLI. One that reads the shared files of a project and writes them back says so here: it takes the lock of the project (`takingTheLock`). */
 export const COMMANDS: Readonly<Record<string, Command>> = {
   affected: affectedCommand,
-  init: initCommand,
-  generate: generateCommand,
+  init: takingTheLock('init', initCommand, { at: 'working-directory' }),
+  generate: takingTheLock('generate', generateCommand),
   list: listCommand,
   describe: describeCommand,
   status: statusCommand,
   todo: todoCommand,
   'plan-waves': planWavesCommand,
   'story-check': storyCheckCommand,
-  acceptance: acceptanceCommand,
+  acceptance: takingTheLock('acceptance', acceptanceCommand, { onlyWith: '--lock' }),
   'story-scope': storyScopeCommand,
   story: storyCommand,
   stories: storiesCommand,
@@ -76,23 +78,23 @@ export const COMMANDS: Readonly<Record<string, Command>> = {
   cited: citedCommand,
   'verify-merge': verifyMergeCommand,
   'merge-trunk': mergeTrunkCommand,
-  docs: docsCommand,
+  docs: takingTheLock('docs', docsCommand),
   doctor: doctorCommand,
-  sdk: sdkCommand,
-  'depcruise-config': depcruiseConfigCommand,
+  sdk: takingTheLock('sdk', sdkCommand),
+  'depcruise-config': takingTheLock('depcruise-config', depcruiseConfigCommand, { onlyWith: '--write' }),
   tsc: tscCommand,
   'build-aliases': buildAliasesCommand,
-  'drizzle-generate': drizzleGenerateCommand,
+  'drizzle-generate': takingTheLock('drizzle-generate', drizzleGenerateCommand),
   'knex-generate': knexGenerateCommand,
   'prisma-client': prismaClientCommand,
   'prisma-generate': prismaGenerateCommand,
   'typeorm-generate': typeormGenerateCommand,
-  'error-factories': errorFactoriesCommand,
-  'value-objects': valueObjectsCommand,
-  'platform-folders': platformFoldersCommand,
-  'context-layout': contextLayoutCommand,
-  'move-to-module': moveToModuleCommand,
-  controllers: controllersCommand,
+  'error-factories': takingTheLock('error-factories', errorFactoriesCommand),
+  'value-objects': takingTheLock('value-objects', valueObjectsCommand),
+  'platform-folders': takingTheLock('platform-folders', platformFoldersCommand),
+  'context-layout': takingTheLock('context-layout', contextLayoutCommand),
+  'move-to-module': takingTheLock('move-to-module', moveToModuleCommand),
+  controllers: takingTheLock('controllers', controllersCommand),
   check: checksCommand,
   'check-file': checkFileCommand,
   lint: lintCommand,

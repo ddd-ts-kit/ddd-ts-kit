@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:4f6cb127bd364861 -->
+<!-- translation-of: README.md sha256:19ae7da406e09b21 -->
 
 # ddd-ts-kit
 
@@ -124,11 +124,14 @@ Ce qu'écrit une commande arrive en entier ou pas du tout : chaque fichier est �
 tous écrits. Une écriture qui échoue (un disque plein) laisse le projet tel qu'il était, et la même
 commande relancée l'écrit ; un processus tué à mi-chemin peut laisser des fichiers `.tmp`, qu'on
 peut supprimer, et, s'il a été tué pendant les renommages, les fichiers déjà en place, que la même
-commande complète. `init` sur un projet déjà initialisé, chaque
-`generate` qui n'est pas un essai à blanc et `drizzle-generate` tiennent le verrou du projet, `.ddd-ts-kit/lock`, que git ignore : une deuxième commande
-attend jusqu'à cinq secondes, puis sort avec le code 2 en nommant la commande qui le tient et le
-correctif, lancer les générateurs l'un après l'autre :
-``Another generator holds the lock of this project: `ddd-ts-kit generate context billing` (pid 1234, started 12 seconds ago).``
+commande complète. Toute commande qui lit les fichiers partagés du projet et les réécrit tient le verrou du projet
+tant qu'elle tourne, `.ddd-ts-kit/lock`, que git ignore : `init` sur un projet déjà initialisé,
+`generate`, `docs`, `sdk`, `drizzle-generate`, `move-to-module`, `context-layout`,
+`platform-folders`, `controllers`, `value-objects`, `error-factories`, `acceptance --lock` et
+`depcruise-config --write`. Aucune ne le prend pour dire ce qu'elle écrirait (`--dry-run`,
+`--check`). Une deuxième commande attend jusqu'à cinq secondes, puis sort avec le code 2 en nommant
+la commande qui le tient et le correctif, les lancer l'une après l'autre :
+``Another command holds the lock of this project: `ddd-ts-kit generate context billing` (pid 1234, started 12 seconds ago).``
 Un verrou pris sur cette machine est gardé tant que sa commande tourne, et repris une fois qu'elle
 est terminée ; un verrou pris sur une autre machine, ou dont le détenteur ne se lit pas, est repris
 une minute après avoir été pris.

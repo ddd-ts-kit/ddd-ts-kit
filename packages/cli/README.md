@@ -116,10 +116,14 @@ beside its place, and the files are renamed into place only once every one of th
 write that fails (a full disk) leaves the project as it stood, and the same command run again
 writes it; a process killed half way may leave `.tmp` files, which can be removed, and, when it was
 killed while renaming, the files already in place, which the same command completes.
-`init` on a project already initialised, each `generate` that is not a dry run and `drizzle-generate`
-hold the lock of the project, `.ddd-ts-kit/lock`, which git ignores: a second one waits up to five seconds, then exits 2 naming the command that
-holds it and the fix, run the generators one after the other:
-``Another generator holds the lock of this project: `ddd-ts-kit generate context billing` (pid 1234, started 12 seconds ago).``
+Every command that reads the shared files of the project and writes them back holds the lock of
+the project while it runs, `.ddd-ts-kit/lock`, which git ignores: `init` on a project already
+initialised, `generate`, `docs`, `sdk`, `drizzle-generate`, `move-to-module`, `context-layout`,
+`platform-folders`, `controllers`, `value-objects`, `error-factories`, `acceptance --lock` and
+`depcruise-config --write`. None takes it to say what it would write (`--dry-run`, `--check`). A
+second one waits up to five seconds, then exits 2 naming the command that holds it and the fix,
+run them one after the other:
+``Another command holds the lock of this project: `ddd-ts-kit generate context billing` (pid 1234, started 12 seconds ago).``
 A lock taken on this machine is kept while its command runs and taken over once it has ended; one
 taken on another machine, or whose holder cannot be read, is taken over a minute after it was taken.
 
