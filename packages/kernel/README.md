@@ -45,7 +45,7 @@ starts, so a business rule never changes with a library.
 | Event sourcing | `EventSourcedAggregate`, `EventStore`, `defineStoredEvent`, `EventSerializer`, `EventSourcedRepository`, `SnapshotPolicy`, `personalData`, `PersonalDataCipher`, `CatchUpSubscription`, `EventStoreProjectionRebuild`, `InMemoryEventStore`, `PostgresEventStore` (see "Event sourcing") |
 | Personal data | `personalFields`, `PersonalDataErasure`, `PersonalDataExport`, `eraseDataSubject`, `exportDataSubject`, `PersonalDataExportDocument`, `inEachTenant`, `recordsInEachTenant`, `isDataSubjectId`, `PersonalDataRecord`, `InMemoryPersonalData` (see "Personal data") |
 | Read side | `Criteria`, `defineCriteria`, `validateCriteria`, `scoped`, `planCriteria`, `evaluateCriteria`, `pageOfPlan`, `hydrate`, `ReadModelStore`, `stampOf`, `TableReadModelStore`, `ProjectionRebuild`, `InMemoryReadModelStore` (see "Criteria", "Hydration" and "Projections") |
-| Persistence helpers | `optimisticUpdate`, `expectVersion` (the version a caller read, `If-Match` over HTTP, still the current one, else `PreconditionFailedError`: 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `restamped`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
+| Persistence helpers | `aggregateMapper` (a mapper that declares the state and never the version), `loadedAt`, `optimisticUpdate`, `expectVersion` (the version a caller read, `If-Match` over HTTP, still the current one, else `PreconditionFailedError`: 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `restamped`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
 | Error reporting | `ErrorReporter`, `ErrorReport`, `errorReportOf`, `reportOnce`, `isUnexpectedError`, `errorReportingMiddleware`, `DeadLetterReports`, `reportProcessFailures`, `NoopErrorReporter` |
 | Doubles | `FixedClock`, `SequentialIdGenerator`, `InMemoryUnitOfWork`, `FixedActorContext`, `FixedExecutionScope`, `InMemoryLogger`, `InMemoryMetrics`, `InMemoryErrorReporter`, `InMemoryCache`, `InMemoryCacheInvalidation`, `InMemoryCachePurger`, `InMemoryLock`, `InMemoryRateLimiter` |
 | Testing (`@ddd-ts-kit/kernel/testing`) | `RecordingCommandBus`, `RecordingQueryBus`: buses that keep every message they are handed, in order (`executed`), and answer what the spec told them (`answering(type, answer)`), nothing otherwise (see "The spec of a reaction") |
@@ -60,7 +60,7 @@ file, and `ddd-ts-kit generate` writes them):
 
 <!-- checked sample -->
 ```ts
-import { AggregateRoot, DomainRefusal, Entity, ValueObject, NamedDomainEvent } from '@ddd-ts-kit/kernel';
+import { AggregateRoot, DomainRefusal, Entity, ValueObject, NamedDomainEvent, recordedEventsOf } from '@ddd-ts-kit/kernel';
 
 // The codes of the context, in <context>.codes.ts, and its refusals, one class each (see "Domain errors").
 export const OrderingCodes = {
@@ -173,7 +173,7 @@ const order = Order.open('o-1');
 order.add('p-7', Quantity.create(2));
 order.place(new Date('2026-01-05T09:00:00Z'));
 
-order.pullEvents(); // [OrderPlaced { aggregateId: 'o-1', lineCount: 1, ... }]
+recordedEventsOf(order); // [OrderPlaced { aggregateId: 'o-1', lineCount: 1, ... }]
 Quantity.create(2).equals(Quantity.create(2)); // true: same value
 new OrderLine('p-7', Quantity.create(1)).equals(new OrderLine('p-7', Quantity.create(5))); // true: same identity
 ```
@@ -182,7 +182,7 @@ new OrderLine('p-7', Quantity.create(1)).equals(new OrderLine('p-7', Quantity.cr
 |---|---|
 | `Entity<Id>` | `id` and `equals`: two entities are equal when their class and their id are |
 | `ValueObject<Props>` | a copy of its `props` frozen in depth (`ValueObjectProps`: primitives, dates, value objects, lists and plain records of those), `equals` by value (dates by their time, lists and records deeply, a value object it holds by its own `equals`), `toJSON` |
-| `AggregateRoot<Id>` | an entity with `version`, the optimistic concurrency token its repository adapter manages, `record(event)` for its methods and `pullEvents()`. The recorded events are not enumerable: spreading, comparing or serialising an aggregate never sees them |
+| `AggregateRoot<Id>` | an entity with a read-only `version`, the optimistic concurrency token its repository adapter moves (`loadedAt`, `optimisticUpdate`), and `record(event)` for its methods. The version and the recorded events are not enumerable: spreading, comparing or serialising an aggregate never sees them |
 | `DomainEvent` | an interface: `name`, `occurredAt`, `aggregateId` |
 
 Instead of changing the state from outside, where every caller has to remember the rule:
@@ -491,7 +491,8 @@ failures, wrapper order) is in the README of that package. In short:
   without recursion. Then the transaction commits.
 - The events are pulled only when the call succeeded. The first `before-commit` handler that
   fails rejects the unit of work; so does the work, a later save or the commit. The queued
-  events are then dropped and never put back on the aggregates: a retry reloads them.
+  events then reach no handler, and the aggregates the work saved are put back as it found them,
+  at the version they were loaded at and with their events: the same instances can be saved again.
 - Outside any unit of work the save dispatches before it resolves, `before-commit` handlers
   then `after-commit` ones.
 
@@ -560,9 +561,11 @@ await unitOfWork.run(async () => {
 //          after-commit c1, after-commit c2
 ```
 
-`pullEvents()` stays public for this wrapper and for the specs of an aggregate; a use case and
-a repository adapter never call it. An aggregate is recognised by what it does (it has
-`pullEvents`), so a context compiled against another copy of the kernel is followed too.
+An aggregate has no method that hands its events over. The wrapper takes them with
+`takeRecordedEvents(aggregate)`, a function of the infrastructure that a use case and a repository
+adapter never call; a spec reads them with `recordedBy(aggregate)` of `@ddd-ts-kit/testing`. What
+the infrastructure keeps of an aggregate (its version, its recorded events) is keyed process-wide,
+so a context compiled against another copy of the kernel is followed too.
 
 ### Two phases
 

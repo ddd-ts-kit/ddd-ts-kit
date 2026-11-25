@@ -1,4 +1,4 @@
-import { Builder, sequence, type Defaults } from '@ddd-ts-kit/testing';
+import { Builder, sequence, withoutRecordedEvents, type Defaults } from '@ddd-ts-kit/testing';
 import { Reminder } from '@/contexts/notification/domain/aggregates/reminder.aggregate';
 
 interface ReminderIngredients {
@@ -59,7 +59,7 @@ export class ReminderBuilder extends Builder<ReminderIngredients, Reminder> {
 
     if (sentAt !== undefined) {
       built.send(sentAt);
-      built.pullEvents();
+      withoutRecordedEvents(built);
     }
 
     if (withdrawn) {

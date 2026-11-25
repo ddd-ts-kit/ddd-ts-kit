@@ -1,12 +1,13 @@
+import { aggregateMapper } from '@ddd-ts-kit/kernel';
 import { Reminder } from '@/contexts/notification/domain/aggregates/reminder.aggregate';
 import type {
   ReminderColumns,
   ReminderRow,
 } from '@/contexts/notification/infrastructure/persistence/reminder-row.schema';
 
-export const ReminderMapper = {
+export const ReminderMapper = aggregateMapper({
   toDomain(row: ReminderRow): Reminder {
-    const loaded = Reminder.rehydrate(row.id, {
+    return Reminder.rehydrate(row.id, {
       registeredAt: row.registered_at,
       appointmentId: row.appointment_id,
       recipientId: row.recipient_id,
@@ -14,10 +15,6 @@ export const ReminderMapper = {
       dueAt: row.due_at,
       status: row.status,
     });
-
-    loaded.version = row.version;
-
-    return loaded;
   },
 
   toRow(saved: Reminder): ReminderColumns {
@@ -33,4 +30,4 @@ export const ReminderMapper = {
       status: state.status,
     };
   },
-};
+});

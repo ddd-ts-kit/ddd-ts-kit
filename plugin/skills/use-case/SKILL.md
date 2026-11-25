@@ -165,7 +165,7 @@ story states it.
    nothing saved or published on failure. The handler loads, calls one intention method,
    saves; an `if` on business state belongs in the aggregate. The save hands over the events
    the aggregate recorded, and they are dispatched once the handler has returned, before the
-   commit: no `pullEvents()`, no dispatcher in a handler
+   commit: no `takeRecordedEvents()`, no dispatcher in a handler
    (`domain-events/dispatched-on-save`). Time and identifiers come from `Clock` and
    `IdGenerator`. Arrange through the world of the context, as the generated spec does:
    `given` stores the aggregates the test starts from, built by the builders;

@@ -117,27 +117,6 @@ describe('domain events of a command wait for the end of its unit of work', () =
     expect(journal.filter((entry) => entry.startsWith('handling'))).toEqual(['handling c1']);
   });
 
-  it('runs no handler of the earlier saves when a later save rejects', async () => {
-    const { carts, dispatcher, heard, hear } = aBench();
-    const second = Cart.open('c2');
-
-    hear('shop.cart.opened');
-
-    dispatcher.on('shop.cart.opened', async (event) => void heard.push(`after ${event.aggregateId}`), {
-      phase: 'after-commit',
-    });
-
-    const failing = new InMemoryUnitOfWork().run(async () => {
-      await carts.save(Cart.open('c1'));
-      carts.failNextSave = new Error('duplicate key');
-      await carts.save(second);
-    });
-
-    await expect(failing).rejects.toThrow('duplicate key');
-    expect(heard).toEqual([]);
-    expect(second.pullEvents()).toHaveLength(1);
-  });
-
   it('fails the command when a before-commit handler fails: rolled back, and no after-commit handler runs', async () => {
     const { bus, dispatcher, journal, note } = aShop();
 

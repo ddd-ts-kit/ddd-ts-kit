@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:fec9298c6e1735bb -->
+<!-- translation-of: README.md sha256:b47472d0744e04ea -->
 
 # @ddd-ts-kit/kernel
 
@@ -48,7 +48,7 @@ avec une bibliothèque.
 | *Event sourcing* | `EventSourcedAggregate`, `EventStore`, `defineStoredEvent`, `EventSerializer`, `EventSourcedRepository`, `SnapshotPolicy`, `personalData`, `PersonalDataCipher`, `CatchUpSubscription`, `EventStoreProjectionRebuild`, `InMemoryEventStore`, `PostgresEventStore` (voir « Event sourcing ») |
 | Données personnelles | `personalFields`, `PersonalDataErasure`, `PersonalDataExport`, `eraseDataSubject`, `exportDataSubject`, `PersonalDataExportDocument`, `inEachTenant`, `recordsInEachTenant`, `isDataSubjectId`, `PersonalDataRecord`, `InMemoryPersonalData` (voir « Données personnelles ») |
 | Côté lecture | `Criteria`, `defineCriteria`, `validateCriteria`, `scoped`, `planCriteria`, `evaluateCriteria`, `pageOfPlan`, `hydrate`, `ReadModelStore`, `stampOf`, `TableReadModelStore`, `ProjectionRebuild`, `InMemoryReadModelStore` (voir « Critères », « Hydratation » et « Projections ») |
-| Aides à la persistance | `optimisticUpdate`, `expectVersion` (la version qu'un appelant a lue, `If-Match` en HTTP, est toujours la version courante, sinon `PreconditionFailedError` : 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `restamped`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
+| Aides à la persistance | `aggregateMapper` (un *mapper* qui déclare l'état et jamais la version), `loadedAt`, `optimisticUpdate`, `expectVersion` (la version qu'un appelant a lue, `If-Match` en HTTP, est toujours la version courante, sinon `PreconditionFailedError` : 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `restamped`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
 | Remontée des erreurs | `ErrorReporter`, `ErrorReport`, `errorReportOf`, `reportOnce`, `isUnexpectedError`, `errorReportingMiddleware`, `DeadLetterReports`, `reportProcessFailures`, `NoopErrorReporter` |
 | Doubles | `FixedClock`, `SequentialIdGenerator`, `InMemoryUnitOfWork`, `FixedActorContext`, `FixedExecutionScope`, `InMemoryLogger`, `InMemoryMetrics`, `InMemoryErrorReporter`, `InMemoryCache`, `InMemoryCacheInvalidation`, `InMemoryCachePurger`, `InMemoryLock`, `InMemoryRateLimiter` |
 | Tests (`@ddd-ts-kit/kernel/testing`) | `RecordingCommandBus`, `RecordingQueryBus` : des bus qui gardent chaque message qu'on leur confie, dans l'ordre (`executed`), et répondent ce que la *spec* leur a dit (`answering(type, answer)`), rien sinon (voir « La *spec* d'une réaction ») |
@@ -63,7 +63,7 @@ chacun son propre fichier, et `ddd-ts-kit generate` les écrit) :
 
 <!-- checked sample -->
 ```ts
-import { AggregateRoot, DomainRefusal, Entity, ValueObject, NamedDomainEvent } from '@ddd-ts-kit/kernel';
+import { AggregateRoot, DomainRefusal, Entity, ValueObject, NamedDomainEvent, recordedEventsOf } from '@ddd-ts-kit/kernel';
 
 // Les codes du contexte, dans <context>.codes.ts, et ses refus, une classe chacun (voir « Erreurs du domaine »).
 export const OrderingCodes = {
@@ -176,7 +176,7 @@ const order = Order.open('o-1');
 order.add('p-7', Quantity.create(2));
 order.place(new Date('2026-01-05T09:00:00Z'));
 
-order.pullEvents(); // [OrderPlaced { aggregateId: 'o-1', lineCount: 1, ... }]
+recordedEventsOf(order); // [OrderPlaced { aggregateId: 'o-1', lineCount: 1, ... }]
 Quantity.create(2).equals(Quantity.create(2)); // true : même valeur
 new OrderLine('p-7', Quantity.create(1)).equals(new OrderLine('p-7', Quantity.create(5))); // true : même identité
 ```
@@ -185,7 +185,7 @@ new OrderLine('p-7', Quantity.create(1)).equals(new OrderLine('p-7', Quantity.cr
 |---|---|
 | `Entity<Id>` | `id` et `equals` : deux entités sont égales quand leur classe et leur id le sont |
 | `ValueObject<Props>` | une copie de ses `props` gelée en profondeur (`ValueObjectProps` : primitives, dates, objets-valeurs, listes et enregistrements simples de ceux-ci), `equals` par valeur (les dates par leur instant, les listes et les enregistrements en profondeur, un objet-valeur qu'il tient par son propre `equals`), `toJSON` |
-| `AggregateRoot<Id>` | une entité avec `version`, le jeton de concurrence optimiste que gère l'adaptateur de son *repository*, `record(event)` pour ses méthodes et `pullEvents()`. Les événements enregistrés ne sont pas énumérables : décomposer, comparer ou sérialiser un agrégat ne les voit jamais |
+| `AggregateRoot<Id>` | une entité avec une `version` en lecture seule, le jeton de concurrence optimiste que déplace l'adaptateur de son *repository* (`loadedAt`, `optimisticUpdate`), et `record(event)` pour ses méthodes. La version et les événements enregistrés ne sont pas énumérables : décomposer, comparer ou sérialiser un agrégat ne les voit jamais |
 | `DomainEvent` | une interface : `name`, `occurredAt`, `aggregateId` |
 
 Plutôt que de changer l'état depuis l'extérieur, où chaque appelant doit se souvenir de la
@@ -500,8 +500,9 @@ réentrance, échecs, ordre des enveloppes) est dans le README de ce *package*. 
   récursion. Puis la transaction est validée.
 - Les événements ne sont tirés que si l'appel a réussi. Le premier gestionnaire `before-commit`
   qui échoue rejette l'unité de travail ; le travail, un save ultérieur ou la validation aussi.
-  Les événements en file sont alors abandonnés et jamais remis sur les agrégats : une nouvelle
-  tentative les recharge.
+  Les événements en file n'atteignent alors aucun gestionnaire, et les agrégats que le travail a
+  sauvegardés sont remis comme il les a trouvés, à la version où ils ont été chargés et avec leurs
+  événements : les mêmes instances peuvent être sauvegardées à nouveau.
 - Hors de toute unité de travail, le save distribue avant de se résoudre, les gestionnaires
   `before-commit` puis les `after-commit`.
 
@@ -571,10 +572,12 @@ await unitOfWork.run(async () => {
 //           after-commit c1, after-commit c2
 ```
 
-`pullEvents()` reste public pour cette enveloppe et pour les specs d'un agrégat ; un cas d'usage
-et un adaptateur de *repository* ne l'appellent jamais. Un agrégat se reconnaît à ce qu'il fait
-(il a `pullEvents`), si bien qu'un contexte compilé contre une autre copie du noyau est suivi lui
-aussi.
+Un agrégat n'a aucune méthode qui remet ses événements. L'enveloppe les prend avec
+`takeRecordedEvents(aggregate)`, une fonction de l'infrastructure qu'un cas d'usage et un adaptateur
+de *repository* n'appellent jamais ; une spec les lit avec `recordedBy(aggregate)` de
+`@ddd-ts-kit/testing`. Ce que l'infrastructure garde d'un agrégat (sa version, ses événements
+enregistrés) est indexé pour tout le processus, si bien qu'un contexte compilé contre une autre copie
+du noyau est suivi lui aussi.
 
 ### Deux phases
 

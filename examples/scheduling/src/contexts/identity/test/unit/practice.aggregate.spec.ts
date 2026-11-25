@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { given } from '@ddd-ts-kit/testing';
+import { given, recordedBy } from '@ddd-ts-kit/testing';
 import { Practice } from '@/contexts/identity/domain/aggregates/practice.aggregate';
 import { DisplayName } from '@/contexts/identity/domain/value-objects/display-name.vo';
 import { Role } from '@/contexts/identity/domain/value-objects/role.vo';
@@ -24,7 +24,7 @@ describe('Practice', () => {
     const loaded = Practice.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 
   it('opens in its time zone with its first manager as a member', () => {
@@ -40,7 +40,7 @@ describe('Practice', () => {
 
     expect(opened.members.map((member) => [member.personId, member.role])).toEqual([['person-1', 'manager']]);
 
-    expect(opened.pullEvents()).toEqual([
+    expect(recordedBy(opened)).toEqual([
       {
         name: 'identity.practice.opened',
         aggregateId: 'practice-7',

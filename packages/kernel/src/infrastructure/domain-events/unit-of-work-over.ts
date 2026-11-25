@@ -4,6 +4,7 @@ import { TransactionConflictError } from '../../domain/errors/transaction-confli
 import { isTransactionConflict } from '../persistence/is-transaction-conflict';
 import { isTransactionTimeout } from '../persistence/is-transaction-timeout';
 import { TransactionTimeoutError } from '../persistence/transaction-timeout-error';
+import { giveBack } from '../aggregates/give-back';
 import { dispatchAfterCommit } from './dispatch-after-commit';
 import { dispatchBeforeCommit } from './dispatch-before-commit';
 import type { CommitStep } from './commit-step';
@@ -13,6 +14,14 @@ import { unitOfWorkScope, type UnitOfWorkScope } from './unit-of-work-scope';
 /** Runs what it is given atomically: it begins, calls it, and commits when it resolved or rolls back when it rejected. */
 type Transaction = <T>(work: () => Promise<T>) => Promise<T>;
 
+export interface UnitOfWorkOverOptions {
+  /**
+   * False when `transaction` undoes nothing of what the work wrote, as a unit of work in memory:
+   * the aggregates then stay as their saves left them, in step with what was stored.
+   */
+  readonly rollsBack?: boolean;
+}
+
 /**
  * What every `UnitOfWork` is made of: the unit of work over the transactions of one database.
  *
@@ -20,8 +29,10 @@ type Transaction = <T>(work: () => Promise<T>) => Promise<T>;
  * unit of work, in recording order across the saves. Once the work has returned they are
  * dispatched, still inside `transaction`: the handlers see every save, and what they save or
  * append to the outbox commits with the rest. A handler that fails, like the work that fails,
- * rejects the whole: the transaction rolls back, the waiting events are dropped and never come
- * back on the aggregates. The steps handed to `atCommit` are applied last, still inside
+ * rejects the whole: the transaction rolls back, the waiting events reach no handler, and the
+ * aggregates the work saved are put back as it found them, at the version they were loaded at and
+ * with the events they had recorded, so the same instances can be saved again. The steps handed to
+ * `atCommit` are applied last, still inside
  * `transaction`; when it rejects, those applied are undone. Once `transaction` has resolved, and
  * only then, the `after-commit` handlers run, then the work handed to `afterCommit`.
  *
@@ -41,7 +52,7 @@ type Transaction = <T>(work: () => Promise<T>) => Promise<T>;
  * rejects, with that failure when it travelled up, with a `UnitOfWorkAbortedError` whose
  * `cause` it is when the work caught it, a retry that then succeeded included.
  */
-export function unitOfWorkOver(transaction: Transaction): UnitOfWork {
+export function unitOfWorkOver(transaction: Transaction, { rollsBack = true }: UnitOfWorkOverOptions = {}): UnitOfWork {
   // The scope of the transaction of this unit of work open on the asynchronous call chain.
   const open = new AsyncLocalStorage<UnitOfWorkScope>();
 
@@ -53,7 +64,7 @@ export function unitOfWorkOver(transaction: Transaction): UnitOfWork {
         return joining(joined, work);
       }
 
-      const scope = openScope();
+      const scope = openScope(rollsBack);
 
       return opened(work, scope, (scoped) =>
         open.run(scope, () => unitOfWorkScope.run(scope, () => transaction(scoped))),
@@ -83,6 +94,7 @@ async function opened<T>(
 
   const result = await transaction(() => thenDispatched(work, scope, applied))
     .catch(async (error: unknown) => {
+      giveBack(scope.found);
       await undone(applied);
       throw translated(error);
     })
@@ -109,8 +121,17 @@ function isRunning(scope: UnitOfWorkScope | undefined): scope is UnitOfWorkScope
   return scope?.kind === 'unit-of-work' && (scope.stage === 'open' || scope.stage === 'before-commit');
 }
 
-function openScope(): UnitOfWorkScope {
-  return { kind: 'unit-of-work', stage: 'open', queue: [], dispatched: [], committed: [], atCommit: [] };
+function openScope(rollsBack: boolean): UnitOfWorkScope {
+  const scope: UnitOfWorkScope = {
+    kind: 'unit-of-work',
+    stage: 'open',
+    queue: [],
+    dispatched: [],
+    committed: [],
+    atCommit: [],
+  };
+
+  return rollsBack ? { ...scope, found: new Map() } : scope;
 }
 
 async function thenDispatched<T>(work: () => Promise<T>, scope: UnitOfWorkScope, applied: CommitStep[]): Promise<T> {

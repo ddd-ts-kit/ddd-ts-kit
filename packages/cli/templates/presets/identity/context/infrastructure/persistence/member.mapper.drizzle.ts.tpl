@@ -1,4 +1,4 @@
-import type { AuditStamp } from '@ddd-ts-kit/kernel';
+import { aggregateMapper, type AuditStamp } from '@ddd-ts-kit/kernel';
 import { Member } from '{{alias.context}}/domain/aggregates/member.aggregate{{alias.ext}}';
 import type { members } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
 
@@ -6,19 +6,15 @@ type MemberRow = typeof members.$inferSelect;
 
 export type MemberColumns = Omit<MemberRow, 'version' | keyof AuditStamp>;
 
-export const MemberMapper = {
+export const MemberMapper = aggregateMapper({
   toDomain(row: MemberRow): Member {
-    const loaded = Member.rehydrate(row.id, {
+    return Member.rehydrate(row.id, {
       organisationId: row.organisationId,
       accountId: row.accountId,
       role: row.role,
       joinedAt: row.joinedAt,
       removedAt: row.removedAt ?? undefined,
     });
-
-    loaded.version = row.version;
-
-    return loaded;
   },
 
   toRow(saved: Member): MemberColumns {
@@ -33,4 +29,4 @@ export const MemberMapper = {
       removedAt: state.removedAt ?? null,
     };
   },
-};
+});

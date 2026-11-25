@@ -1,5 +1,5 @@
 import { describe, expect, it } from '{{tests.module}}';
-import { given } from '@ddd-ts-kit/testing';
+import { given, recordedBy } from '@ddd-ts-kit/testing';
 import { Invitation } from '{{alias.context}}/domain/aggregates/invitation.aggregate{{alias.ext}}';
 import { EmailAddress } from '{{alias.context}}/domain/value-objects/email-address.vo{{alias.ext}}';
 import { InvitationStatus } from '{{alias.context}}/domain/vocabularies/invitation-status.vocabulary{{alias.ext}}';
@@ -27,7 +27,7 @@ describe('Invitation', () => {
     expect(invitation.status).toBe(InvitationStatus.Pending);
     expect(invitation.expiresAt).toEqual(weekLater);
 
-    expect(invitation.pullEvents()).toEqual([
+    expect(recordedBy(invitation)).toEqual([
       {
         name: '{{context.kebab}}.invitation.issued',
         aggregateId: 'invitation-1',
@@ -42,7 +42,7 @@ describe('Invitation', () => {
     const loaded = Invitation.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 });
 

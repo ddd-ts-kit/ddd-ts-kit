@@ -1,5 +1,5 @@
 import { describe, expect, it } from '{{tests.module}}';
-import { given } from '@ddd-ts-kit/testing';
+import { given, recordedBy } from '@ddd-ts-kit/testing';
 import { Member } from '{{alias.context}}/domain/aggregates/member.aggregate{{alias.ext}}';
 import { MemberRole } from '{{alias.context}}/domain/vocabularies/member-role.vocabulary{{alias.ext}}';
 import { aMember } from '{{alias.context}}/test/builders/member.builder{{alias.ext}}';
@@ -20,7 +20,7 @@ describe('Member', () => {
 
     expect(joined.isActive).toBe(true);
 
-    expect(joined.pullEvents()).toEqual([
+    expect(recordedBy(joined)).toEqual([
       {
         name: '{{context.kebab}}.member.joined',
         aggregateId: 'member-1',
@@ -35,7 +35,7 @@ describe('Member', () => {
     const loaded = Member.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 });
 

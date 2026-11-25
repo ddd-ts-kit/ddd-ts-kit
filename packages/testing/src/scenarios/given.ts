@@ -6,7 +6,7 @@ import { scenario, type Scenario } from './scenario';
 
 /**
  * Starts a scenario from an aggregate (or its builder) in its "given" state. The events
- * recorded while arranging are discarded, so only the events of `when` are asserted.
+ * recorded while arranging are left aside, so only the events of `when` are asserted.
  *
  * A builder gives each `when` a fresh aggregate. An aggregate already built is given to one
  * `when`: a second one is refused, since it would act on what the first one left.

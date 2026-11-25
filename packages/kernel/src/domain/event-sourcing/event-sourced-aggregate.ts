@@ -1,8 +1,8 @@
 import { AggregateRoot } from '../aggregate-root';
+import { AggregateTracking } from '../aggregate-tracking';
 import type { DomainEvent } from '../domain-event';
 import type { AggregateHistory } from './aggregate-history';
 import type { Appliers } from './appliers';
-import { unstoredEvents } from './unstored-events';
 
 /**
  * An aggregate whose state is the sum of its events. A command checks the invariants, then
@@ -15,11 +15,6 @@ import { unstoredEvents } from './unstored-events';
  * Chosen per aggregate: the other aggregates of a context keep their state in tables.
  */
 export abstract class EventSourcedAggregate<E extends DomainEvent, S = never> extends AggregateRoot<string> {
-  protected constructor(id: string) {
-    super(id);
-    unstoredEvents.set(this, []);
-  }
-
   /** The apply method of each event this aggregate records, by the name the event carries. */
   protected abstract appliers(): Appliers<E>;
 
@@ -27,7 +22,6 @@ export abstract class EventSourcedAggregate<E extends DomainEvent, S = never> ex
   protected override record(event: E): void {
     this.applyEvent(event);
     super.record(event);
-    unstoredEvents.get(this)?.push(event);
   }
 
   /**
@@ -36,6 +30,7 @@ export abstract class EventSourcedAggregate<E extends DomainEvent, S = never> ex
    */
   protected replay(history: AggregateHistory<E, S>, restore?: (state: S) => void): this {
     const { snapshot, events } = history;
+    const tracking = AggregateTracking.of(this);
 
     if (snapshot !== undefined) {
       if (restore === undefined) {
@@ -43,12 +38,12 @@ export abstract class EventSourcedAggregate<E extends DomainEvent, S = never> ex
       }
 
       restore(snapshot.state);
-      this.version = snapshot.version;
+      tracking.version = snapshot.version;
     }
 
     for (const event of events) {
       this.applyEvent(event);
-      this.version += 1;
+      tracking.version += 1;
     }
 
     return this;

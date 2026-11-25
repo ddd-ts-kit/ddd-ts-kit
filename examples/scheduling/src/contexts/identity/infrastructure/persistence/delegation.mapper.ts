@@ -1,3 +1,4 @@
+import { aggregateMapper } from '@ddd-ts-kit/kernel';
 import { Delegation } from '@/contexts/identity/domain/aggregates/delegation.aggregate';
 import { Desk } from '@/contexts/identity/domain/value-objects/desk.vo';
 import type {
@@ -5,9 +6,9 @@ import type {
   DelegationRow,
 } from '@/contexts/identity/infrastructure/persistence/delegation-row.schema';
 
-export const DelegationMapper = {
+export const DelegationMapper = aggregateMapper({
   toDomain(row: DelegationRow): Delegation {
-    const loaded = Delegation.rehydrate(row.id, {
+    return Delegation.rehydrate(row.id, {
       registeredAt: row.registered_at,
       desk: Desk.create(row.practice_id, row.practitioner_id),
       assistantId: row.assistant_id,
@@ -15,10 +16,6 @@ export const DelegationMapper = {
       endsAt: row.ends_at ?? undefined,
       ended: row.ended_at === null || row.end_cause === null ? undefined : { at: row.ended_at, cause: row.end_cause },
     });
-
-    loaded.version = row.version;
-
-    return loaded;
   },
 
   toRow(saved: Delegation): DelegationColumns {
@@ -36,4 +33,4 @@ export const DelegationMapper = {
       end_cause: state.ended?.cause ?? null,
     };
   },
-};
+});

@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { DomainEventDispatcher } from '../../application/ports/domain-event-dispatcher';
+import type { AggregateTracking } from '../../domain/aggregate-tracking';
 import type { DomainEvent } from '../../domain/domain-event';
+import type { AsFound } from '../aggregates/as-found';
 import type { CommitStep } from './commit-step';
 
 /** Runs the work somewhere: in an asynchronous context, in an execution context. */
@@ -34,6 +36,8 @@ export interface UnitOfWorkScope {
   readonly committed?: (() => Promise<void>)[];
   /** What `atCommit` was handed in a unit of work: applied last, inside the transaction. */
   readonly atCommit?: CommitStep[];
+  /** The aggregates saved in a unit of work whose transaction rolls back, as it found them: what a rollback gives back. */
+  readonly found?: Map<AggregateTracking, AsFound>;
 }
 
 // Follows the asynchronous call chain of what opened it: concurrent commands never share a scope.

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:e8218cd5c94040e8 -->
+<!-- translation-of: README.md sha256:900a0d2b756b748e -->
 
 # @ddd-ts-kit/di
 
@@ -1479,7 +1479,7 @@ réactions s'exécuteraient hors du calendrier de l'unité de travail) :
 
 ```ts
 await this.invoices.save(invoice);
-await this.dispatcher.dispatch(invoice.pullEvents());
+await this.dispatcher.dispatch(takeRecordedEvents(invoice));
 return invoice.id;
 ```
 
@@ -1539,7 +1539,7 @@ export class IssueInvoiceHandler implements CommandHandler<IssueInvoice> {
 ```
 
 Un gestionnaire écrit `await this.orders.save(order); return order.id;` et rien d'autre : pas de
-`pullEvents()`, pas de `DomainEventDispatcher` dans un cas d'usage. `kernelModule()` place
+`takeRecordedEvents()`, pas de `DomainEventDispatcher` dans un cas d'usage. `kernelModule()` place
 `dispatchingOnSave` du kernel autour de chaque liaison de nature `repository`, dans chaque
 module : déclarée avec `@Repository`, liée `.as('repository')`, ou liée sous un port qui étend le
 `Repository` du kernel (qui est un *repository*, que le module le dise ou non). Un adaptateur de
@@ -1560,7 +1560,7 @@ module : déclarée avec `@Repository`, liée `.as('repository')`, ou liée sous
 | Un gestionnaire envoie une commande | Avant la validation, cette commande rejoint l'unité de travail en cours : une distribution, à la fin de la plus externe, une validation. Après la validation, c'est une unité de travail à part |
 | Le même agrégat enregistré deux fois | Le second enregistrement annonce ce qui a été consigné depuis le premier, ce qui peut n'être rien |
 | Un enregistrement hors de toute unité de travail | Distribue avant de se résoudre, les gestionnaires `before-commit` puis les `after-commit`. Rien n'est alors atomique : l'état est écrit, les gestionnaires s'exécutent, et un gestionnaire qui échoue rejette l'enregistrement sans le défaire |
-| Un adaptateur qui retire lui-même les événements | Ne laisse rien à distribuer : pas de double distribution, et pas de distribution du tout à moins que l'adaptateur la fasse. Un adaptateur n'appelle jamais `pullEvents()` |
+| Un adaptateur qui retire lui-même les événements | Ne laisse rien à distribuer : pas de double distribution, et pas de distribution du tout à moins que l'adaptateur la fasse. Un adaptateur n'appelle jamais `takeRecordedEvents()` |
 | Ordre des enveloppes | Le plus externe d'abord : le hook `decorate`, l'instrumentation (le *span* de l'enregistrement), la remise des événements, les aspects que d'autres modules placent autour de la nature (`builder.around`), les aspects de la liaison (`.with(retry(...))`). Un enregistrement retenté annonce une seule fois |
 
 Un gestionnaire `before-commit` ne peut avoir que des effets que couvre la transaction, parce que

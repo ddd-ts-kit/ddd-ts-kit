@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { InMemoryEventStore, appendChanges, type DomainEvent } from '../src';
+import { InMemoryEventStore, appendChanges, takeRecordedEvents, type DomainEvent } from '../src';
 import { AT, Account, AccountOpened, MoneyDeposited, Overdraft, type AccountEvent } from './support/bank/account';
 
 describe('EventSourcedAggregate', () => {
@@ -9,7 +9,7 @@ describe('EventSourcedAggregate', () => {
     expect(account.toState()).toEqual({ holder: 'Ada', balance: 300, movements: 2 });
     expect(account.version).toBe(0);
 
-    expect(account.pullEvents().map((event) => event.name)).toEqual([
+    expect(takeRecordedEvents(account).map((event) => event.name)).toEqual([
       'bank.account.opened',
       'bank.account.deposited',
       'bank.account.withdrawn',
@@ -19,10 +19,10 @@ describe('EventSourcedAggregate', () => {
   it('decides on the state its events built: a refused command records nothing', () => {
     const account = Account.open('a1', 'Ada').deposit(100);
 
-    account.pullEvents();
+    takeRecordedEvents(account);
 
     expect(() => account.withdraw(500)).toThrow(Overdraft);
-    expect(account.pullEvents()).toEqual([]);
+    expect(takeRecordedEvents(account)).toEqual([]);
   });
 
   it('is rebuilt by replaying its stream, at the version of the stream, recording nothing', () => {
@@ -32,7 +32,7 @@ describe('EventSourcedAggregate', () => {
 
     expect(account.toState()).toEqual({ holder: 'Ada', balance: 570, movements: 2 });
     expect(account.version).toBe(3);
-    expect(account.pullEvents()).toEqual([]);
+    expect(takeRecordedEvents(account)).toEqual([]);
   });
 
   it('starts from a snapshot and replays only the events after it', () => {

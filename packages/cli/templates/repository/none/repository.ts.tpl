@@ -1,4 +1,4 @@
-import { ConcurrencyError } from '@ddd-ts-kit/kernel';
+import { loadedAt, optimisticUpdate } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
@@ -28,21 +28,18 @@ export class InMemory{{aggregate.pascal}}Repository implements {{aggregate.pasca
       return undefined;
     }
 
-    const found = {{aggregate.pascal}}.rehydrate(id, structuredClone(row.state));
-
-    found.version = row.version;
-
-    return found;
+    return loadedAt({{aggregate.pascal}}.rehydrate(id, structuredClone(row.state)), row.version);
   }
 
   async save(saved: {{aggregate.pascal}}): Promise<void> {
-    const stored = this.rows.get(saved.id)?.version ?? 0;
+    await optimisticUpdate(saved, async ({ expected, next }) => {
+      if ((this.rows.get(saved.id)?.version ?? 0) !== expected) {
+        return 0;
+      }
 
-    if (stored !== saved.version) {
-      throw new ConcurrencyError(saved.id);
-    }
+      this.rows.set(saved.id, { state: structuredClone(saved.toState()), version: next });
 
-    saved.version = stored + 1;
-    this.rows.set(saved.id, { state: structuredClone(saved.toState()), version: saved.version });
+      return 1;
+    });
   }
 }

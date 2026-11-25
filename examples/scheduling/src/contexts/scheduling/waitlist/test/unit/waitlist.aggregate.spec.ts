@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { given } from '@ddd-ts-kit/testing';
+import { given, recordedBy } from '@ddd-ts-kit/testing';
 import { Waitlist } from '@/contexts/scheduling/waitlist/domain/aggregates/waitlist.aggregate';
 import { Slot } from '@/contexts/scheduling/calendars/domain/value-objects/slot.vo';
 import { Waiter } from '@/contexts/scheduling/waitlist/domain/value-objects/waiter.vo';
@@ -33,14 +33,14 @@ describe('Waitlist', () => {
     const loaded = Waitlist.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 
   it('is born empty and announces nothing until someone joins', () => {
     const born = Waitlist.create({ calendarId: 'calendar-1', day: '2026-03-02' }, now);
 
     expect(born.waiters).toEqual([]);
-    expect(born.pullEvents()).toEqual([]);
+    expect(recordedBy(born)).toEqual([]);
   });
 
   it.each(['2026-02-30', 'Monday', ''])('refuses to be born for %j, which is not a day', (day) => {

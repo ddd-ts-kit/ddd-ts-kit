@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:04a827dc5035e5e1 -->
+<!-- translation-of: README.md sha256:0056fde891a2098b -->
 
 # @ddd-ts-kit/testing
 
@@ -358,8 +358,13 @@ it('refuses to pay an order twice', () => {
 });
 ```
 
-`given` prend un agrégat ou son *builder* et écarte les événements de la mise en place
-(`pullEvents()`), si bien que seuls les événements de `when` sont vérifiés. `scenario(() => aggregate)` fait
+`given` prend un agrégat ou son *builder* et laisse de côté les événements de la mise en place, si
+bien que seuls les événements de `when` sont vérifiés ; il les lit et ne retire rien de l'agrégat.
+Hors d'un scénario, `recordedBy(aggregate)` lit ce qu'un agrégat a enregistré et n'a pas encore
+annoncé (`expect(recordedBy(order)).toEqual([new OrderPlaced('o-1', at)])`), et
+`withoutRecordedEvents(aggregate)` rend l'agrégat sans aucun, pour un *builder* qui met en place un
+état par des intentions. Un agrégat n'a de méthode pour ni l'un ni l'autre : sa version et ses
+événements sont à l'infrastructure. `scenario(() => aggregate)` fait
 de même avec la mise en place sous forme de fonction, rejouée à partir d'un agrégat neuf à chaque `when`,
 comme l'est `given(builder)`. Un agrégat déjà construit est donné à un seul `when` : un second `when` sur
 le même `given(aggregate)` agirait sur ce que le premier a laissé, et lève une `TypeError` qui le dit.

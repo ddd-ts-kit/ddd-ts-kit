@@ -8,6 +8,7 @@ import {
   err,
   idempotent,
   ok,
+  takeRecordedEvents,
   unwrap,
   type IntegrationEvent,
 } from '../src';
@@ -134,8 +135,8 @@ describe('AggregateRoot', () => {
     const cart = new Cart('c1');
 
     cart.checkout();
-    expect(cart.pullEvents()).toHaveLength(1);
-    expect(cart.pullEvents()).toHaveLength(0);
+    expect(takeRecordedEvents(cart)).toHaveLength(1);
+    expect(takeRecordedEvents(cart)).toHaveLength(0);
   });
 });
 

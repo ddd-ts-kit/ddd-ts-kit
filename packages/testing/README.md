@@ -354,8 +354,13 @@ it('refuses to pay an order twice', () => {
 });
 ```
 
-`given` takes an aggregate or its builder and discards the events of the arrangement
-(`pullEvents()`), so only the events of `when` are asserted. `scenario(() => aggregate)` is
+`given` takes an aggregate or its builder and leaves the events of the arrangement aside, so only
+the events of `when` are asserted; it reads them and takes nothing off the aggregate. Outside a
+scenario, `recordedBy(aggregate)` reads what an aggregate recorded and has yet to announce
+(`expect(recordedBy(order)).toEqual([new OrderPlaced('o-1', at)])`), and
+`withoutRecordedEvents(aggregate)` hands the aggregate with none, for a builder that arranges a
+state through intentions. An aggregate has no method for either: its version and its events are
+the infrastructure's. `scenario(() => aggregate)` is
 the same with the arrangement as a function, replayed from a fresh aggregate at each `when`, as
 `given(builder)` is. An aggregate already built is given to one `when`: a second `when` on the same
 `given(aggregate)` would act on what the first one left, and throws a `TypeError` that says so.

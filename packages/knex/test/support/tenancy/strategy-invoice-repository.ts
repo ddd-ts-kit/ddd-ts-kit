@@ -1,4 +1,11 @@
-import { FixedClock, stampCreation, stampUpdate, tenantScopeOf, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import {
+  FixedClock,
+  loadedAt,
+  stampCreation,
+  stampUpdate,
+  tenantScopeOf,
+  type ExecutionScope,
+} from '@ddd-ts-kit/kernel';
 import { auditRow, insertIgnoringConflict, optimisticUpdate, tenantRow, type KnexContext } from '../../../src';
 import { Invoice, type InvoiceState } from '../billing-core/domain/invoice';
 import type { InvoiceRepository } from '../billing-core/domain/repositories/invoice.repository';
@@ -24,11 +31,7 @@ export class StrategyInvoiceRepository implements InvoiceRepository {
       return undefined;
     }
 
-    const invoice = Invoice.rehydrate(row);
-
-    invoice.version = row.version;
-
-    return invoice;
+    return loadedAt(Invoice.rehydrate(row), row.version);
   }
 
   async save(invoice: Invoice): Promise<void> {

@@ -142,11 +142,11 @@ describe('the guidance init writes', () => {
     const rule = (name: string): string => read(root, `.claude/rules/${name}.md`);
 
     expect(rule('application')).toContain(
-      'never `pullEvents()`, never a `DomainEventDispatcher` here (`domain-events/dispatched-on-save`)',
+      'never `takeRecordedEvents()`, never a `DomainEventDispatcher` here (`domain-events/dispatched-on-save`)',
     );
 
     expect(rule('infrastructure')).toContain(
-      'A repository only persists: no `pullEvents()`, no dispatcher (`domain-events/dispatched-on-save`)',
+      'A repository only persists: no `takeRecordedEvents()`, no dispatcher (`domain-events/dispatched-on-save`)',
     );
 
     expect(rule('platform')).toContain(
