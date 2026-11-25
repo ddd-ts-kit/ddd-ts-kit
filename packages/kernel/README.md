@@ -1275,17 +1275,18 @@ logger and its children. Ask it before building fields that cost; the kit does, 
 `loggingMiddleware` and the scheduler. `NoopLogger` answers `false`.
 
 **`flush()`** resolves once every entry logged so far, through the logger or a child, was
-handed to its destination, and never rejects. It is called once, when the process stops, after
-the last entry: the application of `@ddd-ts-kit/di` calls it at the end of `stop()`. What is
-logged after a flush is unspecified, and never throws: pino and `StdoutLogger` still write it,
-winston, whose flush ends the logger, drops it. A second call resolves too.
+handed to its destination, and never rejects. It ends nothing: an entry logged afterwards is
+written like the others, by every logger of the kit, and a later call flushes it in turn. The
+application of `@ddd-ts-kit/di` calls it at the end of `stop()`, after the last entry of its
+modules.
 
 `InMemoryLogger` takes `{ level?, fields?, base?, scrubMessages? }` like a real adapter: a
 threshold (default `debug`, every entry), fields read at each entry, fields added to every
 entry. Its `entries` hold what a logger writes: an error passed as a field is recorded as its
 description. `CREDENTIAL_KEYS` and `REDACTED` are the field names and the marker `StdoutLogger`
-and the pino and winston adapters redact with, and `isCredentialKey(name)` the comparison they
-share, without case; `InMemoryLogger` redacts nothing.
+and the pino and winston adapters redact with. `hiddenKeys(added)` is the one question they
+ask of a field name: whether it is one of `CREDENTIAL_KEYS` (`isCredentialKey(name)`) or of the
+names a project adds through `redact`, without case. `InMemoryLogger` redacts nothing.
 
 ### Metrics
 

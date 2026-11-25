@@ -1,12 +1,6 @@
-import { escapeRegExp } from '../check/text/escape-reg-exp';
-import { workspaceSources } from '../generate/kinds/same-name/workspace-sources';
 import type { Config } from '../config';
-import { namedBindingsOf } from '../migration';
-import { entitiesList } from '../generate/kinds/same-name/entities-list';
 import { indexPicture } from '../generate/kinds/same-name/index-picture';
-import { importedTwiceNotes } from '../generate/kinds/same-name/imported-twice-notes';
-import { readModule } from '../generate/kinds/same-name/read-module';
-import { settleSameNames } from '../generate/kinds/same-name/settle-same-names';
+import { ORM_MEMBERS } from '../orm/orm-members';
 import { Workspace } from '../workspace';
 
 /**
@@ -29,12 +23,7 @@ export function settleIndexNames(ws: Workspace, config: Config): void {
     return;
   }
 
-  const said =
-    config.stack.orm === 'drizzle'
-      ? settleSameNames(ws, config)
-      : config.stack.orm === 'typeorm'
-        ? importedTwiceNotes(ws, config)
-        : [];
+  const said = ORM_MEMBERS[config.stack.orm].tables?.indexNames?.settled(ws, config) ?? [];
 
   // What the command ends with is compared with what the index gave on disk at its end, once (`keepThePicture`).
   said.forEach((note) => {
@@ -58,56 +47,12 @@ function handLinesUnseen(ws: Workspace, config: Config, onDisk: string): string[
   const outside = onDisk.replace(REGION, '$1$2');
   const kept = new Set(rewritten.split('\n').map((line) => line.trim()));
   const dropped = outside.split('\n').filter((line) => line.trim() !== '' && !kept.has(line.trim()));
-  const unread = dropped.length === 0 ? [] : unreadOutside(ws, config, { index, outside, rewritten });
+  const names = ORM_MEMBERS[config.stack.orm].tables?.indexNames;
+  const unread = dropped.length === 0 ? [] : (names?.unreadOutside(ws, config, { index, outside, rewritten }) ?? []);
 
   return unread.length === 0
     ? []
     : [
         `${index} is left as it stood before the command: outside the regions the kit writes it holds ${unread.join('; ')}, which the kit does not read with certainty, and \`init --force\` writes the index again from its template, without the ${dropped.length} line(s) written there by hand. Move what the kit should keep into a file of a context, or keep the index by hand.`,
       ];
-}
-
-/** What the part of the index outside the regions holds that the kit cannot answer for. */
-function unreadOutside(
-  ws: Workspace,
-  config: Config,
-  { index, outside, rewritten }: { index: string; outside: string; rewritten: string },
-): string[] {
-  if (config.stack.orm === 'typeorm') {
-    const written = new Set(entitiesList(rewritten));
-
-    return entitiesList(outside)
-      .filter((entry) => !written.has(entry) && !isOfTheKit(outside, entry))
-      .map((entry) => `the entry \`${entry}\` of \`entities\``);
-  }
-
-  if (config.stack.orm !== 'drizzle') {
-    return [];
-  }
-
-  const sources = workspaceSources(ws, config);
-  const own = readModule(outside);
-
-  return [
-    ...[...new Set(own.written)].map((line) => `\`${line}\``),
-    ...own.whole
-      .filter((source) => sources.resolve(index, source).kind !== 'file')
-      .map((source) => `\`export * from '${source}'\`, a module the kit does not follow`),
-  ];
-}
-
-/**
- * Whether an entry the rewritten list lacks is one a template wrote for another stack: a constant
- * the index builds by calling a function of a package of the kit, as the audit trail or the outbox.
- */
-function isOfTheKit(outside: string, entry: string): boolean {
-  const name = escapeRegExp(entry.replace(/^\.\.\./, ''));
-  const [, built = ''] = new RegExp(`\\bconst ${name}\\b[^=\\n]*=\\s*([\\w$]+)\\(`).exec(outside) ?? [];
-
-  return (
-    built !== '' &&
-    namedBindingsOf(outside, 'import').some(
-      ({ source, names }) => source.startsWith('@ddd-ts-kit/') && names.some(({ local }) => local === built),
-    )
-  );
 }

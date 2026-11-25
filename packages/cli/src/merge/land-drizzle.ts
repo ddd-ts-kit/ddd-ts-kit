@@ -1,9 +1,9 @@
+import { drizzleMigrationFolder } from '../check/migrations/drizzle-migration-folder';
 import { drizzleOutFolder } from '../check/migrations/drizzle-out-folder';
-import { readMigrationFolder } from '../check/migrations/read-migration-folder';
 import { CliError } from '../cli-error';
 import { replayDrizzleMigrations } from '../migration';
 import { migrationsAt } from './migrations-at';
-import type { MigrationsLanded } from './renumber-migrations';
+import type { MigrationsLanded } from '../orm/migrations/migrations-landed';
 
 /** The commits a drizzle replay of a merge is decided on. */
 export interface DrizzleLanding {
@@ -29,7 +29,7 @@ export function landDrizzle(root: string, landing: DrizzleLanding): MigrationsLa
   const [base, ours, trunk] = [names(landing.base), names(landing.ours), names(landing.trunk)];
   const added = (side: ReadonlySet<string>): boolean => [...side].some((name) => !base.has(name));
 
-  const working = (readMigrationFolder(root, 'drizzle')?.migrations ?? []).some(
+  const working = drizzleMigrationFolder(root).migrations.some(
     (migration) => !trunk.has(migration.name) && WORKING.test(migration.name),
   );
 

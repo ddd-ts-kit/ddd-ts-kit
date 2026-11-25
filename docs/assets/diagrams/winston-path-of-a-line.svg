@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540" role="img" aria-labelledby="title desc" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
   <title id="title">The path of one log line through WinstonLogger and winston</title>
-  <desc id="desc">An adapter calls logger.info with a message and fields. WinstonLogger first asks winston whether the level is enabled: below the threshold, or once the logger was flushed, nothing is written. Otherwise it describes the errors among the fields and keeps the level and the message out of them. winston merges the fields of the line, those of the children and its defaultMeta (service, environment, base). Then the formats run in order: correlationFields fills the keys nobody gave from fields(), redactCredentials replaces the value of every credential key by [redacted], isoTime writes time, and json or the pretty line serializes. Each transport writes the line if it passes its own level: the console by default, or the files, syslog or streams you give.</desc>
+  <desc id="desc">An adapter calls logger.info with a message and fields. WinstonLogger first asks winston whether the level is enabled: below the threshold, or once the logger was ended, nothing is written. Otherwise it describes the errors among the fields and keeps the level and the message out of them. winston merges the fields of the line, those of the children and its defaultMeta (service, environment, base). Then the formats run in order: correlationFields fills the keys nobody gave from fields(), redactCredentials replaces the value of every credential key by [redacted], isoTime writes time, and json or the pretty line serializes. Each transport writes the line if it passes its own level: the console by default, or the files, syslog or streams you give.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#3d4449"/>
@@ -17,7 +17,7 @@
   <rect x="312" y="70" width="200" height="96" rx="10" fill="#f1ebf5" stroke="#7a4f9a" stroke-width="2"/>
   <text x="412" y="98" font-size="16" font-weight="700" fill="#7a4f9a" text-anchor="middle">level enabled?</text>
   <text x="412" y="122" font-size="13" fill="#1f2328" text-anchor="middle">asked by WinstonLogger,</text>
-  <text x="412" y="142" font-size="13" fill="#1f2328" text-anchor="middle">false once flushed</text>
+  <text x="412" y="142" font-size="13" fill="#1f2328" text-anchor="middle">false once ended</text>
   <rect x="552" y="70" width="240" height="96" rx="10" fill="#f1ebf5" stroke="#7a4f9a" stroke-width="2"/>
   <text x="672" y="98" font-size="16" font-weight="700" fill="#7a4f9a" text-anchor="middle">WinstonLogger</text>
   <text x="672" y="122" font-size="13" fill="#1f2328" text-anchor="middle">errors described once</text>

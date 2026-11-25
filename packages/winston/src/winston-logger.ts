@@ -1,6 +1,7 @@
 import { UNWRITABLE_FIELDS, describeErrorFields, type LogFields, type LogLevel, type Logger } from '@ddd-ts-kit/kernel';
 import type winston from 'winston';
 import { endOf } from './end-of';
+import { handedOver } from './handed-over';
 
 export interface WinstonLoggerOptions {
   /**
@@ -57,18 +58,29 @@ export class WinstonLogger implements Logger {
   /**
    * Whether winston would hand an entry of that level to a transport. winston filters by level
    * in its transports, after the formats: asked here, a dropped entry costs nothing. `false`
-   * for every level once the logger was flushed.
+   * for every level once the logger was ended.
    */
   isLevelEnabled(level: LogLevel): boolean {
     return this.root.ended === undefined && this.winston.isLevelEnabled(this.nativeLevel(level));
   }
 
   /**
-   * Ends the winston logger and resolves once its transports have written everything. Final:
-   * what is logged afterwards, through this logger or a child, is dropped without a throw. A
-   * second call answers the same promise. Never rejects.
+   * Resolves once winston has handed its transports every line logged so far, through this
+   * logger or a child. Never rejects, and ends nothing: a line logged afterwards is written
+   * like the others. What a transport still holds of the lines it took, as the `File` transport
+   * holds the end of its file, is written by the time the logger has ended.
    */
   flush(): Promise<void> {
+    return this.root.ended ?? handedOver(this.root.winston);
+  }
+
+  /**
+   * Ends the winston logger and resolves once each of its transports has finished, a file
+   * closed over all its lines. Final: winston does not reopen, so what is logged afterwards,
+   * through this logger or a child, is dropped without a throw. A second call answers the same
+   * promise. Never rejects.
+   */
+  end(): Promise<void> {
     this.root.ended ??= endOf(this.root.winston).catch(() => undefined);
 
     return this.root.ended;

@@ -10,7 +10,8 @@ export interface Application<Native = unknown> {
   /**
    * Stops the job scheduler, unsubscribes the consumers, calls `onStop` of every started module, in
    * reverse order, gives the `ErrorReporter` two seconds to send what it still holds, then
-   * flushes the `Logger`, last. Nothing may log through the application afterwards.
+   * flushes the `Logger`, last. An entry logged afterwards is written, and waits for a flush of
+   * its own.
    */
   stop(): Promise<void>;
 
