@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { recordedBy, withoutRecordedEvents } from '@ddd-ts-kit/testing';
 import { Cancellation } from '@/contexts/scheduling/calendars/domain/value-objects/cancellation.vo';
 import { anAppointment } from '@/contexts/scheduling/calendars/test/builders/appointment.builder';
 import { anAttachedDocument } from '@/contexts/scheduling/calendars/test/builders/attached-document.builder';
@@ -12,12 +13,12 @@ describe('The document of an appointment', () => {
   it('is attached in place of the one it held, which is answered to be deleted, and announces nothing', () => {
     const appointment = anAppointment().build();
 
-    appointment.pullEvents();
+    withoutRecordedEvents(appointment);
 
     expect(appointment.attachDocument(anAttachedDocument(FIRST), NOW)).toBeUndefined();
     expect(appointment.attachDocument(anAttachedDocument(SECOND), NOW)?.key).toBe(FIRST);
     expect([appointment.document?.file.key, appointment.changedAt]).toEqual([SECOND, NOW]);
-    expect(appointment.pullEvents()).toEqual([]);
+    expect(recordedBy(appointment)).toEqual([]);
   });
 
   it('is removed, answering its file, and cannot be removed twice', () => {

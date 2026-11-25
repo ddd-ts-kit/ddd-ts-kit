@@ -1,5 +1,5 @@
 import { describe, expect, it } from '{{tests.module}}';
-import { givenEvents } from '@ddd-ts-kit/testing';
+import { givenEvents, recordedBy } from '@ddd-ts-kit/testing';
 import { {{name.pascal}} } from '{{alias.context}}/domain/aggregates/{{name.kebab}}.aggregate{{alias.ext}}';
 import { {{event.pascal}} } from '{{alias.context}}/domain/events/{{event.kebab}}.event{{alias.ext}}';
 import { {{name.article}}{{name.pascal}} } from '{{alias.context}}/test/builders/{{name.kebab}}.builder{{alias.ext}}';
@@ -11,7 +11,7 @@ describe('{{name.title}}', () => {
     const born = {{name.pascal}}.create('{{name.kebab}}-7', {{event.instant}});
 
     expect(born.{{event.instant}}).toEqual({{event.instant}});
-    expect(born.pullEvents()).toEqual([new {{event.pascal}}('{{name.kebab}}-7', {{event.instant}})]);
+    expect(recordedBy(born)).toEqual([new {{event.pascal}}('{{name.kebab}}-7', {{event.instant}})]);
   });
 
   it('is rebuilt from its history, recording nothing', () => {
@@ -25,7 +25,7 @@ describe('{{name.title}}', () => {
     const loaded = {{name.article}}{{name.pascal}}().identifiedBy('{{name.kebab}}-7').{{event.instant}}({{event.instant}}).build();
 
     expect(loaded.{{event.instant}}).toEqual({{event.instant}});
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 
   // TODO(domain): replace each entry below by a test named after the business rule it proves: given the events of a history, when one command, then the events it records (`thenEvents`) or the refusal (`thenError`).

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dispatchingOnSave, type DomainEvent } from '../src';
+import { dispatchingOnSave, takeRecordedEvents, type DomainEvent } from '../src';
 import { aBench } from './support/shop/a-bench';
 import { Cart } from './support/shop/cart';
 import { InMemoryCarts } from './support/shop/in-memory-carts';
@@ -15,7 +15,7 @@ describe('domain events leave with the save', () => {
     await carts.save(cart);
 
     expect(heard).toEqual(['shop.cart.opened', 'shop.cart.added-book', 'shop.cart.added-pen']);
-    expect(cart.pullEvents()).toEqual([]);
+    expect(takeRecordedEvents(cart)).toEqual([]);
     expect(carts.saved).toEqual(['c1']);
   });
 
@@ -44,7 +44,7 @@ describe('domain events leave with the save', () => {
 
     expect(carts.count()).toBe(0);
     expect(heard).toEqual([]);
-    expect(cart.pullEvents()).toHaveLength(1);
+    expect(takeRecordedEvents(cart)).toHaveLength(1);
   });
 
   it('keeps the events on the aggregate when the save fails, and dispatches them with the save that succeeds', async () => {
@@ -93,12 +93,12 @@ describe('domain events leave with the save', () => {
 });
 
 describe('a repository adapter and the dispatch', () => {
-  it('dispatches nothing twice when the adapter pulled the events itself: nothing is left', async () => {
+  it('dispatches nothing twice when the adapter took the events itself: nothing is left', async () => {
     class PullingCarts extends InMemoryCarts {
       readonly pulled: DomainEvent[] = [];
 
       override async save(cart: Cart): Promise<void> {
-        this.pulled.push(...cart.pullEvents());
+        this.pulled.push(...takeRecordedEvents(cart));
       }
     }
 
@@ -204,6 +204,6 @@ describe('a repository adapter and the dispatch', () => {
 
     expect(bench.heard).toEqual(['shop.cart.opened']);
     expect(carts.lastSaved()).toBe('c1');
-    expect(kept.pullEvents()).toHaveLength(1);
+    expect(takeRecordedEvents(kept)).toHaveLength(1);
   });
 });

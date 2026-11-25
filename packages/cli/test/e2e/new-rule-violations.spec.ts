@@ -163,7 +163,7 @@ const INJECTIONS: readonly Injection[] = [
     what: 'a handler that pulls the events of the aggregate it saved',
     file: HANDLER,
     from: SAVED,
-    to: `${SAVED}    invoice.pullEvents();\n`,
+    to: `${SAVED}    takeRecordedEvents(invoice);\n`,
   },
   {
     rule: 'domain-events/transactional-before-commit',

@@ -1,3 +1,4 @@
+import { AggregateTracking } from './aggregate-tracking';
 import type { DomainEvent } from './domain-event';
 import { Entity } from './entity';
 
@@ -5,32 +6,23 @@ import { Entity } from './entity';
  * Consistency boundary and transaction boundary. Only the root is reachable from
  * outside; state changes go through intention-revealing methods that guard the
  * invariants and record domain events.
+ *
+ * The model records and reads its version; it moves neither. The repository adapter says at
+ * which version it loaded the aggregate (`loadedAt`), the save moves it (`optimisticUpdate`), and
+ * the recorded events leave with the save (`dispatchingOnSave`).
  */
 export abstract class AggregateRoot<Id extends string | number = string> extends Entity<Id> {
-  /** Optimistic concurrency token, managed by the repository adapter. */
-  version = 0;
-
-  private readonly events: DomainEvent[] = [];
-
-  /**
-   * The recorded events are no part of the state: they are kept out of enumeration, so that
-   * comparing, spreading or serialising an aggregate never sees what it has yet to announce.
-   */
   protected constructor(id: Id) {
     super(id);
-    Object.defineProperty(this, 'events', { enumerable: false });
+    AggregateTracking.start(this);
   }
 
-  /**
-   * Hands over the recorded events and clears them. Called for a handler by the save of the
-   * repository (`dispatchingOnSave`), and by a spec that asserts what an aggregate recorded;
-   * never by a use case or a repository adapter.
-   */
-  pullEvents(): DomainEvent[] {
-    return this.events.splice(0);
+  /** Optimistic concurrency token: the version the store holds of this aggregate, 0 until its first save. */
+  get version(): number {
+    return AggregateTracking.of(this).version;
   }
 
   protected record(event: DomainEvent): void {
-    this.events.push(event);
+    AggregateTracking.of(this).recorded.push(event);
   }
 }

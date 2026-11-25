@@ -1,6 +1,8 @@
 export {
   CONCURRENCY_CONFLICT,
   ConcurrencyError,
+  aggregateMapper,
+  loadedAt,
   optimisticUpdate,
   schemaNameOf,
   type VersionStep,

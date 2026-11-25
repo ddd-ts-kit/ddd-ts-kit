@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { given } from '@ddd-ts-kit/testing';
+import { given, recordedBy } from '@ddd-ts-kit/testing';
 import { Reminder } from '@/contexts/notification/domain/aggregates/reminder.aggregate';
 import { aReminder } from '@/contexts/notification/test/builders/reminder.builder';
 
@@ -22,7 +22,7 @@ describe('Reminder', () => {
     const loaded = Reminder.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 
   it('is born planned, due 24 hours before the start of its appointment', () => {
@@ -30,7 +30,7 @@ describe('Reminder', () => {
 
     expect(born.status).toBe('planned');
     expect(born.dueAt).toEqual(dayBefore);
-    expect(born.pullEvents()).toEqual([]);
+    expect(recordedBy(born)).toEqual([]);
   });
 
   it('is not due earlier than 24 hours before the start', () => {

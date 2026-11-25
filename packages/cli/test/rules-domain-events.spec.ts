@@ -12,25 +12,25 @@ const MAPPER = `${BILLING}/infrastructure/persistence/invoice.mapper.ts`;
 const GATEWAY = `${BILLING}/infrastructure/external/stripe-payment.gateway.ts`;
 const IMPORTED = "import { Clock, DomainEventDispatcher } from '@ddd-ts-kit/kernel';";
 const DECLARATIONS = "import { CommandHandler, Repository } from '@ddd-ts-kit/kernel/declarations';";
-const PULLED = 'const events = invoice.pullEvents();';
+const PULLED = 'const events = takeRecordedEvents(invoice);';
 
 describe('domain-events/dispatched-on-save', () => {
-  it('reports every call to pullEvents under application/ and infrastructure/', () => {
+  it('reports every call to takeRecordedEvents under application/ and infrastructure/', () => {
     const files = {
       [HANDLER]: lines(PULLED),
-      [EVENT_HANDLER]: lines('', 'await dispatch(this.invoice?.pullEvents());'),
+      [EVENT_HANDLER]: lines('', 'await dispatch(takeRecordedEvents(this.invoice));'),
       [INTEGRATION_HANDLER]: lines(PULLED),
       [ADAPTER]: lines(PULLED),
       [GATEWAY]: lines(PULLED, PULLED),
     };
 
     expect(found(files)).toEqual([
-      'application/commands/issue-invoice/issue-invoice.handler.ts:1 `pullEvents()` is called',
-      'application/event-handlers/invoice-issued.event-handler.ts:2 `pullEvents()` is called',
-      'application/integration/handlers/product-listed.integration-handler.ts:1 `pullEvents()` is called',
-      'infrastructure/external/stripe-payment.gateway.ts:1 `pullEvents()` is called',
-      'infrastructure/external/stripe-payment.gateway.ts:2 `pullEvents()` is called',
-      'infrastructure/persistence/pg-invoice.repository.ts:1 `pullEvents()` is called',
+      'application/commands/issue-invoice/issue-invoice.handler.ts:1 `takeRecordedEvents()` is called',
+      'application/event-handlers/invoice-issued.event-handler.ts:2 `takeRecordedEvents()` is called',
+      'application/integration/handlers/product-listed.integration-handler.ts:1 `takeRecordedEvents()` is called',
+      'infrastructure/external/stripe-payment.gateway.ts:1 `takeRecordedEvents()` is called',
+      'infrastructure/external/stripe-payment.gateway.ts:2 `takeRecordedEvents()` is called',
+      'infrastructure/persistence/pg-invoice.repository.ts:1 `takeRecordedEvents()` is called',
     ]);
   });
 
@@ -88,7 +88,7 @@ describe('domain-events/dispatched-on-save, what it does not judge and what it s
       [`${BILLING}/domain/aggregates/invoice.aggregate.ts`]: lines(
         'export class Invoice {',
         '  drain(): void {',
-        '    this.pullEvents();',
+        '    takeRecordedEvents(this);',
         '  }',
         '}',
       ),
@@ -103,13 +103,17 @@ describe('domain-events/dispatched-on-save, what it does not judge and what it s
     expect(found(files)).toEqual([]);
   });
 
-  it('reads code only: a name in a comment, in a string or as a declaration is not a call', () => {
+  it('reads code only: a name in a comment, in a string, as a declaration or as a method of another object is not the call', () => {
     const handler = lines(
-      '// invoice.pullEvents() used to be here, with a DomainEventDispatcher',
-      "const hint = 'aggregate.pullEvents()';",
+      '// takeRecordedEvents(invoice) used to be here, with a DomainEventDispatcher',
+      "const hint = 'takeRecordedEvents(aggregate)';",
+      'function takeRecordedEvents(): void {}',
       'class Outbox {',
-      '  pullEvents(): void {}',
+      '  takeRecordedEvents(batch: number): readonly string[] {',
+      '    return [];',
+      '  }',
       '}',
+      'outbox.takeRecordedEvents();',
     );
 
     expect(found({ [HANDLER]: handler })).toEqual([]);
@@ -132,7 +136,7 @@ describe('domain-events/dispatched-on-save, what it does not judge and what it s
     expect(reported(root, RULE)).toHaveLength(1);
 
     expect(violation?.message).toBe(
-      '`pullEvents()` is called in application/commands: the events an aggregate recorded are dispatched when its repository saves it.',
+      '`takeRecordedEvents()` is called in application/commands: the events an aggregate recorded are dispatched when its repository saves it.',
     );
 
     expect(reported(projectWith({ [HANDLER]: lines(PULLED) }, { rules: { [RULE]: 'off' } }), RULE)).toEqual([]);

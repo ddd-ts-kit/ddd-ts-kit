@@ -1,5 +1,6 @@
 import type { DomainEventDispatcher } from '../../application/ports/domain-event-dispatcher';
 import type { ExecutionScope } from '../../application/ports/execution-scope';
+import { takeRecordedEvents } from '../aggregates/take-recorded-events';
 import { announceDomainEvents } from './announce-domain-events';
 import { recordedAggregates } from './recorded-aggregates';
 import { SaveAfterCommitError } from './save-after-commit-error';
@@ -27,7 +28,7 @@ const wrapped = new WeakSet<object>();
  * The repository is wrapped in place, as tracing and the aspects do, so the same object is
  * answered and wrapping twice is a no-op; a sealed or frozen one is fronted by a proxy. The
  * dispatcher is asked for at each dispatch. An adapter contains no dispatch code: one that
- * pulls the events itself leaves nothing to dispatch here.
+ * takes the events itself leaves nothing to dispatch here.
  *
  * Given the execution scope, the handlers run in the execution context of the save (its tenant, its
  * actor, its correlation id), also when the unit of work that dispatches them was opened in another:
@@ -87,11 +88,7 @@ function announcing(original: Method, dispatcher: Dispatching, scope: Scoping | 
   const announced = async (args: readonly unknown[], result: unknown): Promise<unknown> => {
     const value = await result;
 
-    await announceDomainEvents(
-      recordedAggregates(args).flatMap((aggregate) => aggregate.pullEvents()),
-      dispatcher(),
-      scope?.(),
-    );
+    await announceDomainEvents(recordedAggregates(args).flatMap(takeRecordedEvents), dispatcher(), scope?.());
 
     return value;
   };

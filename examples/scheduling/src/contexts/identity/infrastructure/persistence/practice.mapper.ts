@@ -1,3 +1,4 @@
+import { aggregateMapper } from '@ddd-ts-kit/kernel';
 import { Practice } from '@/contexts/identity/domain/aggregates/practice.aggregate';
 import { Membership } from '@/contexts/identity/domain/value-objects/membership.vo';
 import { Role } from '@/contexts/identity/domain/value-objects/role.vo';
@@ -9,9 +10,9 @@ interface StoredMember {
   readonly role: string;
 }
 
-export const PracticeMapper = {
+export const PracticeMapper = aggregateMapper({
   toDomain(row: PracticeRow): Practice {
-    const loaded = Practice.rehydrate(row.id, {
+    return Practice.rehydrate(row.id, {
       registeredAt: row.registered_at,
       name: row.name,
       timeZone: TimeZone.create(row.time_zone),
@@ -19,10 +20,6 @@ export const PracticeMapper = {
         Membership.create(member.personId, Role.create(member.role)),
       ),
     });
-
-    loaded.version = row.version;
-
-    return loaded;
   },
 
   toRow(saved: Practice): PracticeColumns {
@@ -41,7 +38,7 @@ export const PracticeMapper = {
       members: JSON.stringify(members),
     };
   },
-};
+});
 
 /** The driver hands a JSON column back already parsed; the row type says what was written. */
 function storedMembersOf(column: unknown): readonly StoredMember[] {

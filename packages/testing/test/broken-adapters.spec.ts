@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { FixedClock, type EventStore, type Lock, type LockHandle, type Repository } from '@ddd-ts-kit/kernel';
+import {
+  FixedClock,
+  loadedAt,
+  optimisticUpdate,
+  type EventStore,
+  type Lock,
+  type LockHandle,
+  type Repository,
+} from '@ddd-ts-kit/kernel';
 import { InMemoryRepository, resetSequences } from '../src';
 import {
   eventStoreUnitOfWorkContract,
@@ -45,16 +53,15 @@ class LastWriteWinsOrders implements Repository<Order> {
       return undefined;
     }
 
-    const order = Order.rehydrate(row.snapshot);
-
-    order.version = row.version;
-
-    return order;
+    return loadedAt(Order.rehydrate(row.snapshot), row.version);
   }
 
   async save(order: Order): Promise<void> {
-    order.version += 1;
-    this.rows.set(order.id, { snapshot: order.toSnapshot(), version: order.version });
+    await optimisticUpdate(order, async ({ next }) => {
+      this.rows.set(order.id, { snapshot: order.toSnapshot(), version: next });
+
+      return 1;
+    });
   }
 }
 

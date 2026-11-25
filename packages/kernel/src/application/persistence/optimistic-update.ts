@@ -1,5 +1,7 @@
+import { AggregateTracking } from '../../domain/aggregate-tracking';
 import { ConcurrencyError } from '../../domain/errors/concurrency-error';
 import { UniqueViolationError } from '../../domain/errors/unique-violation-error';
+import { storedAt } from '../../infrastructure/aggregates/stored-at';
 import { isUniqueViolation } from '../../infrastructure/persistence/is-unique-violation';
 
 export interface VersionStep {
@@ -19,12 +21,14 @@ export interface VersionStep {
  * database refuses for a value another row holds under a unique constraint (an email) raises a
  * UniqueViolationError (`CONFLICT`), the error of the driver as its cause: the same save would be
  * refused again. On success the aggregate carries the new version, so it can be saved again.
+ * The aggregate is one of the kit, of whichever copy of the kernel: anything else is refused with
+ * a `TypeError` before anything is written.
  */
 export async function optimisticUpdate(
-  aggregate: { readonly id: string | number; version: number },
+  aggregate: { readonly id: string | number; readonly version: number },
   write: (step: VersionStep) => Promise<number>,
 ): Promise<void> {
-  const expected = aggregate.version;
+  const expected = AggregateTracking.of(aggregate).version;
   const next = expected + 1;
 
   const written = await write({ expected, next }).catch((error: unknown) => {
@@ -35,5 +39,5 @@ export async function optimisticUpdate(
     throw new ConcurrencyError(aggregate.id);
   }
 
-  aggregate.version = next;
+  storedAt(aggregate, next);
 }

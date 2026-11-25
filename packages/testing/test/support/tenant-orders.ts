@@ -1,4 +1,11 @@
-import { tenantReachOf, tenantScopeOf, type ExecutionScope, type Repository } from '@ddd-ts-kit/kernel';
+import {
+  loadedAt,
+  optimisticUpdate,
+  tenantReachOf,
+  tenantScopeOf,
+  type ExecutionScope,
+  type Repository,
+} from '@ddd-ts-kit/kernel';
 import { Order, type OrderSnapshot } from './order';
 
 interface StoredOrder {
@@ -27,25 +34,23 @@ export class TenantOrders implements Repository<Order> {
       return Promise.resolve(undefined);
     }
 
-    const order = Order.rehydrate(row.snapshot);
-
-    order.version = row.version;
-
-    return Promise.resolve(order);
+    return Promise.resolve(loadedAt(Order.rehydrate(row.snapshot), row.version));
   }
 
   save(order: Order): Promise<void> {
     const { tenantId } = tenantScopeOf(this.scope);
-    const row = this.rows.get(order.id);
-    const expected = order.version;
 
-    if (expected === 0 ? row !== undefined : row?.tenantId !== tenantId || row.version !== expected) {
-      return Promise.reject(new Error(`Order ${order.id} changed or belongs to another tenant`));
-    }
+    // No row written for an order that changed or belongs to another tenant: a ConcurrencyError.
+    return optimisticUpdate(order, async ({ expected, next }) => {
+      const row = this.rows.get(order.id);
 
-    this.rows.set(order.id, { tenantId, snapshot: order.toSnapshot(), version: expected + 1 });
-    order.version = expected + 1;
+      if (expected === 0 ? row !== undefined : row?.tenantId !== tenantId || row.version !== expected) {
+        return 0;
+      }
 
-    return Promise.resolve();
+      this.rows.set(order.id, { tenantId, snapshot: order.toSnapshot(), version: next });
+
+      return 1;
+    });
   }
 }

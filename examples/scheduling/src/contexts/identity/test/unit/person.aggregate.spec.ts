@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { given } from '@ddd-ts-kit/testing';
+import { given, recordedBy } from '@ddd-ts-kit/testing';
 import { Person } from '@/contexts/identity/domain/aggregates/person.aggregate';
 import { DisplayName } from '@/contexts/identity/domain/value-objects/display-name.vo';
 import { Email } from '@/contexts/identity/domain/value-objects/email.vo';
@@ -21,7 +21,7 @@ describe('Person', () => {
     const loaded = Person.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 
   it('announces that the person is registered, with the name and the address to reach them', () => {
@@ -34,7 +34,7 @@ describe('Person', () => {
       .bornAt(bornAt)
       .build();
 
-    expect(born.pullEvents()).toEqual([
+    expect(recordedBy(born)).toEqual([
       {
         name: 'identity.person.registered',
         aggregateId: 'person-7',

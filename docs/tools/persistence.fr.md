@@ -1,5 +1,5 @@
 [English](persistence.md) · **Français**
-<!-- translation-of: persistence.md sha256:e7e5178e1b6a585a -->
+<!-- translation-of: persistence.md sha256:0b62ec02c4fb79e2 -->
 
 # Persistance : Drizzle, Knex, Prisma, TypeORM, et quelle base de données
 
@@ -84,7 +84,7 @@ dans un projet, chaque partie est un fichier à part, nommé dans les commentair
 ```ts
 import type { Knex } from 'knex';
 import { AggregateRoot, DomainRefusal, NamedDomainEvent, Repository } from '@ddd-ts-kit/kernel';
-import { type KnexContext, insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/knex';
+import { aggregateMapper, insertIgnoringConflict, optimisticUpdate, type KnexContext } from '@ddd-ts-kit/knex';
 
 // domain/events/invoice-paid.event.ts : le domaine ne connaît ni ligne, ni SQL, ni bibliothèque.
 export class InvoicePaid extends NamedDomainEvent('billing.invoice.paid') {
@@ -153,19 +153,15 @@ type InvoiceRow = {
 };
 
 // infrastructure/persistence/invoice.mapper.ts
-const InvoiceMapper = {
+const InvoiceMapper = aggregateMapper({
   toDomain(row: InvoiceRow): Invoice {
-    const loaded = Invoice.rehydrate(row.id, row.amount_in_cents, row.paid_at);
-
-    loaded.version = row.version;
-
-    return loaded;
+    return Invoice.rehydrate(row.id, row.amount_in_cents, row.paid_at);
   },
 
-  toRow(saved: Invoice, version: number): InvoiceRow {
-    return { id: saved.id, amount_in_cents: saved.amountInCents, paid_at: saved.paidAt, version };
+  toRow(saved: Invoice): Omit<InvoiceRow, 'version'> {
+    return { id: saved.id, amount_in_cents: saved.amountInCents, paid_at: saved.paidAt };
   },
-};
+});
 
 // infrastructure/persistence/knex-invoice.repository.ts
 export class KnexInvoiceRepository implements InvoiceRepository {
@@ -180,7 +176,7 @@ export class KnexInvoiceRepository implements InvoiceRepository {
   /** Aucune ligne écrite signifie qu'une autre transaction l'a sauvegardée d'abord : optimisticUpdate lève ConcurrencyError. */
   async save(saved: Invoice): Promise<void> {
     await optimisticUpdate(saved, async ({ expected, next }) => {
-      const row = InvoiceMapper.toRow(saved, next);
+      const row = { ...InvoiceMapper.toRow(saved), version: next };
 
       if (expected === 0) {
         const inserted = await insertIgnoringConflict(this.database.executor(), invoicesOf(this.database), {

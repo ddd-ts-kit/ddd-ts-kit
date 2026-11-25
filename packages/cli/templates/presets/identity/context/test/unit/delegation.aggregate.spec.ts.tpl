@@ -1,5 +1,5 @@
 import { describe, expect, it } from '{{tests.module}}';
-import { given } from '@ddd-ts-kit/testing';
+import { given, recordedBy } from '@ddd-ts-kit/testing';
 import { Delegation, type DelegationTerms } from '{{alias.context}}/domain/aggregates/delegation.aggregate{{alias.ext}}';
 import { DelegationPeriod } from '{{alias.context}}/domain/value-objects/delegation-period.vo{{alias.ext}}';
 import { OrganisationRights } from '{{alias.context}}/domain/value-objects/organisation-rights.vo{{alias.ext}}';
@@ -18,7 +18,7 @@ describe('Delegation', () => {
 
     expect(granted.isActiveAt(during)).toBe(true);
 
-    expect(granted.pullEvents()).toEqual([
+    expect(recordedBy(granted)).toEqual([
       {
         name: '{{context.kebab}}.delegation.granted',
         aggregateId: 'delegation-1',
@@ -54,7 +54,7 @@ describe('Delegation', () => {
     const loaded = Delegation.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 });
 

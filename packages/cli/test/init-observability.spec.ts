@@ -196,7 +196,7 @@ describe('a generated command handler', () => {
         '    await this.invoiceRepository.save(invoice);\n\n    return invoice.id;',
       );
 
-      expect(handler, flags.join(' ')).not.toMatch(/pullEvents|DomainEventDispatcher/);
+      expect(handler, flags.join(' ')).not.toMatch(/takeRecordedEvents|DomainEventDispatcher/);
     }
   });
 

@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { Clock, DomainError, ExecutionScope, FixedClock } from '@ddd-ts-kit/kernel';
+import { AggregateRoot, Clock, DomainError, ExecutionScope, FixedClock, loadedAt } from '@ddd-ts-kit/kernel';
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 import { repositoryContract } from '@ddd-ts-kit/testing/contracts';
 import {
@@ -62,7 +62,13 @@ describe('a repository declared with @Repository', () => {
 });
 
 describe('optimisticUpdate', () => {
-  const aggregate = (version: number) => ({ id: 'inv-1', version });
+  class Versioned extends AggregateRoot {
+    constructor() {
+      super('inv-1');
+    }
+  }
+
+  const aggregate = (version: number) => loadedAt(new Versioned(), version);
 
   it('tells the write which version to expect and which to store, then moves the aggregate on', async () => {
     const invoice = aggregate(3);

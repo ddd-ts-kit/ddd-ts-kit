@@ -1,19 +1,16 @@
+import { aggregateMapper } from '@ddd-ts-kit/kernel';
 import { Member } from '{{alias.context}}/domain/aggregates/member.aggregate{{alias.ext}}';
 import type { MemberColumns, MemberRow } from '{{alias.context}}/infrastructure/persistence/member-row.schema{{alias.ext}}';
 
-export const MemberMapper = {
+export const MemberMapper = aggregateMapper({
   toDomain(row: MemberRow): Member {
-    const loaded = Member.rehydrate(row.id, {
+    return Member.rehydrate(row.id, {
       organisationId: row.organisation_id,
       accountId: row.account_id,
       role: row.role,
       joinedAt: row.joined_at,
       removedAt: row.removed_at ?? undefined,
     });
-
-    loaded.version = row.version;
-
-    return loaded;
   },
 
   toRow(saved: Member): MemberColumns {
@@ -28,4 +25,4 @@ export const MemberMapper = {
       removed_at: state.removedAt ?? null,
     };
   },
-};
+});

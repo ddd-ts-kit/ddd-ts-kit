@@ -1,4 +1,5 @@
 import { describe, expect, it } from '{{tests.module}}';
+import { recordedBy } from '@ddd-ts-kit/testing';
 import { {{name.pascal}} } from '{{alias.context}}/domain/aggregates/{{name.kebab}}.aggregate{{alias.ext}}';
 {{#if birth.named}}
 import { {{birth.pascal}} } from '{{alias.context}}/domain/events/{{birth.kebab}}.event{{alias.ext}}';
@@ -18,7 +19,7 @@ describe('{{name.title}}', () => {
 
     const born = {{name.article}}{{name.pascal}}().identifiedBy('{{name.kebab}}-7').{{birth.instant}}({{birth.instant}}).build();
 
-    expect(born.pullEvents()).toEqual([new {{birth.pascal}}('{{name.kebab}}-7', {{birth.instant}})]);
+    expect(recordedBy(born)).toEqual([new {{birth.pascal}}('{{name.kebab}}-7', {{birth.instant}})]);
   });
 
 {{/if}}
@@ -28,7 +29,7 @@ describe('{{name.title}}', () => {
     const loaded = {{name.pascal}}.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 
   // TODO(domain): replace each entry below by a given / when / then test (`given` of `@ddd-ts-kit/testing`) named after the business rule it proves: a built state, one intention, then the recorded facts (`thenEvents`) or the raised error (`thenError`).

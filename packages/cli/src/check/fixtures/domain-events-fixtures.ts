@@ -23,7 +23,7 @@ const SAVING_ADAPTER = source(
   '@Repository(InvoiceRepository, [])',
   'export class InMemoryInvoiceRepository implements InvoiceRepository {',
   '  async save(invoice: Invoice): Promise<void> {',
-  '    await this.dispatch(invoice.pullEvents());',
+  '    await this.dispatch(takeRecordedEvents(invoice));',
   '  }',
   '}',
 );
@@ -36,7 +36,7 @@ const PULLING_EVENT_HANDLER = source(
   '@DomainEventHandler(InvoiceIssued, [DomainEventDispatcher])',
   'export class InvoiceIssuedEventHandler {',
   '  async handle(event: InvoiceIssued): Promise<void> {',
-  '    await this.dispatcher.dispatch(event.invoice.pullEvents());',
+  '    await this.dispatcher.dispatch(takeRecordedEvents(event.invoice));',
   '  }',
   '}',
 );
@@ -50,8 +50,8 @@ const DISPATCHED_ON_SAVE: readonly Fixture[] = [
       ...DECLARED_CONTEXT,
       [HANDLER]: handlerDoing([], ['await this.invoices.save(command.invoice);']),
       [AGGREGATE_SPEC]:
-        "import { expect, it } from 'vitest';\n\nit('records nothing twice', () => {\n  expect(invoice.pullEvents()).toEqual([]);\n});\n",
-      'src/platform/dispatching-on-save.ts': `import { DomainEventDispatcher } from ${KERNEL};\n\nexport const dispatched = (dispatcher: DomainEventDispatcher, saved: Saved): Promise<void> => dispatcher.dispatch(saved.pullEvents());\n`,
+        "import { expect, it } from 'vitest';\n\nit('records nothing twice', () => {\n  expect(takeRecordedEvents(invoice)).toEqual([]);\n});\n",
+      'src/platform/dispatching-on-save.ts': `import { DomainEventDispatcher } from ${KERNEL};\n\nexport const dispatched = (dispatcher: DomainEventDispatcher, saved: Saved): Promise<void> => dispatcher.dispatch(takeRecordedEvents(saved));\n`,
     }),
   },
   {
@@ -62,7 +62,7 @@ const DISPATCHED_ON_SAVE: readonly Fixture[] = [
       ...DECLARED_CONTEXT,
       [HANDLER]: handlerDoing(
         [],
-        ['await this.invoices.save(command.invoice);', 'await this.announce(command.invoice.pullEvents());'],
+        ['await this.invoices.save(command.invoice);', 'await this.announce(takeRecordedEvents(command.invoice));'],
       ),
     }),
   },

@@ -37,8 +37,8 @@ not `port` then `adapter`.
 
 - **One repository per aggregate root**, whole-aggregate load and save. Add only the lookups
   a use case needs, named in the ubiquitous language; a screen reads through a read port.
-- **Rows stay inside.** The mapper translates row to aggregate (`rehydrate`) and back; it is
-  the one place for a type assertion. No ORM type crosses the port.
+- **Rows stay inside.** The mapper (`aggregateMapper`) translates row to aggregate (`rehydrate`)
+  and back; it is the one place for a type assertion. No ORM type crosses the port.
 - **Each context owns its tables**, in its own database schema and in a file of its own: the
   tables file of `infrastructure/persistence/` (Drizzle, Knex, TypeORM; `shared/infrastructure/persistence/` with modules) or on Prisma
   `prisma/schema/<context>.prisma` (an earlier single `prisma/schema.prisma` moves first: the

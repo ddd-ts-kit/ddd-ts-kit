@@ -1,6 +1,8 @@
 export {
   CONCURRENCY_CONFLICT,
   ConcurrencyError,
+  aggregateMapper,
+  loadedAt,
   optimisticUpdate,
   // The name to use in `@@schema("...")` and in the `schemas` list of the datasource.
   schemaNameOf,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { given } from '@ddd-ts-kit/testing';
+import { given, recordedBy, withoutRecordedEvents } from '@ddd-ts-kit/testing';
 import { Appointment } from '@/contexts/scheduling/calendars/domain/aggregates/appointment.aggregate';
 import { Cancellation } from '@/contexts/scheduling/calendars/domain/value-objects/cancellation.vo';
 import { Slot } from '@/contexts/scheduling/calendars/domain/value-objects/slot.vo';
@@ -31,7 +31,7 @@ describe('Appointment', () => {
     const loaded = Appointment.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 
   it('records that it was booked, holding its slot with nothing left to confirm', () => {
@@ -42,7 +42,7 @@ describe('Appointment', () => {
     expect(booked.status).toBe('booked');
     expect(booked.confirmBefore).toBeUndefined();
 
-    expect(booked.pullEvents()).toMatchObject([
+    expect(recordedBy(booked)).toMatchObject([
       {
         name: 'scheduling.appointment.booked',
         aggregateId: 'appointment-9',
@@ -60,7 +60,7 @@ describe('Appointment', () => {
     expect(requested.status).toBe('requested');
     expect(requested.confirmBefore).toEqual(deadline);
 
-    expect(requested.pullEvents()).toMatchObject([
+    expect(recordedBy(requested)).toMatchObject([
       { name: 'scheduling.appointment.booked', held: { confirmBefore: deadline } },
     ]);
   });
@@ -176,11 +176,11 @@ describe('Appointment, from confirmation to its end', () => {
     const appointment = anAppointment().startingAt(at('09:00')).build();
     const previous = appointment.booking;
 
-    appointment.pullEvents();
+    withoutRecordedEvents(appointment);
 
     appointment.reschedule(Slot.between(at('14:00'), at('14:30'), at('14:30')), '2026-03-02', at('08:00'));
 
-    expect(appointment.pullEvents()).toMatchObject([{ moved: { booking: appointment.booking, previous } }]);
+    expect(recordedBy(appointment)).toMatchObject([{ moved: { booking: appointment.booking, previous } }]);
   });
 
   it('is completed once it has started', () => {

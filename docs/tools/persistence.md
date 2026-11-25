@@ -76,7 +76,7 @@ application.
 ```ts
 import type { Knex } from 'knex';
 import { AggregateRoot, DomainRefusal, NamedDomainEvent, Repository } from '@ddd-ts-kit/kernel';
-import { type KnexContext, insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/knex';
+import { aggregateMapper, insertIgnoringConflict, optimisticUpdate, type KnexContext } from '@ddd-ts-kit/knex';
 
 // domain/events/invoice-paid.event.ts: the domain knows no row, no SQL, no library.
 export class InvoicePaid extends NamedDomainEvent('billing.invoice.paid') {
@@ -145,19 +145,15 @@ type InvoiceRow = {
 };
 
 // infrastructure/persistence/invoice.mapper.ts
-const InvoiceMapper = {
+const InvoiceMapper = aggregateMapper({
   toDomain(row: InvoiceRow): Invoice {
-    const loaded = Invoice.rehydrate(row.id, row.amount_in_cents, row.paid_at);
-
-    loaded.version = row.version;
-
-    return loaded;
+    return Invoice.rehydrate(row.id, row.amount_in_cents, row.paid_at);
   },
 
-  toRow(saved: Invoice, version: number): InvoiceRow {
-    return { id: saved.id, amount_in_cents: saved.amountInCents, paid_at: saved.paidAt, version };
+  toRow(saved: Invoice): Omit<InvoiceRow, 'version'> {
+    return { id: saved.id, amount_in_cents: saved.amountInCents, paid_at: saved.paidAt };
   },
-};
+});
 
 // infrastructure/persistence/knex-invoice.repository.ts
 export class KnexInvoiceRepository implements InvoiceRepository {
@@ -172,7 +168,7 @@ export class KnexInvoiceRepository implements InvoiceRepository {
   /** No row written means another transaction saved it first: optimisticUpdate throws ConcurrencyError. */
   async save(saved: Invoice): Promise<void> {
     await optimisticUpdate(saved, async ({ expected, next }) => {
-      const row = InvoiceMapper.toRow(saved, next);
+      const row = { ...InvoiceMapper.toRow(saved), version: next };
 
       if (expected === 0) {
         const inserted = await insertIgnoringConflict(this.database.executor(), invoicesOf(this.database), {

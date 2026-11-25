@@ -1,5 +1,5 @@
 [English](domain-and-integration-events.md) · **Français**
-<!-- translation-of: domain-and-integration-events.md sha256:413cd38e48c31cef -->
+<!-- translation-of: domain-and-integration-events.md sha256:97ce9c0273ae0390 -->
 
 # Événements du domaine et événements d'intégration
 
@@ -131,7 +131,7 @@ La déclaration complète est dans [Concevoir la charge utile](#concevoir-la-cha
    mettre en file les événements enregistrés. Une fois que le gestionnaire de commande a rendu la
    main, ils sont distribués aux gestionnaires du même contexte, dans la transaction de la
    commande, avant sa validation. Le gestionnaire de commande écrit
-   `await this.appointments.save(appointment)` et rien d'autre : ni `pullEvents()`, ni
+   `await this.appointments.save(appointment)` et rien d'autre : ni `takeRecordedEvents()`, ni
    distributeur (`domain-events/dispatched-on-save`, [ARCHITECTURE.fr.md](../ARCHITECTURE.fr.md)
    section 4, « Événements du domaine »).
 
@@ -139,7 +139,7 @@ La déclaration complète est dans [Concevoir la charge utile](#concevoir-la-cha
 
    ```ts
    await this.appointments.save(appointment);
-   await this.dispatcher.dispatch(appointment.pullEvents()); // refusé : domain-events/dispatched-on-save
+   await this.dispatcher.dispatch(takeRecordedEvents(appointment)); // refusé : domain-events/dispatched-on-save
    ```
 
    écrivez le `save` seul :
@@ -523,16 +523,17 @@ contiendrait la ligne d'outbox est terminée.
 
 | Ce qui échoue | Résultat |
 |---|---|
-| un `save` | il ne retire rien : ses événements restent sur l'agrégat et n'atteignent aucun gestionnaire ; l'unité de travail est annulée, les événements des `save` précédents sont abandonnés |
+| un `save` | il ne retire rien : ses événements restent sur l'agrégat et n'atteignent aucun gestionnaire ; l'unité de travail est annulée, les événements des `save` précédents n'atteignent aucun gestionnaire et retournent à leurs agrégats |
 | le gestionnaire de commande, après un `save` | les événements en file sont abandonnés : aucun gestionnaire d'aucune phase ne s'exécute |
 | un gestionnaire `before-commit` | la commande échoue avec ce qu'il a levé ; annulation ; les événements encore en attente sont abandonnés ; aucun gestionnaire `after-commit` ne s'exécute |
 | la validation | annulation ; aucun gestionnaire `after-commit` ne s'exécute, aucune ligne d'outbox n'existe |
 | un gestionnaire `after-commit` | rien n'est défait : l'état est validé et la commande réussit |
 
-Les événements retirés par un `save` d'une unité de travail annulée sont abandonnés et jamais
-remis sur l'instance de l'agrégat. Une nouvelle tentative (retry) exécute à nouveau la commande sur
-des agrégats rechargés, qui enregistrent à nouveau leurs événements ; ceux-ci sont distribués une
-seule fois. Une instance d'agrégat d'une commande qui a échoué n'est pas réutilisée.
+Une unité de travail annulée remet les agrégats qu'elle a sauvegardés comme elle les a trouvés : à
+la version où ils ont été chargés, avec les événements que ses `save` avaient pris. Une nouvelle
+tentative (retry) peut exécuter à nouveau la commande sur des agrégats rechargés ou sauvegarder les
+mêmes instances ; dans les deux cas leurs événements sont distribués une seule fois. Une unité de
+travail qui ne défait rien, comme `InMemoryUnitOfWork`, les laisse comme ses `save` les ont laissés.
 
 ### Où vit la file
 

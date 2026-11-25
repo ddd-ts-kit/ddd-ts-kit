@@ -1,4 +1,11 @@
-import { stampCreation, stampUpdate, tenantScopeOf, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import {
+  loadedAt,
+  stampCreation,
+  stampUpdate,
+  tenantScopeOf,
+  type Clock,
+  type ExecutionScope,
+} from '@ddd-ts-kit/kernel';
 import { optimisticUpdate, ownTenantWhere, rowsCreated, tenantWhere } from '../../../../../src';
 import type { Prisma } from '../../../../generated/client/client';
 import type { Database } from '../../../platform/database/database';
@@ -29,11 +36,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       return undefined;
     }
 
-    const invoice = Invoice.rehydrate({ ...row, status: statusOf(row.status) });
-
-    invoice.version = row.version;
-
-    return invoice;
+    return loadedAt(Invoice.rehydrate({ ...row, status: statusOf(row.status) }), row.version);
   }
 
   async save(invoice: Invoice): Promise<void> {
