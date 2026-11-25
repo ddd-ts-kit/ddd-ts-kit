@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:17a6ceff0da01303 -->
+<!-- translation-of: README.md sha256:4c97e3ed6dfdce56 -->
 
 # @ddd-ts-kit/testing
 
@@ -341,6 +341,7 @@ it('refuses to pay an order twice', () => {
   given(anOrder().paid())
     .when((order) => order.pay())
     .thenError('ORDER_ALREADY_PAID')
+    .thenNoEvent()
     .thenState((order) => expect(order.status).toBe('paid'));
 });
 ```
@@ -360,7 +361,9 @@ de même avec la mise en place sous forme de fonction, rejouée à partir d'un a
 
 Les échecs sont des `AssertionError` de `node:assert`, avec les événements attendus et enregistrés côte à
 côte, si bien qu'ils se lisent bien sous n'importe quel runner. Une erreur levée par `when` n'est jamais
-avalée : toute assertion sauf `thenError` échoue sur elle. Quand `when` (ou la mise en place) est
+avalée : toute assertion sauf `thenError` échoue sur elle. Une fois que `thenError` l'a vérifiée, les
+autres lisent ce que l'action a laissé, événements enregistrés avant la levée compris :
+`.thenError('ORDER_ALREADY_PAID').thenNoEvent()` est un refus qui n'a rien enregistré. Quand `when` (ou la mise en place) est
 asynchrone, la chaîne est une promesse : `await given(order).when(async (o) => ...).thenEventNames([...])`.
 
 ### Un agrégat en event sourcing

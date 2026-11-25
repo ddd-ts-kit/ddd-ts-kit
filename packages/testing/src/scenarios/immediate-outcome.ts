@@ -14,13 +14,14 @@ import { show } from './show';
 
 /** The assertions about an action that already ran: each one throws at once. */
 export class ImmediateOutcome<A> implements Outcome<A> {
-  // An error nobody looked at must not let a state assertion pass by accident.
+  // An error nobody looked at must not let another assertion pass by accident: once `thenError`
+  // looked at it, the events recorded before the throw and the state are what the action left.
   private errorAsserted = false;
 
   constructor(private readonly recorded: Recorded<A>) {}
 
   thenEvents(expected: readonly EventMatcher[]): this {
-    this.assertDidNotThrow('events');
+    this.assertNoUnseenError('events');
     const { events } = this.recorded;
 
     const differences = expected.flatMap((matcher, index) => {
@@ -51,7 +52,7 @@ export class ImmediateOutcome<A> implements Outcome<A> {
   }
 
   thenEventNames(expected: readonly string[]): this {
-    this.assertDidNotThrow('events');
+    this.assertNoUnseenError('events');
     const actual = this.recorded.events.map((event) => event.name);
 
     if (!isDeepStrictEqual(actual, [...expected])) {
@@ -71,7 +72,7 @@ export class ImmediateOutcome<A> implements Outcome<A> {
   }
 
   thenNoEvent(): this {
-    this.assertDidNotThrow('no event');
+    this.assertNoUnseenError('no event');
     const { events } = this.recorded;
 
     if (events.length > 0) {
@@ -114,9 +115,7 @@ export class ImmediateOutcome<A> implements Outcome<A> {
   }
 
   thenState(inspectState: (aggregate: A) => void): this {
-    if (!this.errorAsserted) {
-      this.assertDidNotThrow('a state');
-    }
+    this.assertNoUnseenError('a state');
 
     inspectState(this.recorded.aggregate);
 
@@ -141,10 +140,10 @@ export class ImmediateOutcome<A> implements Outcome<A> {
     return thrown.error;
   }
 
-  private assertDidNotThrow(expectation: string): void {
+  private assertNoUnseenError(expectation: string): void {
     const { thrown } = this.recorded;
 
-    if (thrown !== undefined) {
+    if (thrown !== undefined && !this.errorAsserted) {
       throw new AssertionError({
         message: `Expected ${expectation}, but the action failed with ${describeError(thrown.error)}.`,
         actual: thrown.error,

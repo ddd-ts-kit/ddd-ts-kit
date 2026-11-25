@@ -82,6 +82,38 @@ describe('given / when / then', () => {
   });
 });
 
+describe('what a refused action left behind', () => {
+  const payingTwice = () =>
+    given(anOrder()).when((order) => {
+      order.pay(at);
+      order.pay(at);
+    });
+
+  it('asserts that a refusal recorded nothing, once the error was asserted', () => {
+    given(anOrder().paid())
+      .when((order) => order.pay(at))
+      .thenError('ORDER_ALREADY_PAID')
+      .thenNoEvent()
+      .thenEventNames([])
+      .thenEvents([]);
+  });
+
+  it('reads the events recorded before the throw, once the error was asserted', () => {
+    payingTwice().thenError(OrderAlreadyPaid).thenEventNames(['ordering.order.paid']).thenEvents([OrderPaid]);
+
+    expect(failureOf(() => payingTwice().thenError(OrderAlreadyPaid).thenNoEvent())).toContain(
+      'Expected no event.\nRecorded:\n  1. ordering.order.paid',
+    );
+  });
+
+  it('reads them after an asynchronous when too', async () => {
+    await given(anOrder().paid())
+      .when(async (order) => order.pay(at))
+      .thenError('ORDER_ALREADY_PAID')
+      .thenNoEvent();
+  });
+});
+
 describe('asynchronous scenarios', () => {
   const later = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 1));
 

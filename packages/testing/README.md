@@ -337,6 +337,7 @@ it('refuses to pay an order twice', () => {
   given(anOrder().paid())
     .when((order) => order.pay())
     .thenError('ORDER_ALREADY_PAID')
+    .thenNoEvent()
     .thenState((order) => expect(order.status).toBe('paid'));
 });
 ```
@@ -356,7 +357,9 @@ the same with the arrangement as a function, replayed from a fresh aggregate at 
 
 Failures are `AssertionError`s of `node:assert` with the expected and recorded events side by
 side, so they read well under any runner. An error raised by `when` is never swallowed: every
-assertion but `thenError` fails on it. When `when` (or the arrangement) is asynchronous, the
+assertion but `thenError` fails on it. Once `thenError` asserted it, the others read what the action
+left behind, the events recorded before the throw included: `.thenError('ORDER_ALREADY_PAID').thenNoEvent()`
+is a refusal that recorded nothing. When `when` (or the arrangement) is asynchronous, the
 chain is a promise: `await given(order).when(async (o) => ...).thenEventNames([...])`.
 
 ### An event-sourced aggregate
