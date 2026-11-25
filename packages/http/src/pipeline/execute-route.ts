@@ -33,6 +33,7 @@ import { isListed } from './is-listed';
 import { iteratedWithin, type Within } from './iterated-within';
 import { negotiatedVary } from './negotiated-vary';
 import { negotiation, type Negotiation } from './negotiation';
+import { Progress } from './progress';
 import type { RawRequest } from './raw-request';
 import { readBody } from './read-body';
 import { receiveUpload } from './receive-upload';
@@ -51,8 +52,8 @@ interface Call {
   readonly correlationId: string;
   /** Present when the application registers representations: what the `Accept` header chose. */
   readonly negotiated: Negotiation | undefined;
-  /** Filled as the request advances, for the error hook to say how far it went, and for the tags of the answer. */
-  readonly reached: { execution?: ExecutionContext; params?: unknown };
+  /** Told as the request advances, for the error hook to say how far it went, and for the tags of the answer. */
+  readonly progress: Progress;
 }
 
 const defaultErrorMapper = createErrorMapper();
@@ -68,7 +69,7 @@ export async function executeRoute(
   const correlationId = correlationIdOf(request.headers, requestId);
   const { representations } = options;
   const negotiated = representations === undefined ? undefined : negotiation(route, request.headers, representations);
-  const call: Call = { route, request, options, requestId, correlationId, negotiated, reached: {} };
+  const call: Call = { route, request, options, requestId, correlationId, negotiated, progress: new Progress() };
   const respond = (): Promise<RouteResponse> => responded(call);
 
   return options.around === undefined ? respond() : options.around(route, respond);
@@ -90,11 +91,11 @@ async function responded(call: Call): Promise<RouteResponse> {
 }
 
 /** The tags are read from the value the handler answered, whatever representation writes it. */
-function taggingOf({ route, options, reached }: Call, body: unknown): Tagging {
+function taggingOf({ route, options, progress }: Call, body: unknown): Tagging {
   const perTenant = options.cacheTags?.perTenant === true;
-  const tenantId = perTenant ? reached.execution?.tenantId : undefined;
+  const tenantId = perTenant ? progress.execution?.tenantId : undefined;
 
-  return { route, header: options.cacheTags?.header, perTenant, params: reached.params, body, tenantId };
+  return { route, header: options.cacheTags?.header, perTenant, params: progress.params, body, tenantId };
 }
 
 function defaultRequestId(request: RawRequest): string {
@@ -104,25 +105,28 @@ function defaultRequestId(request: RawRequest): string {
 async function handled(call: Call): Promise<RouteOutput> {
   const { route, request, options } = call;
   const principal = await options.resolvePrincipal?.(request.raw);
+  // Read once: the caller is admitted and the handler runs under the same deadline.
+  const deadline = deadlineOf(options);
+  const { headers } = request;
 
   await admittedCaller({
     route,
-    headers: request.headers,
+    headers,
     correlationId: call.correlationId,
     principal,
-    deadline: deadlineOf(options),
-    reached: call.reached,
+    deadline,
+    progress: call.progress,
   });
 
   const input = await acceptedInput(call);
-  const expectedVersion = expectedVersionOf(route, request.headers);
-  const execution = executionOf(call, principal, input.params);
+  const expectedVersion = expectedVersionOf(route, headers);
+  const execution = executionOf(call, { principal, deadline, params: input.params });
   // A field set in a body is an act, recorded; a field shown or left out of the answer only shapes it.
   const setting = new FieldJudge(execution.actor, options.fieldAccess, true);
   const showing = new FieldJudge(execution.actor, options.fieldAccess);
   const context = requestContext(call, { execution, principal, expectedVersion });
 
-  call.reached.params = input.params;
+  call.progress.validated(input.params);
 
   const within: Within = (work) => {
     const asPrincipal = (): ReturnType<typeof work> => options.withPrincipal?.(principal, work) ?? work();
@@ -205,21 +209,29 @@ async function acceptedInput(call: Call): Promise<Omit<RouteInput, 'context'>> {
   return { ...validateRequest(route, read), ...upload };
 }
 
-/** The execution context of the request, in the tenant it names once the caller is known to belong to it. */
-function executionOf(call: Call, principal: unknown, params: unknown): ExecutionContext {
-  const { request, options, correlationId } = call;
+/** Who calls, by when it must be answered, and the parameters the tenant of the request may be read from. */
+interface Identity {
+  readonly principal: unknown;
+  readonly deadline: Date | undefined;
+  readonly params: unknown;
+}
+
+/**
+ * The execution context of the request, in the tenant it names once the caller is known to
+ * belong to it. The progress is told who calls before the tenant is resolved: a caller refused
+ * for the tenant it names is reported with who it is.
+ */
+function executionOf(call: Call, { principal, deadline, params }: Identity): ExecutionContext {
+  const { request, options, correlationId, progress } = call;
   const { headers } = request;
-  const deadline = deadlineOf(options);
-  const execution = executionOfRequest({ correlationId, headers, principal, deadline });
-
-  call.reached.execution = execution;
-
+  const execution = progress.identified(executionOfRequest({ correlationId, headers, principal, deadline }));
   const tenantId = resolvedTenant({ resolver: options.resolveTenant, headers, params, actor: execution.actor });
-  const named = tenantId === undefined || tenantId === execution.tenantId ? execution : undefined;
 
-  call.reached.execution = named ?? executionOfRequest({ correlationId, headers, principal, deadline, tenantId });
+  if (tenantId === undefined || tenantId === execution.tenantId) {
+    return execution;
+  }
 
-  return call.reached.execution;
+  return progress.identified(executionOfRequest({ correlationId, headers, principal, deadline, tenantId }));
 }
 
 async function answer(result: RouteOutput, call: Call): Promise<RouteResponse> {
@@ -268,7 +280,7 @@ function refusal(error: unknown, call: Call): { response: RouteResponse; context
 
 function contextOf(error: unknown, call: Call): ErrorContext {
   const { route, options, requestId, correlationId } = call;
-  const { execution } = call.reached;
+  const { execution } = call.progress;
 
   return {
     requestId,
