@@ -113,4 +113,28 @@ describe('several instances of an application', () => {
     expect(job.scheduledAt).toEqual(['2026-03-02T10:15:00.000Z']);
     expect(JSON.stringify(logger.entries)).not.toContain('secret');
   });
+
+  it('run the next occurrence when the lock of the previous one cannot be released: that lock ends at its time to live', async () => {
+    const clock = new FixedClock(new Date('2026-03-02T09:58:30.000Z'));
+    const memory = new InMemoryLock(clock);
+
+    const lock: Lock = {
+      acquire: async (key, options) => {
+        const handle = await memory.acquire(key, options);
+
+        return handle && { ...handle, release: () => Promise.reject(new Error('redis://secret@host is down')) };
+      },
+    };
+
+    const { scheduler } = aBench({ clock, lock });
+    const job = new RecordingJob();
+
+    scheduler.register({ name: REMINDERS, schedule: QUARTERLY, run: job.run });
+    await scheduler.start();
+
+    await scheduler.advance(17 * MINUTE);
+
+    expect(scheduler.runs).toMatchObject([{ outcome: 'succeeded' }, { outcome: 'succeeded' }]);
+    expect(job.scheduledAt).toEqual(['2026-03-02T10:00:00.000Z', '2026-03-02T10:15:00.000Z']);
+  });
 });

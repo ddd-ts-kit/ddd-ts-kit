@@ -73,23 +73,17 @@ export class JobRunner {
     const ttlMs = (timeoutMs ?? this.options.lockTtlMs) + jitterMs + this.options.lateAfterMs;
 
     try {
-      await job.held?.release();
-      job.held = await this.options.lock.acquire(`job:${job.name}:${scheduledAt.toISOString()}`, { ttlMs });
+      return await job.hold(this.options.lock, `job:${job.name}:${scheduledAt.toISOString()}`, ttlMs);
     } catch (error) {
       throw new JobLockUnavailableError(job.name, { cause: error });
     }
-
-    return job.held !== undefined;
   }
 
   private async execute(job: RegisteredJob, occurrence: Occurrence): Promise<JobRun> {
     const started = { occurrence, startedAt: this.options.clock.now(), correlationId: this.options.ids.next() };
     const controller = new AbortController();
 
-    job.abort = (reason) => {
-      controller.abort(reason);
-    };
-
+    const forget = job.abortsThrough(controller);
     const disarm = this.armTimeout(job, controller);
 
     try {
@@ -100,7 +94,7 @@ export class JobRunner {
       return this.recorder.failed(job, started, error);
     } finally {
       disarm();
-      job.abort = undefined;
+      forget();
     }
   }
 
