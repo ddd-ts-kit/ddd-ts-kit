@@ -10,7 +10,6 @@ import { platformPath } from './platform-path';
 import { SourceText } from '../source-text';
 
 const SYSTEM = '[Role.System]';
-const IMPORTS_ROLE = /import\s*\{[^}]*\bRole\b[^}]*\}\s*from/;
 
 /**
  * Who holds a new permission, in a project whose rights are roles. With `--grant <role>`, the role
@@ -87,13 +86,10 @@ function write(scope: Scope, grant: Grant): void {
   const granted = withGrant(grant, key);
   const permissions = `${scope.config.contextsDir}/${scope.context.kebab}/${permissionsFile(scope.context)}`;
 
-  const withSet = new RegExp(`import\\s*\\{[^}]*\\b${set}\\b`).test(granted)
-    ? granted
-    : withImport(granted, `import { ${set} } from '${specifierOf(scope.config, permissions)}';`);
-
-  const next = IMPORTS_ROLE.test(withSet)
-    ? withSet
-    : withImport(withSet, `import { Role } from '${declared.specifier}';`);
+  const next = [
+    `import { ${set} } from '${specifierOf(scope.config, permissions)}';`,
+    `import { Role } from '${declared.specifier}';`,
+  ].reduce(withImport, granted);
 
   scope.ws.update(file, next);
 
