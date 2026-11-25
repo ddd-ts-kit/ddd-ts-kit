@@ -151,7 +151,7 @@ describe('a context generated in the declared style, towards the outside', () =>
     const gateway = read(root, `${SHIPPING}/infrastructure/external/in-process-invoice-status.gateway.ts`);
 
     expect(gateway).toContain(
-      '@Gateway(InvoiceStatusGateway)\nexport class InProcessInvoiceStatusGateway implements InvoiceStatusGateway {\n  constructor(readonly upstream: InvoiceStatusContract) {}',
+      '@Gateway(InvoiceStatusGateway)\nexport class InProcessInvoiceStatusGateway implements InvoiceStatusGateway {\n  constructor(private readonly upstream: InvoiceStatusContract) {}',
     );
 
     expect(gateway).toContain("import type { InvoiceStatusContract } from '@/contexts/billing/published-language';");
@@ -165,7 +165,8 @@ describe('a context generated in the declared style, towards the outside', () =>
     );
 
     expect(read(root, 'src/platform/composition/platform.module.ts')).toContain(
-      `      // ddd-ts-kit:bindings\n${refusalAt('      ')}\n      // /ddd-ts-kit:bindings`,
+      // Set apart from the statement above the region, as the layout rules ask of a statement on several lines.
+      `      // ddd-ts-kit:bindings\n\n${refusalAt('      ')}\n      // /ddd-ts-kit:bindings`,
     );
 
     expect(read(root, 'src/platform/composition/platform-test.module.ts')).toContain(
