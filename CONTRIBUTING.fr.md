@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:1243627ece6e75f4 -->
+<!-- translation-of: CONTRIBUTING.md sha256:ad3262469573cdea -->
 
 # Contribuer
 
@@ -154,8 +154,12 @@ bout prend 2,5 à 7 Go, et plusieurs à la fois (plusieurs sessions de code, un 
   `value`, ou les `values` parmi lesquelles il se trouve, auxquelles le parseur le tient alors), et
   `run(args, io)`, dont les `args` ne lisent que les options déclarées. Son usage est écrit depuis
   les options ; `usage` n'est écrit à la main que lorsqu'elles ne peuvent pas le dire (des formes
-  qui s'excluent, une option obligatoire). Une commande qui lit les fichiers partagés d'un projet
-  et les réécrit dit `takesTheLock` et ne prend jamais le verrou elle-même. Une nouvelle commande
+  qui s'excluent, une option obligatoire). Une commande qui est un mode d'une autre
+  (`check --baseline`, jointe à elle par `withModes`) dit son `mode` : l'option qui le choisit, qui
+  ouvre sa ligne d'usage, et `because`, pourquoi elle ne prend aucune option des autres modes, les
+  mots du refus de l'une d'elles (`check --baseline does not take --rule: it judges every rule on
+  every file.`). Une commande qui lit les fichiers partagés d'un projet et les réécrit dit
+  `takesTheLock` et ne prend jamais le verrou elle-même. Une nouvelle commande
   s'ajoute à la liste de `packages/cli/src/commands.ts`, là où la référence la liste : `--help`,
   `<command> --help`, l'usage qui répond à un argument refusé et la référence de
   `docs/guides/commands.md` (`node pipeline/monorepo/commands-guide.mjs`) se lisent dans les

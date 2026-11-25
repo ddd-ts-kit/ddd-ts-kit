@@ -271,7 +271,7 @@ describe('check --self', () => {
       const refused = cli(tempDir('self-alone'), 'check', '--self', option);
 
       expect(refused.code).toBe(2);
-      expect(refused.stderr).toContain(`error: Unknown option '${option.split('=')[0] ?? ''}'.`);
+      expect(refused.stderr).toContain(`error: check --self does not take ${option.split('=')[0] ?? ''}: it replays`);
     },
   );
 });

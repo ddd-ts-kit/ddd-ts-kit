@@ -18,10 +18,14 @@ import { refuseMissingPaths } from './refuse-missing-paths';
  */
 export const cleanOnlyCommand = defineCommand({
   name: 'check',
-  usage: ['ddd-ts-kit check --clean-only <dir>... [--rule <id>]... [--format text|json|github]'],
+  mode: {
+    chosenBy: 'clean-only',
+    because: 'it judges the directories given as they are, outside a project, its history and its baseline',
+  },
+  positionals: '<dir>...',
   options: {
     'clean-only': { type: 'boolean' },
-    rule: { type: 'string', multiple: true },
+    rule: { type: 'string', value: '<id>', multiple: true },
     format: { type: 'string', values: CHECK_FORMATS },
     explain: { type: 'boolean' },
   },

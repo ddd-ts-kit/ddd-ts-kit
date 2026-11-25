@@ -7,7 +7,7 @@ import { stdoutJson } from '../json/stdout-json';
 /** `check --commit-size`: says whether what is about to be committed fits one slice. Advisory unless `--strict`. */
 export const commitSizeCommand = defineCommand({
   name: 'check',
-  usage: ['ddd-ts-kit check --commit-size [--staged] [--strict]'],
+  mode: { chosenBy: 'commit-size', because: 'it measures what is about to be committed and runs no rule' },
   options: {
     'commit-size': { type: 'boolean' },
     staged: { type: 'boolean' },

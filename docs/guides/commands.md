@@ -345,10 +345,11 @@ Usage
   ddd-ts-kit context-layout [<context>...] [--dry-run]
   ddd-ts-kit affected [--base <git-ref>] [--head <git-ref>] [--format text|json|github|env]
   ddd-ts-kit affected --base <git-ref> --run <script>
-  ddd-ts-kit check [paths...] [--rule <id>]... [--format text|json|github|gitlab] [--changed-since <git-ref>] [--explain] [--self]
+  ddd-ts-kit check [paths...] [--rule <id>]... [--format text|json|github|gitlab] [--changed-since <git-ref>] [--explain]
   ddd-ts-kit check --baseline write|prune
-  ddd-ts-kit check --clean-only <dir>... [--rule <id>]... [--format text|json|github]
+  ddd-ts-kit check --clean-only <dir>... [--rule <id>]... [--format text|json|github|gitlab] [--explain]
   ddd-ts-kit check --commit-size [--staged] [--strict]
+  ddd-ts-kit check --self
   ddd-ts-kit check-file <path> [--content-from <file>] [--rule <id>]...
   ddd-ts-kit lint [paths...] [--format <eslint formatter>] [--fix] [--no-cache] [--ignore-pattern <pattern>]...
   ddd-ts-kit rules

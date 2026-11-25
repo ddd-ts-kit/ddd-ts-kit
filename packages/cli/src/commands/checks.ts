@@ -11,9 +11,9 @@ import { commitSizeCommand } from './commit-size';
  * directories judged outside any project, the size of the commit in progress, and the fixtures of
  * the rules replayed.
  */
-export const checksCommand = withModes(checkCommand, {
-  baseline: baselineCommand,
-  'clean-only': cleanOnlyCommand,
-  'commit-size': commitSizeCommand,
-  self: selfCheckCommand,
-});
+export const checksCommand = withModes(checkCommand, [
+  baselineCommand,
+  cleanOnlyCommand,
+  commitSizeCommand,
+  selfCheckCommand,
+]);

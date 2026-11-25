@@ -105,6 +105,31 @@ describe('rules and explain', () => {
   });
 });
 
+describe('the outputs of check --clean-only', () => {
+  it('prints as its usage says: the four formats of check, and the reasons under --explain', () => {
+    const root = tempDir('clean-outputs');
+
+    write(
+      root,
+      'src/a.ts',
+      'export function unbraced(flag: boolean): number {\n  if (flag) return 1;\n\n  return 2;\n}\n',
+    );
+
+    const gitlab = cli(root, 'check', '--clean-only', 'src', '--format', 'gitlab');
+    const explained = cli(root, 'check', '--clean-only', 'src', '--explain');
+
+    expect(gitlab.code).toBe(1);
+
+    expect(JSON.parse(gitlab.stdout)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ check_name: 'clean/braces' })]),
+    );
+
+    expect(explained.code).toBe(1);
+    expect(explained.stdout).toContain('clean/braces');
+    expect(explained.stdout.length).toBeGreaterThan(cli(root, 'check', '--clean-only', 'src').stdout.length);
+  });
+});
+
 describe('check --clean-only', () => {
   const found = (result: CliResult): string[] =>
     checkJsonOf(result).violations.map((violation) => `${violation.file} ${violation.ruleId}`);
@@ -145,7 +170,11 @@ describe('check --clean-only', () => {
     const rule = cli(root, 'check', '--clean-only', '--rule', 'layer/domain-purity', '--rule', 'clean/braces', 'src');
 
     expect(since.code).toBe(2);
-    expect(failure(since).message).toContain("Unknown option '--changed-since'.");
+
+    expect(failure(since).message).toBe(
+      'check --clean-only does not take --changed-since: it judges the directories given as they are, outside a project, its history and its baseline.',
+    );
+
     expect(failure(since).fix).toContain('ddd-ts-kit check --clean-only <dir>...');
     expect(rule.code).toBe(2);
     expect(rule.stderr).toContain('--clean-only does not run layer/domain-purity.');

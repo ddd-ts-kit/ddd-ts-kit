@@ -20,6 +20,8 @@ export function defineToolCommand(spec: ToolCommandSpec): Command {
     spec: {
       name: spec.name,
       alias: undefined,
+      mode: undefined,
+      modes: [],
       options: {},
       usage: [`ddd-ts-kit ${spec.name} ${spec.positionals}`],
       passesArgumentsOn: true,

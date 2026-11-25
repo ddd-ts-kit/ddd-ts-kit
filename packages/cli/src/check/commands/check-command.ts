@@ -26,14 +26,11 @@ const CHANGED_SINCE_FIX =
 /** `check [paths...]`: the architecture rules on the project, or on the paths given, the errors its baseline records left quiet. */
 export const checkCommand = defineCommand({
   name: 'check',
-  // Written by hand: it names `--self`, which chooses another command of `check`.
-  usage: [
-    'ddd-ts-kit check [paths...] [--rule <id>]... [--format text|json|github|gitlab] [--changed-since <git-ref>] [--explain] [--self]',
-  ],
+  positionals: '[paths...]',
   options: {
-    rule: { type: 'string', multiple: true },
+    rule: { type: 'string', value: '<id>', multiple: true },
     format: { type: 'string', values: CHECK_FORMATS },
-    'changed-since': { type: 'string' },
+    'changed-since': { type: 'string', value: '<git-ref>' },
     explain: { type: 'boolean' },
   },
   run(args, io) {

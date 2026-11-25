@@ -16,6 +16,8 @@ export interface CommandSpec<O extends OptionSpecs> {
   readonly alias?: string;
   /** Its positional arguments, as the usage writes them: `<context>`, `[paths...]`. */
   readonly positionals?: string;
+  /** Said by a command that is one mode of another (`check --baseline`): what chooses it, and why it stands alone. */
+  readonly mode?: Mode<keyof O & string>;
   /** Its own options; `--json`, `--cwd` and `--help` are those of every command. */
   readonly options: O;
   /**
@@ -45,10 +47,24 @@ export interface CommandSpec<O extends OptionSpecs> {
   run(args: ArgumentsOf<O>, io: Io): number;
 }
 
+/** What makes a command one mode of another, under the name of that other. */
+interface Mode<Option extends string = string> {
+  /** The option of the mode that chooses it: `check --baseline write` is the mode `baseline` of `check`. */
+  readonly chosenBy: Option;
+  /**
+   * Why it takes no option of the other modes, as the words that end the refusal of one: "check
+   * --baseline does not take --rule: it judges every rule on every file."
+   */
+  readonly because: string;
+}
+
 /** What a command declares of itself, as the entry, the help and the specs read it. */
-interface Declaration {
+export interface Declaration {
   readonly name: string;
   readonly alias: string | undefined;
+  readonly mode: Mode | undefined;
+  /** The command itself and its modes, each as it declares itself, when it has modes; none otherwise. */
+  readonly modes: readonly Declaration[];
   readonly options: OptionSpecs;
   /** Its lines of the usage, as the help prints them under `Usage`. */
   readonly usage: readonly string[];
@@ -71,7 +87,7 @@ export interface Command {
  * says it takes. An argument it refuses is answered with its usage.
  */
 export function defineCommand<const O extends OptionSpecs>(spec: CommandSpec<O>): Command {
-  const { name, alias, options, takesTheLock } = spec;
+  const { name, alias, mode, options, takesTheLock } = spec;
   const usage = spec.usage ?? [usageLine(spec)];
 
   const command = (argv: readonly string[], io: Io): number => {
@@ -83,13 +99,11 @@ export function defineCommand<const O extends OptionSpecs>(spec: CommandSpec<O>)
         ? run()
         : holdingTheLock({ name, args }, takesTheLock === true ? {} : takesTheLock, run);
     } catch (error) {
-      throw error instanceof ArgumentsError && error.usage === undefined && usage.length > 0
-        ? error.answeredWith(usage)
-        : error;
+      throw error instanceof ArgumentsError && error.usage === undefined ? error.answeredWith(usage) : error;
     }
   };
 
-  return Object.assign(command, { spec: { name, alias, options, usage, passesArgumentsOn: false } });
+  return Object.assign(command, { spec: { name, alias, mode, modes: [], options, usage, passesArgumentsOn: false } });
 }
 
 function argumentsOf<O extends OptionSpecs>(spec: CommandSpec<O>, argv: readonly string[]): ArgumentsOf<O> {

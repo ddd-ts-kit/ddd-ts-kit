@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { COMMANDS } from '../src/commands';
+import type { Declaration } from '../src/commands/command';
 import { usageLine } from '../src/commands/usage-line';
 import { COMMON_FLAGS } from '../src/generate/generate-options';
 import { cli, tempDir } from './helpers';
@@ -8,6 +9,44 @@ import { cli, tempDir } from './helpers';
 const OF_EVERY_COMMAND = ['json', 'cwd', 'help'];
 
 const DECLARED = COMMANDS.map((command) => command.spec);
+
+/** Every command and every mode as it declares itself alone: a command with modes is read mode by mode. */
+const EACH_ALONE = DECLARED.flatMap((spec) => (spec.modes.length === 0 ? [spec] : spec.modes));
+
+function label({ name, mode }: Declaration): string {
+  return mode === undefined ? name : `${name} --${mode.chosenBy}`;
+}
+
+/**
+ * Each option a command or one of its modes does not declare and another of its modes does, with
+ * the words that ask for it: the option that chooses the mode, then the refused one. An option that
+ * chooses a mode is not refused by the command itself: it runs that mode.
+ */
+const REFUSED_BESIDE = DECLARED.flatMap(({ modes }) =>
+  modes.flatMap((asked) =>
+    [...new Map(modes.flatMap((owner) => Object.keys(owner.options).map((option) => [option, owner] as const)))]
+      .filter(([option]) => !Object.hasOwn(asked.options, option))
+      .filter(([option]) => asked.mode !== undefined || modes.every(({ mode }) => mode?.chosenBy !== option))
+      .map(([option, owner]) => ({
+        called: label(asked),
+        option,
+        asked,
+        owner,
+        argv: [asked.name, ...wordsOf(asked, asked.mode?.chosenBy), ...wordsOf(owner, option)],
+      })),
+  ),
+);
+
+/** How a command line writes an option of a declaration, with a value it takes. */
+function wordsOf({ options }: Declaration, option: string | undefined): string[] {
+  const spec = option === undefined ? undefined : options[option];
+
+  if (spec === undefined) {
+    return [];
+  }
+
+  return spec.type === 'boolean' ? [`--${option}`] : [`--${option}`, spec.values?.[0] ?? 'main'];
+}
 
 /** The options the usage lines name, each once, without its dashes. */
 function optionsIn(usage: readonly string[]): string[] {
@@ -24,15 +63,46 @@ describe('the commands of the CLI, as they declare themselves', () => {
     expect(names.filter((name, index) => names.indexOf(name) !== index)).toEqual([]);
   });
 
-  it.each(DECLARED.map((spec) => [spec.name, spec] as const))(
+  it.each(EACH_ALONE.map((spec) => [label(spec), spec] as const))(
     '%s names in its usage exactly the options it declares',
-    (name, spec) => {
+    (_, spec) => {
       // `generate` names the flags every kind takes; each kind names its own (`generate <kind> --help`).
-      const declared = name === 'generate' ? COMMON_FLAGS : Object.keys(spec.options);
+      const declared = spec.name === 'generate' ? COMMON_FLAGS : Object.keys(spec.options);
 
       expect(optionsIn(spec.usage)).toEqual([...declared].sort());
     },
   );
+
+  it('have, among those with modes, each mode chosen by an option it declares and no other mode does', () => {
+    const modes = DECLARED.flatMap((spec) => spec.modes.flatMap(({ mode }) => (mode === undefined ? [] : [mode])));
+
+    expect(modes.map(({ chosenBy }) => chosenBy)).toEqual(['baseline', 'clean-only', 'commit-size', 'self']);
+
+    for (const { modes: together } of DECLARED) {
+      for (const { mode, options } of together) {
+        const others = together.filter((other) => other.mode !== mode);
+
+        expect(mode === undefined || Object.hasOwn(options, mode.chosenBy)).toBe(true);
+        expect(others.filter((other) => mode !== undefined && Object.hasOwn(other.options, mode.chosenBy))).toEqual([]);
+      }
+    }
+  });
+
+  it.each(REFUSED_BESIDE)('$called refuses --$option, which another of its modes declares', (refusal) => {
+    const { asked, option, owner } = refusal;
+    const refused = cli(tempDir('declared-modes-each'), ...refusal.argv);
+
+    const message =
+      asked.mode === undefined
+        ? `--${option} is an option of ${label(owner)}.`
+        : `${label(asked)} does not take --${option}: ${asked.mode.because}.`;
+
+    expect(refused.code).toBe(2);
+
+    expect(refused.stderr).toBe(
+      `error: ${message}\n  fix: ${(asked.mode === undefined ? owner : asked).usage.join('')}`,
+    );
+  });
 });
 
 describe('the usage of a command that does not write it by hand', () => {
@@ -98,30 +168,52 @@ describe('an option that names its values', () => {
 
 describe('the modes of check', () => {
   it.each([
-    [['--baseline', 'write', '--rule', 'clean/braces'], 'ddd-ts-kit check --baseline write|prune'],
-    [['--commit-size', '--explain'], 'ddd-ts-kit check --commit-size [--staged] [--strict]'],
     [
-      ['--clean-only', '--changed-since', 'main'],
-      'ddd-ts-kit check --clean-only <dir>... [--rule <id>]... [--format text|json|github]',
+      ['--baseline', 'write', '--rule', 'clean/braces'],
+      'check --baseline does not take --rule: it judges every rule on every file.',
+      'ddd-ts-kit check --baseline write|prune',
     ],
-  ])('answer an option of another mode with their own usage: %j', (argv, usage) => {
+    [
+      ['--baseline', 'prune', '--clean-only'],
+      'check --baseline does not take --clean-only: it judges every rule on every file.',
+      'ddd-ts-kit check --baseline write|prune',
+    ],
+    [
+      ['--clean-only', '--changed-since=main'],
+      'check --clean-only does not take --changed-since: it judges the directories given as they are, outside a project, its history and its baseline.',
+      'ddd-ts-kit check --clean-only <dir>... [--rule <id>]... [--format text|json|github|gitlab] [--explain]',
+    ],
+    [
+      ['--commit-size', '--explain'],
+      'check --commit-size does not take --explain: it measures what is about to be committed and runs no rule.',
+      'ddd-ts-kit check --commit-size [--staged] [--strict]',
+    ],
+    [
+      ['--self', '--format', 'github'],
+      'check --self does not take --format: it replays the fixtures shipped with the CLI, whatever the project.',
+      'ddd-ts-kit check --self',
+    ],
+    [
+      ['--staged'],
+      '--staged is an option of check --commit-size.',
+      'ddd-ts-kit check --commit-size [--staged] [--strict]',
+    ],
+  ])('refuse an option of another mode with their reason and their usage: %j', (argv, message, usage) => {
     const refused = cli(tempDir('declared-modes'), 'check', ...argv);
 
     expect(refused.code).toBe(2);
-    expect(refused.stderr.split('\n').slice(1)).toEqual([`  fix: ${usage}`]);
+    expect(refused.stderr).toBe(`error: ${message}\n  fix: ${usage}`);
   });
 
-  it('answer with the usage of them all an option none of them takes, and one refused beside --self', () => {
-    const root = tempDir('declared-modes-whole');
+  it('leave to the parser an option none of them knows: a mode answers with its usage, check itself with all of them', () => {
+    const root = tempDir('declared-modes-unknown');
+    const ofTheMode = cli(root, 'check', '--baseline', 'write', '--nope').stderr.split('\n');
+    const ofThemAll = cli(root, 'check', '--nope').stderr.split('\n');
 
-    for (const argv of [['--staged'], ['--self', '--rule', 'clean/braces']]) {
-      const fix = cli(root, 'check', ...argv)
-        .stderr.split('\n')
-        .slice(1);
-
-      expect(fix).toHaveLength(4);
-      expect(fix[0]).toContain('fix: ddd-ts-kit check [paths...]');
-      expect(fix[3]).toContain('ddd-ts-kit check --commit-size [--staged] [--strict]');
-    }
+    expect(ofTheMode[0]).toContain("error: Unknown option '--nope'.");
+    expect(ofTheMode.slice(1)).toEqual(['  fix: ddd-ts-kit check --baseline write|prune']);
+    expect(ofThemAll[0]).toContain("error: Unknown option '--nope'.");
+    expect(ofThemAll).toHaveLength(6);
+    expect(ofThemAll.at(-1)).toBe('       ddd-ts-kit check --self');
   });
 });

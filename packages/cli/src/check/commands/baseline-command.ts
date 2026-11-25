@@ -1,4 +1,4 @@
-import { CliError } from '../../cli-error';
+import { ArgumentsError } from '../../commands/arguments-error';
 import { defineCommand } from '../../commands/command';
 import type { Io } from '../../commands/io';
 import { baselineFollowingMoves } from '../baseline/baseline-following-moves';
@@ -10,19 +10,21 @@ import { writeBaseline } from '../baseline/write-baseline';
 import { runCheck } from '../engine/run-check';
 import { loadProject } from '../project/load-project';
 
+const BASELINE = { chosenBy: 'baseline', because: 'it judges every rule on every file' } as const;
+
 /**
  * `--baseline write` records the errors of every rule on every file; `--baseline prune` lowers the
  * recorded counts to what the project still has, and never raises one.
  */
 export const baselineCommand = defineCommand({
   name: 'check',
-  usage: ['ddd-ts-kit check --baseline write|prune'],
+  mode: BASELINE,
   options: { baseline: { type: 'string', values: ['write', 'prune'] } },
   run(args, io) {
     const mode = args.text('baseline') ?? 'write';
 
     if (args.positionals.length > 0) {
-      throw new CliError(`--baseline ${mode} judges every rule on every file.`, 'Run it without a path.');
+      throw new ArgumentsError(`check --baseline does not take a path: ${BASELINE.because}.`, 'Run it without a path.');
     }
 
     return rewriteBaseline(args.projectRoot, mode, io);

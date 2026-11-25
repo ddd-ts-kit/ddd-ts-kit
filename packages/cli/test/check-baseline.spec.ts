@@ -80,8 +80,11 @@ describe('check --baseline', () => {
     const refused = cli(root, 'check', '--baseline', 'write', 'src');
 
     expect(refused.code).toBe(2);
-    expect(refused.stderr).toContain('--baseline write judges every rule on every file.');
-    expect(refused.stderr).toContain('fix: Run it without a path.');
+
+    expect(refused.stderr).toBe(
+      'error: check --baseline does not take a path: it judges every rule on every file.\n  fix: ddd-ts-kit check --baseline write|prune',
+    );
+
     expect(cli(root, 'check', '--baseline', 'keep').stderr).toContain('fix: Use one of: write, prune.');
   });
 
@@ -91,8 +94,10 @@ describe('check --baseline', () => {
       const refused = cli(legacyProject('baseline-other-mode'), 'check', '--baseline', 'prune', option);
 
       expect(refused.code).toBe(2);
-      expect(refused.stderr).toContain(`error: Unknown option '${option.split('=')[0] ?? ''}'.`);
-      expect(refused.stderr).toContain('ddd-ts-kit check --baseline write|prune');
+
+      expect(refused.stderr).toBe(
+        `error: check --baseline does not take ${option.split('=')[0] ?? ''}: it judges every rule on every file.\n  fix: ddd-ts-kit check --baseline write|prune`,
+      );
     },
   );
 });

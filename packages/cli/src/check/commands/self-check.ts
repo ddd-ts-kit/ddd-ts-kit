@@ -5,8 +5,7 @@ import { stdoutJson } from '../../json/stdout-json';
 /** `check --self`: replays the rule fixtures shipped with the CLI and exits 0 when every rule behaves as expected. */
 export const selfCheckCommand = defineCommand({
   name: 'check',
-  // No line of its own: the usage of the check of a project names `--self`.
-  usage: [],
+  mode: { chosenBy: 'self', because: 'it replays the fixtures shipped with the CLI, whatever the project' },
   options: { self: { type: 'boolean' } },
   run(args, io) {
     const outcomes = runSelfCheck();
