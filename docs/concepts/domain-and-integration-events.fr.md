@@ -1,5 +1,5 @@
 [English](domain-and-integration-events.md) · **Français**
-<!-- translation-of: domain-and-integration-events.md sha256:97ce9c0273ae0390 -->
+<!-- translation-of: domain-and-integration-events.md sha256:9db648c7629f9fa4 -->
 
 # Événements du domaine et événements d'intégration
 
@@ -691,6 +691,12 @@ défait l'autonomie que l'événement devait apporter.
 
 ## Ce que fournit le kit
 
+- Un événement du domaine a un rang et une identité qu'il n'écrit pas lui-même. L'agrégat qui
+  l'enregistre lui donne son rang dans son histoire, à partir de 1 (`rankOf(event)`), et
+  `eventIdOf(event)` vaut `<name>:<aggregateId>:<rang>` : rien n'est tiré, si bien que l'événement
+  qu'une sauvegarde distribue et le même événement relu depuis un flux n'en font qu'un.
+  `stampOf(event)` porte le rang comme version de la ligne d'un modèle de lecture, ce qui ordonne
+  les événements qu'une commande enregistre au même instant.
 - `defineIntegrationEvent` donne le type de la charge utile, valide ce qui est publié et ce qui
   est consommé, et alimente le catalogue et le document AsyncAPI générés
   (`events/defined-in-published-language`).

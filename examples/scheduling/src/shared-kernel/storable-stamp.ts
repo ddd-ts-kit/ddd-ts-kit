@@ -7,9 +7,10 @@ const RANKS = 10;
 /**
  * The stamp of a fact as a read model can keep it. The SQL store reads a stamp back without its
  * milliseconds and then never finds the row it wants to replace: the second fact of a key was
- * refused for ever. The instant is therefore given to the second, and the order is carried by a
- * version made of the millisecond of the fact, then of a rank from 0 to 9 the caller gives to
- * two facts of one millisecond (0 when it has no such order).
+ * refused for ever. The instant is therefore given to the second, and the order is carried by the
+ * version: the one the stamp has (a domain event is ranked by its aggregate), else one made of the
+ * millisecond of the fact, then of a rank from 0 to 9 the caller gives to two facts of one
+ * millisecond (0 when it has no such order).
  */
 export function storableStamp(stamp: EventStamp, rank = 0): EventStamp {
   const instant = stamp.occurredAt.getTime();
@@ -17,6 +18,6 @@ export function storableStamp(stamp: EventStamp, rank = 0): EventStamp {
   return {
     eventId: stamp.eventId,
     occurredAt: new Date(Math.floor(instant / SECOND) * SECOND),
-    version: instant * RANKS + Math.min(Math.max(Math.trunc(rank), 0), RANKS - 1),
+    version: stamp.version ?? instant * RANKS + Math.min(Math.max(Math.trunc(rank), 0), RANKS - 1),
   };
 }

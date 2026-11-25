@@ -10,6 +10,7 @@ import {
   InMemorySubjectKeyStore,
   InMemoryUnitOfWork,
   PersonalDataCipher,
+  ranked,
   scoped,
 } from '@ddd-ts-kit/kernel';
 import { applyingProjection } from '@ddd-ts-kit/kernel/declarations';
@@ -47,10 +48,10 @@ describe('AttendanceHistoryProjection', () => {
     const history = new FakeAttendanceHistory();
     const projection = new AttendanceHistoryProjection(history);
 
-    const created = new AttendanceRecordCreated('practice-1.patient-1', at, {
-      practiceId: 'practice-1',
-      patientId: 'patient-1',
-    });
+    const created = ranked(
+      new AttendanceRecordCreated('practice-1.patient-1', at, { practiceId: 'practice-1', patientId: 'patient-1' }),
+      1,
+    );
 
     expect(await projection.created(created)).toBe('applied');
     expect(await projection.created(created)).toBe('stale');

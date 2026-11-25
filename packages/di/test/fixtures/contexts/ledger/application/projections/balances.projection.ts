@@ -1,4 +1,4 @@
-import { stampOf, storedStampOf, type ReadModelWrite } from '@ddd-ts-kit/kernel';
+import { stampOf, type ReadModelWrite } from '@ddd-ts-kit/kernel';
 import { On, Projection } from '@ddd-ts-kit/kernel/declarations';
 import { MoneyMoved } from '../../domain/events/money-moved.event';
 import { Balances } from '../ports/balances.port';
@@ -9,7 +9,7 @@ export class BalancesProjection {
 
   @On(MoneyMoved)
   async moved(event: MoneyMoved): Promise<ReadModelWrite> {
-    return this.balances.upsertIfNewer(event.aggregateId, storedStampOf(event) ?? stampOf(event), (row) => ({
+    return this.balances.upsertIfNewer(event.aggregateId, stampOf(event), (row) => ({
       accountId: event.aggregateId,
       cents: (row?.cents ?? 0) + event.cents,
     }));

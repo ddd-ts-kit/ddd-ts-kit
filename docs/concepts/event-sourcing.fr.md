@@ -1,5 +1,5 @@
 [English](event-sourcing.md) · **Français**
-<!-- translation-of: event-sourcing.md sha256:88099c791d20ad99 -->
+<!-- translation-of: event-sourcing.md sha256:6a60d9807254be10 -->
 
 # Event sourcing, par agrégat
 
@@ -543,8 +543,9 @@ sous son nom, qui lit le store après son point de reprise, applique un lot et a
 reprise dans une même unité de travail. Une projection ajoutée plus tard commence à la position
 zéro et est donc remplie à partir de tout l'historique. `EventStoreProjectionRebuild` rejoue le
 store dans une copie vide du modèle de lecture et l'échange contre l'ancien, sans arrêter
-l'abonnement. Chaque ligne est estampillée de la version de son flux (`storedStampOf`), si bien
-qu'un événement appliqué deux fois ne change rien.
+l'abonnement. Chaque ligne est estampillée du rang de son événement dans son flux (`stampOf`,
+l'estampille que porte le même événement quand sa sauvegarde le distribue), si bien qu'un
+événement appliqué deux fois ne change rien.
 
 Le modèle de lecture de l'historique de l'exemple est une telle projection (un extrait) :
 
@@ -555,8 +556,8 @@ export class AttendanceHistoryProjection {
 
   @On(AttendanceRecordNoShowNoted)
   async noShowNoted(event: AttendanceRecordNoShowNoted): Promise<ReadModelWrite> {
-    const stamp = storedStampOf(event) ?? stampOf(event); // la version du flux : appliqué deux fois, ne change rien
-    // ... insère ou met à jour l'entrée `${event.aggregateId}#${stamp.version}` si elle est plus récente
+    const stamp = stampOf(event); // sa version est le rang dans le flux : appliqué deux fois, ne change rien
+    // ... insère ou met à jour l'entrée `${event.aggregateId}#${rankOf(event)}` si elle est plus récente
   }
 }
 ```

@@ -672,6 +672,11 @@ calling back defeats the autonomy the event was meant to give.
 
 ## What the kit provides
 
+- A domain event has a rank and an identity it does not write itself. The aggregate that records
+  it gives it its rank in its history, from 1 (`rankOf(event)`), and `eventIdOf(event)` is
+  `<name>:<aggregateId>:<rank>`: nothing is drawn, so the event a save dispatches and the same
+  event read back from a stream are one. `stampOf(event)` carries the rank as the version of the
+  row of a read model, which orders the events one command records at the same instant.
 - `defineIntegrationEvent` gives the payload type, validates what is published and what is
   consumed, and feeds the generated catalog and AsyncAPI document
   (`events/defined-in-published-language`).

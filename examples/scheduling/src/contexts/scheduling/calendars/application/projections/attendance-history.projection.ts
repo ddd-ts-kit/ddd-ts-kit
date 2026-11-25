@@ -1,4 +1,4 @@
-import { stampOf, storedStampOf, type DomainEvent, type ReadModelWrite } from '@ddd-ts-kit/kernel';
+import { rankOf, stampOf, type DomainEvent, type ReadModelWrite } from '@ddd-ts-kit/kernel';
 import { On, Projection } from '@ddd-ts-kit/kernel/declarations';
 import { AttendanceRecordCancellationNoted } from '@/contexts/scheduling/calendars/domain/events/attendance-record-cancellation-noted.event';
 import { AttendanceRecordCreated } from '@/contexts/scheduling/calendars/domain/events/attendance-record-created.event';
@@ -14,8 +14,8 @@ type Fact = Omit<AttendanceEntry, 'id' | 'recordId' | 'version' | 'notedAt'>;
 /**
  * Keeps the history of each attendance record, one entry per fact, from the event store: a
  * catch-up subscription under its name applies it, and it is rebuilt from position zero by
- * replaying the store. Each entry is stamped with the version of its stream, so an event applied
- * twice changes nothing.
+ * replaying the store. Each entry is stamped with the rank of its event in its record, so an event
+ * applied twice changes nothing.
  */
 @Projection('scheduling.attendance-history', { feed: 'event-store' })
 export class AttendanceHistoryProjection {
@@ -41,11 +41,10 @@ export class AttendanceHistoryProjection {
   }
 
   private noted(event: DomainEvent, fact: Fact): Promise<ReadModelWrite> {
-    const stamp = storedStampOf(event) ?? stampOf(event);
-    const version = stamp.version ?? 0;
+    const version = rankOf(event);
     const id = `${event.aggregateId}#${version}`;
 
-    return this.history.upsertIfNewer(id, stamp, () => ({
+    return this.history.upsertIfNewer(id, stampOf(event), () => ({
       id,
       recordId: event.aggregateId,
       version,

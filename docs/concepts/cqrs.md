@@ -359,8 +359,13 @@ which `upsertIfNewer` with a `next` answering `undefined` could not.
 - **Count it.** `projection_events_total` has the result `missing`: a count that grows is a
   change that arrived before its creation, or after a removal.
 
-**One kind of stamp per key.** `stampOf(event)` orders by the instant of the event, then by its
-id; `stampOf(event, version)` orders by a version the upstream counts per key. The order is total
+**One kind of stamp per key.** `stampOf(event)` of an integration event orders by the instant of
+the event, then by its id; `stampOf(event, version)` orders by a version the upstream counts per
+key. `stampOf(event)` of a domain event always carries a version, the rank the aggregate gave the
+event when it recorded it: the events of one aggregate are applied in its order, two events of
+one command and of one instant included. That version is the history of one aggregate, so it
+orders a key only that aggregate writes; a key that the domain events of several aggregates write
+is stamped `{ eventId: eventIdOf(event), occurredAt: event.occurredAt }`. The order is total
 within each kind: the latest of a set of events is the same whatever the order of their
 deliveries. When one stamp has a version and the other has none, the instants decide, and that is
 not an order: with A (version 1, 12:09), B (no version, 12:05) and C (version 2, 12:01), C is

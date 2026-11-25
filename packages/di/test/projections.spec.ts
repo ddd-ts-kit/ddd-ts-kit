@@ -9,6 +9,7 @@ import {
   IntegrationEventSubscriber,
   InMemoryReadModelStore,
   Criteria,
+  ranked,
   scoped,
   type IntegrationEvent,
   type ReadModelStore,
@@ -82,7 +83,7 @@ describe('a declared projection', () => {
 
     await app
       .get(DomainEventDispatcher)
-      .dispatch([new CustomerForgotten('customer-1', new Date('2026-10-10T12:00:05Z'))]);
+      .dispatch([ranked(new CustomerForgotten('customer-1', new Date('2026-10-10T12:00:05Z')), 2)]);
 
     await app.eventBus.publish([placed('evt-2', 2)]);
 
