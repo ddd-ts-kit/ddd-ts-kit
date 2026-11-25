@@ -167,6 +167,15 @@ restarted a desktop. Two things bound them:
   can move it.
 - A new template compiles as generated and carries `TODO(domain)` markers only where business
   knowledge is needed.
+- A kind of `generate` is one declaration in `packages/cli/src/generate/kinds/`, listed in
+  `kinds.ts`. A kind that writes in a context is `defineKind({ name, summary, scope, positionals,
+  options, shared, writesInModules, run })`: `options` are declared as a command declares its own
+  (`TERM` when its names are held to the glossary), `shared` says what it writes outside its context
+  and when, and `run(scope, request)` gets the context opened and the rows of `--term` learnt. One
+  concept of the model its templates say whole is a `conceptKind` (`entity-kind.ts`). Its usage,
+  the flags it refuses, `generate <kind> --help` and `generate --help --json` are written from the
+  declaration; `shownOptions` writes its flags by hand only for forms that exclude each other or a
+  flag it requires. A kind of the project or of a new context (`adr`, `context`) is a plain `Kind`.
 - Runtime packages keep third-party libraries behind optional peer dependencies and subpath
   entries. `@ddd-ts-kit/kernel` and the CLI have no runtime dependency.
 - Skills stay short: they tell an agent what to run and what to decide, and point to the
