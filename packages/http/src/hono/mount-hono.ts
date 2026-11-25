@@ -2,9 +2,9 @@ import { Readable } from 'node:stream';
 import type { Context, Hono } from 'hono';
 import { assertCachedRoutes } from '../pipeline/assert-cached-routes';
 import { executeRoute } from '../pipeline/execute-route';
+import { wholeOf } from '../pipeline/whole-of';
 import type { RawRequest } from '../pipeline/raw-request';
 import type { RouteResponse } from '../pipeline/route-response';
-import { serializeBody } from '../pipeline/serialize-body';
 import { assertServed } from '../representation/assert-served';
 import { assertUniqueRoutes } from '../route/assert-unique-routes';
 import type { Route } from '../route/route';
@@ -81,17 +81,10 @@ function common(context: Context): Omit<RawRequest, 'body'> {
   return { params: context.req.param(), query: queryOf(context), headers, raw };
 }
 
-function responseOf(result: RouteResponse): Response {
-  return new Response(sentOf(result), { status: result.status, headers: result.headers });
-}
+function responseOf({ status, headers, payload }: RouteResponse): Response {
+  const sent = payload.kind === 'stream' ? Readable.toWeb(payload.stream) : (wholeOf(payload) ?? null);
 
-/** A file as it is, a streamed list as a stream of its chunks, anything else serialized. */
-function sentOf(result: RouteResponse): ReadableStream | string | Uint8Array | null {
-  if (result.body instanceof Readable) {
-    return Readable.toWeb(result.body);
-  }
-
-  return result.stream === undefined ? (serializeBody(result) ?? null) : Readable.toWeb(Readable.from(result.stream));
+  return new Response(sent, { status, headers });
 }
 
 /** A repeated key keeps its values as a list, a single one is a string: what Express and Fastify answer. */

@@ -4,7 +4,7 @@ import express, { type IRouter, type Request, type RequestHandler, type Response
 import type { ExecuteOptions } from '../pipeline/execute-options';
 import { assertCachedRoutes } from '../pipeline/assert-cached-routes';
 import { executeRoute } from '../pipeline/execute-route';
-import { serializeBody } from '../pipeline/serialize-body';
+import { wholeOf } from '../pipeline/whole-of';
 import { assertServed } from '../representation/assert-served';
 import { assertUniqueRoutes } from '../route/assert-unique-routes';
 import type { HttpMethod } from '../route/http-method';
@@ -61,24 +61,19 @@ function handlerOf(route: Route, options: ExpressMountOptions): ExpressHandler {
     // A parser reads an empty body as `{}`: a request that declares no bytes has no body, as on the other frameworks.
     const body: unknown = headers['content-length'] === '0' ? undefined : request.body;
 
-    const result = await executeRoute(
-      route,
-      { params, query, headers, body, raw: request, stream: streamOf(request) },
-      options,
-    );
+    const {
+      status,
+      headers: answered,
+      payload,
+    } = await executeRoute(route, { params, query, headers, body, raw: request, stream: streamOf(request) }, options);
 
-    response.status(result.status);
+    response.status(status).set(answered);
 
-    for (const [name, value] of Object.entries(result.headers)) {
-      response.setHeader(name, value);
-    }
-
-    if (result.body instanceof Readable) {
-      await pipeline(result.body, response).catch(() => response.destroy());
-    } else if (result.stream === undefined) {
-      response.end(serializeBody(result));
+    if (payload.kind === 'stream') {
+      // A stream that fails once the status is sent can only cut the response short.
+      await pipeline(payload.stream, response).catch(() => response.destroy());
     } else {
-      await pipeline(Readable.from(result.stream), response).catch(() => response.destroy());
+      response.end(wholeOf(payload));
     }
   };
 }

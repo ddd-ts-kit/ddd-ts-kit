@@ -1,9 +1,7 @@
-import { Readable } from 'node:stream';
 import type { FastifyInstance } from 'fastify';
 import { assertCachedRoutes } from '../pipeline/assert-cached-routes';
 import { executeRoute } from '../pipeline/execute-route';
-import type { RouteResponse } from '../pipeline/route-response';
-import { serializeBody } from '../pipeline/serialize-body';
+import { wholeOf } from '../pipeline/whole-of';
 import { assertServed } from '../representation/assert-served';
 import { assertUniqueRoutes } from '../route/assert-unique-routes';
 import type { Route } from '../route/route';
@@ -92,19 +90,13 @@ function register(instance: FastifyInstance, routes: readonly Route[], options: 
       handler: async (request, reply) => {
         const { params, query, headers, body } = request;
         const raw = { params, query, headers, body, raw: request, stream: request.raw };
-        const result = await executeRoute(route, raw, options);
+        const { status, headers: answered, payload } = await executeRoute(route, raw, options);
 
-        return reply.code(result.status).headers(result.headers).send(sentOf(result));
+        return reply
+          .code(status)
+          .headers(answered)
+          .send(payload.kind === 'stream' ? payload.stream : wholeOf(payload));
       },
     });
   }
-}
-
-/** A file as it is, a streamed list as a stream of its chunks, anything else serialized. */
-function sentOf(result: RouteResponse): Readable | string | Uint8Array | undefined {
-  if (result.body instanceof Readable) {
-    return result.body;
-  }
-
-  return result.stream === undefined ? serializeBody(result) : Readable.from(result.stream);
 }

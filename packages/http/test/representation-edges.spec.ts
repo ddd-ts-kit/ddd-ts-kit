@@ -8,6 +8,7 @@ import {
   executeRoute,
   streamSchemaOf,
   type RawRequest,
+  type RouteResponse,
   type Route,
 } from '../src';
 import { AsyncLocalStorageExecutionScope } from '@ddd-ts-kit/kernel';
@@ -29,6 +30,11 @@ async function* items<T>(...values: T[]): AsyncIterable<T> {
     await Promise.resolve();
     yield value;
   }
+}
+
+/** The chunks an adapter writes for a list read as it comes, in order. */
+function chunksOf({ payload }: RouteResponse): Promise<unknown[]> {
+  return all(payload.kind === 'stream' ? payload.stream : items());
 }
 
 async function all<T>(iterable: AsyncIterable<T>): Promise<T[]> {
@@ -125,7 +131,7 @@ describe('the pipeline with representations, at its edges', () => {
 
     expect(none.status).toBe(204);
     expect(none.headers['content-type']).toBeUndefined();
-    expect(await all(empty.stream ?? items())).toEqual(['id\r\n']);
+    expect(await chunksOf(empty)).toEqual(['id\r\n']);
   });
 
   it('leaves a binary body of the handler as it is', async () => {
@@ -234,7 +240,7 @@ describe('a list streamed after its handler returned', () => {
       withPrincipal: (_principal, work) => work(),
     });
 
-    expect(await all(response.stream ?? items())).toEqual(['[', '{"id":"c-42"}', ',{"id":"c-42"}', ']']);
+    expect(await chunksOf(response)).toEqual(['[', '{"id":"c-42"}', ',{"id":"c-42"}', ']']);
   });
 
   it('closes what it reads when the reader stops early', async () => {

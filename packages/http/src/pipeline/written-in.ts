@@ -1,29 +1,32 @@
+import { Readable } from 'node:stream';
 import type { BodyShape } from '../representation/body-shape';
-import { JsonRepresentation } from '../representation/json-representation';
 import type { Chosen } from '../representation/representations';
 import { isAsyncIterable } from '../support/is-async-iterable';
 import { closingWith } from './closing-with';
+import { reportedStream } from './reported-stream';
 import type { RepresentedAnswer } from './represented-answer';
 
-const encoder = new TextEncoder();
+interface Written {
+  readonly chosen: Chosen;
+  readonly shape: BodyShape;
+  /** Told of a list that fails while its chunks are read. */
+  readonly interrupted?: (error: unknown) => void;
+}
 
 /**
- * A value in the representation chosen for it: bytes at once, or chunks for a streamed list. A
- * value answered in the JSON of the kit stays the value, which the adapter writes as JSON as it
- * always did, and which a spec calling `executeRoute` reads as it is.
+ * A value in the representation chosen for it: its text at once, or a stream of its chunks for a
+ * list read as it comes. A value the representation cannot write fails here, inside the pipeline.
  */
-export function writtenIn(value: unknown, chosen: Chosen, shape: BodyShape): RepresentedAnswer {
+export function writtenIn(value: unknown, { chosen, shape, interrupted }: Written): RepresentedAnswer {
   const headers = { 'content-type': `${chosen.mediaType}; charset=utf-8` };
-
-  if (chosen.representation instanceof JsonRepresentation && !isAsyncIterable(value)) {
-    return { headers, body: value };
-  }
-
   const written = chosen.representation.write(value, shape);
 
   if (typeof written === 'string') {
-    return { headers, body: encoder.encode(written) };
+    return { headers, payload: { kind: 'text', text: written } };
   }
 
-  return { headers, stream: isAsyncIterable(value) ? closingWith(written, value) : written };
+  const chunks = isAsyncIterable(value) ? closingWith(written, value) : written;
+  const reported = interrupted === undefined ? chunks : reportedStream(chunks, interrupted);
+
+  return { headers, payload: { kind: 'stream', stream: Readable.from(reported) } };
 }

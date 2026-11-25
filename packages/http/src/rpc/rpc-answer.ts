@@ -1,8 +1,10 @@
 import { Readable } from 'node:stream';
+import { finished } from 'node:stream/promises';
 import type { ErrorMapper } from '../error/error-mapper';
 import type { Problem } from '../error/problem';
 import { toProblem } from '../error/to-problem';
 import type { RouteResponse } from '../pipeline/route-response';
+import { isJsonContentType } from '../representation/is-json-content-type';
 import { NotAcceptableError } from '../representation/not-acceptable-error';
 import { isRecord } from '../support/is-record';
 import type { RpcRefusal } from './rpc-refusal';
@@ -28,38 +30,39 @@ export async function rpcAnswer(response: RouteResponse, protocol: RpcProtocol, 
     throw protocol.refuse(refusalOf(response));
   }
 
-  const { body } = response;
-  const streamed = (what: string): Error => protocol.refuse(streamedRefusal(what, response, mapper));
+  const { payload } = response;
+  const onlyOverHttp = (what: string): Error => protocol.refuse(streamedRefusal(what, response, mapper));
 
-  if (body instanceof Readable) {
-    body.destroy();
+  if (payload.kind === 'stream') {
+    await closed(payload.stream);
 
-    throw streamed('a file');
+    throw onlyOverHttp(response.body instanceof Readable ? 'a file' : 'a list read as it comes');
   }
 
-  if (response.stream !== undefined) {
-    await response.stream[Symbol.asyncIterator]().return?.();
-
-    throw streamed('a list read as it comes');
-  }
-
-  if (body instanceof Uint8Array) {
+  if (payload.kind === 'bytes') {
     if (!protocol.carriesBinary) {
-      throw streamed('a binary body');
+      throw onlyOverHttp('a binary body');
     }
 
-    return new Blob([body], { type: response.headers['content-type'] });
+    return new Blob([payload.bytes], { type: response.headers['content-type'] });
   }
 
-  return isJson(response) && body !== undefined ? JSON.parse(JSON.stringify(body)) : body;
+  return payload.kind === 'text' ? returned(payload.text, response) : undefined;
+}
+
+/** A file is closed, and so is the cursor of a list, whether anything was read from it or not. */
+async function closed(stream: Readable): Promise<void> {
+  stream.destroy();
+
+  await finished(stream).catch(() => undefined);
 }
 
 /**
  * A JSON body is returned as the HTTP route writes it, a date as its text: what the contract, and
  * the client generated from it, say it is, which the serializer of a protocol would otherwise keep a `Date`.
  */
-function isJson(response: RouteResponse): boolean {
-  return /[/+]json\b/.test(response.headers['content-type'] ?? '');
+function returned(text: string, response: RouteResponse): unknown {
+  return isJsonContentType(response.headers['content-type']) ? JSON.parse(text) : text;
 }
 
 /** A refusal the route answers itself, without a problem document, keeps its status and its body under the code `HTTP_<status>`. */

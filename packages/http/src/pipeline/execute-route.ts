@@ -1,4 +1,3 @@
-import { Readable } from 'node:stream';
 import type { ExecutionContext } from '@ddd-ts-kit/kernel';
 import { createErrorMapper } from '../error/create-error-mapper';
 import { toProblem } from '../error/to-problem';
@@ -9,13 +8,14 @@ import { FieldJudge } from '../field-access/field-judge';
 import { FieldTree } from '../field-access/field-tree';
 import { responseFields } from '../field-access/response-fields';
 import { visibleBody } from '../field-access/visible-body';
+import { JsonRepresentation } from '../representation/json-representation';
 import { NotAcceptableError } from '../representation/not-acceptable-error';
 import { PROBLEM_SHAPE } from '../representation/problem-shape';
+import type { Chosen } from '../representation/representations';
 import type { RequestContext } from '../route/request-context';
 import type { RouteInput } from '../route/route-input';
 import type { RouteOutput } from '../route/route-output';
 import type { Route } from '../route/route';
-import { isAsyncIterable } from '../support/is-async-iterable';
 import { resolvedTenant } from '../tenancy/resolved-tenant';
 import { guardRefusals } from '../controller/guard-refusals';
 import { admittedCaller } from './admitted-caller';
@@ -29,16 +29,14 @@ import type { ErrorContext } from './error-context';
 import type { ExecuteOptions } from './execute-options';
 import { executionOfRequest } from './execution-of-request';
 import { expectedVersionOf } from './expected-version-of';
+import { isListed } from './is-listed';
 import { iteratedWithin, type Within } from './iterated-within';
 import { negotiatedVary } from './negotiated-vary';
 import { negotiation, type Negotiation } from './negotiation';
-import { PROBLEM_CONTENT_TYPE } from './problem-content-type';
 import type { RawRequest } from './raw-request';
 import { readBody } from './read-body';
 import { receiveUpload } from './receive-upload';
-import type { RepresentedAnswer } from './represented-answer';
 import { represented } from './represented';
-import { reportedStream } from './reported-stream';
 import type { RouteResponse } from './route-response';
 import { taggedAnswer, type Tagging } from './tagged-answer';
 import { validateRequest } from './validate-request';
@@ -58,7 +56,8 @@ interface Call {
 }
 
 const defaultErrorMapper = createErrorMapper();
-const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
+/** The refusal of a request that negotiated nothing: a problem document in JSON. */
+const KIT_PROBLEM: Chosen = { mediaType: 'application/problem+json', representation: new JsonRepresentation() };
 
 export async function executeRoute(
   route: Route,
@@ -154,9 +153,7 @@ async function answered({ route, options }: Call, input: RouteInput): Promise<Ro
 
 /** A list streamed after the handler returned is still read inside the scope of the request; a file is the handler's own. */
 function streamedWithin(result: RouteOutput, within: Within): RouteOutput {
-  const listed = isAsyncIterable(result.body) && !(result.body instanceof Readable);
-
-  return listed ? { ...result, body: iteratedWithin(result.body, within) } : result;
+  return isListed(result.body) ? { ...result, body: iteratedWithin(result.body, within) } : result;
 }
 
 /** What the context of a request is made of once its caller and its tenant are known. */
@@ -226,49 +223,30 @@ function executionOf(call: Call, principal: unknown, params: unknown): Execution
 }
 
 async function answer(result: RouteOutput, call: Call): Promise<RouteResponse> {
-  const chosen = call.negotiated?.answer;
-
-  const written = reportingFailures(await represented(call.route, result, chosen), call);
-
   const kept = {
     ...cacheHeadersOf(call.route, result.status, call.options.resolveTenant?.headers),
     ...lowerCaseKeys(result.headers ?? {}),
   };
 
+  const written = await represented(call.route, result, {
+    chosen: call.negotiated?.answer,
+    ownContentType: kept['content-type'],
+    interrupted: (error) => {
+      notify(call.options, error, { ...contextOf(error, call), interrupted: true });
+    },
+  });
+
   return {
-    ...written,
     status: result.status,
     headers: {
-      ...defaultContentType(result.body),
       ...written.headers,
       ...kept,
       ...negotiatedVary(call.negotiated?.varies === true, kept['vary']),
       ...identifierHeaders(call),
     },
+    payload: written.payload,
+    ...(result.body === undefined || isListed(result.body) ? {} : { body: result.body }),
   };
-}
-
-/** A streamed list that fails after its status is told to the error hook, as a fault, before the response is cut short. */
-function reportingFailures(written: RepresentedAnswer, call: Call): RepresentedAnswer {
-  if (written.stream === undefined) {
-    return written;
-  }
-
-  const report = (error: unknown): void => {
-    notify(call.options, error, { ...contextOf(error, call), interrupted: true });
-  };
-
-  return { ...written, stream: reportedStream(written.stream, report) };
-}
-
-function defaultContentType(body: unknown): Record<string, string> {
-  if (body === undefined) {
-    return {};
-  }
-
-  const binary = body instanceof Uint8Array || body instanceof Readable;
-
-  return { 'content-type': binary ? 'application/octet-stream' : JSON_CONTENT_TYPE };
 }
 
 function lowerCaseKeys(headers: Readonly<Record<string, string>>): Record<string, string> {
@@ -304,16 +282,11 @@ function contextOf(error: unknown, call: Call): ErrorContext {
 }
 
 function problemBody(problem: Problem, call: Call): Omit<RouteResponse, 'status'> {
-  const chosen = call.negotiated?.problem;
+  const chosen = call.negotiated?.problem ?? KIT_PROBLEM;
+  const written = writtenIn(problem, { chosen, shape: PROBLEM_SHAPE });
   const kept = { ...cacheHeadersOf(call.route, problem.status), ...identifierHeaders(call) };
 
-  if (chosen === undefined) {
-    return { headers: { 'content-type': PROBLEM_CONTENT_TYPE, ...kept }, body: problem };
-  }
-
-  const written = writtenIn(problem, chosen, PROBLEM_SHAPE);
-
-  return { ...written, headers: { ...written.headers, ...kept } };
+  return { headers: { ...written.headers, ...kept }, payload: written.payload, body: problem };
 }
 
 async function reportGuardRefusal(options: ExecuteOptions, error: unknown, context: ErrorContext): Promise<void> {
