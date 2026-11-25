@@ -283,7 +283,7 @@ The codes the packages of the kit raise are a list too, `KitCodes`, with its typ
 `NotFound`, `Conflict`, `InvariantViolation`, `Unauthorized`, `NotAcceptable`, `ConcurrencyConflict`,
 `InvalidCriteria`, `InvalidPageRequest`, `Timeout`, `CircuitOpen`, `BulkheadFull`, `AttemptsExhausted`,
 `ServiceUnavailable`, `PreconditionFailed`, `PreconditionRequired`, `FileTooLarge`, `UnsupportedMediaType`,
-`FileNotFound`, `FileRejected` and `InvalidFileKey`. A route names them in `errors` and a test expects them
+`FileNotFound`, `FileRejected`, `InvalidFileKey`, `InvalidFileUrlExpiry` and `ForbiddenTransition`. A route names them in `errors` and a test expects them
 (`rejects.toMatchObject({ code: KitCodes.Forbidden })`) without writing the string: the editor completes
 the key, and a misspelled one does not compile.
 

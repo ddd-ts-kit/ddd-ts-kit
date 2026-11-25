@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:a21ee111db17300f -->
+<!-- translation-of: README.md sha256:6dc7e710f722c4e7 -->
 
 # @ddd-ts-kit/kernel
 
@@ -288,7 +288,7 @@ Les codes que lèvent les paquets du kit forment eux aussi une liste, `KitCodes`
 `NotFound`, `Conflict`, `InvariantViolation`, `Unauthorized`, `NotAcceptable`, `ConcurrencyConflict`,
 `InvalidCriteria`, `InvalidPageRequest`, `Timeout`, `CircuitOpen`, `BulkheadFull`, `AttemptsExhausted`,
 `ServiceUnavailable`, `PreconditionFailed`, `PreconditionRequired`, `FileTooLarge`, `UnsupportedMediaType`,
-`FileNotFound`, `FileRejected` et `InvalidFileKey`. Une route les nomme dans `errors` et un test les attend
+`FileNotFound`, `FileRejected`, `InvalidFileKey`, `InvalidFileUrlExpiry` et `ForbiddenTransition`. Une route les nomme dans `errors` et un test les attend
 (`rejects.toMatchObject({ code: KitCodes.Forbidden })`) sans écrire la chaîne : l'éditeur complète la clé,
 et une clé mal orthographiée ne compile pas.
 

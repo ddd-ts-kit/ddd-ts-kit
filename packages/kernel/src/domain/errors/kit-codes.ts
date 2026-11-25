@@ -26,6 +26,8 @@ export const KitCodes = {
   FileNotFound: 'FILE_NOT_FOUND',
   FileRejected: 'FILE_REJECTED',
   InvalidFileKey: 'INVALID_FILE_KEY',
+  InvalidFileUrlExpiry: 'INVALID_FILE_URL_EXPIRY',
+  ForbiddenTransition: 'FORBIDDEN_TRANSITION',
 } as const;
 
 /** One code of the kit: `'FORBIDDEN' | 'NOT_FOUND' | ...`. */
