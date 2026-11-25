@@ -1,5 +1,5 @@
 [English](choosing-access-control.md) · **Français**
-<!-- translation-of: choosing-access-control.md sha256:56f609f6ba48a51b -->
+<!-- translation-of: choosing-access-control.md sha256:01ab9bc8d57a2935 -->
 
 # Choisir le contrôle d'accès, avec des préréglages commentés
 
@@ -41,7 +41,7 @@ compare).
 | Outil de prise de rendez-vous où « seul le patient qui a réservé peut annuler » | RBAC plus une politique |
 | Validation de notes de frais selon le montant et le service, avec une règle des quatre yeux | ABAC par-dessus les rôles |
 | Documents, dossiers, partage, équipes, délégation | ReBAC |
-| SaaS pour de nombreuses entreprises, chacune avec ses administrateurs et ses membres | RBAC avec la vérification du *tenant*, tables partagées ; ReBAC à l'intérieur d'un *tenant* si les utilisateurs partagent |
+| SaaS pour de nombreuses entreprises, chacune avec ses administrateurs et ses membres | RBAC tenu aux *tenants* (`TenantBoundAuthorizer`), tables partagées ; ReBAC à l'intérieur d'un *tenant* si les utilisateurs partagent |
 | API publique pour des partenaires | n'importe lequel des modèles ci-dessus, plus des scopes |
 
 ## Ce que tous les préréglages ont en commun
@@ -108,7 +108,8 @@ await commandBus.execute(new VoidInvoice(actorOf(context.principal), params.invo
 Une recherche ne charge jamais pour filtrer ensuite : le gestionnaire demande le périmètre de
 l'acteur et le port de lecture le transforme en requête. `scoped` du noyau joint le périmètre aux
 critères par un ET, sur les champs que le port de lecture nomme (`ids: 'id'` pour une liste
-d'identifiants, `filter: { tenantId: 'tenantId' }` pour la vérification du *tenant*), et des
+d'identifiants, `filter: { tenantId: 'tenantId' }` pour le *tenant* d'un modèle tenu aux
+*tenants*), et des
 critères qu'un appelant affine ensuite gardent la restriction.
 
 <!-- checked sample -->
@@ -163,8 +164,8 @@ const visible = (await this.invoices.all()).filter((invoice) => canRead(query.ac
 
 | `AccessScope` | Donné par | Ce que le port de lecture ajoute |
 |---|---|---|
-| `{ kind: 'all' }` | un rôle qui accorde la permission, sans vérification du *tenant* | rien |
-| `{ kind: 'filter', filter: { tenantId } }` | un rôle, avec la vérification du *tenant* | `tenant_id = :tenantId` |
+| `{ kind: 'all' }` | un rôle qui accorde la permission | rien |
+| `{ kind: 'filter', filter: { tenantId } }` | le même, sous `TenantBoundAuthorizer` | `tenant_id = :tenantId` |
 | `{ kind: 'ids', ids }` | les relations | `id IN (...)` |
 | `{ kind: 'none' }` | n'importe quel modèle, et toujours pour l'acteur anonyme | une page vide, sans requête |
 
@@ -176,7 +177,7 @@ un rôle hérité inconnu et un cycle dans la hiérarchie.
 
 <!-- checked sample -->
 ```ts
-import { RoleBasedAuthorizer, tenantOfContext, type Grant, type PermissionSet } from '@ddd-ts-kit/auth';
+import { RoleBasedAuthorizer, TenantBoundAuthorizer, type Grant, type PermissionSet } from '@ddd-ts-kit/auth';
 
 declare const billingPermissions: PermissionSet<'billing', 'invoice.read' | 'invoice.issue' | 'invoice.void'>;
 
@@ -191,12 +192,16 @@ export const roles: Readonly<Record<Role, readonly Grant[]>> = {
   system: [billingPermissions['invoice.issue']], // les jobs et les consommateurs qui envoient la commande
 };
 
-export const authorizer = new RoleBasedAuthorizer({
+const byRoles = new RoleBasedAuthorizer({
   roles,
   inherits: { accountant: ['clerk'] }, // un comptable a tout ce qu'a un employé
-  tenantOf: tenantOfContext, // active la vérification du tenant
-  crossTenantRoles: ['admin'], // peut agir dans tous les tenants
   systemRole: 'system', // le rôle de systemActor(...) et d'aucun autre acteur, aucun par défaut
+});
+
+// Quel que soit le modèle : ce qu'il autorise est tenu aux tenants de l'acteur
+export const authorizer = new TenantBoundAuthorizer({
+  model: byRoles,
+  crossTenantRoles: ['admin'], // peut agir dans tous les tenants
 });
 ```
 
@@ -270,8 +275,10 @@ La *spec* de la politique n'a besoin de rien d'autre que la politique : `new
 OnlyIssuerVoidsPolicy().allows(actor, invoice)` répond `true` quand la facture a été émise par cet
 acteur, sans *authorizer*, sans conteneur et sans base de données.
 
-Les listes : un rôle qui accorde la permission lit `all`, restreint au *tenant* par la
-vérification du *tenant* (`{ kind: 'filter', filter: { tenantId } }`).
+Les listes : un rôle qui accorde la permission lit `all`, que `TenantBoundAuthorizer` restreint
+au *tenant* (`{ kind: 'filter', filter: { tenantId } }`). Dans un projet de `init --tenancy
+shared-table`, les *repositories* confinent chaque instruction au *tenant* du travail : `init` y
+lie l'autorisateur avec `rowsConfinedBy: 'stores'`, et le périmètre reste `all`.
 
 ## Préréglage 2 : des politiques sur attributs par-dessus les rôles
 
@@ -478,8 +485,9 @@ d'un *tenant*. Le contexte, la ressource d'un cas d'usage sur aucun élément, e
 chaque *tenant* : avec des *tenants*, l'opérateur du contexte dans un *tenant* l'opère dans tous,
 et de même une personne qui appartient à deux *tenants* avec un statut différent dans chacun. Avec
 des *tenants*, gardez les relations pour les éléments, et décidez *tenant* par *tenant* ce que
-permet un cas d'usage sur aucun élément : par des rôles avec la vérification du *tenant*
-(préréglage 1, posé en premier comme dans le modèle combiné ci-dessous), ou sur un objet qui nomme
+permet un cas d'usage sur aucun élément : par une exigence qui nomme son *tenant*, que
+`TenantBoundAuthorizer` refuse à qui n'y appartient pas quel que soit le modèle (préréglage 1),
+ou sur un objet qui nomme
 le *tenant* (un type `tenant` avec son `operator`, les éléments l'atteignant par une relation
 `parent`), jamais sur le contexte.
 
