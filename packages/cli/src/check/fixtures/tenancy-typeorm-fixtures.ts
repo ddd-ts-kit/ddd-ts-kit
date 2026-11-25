@@ -59,6 +59,11 @@ export const TENANCY_TYPEORM_FIXTURES: readonly Fixture[] = [
     expect: { file: TYPEORM_ADAPTER },
     files: project({ [TYPEORM_ADAPTER]: TYPEORM_UNSCOPED }, tenancyConfig('typeorm')),
   },
+  tenancyBypass(
+    'typeorm',
+    'an aggregate saved with no tenant',
+    'return saveAggregate(this.database, invoices, { aggregate: saved, row, scope: this.scope, clock: this.clock });',
+  ),
   tenancyBypass('typeorm', 'a row saved by its key', 'return this.database.manager().save(invoices, row);'),
   tenancyBypass(
     'typeorm',

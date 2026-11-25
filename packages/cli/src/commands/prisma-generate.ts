@@ -9,6 +9,7 @@ import {
   requiredMigrationName,
   runOrmTool,
 } from '../migration';
+import { namedFolders } from '../orm/migrations/named-folders';
 import { defineCommand } from './command';
 import type { Io } from './io';
 import { refuseSecondName } from './refuse-second-name';
@@ -32,7 +33,7 @@ export const prismaGenerateCommand = defineCommand({
 
     const name = requiredMigrationName(args.text('name'));
 
-    refuseTakenMigrationName(root, 'prisma', name);
+    refuseTakenMigrationName(root, namedFolders, name);
     ensureDatabaseReachable();
 
     const offline = !hasDatabaseUrl();

@@ -1,23 +1,20 @@
-import { CREDENTIAL_KEYS, REDACTED, isCredentialKey } from '@ddd-ts-kit/kernel';
+import { CREDENTIAL_KEYS, REDACTED, hiddenKeys, type IsHiddenKey } from '@ddd-ts-kit/kernel';
 import winston from 'winston';
-
-type Hidden = (key: string) => boolean;
 
 /**
  * A winston format hiding the value of `CREDENTIAL_KEYS` and of the given keys at the top of a
- * line and one level below. Names are matched without case, as `isCredentialKey` of the kernel
- * does. Place it after the formats that add fields.
+ * line and one level below. Names are matched without case, as `hiddenKeys` of the kernel
+ * matches them. Place it after the formats that add fields.
  */
 export function redactCredentials(keys: readonly string[] = CREDENTIAL_KEYS): winston.Logform.Format {
-  const added: ReadonlySet<string> = new Set(keys.map((key) => key.toLowerCase()));
-  const hidden: Hidden = (key) => isCredentialKey(key) || added.has(key.toLowerCase());
+  const isHidden = hiddenKeys(keys);
 
   return winston.format((info) => {
     for (const [key, value] of Object.entries(info)) {
-      if (hidden(key)) {
+      if (isHidden(key)) {
         info[key] = REDACTED;
       } else if (isRecord(value)) {
-        info[key] = withoutCredentials(value, hidden);
+        info[key] = withoutCredentials(value, isHidden);
       }
     }
 
@@ -32,9 +29,9 @@ function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
 /** A nested object belongs to the caller: it is copied when a key has to be hidden, never written to. */
 function withoutCredentials(
   nested: Readonly<Record<string, unknown>>,
-  hidden: Hidden,
+  isHidden: IsHiddenKey,
 ): Readonly<Record<string, unknown>> {
-  const credentials = Object.keys(nested).filter(hidden);
+  const credentials = Object.keys(nested).filter(isHidden);
 
   if (credentials.length === 0) {
     return nested;

@@ -115,6 +115,14 @@ restarted a desktop. Two things bound them:
   every kind in a multi-tenant project on each ORM and reads every call of the generated code to a
   class or function of the kit whose options take a `tenant` (read from the sources of the
   packages): a call without it fails, unless `TENANT_GAPS` says why.
+- Inside the CLI, an ORM is one member of `ORM_MEMBERS` (`packages/cli/src/orm`), which answers
+  what the commands ask of it: how its migrations follow those of a trunk (`MigrationHistory`,
+  and the `MigrationTool` of an ORM that orders files), where the tables of a context are
+  declared and what its schema index names (`TablesDeclaration`, `IndexNames`), how the generated
+  code reaches its database (`DatabaseAccess`). A capability a member does not have is absent,
+  never a function that does nothing. A new ORM is a file under `orm/members` and its entry in
+  the record, and the compiler lists what it has to answer; a command that needs something else
+  of an ORM asks the member a new question, it does not compare the name of the ORM.
 - A line of those two registries turns a failing check green, so it is a decision of the
   maintainer, never the shortest way to a green pipeline: its reason says what the member does
   instead (a reason too short, or a promise for later, fails), the run of a pull request annotates

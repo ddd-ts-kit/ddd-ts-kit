@@ -1,9 +1,9 @@
 import type { Knex } from 'knex';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
-import { type KnexContext, auditRow, insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/knex';
+import { type KnexContext, saveAggregate } from '@ddd-ts-kit/knex';
 import type { Delegation } from '{{alias.context}}/domain/aggregates/delegation.aggregate{{alias.ext}}';
 {{#if style.declared}}
 import { DelegationRepository } from '{{alias.context}}/domain/repositories/delegation.repository{{alias.ext}}';
@@ -13,9 +13,9 @@ import type { DelegationRepository } from '{{alias.context}}/domain/repositories
 {{/unless}}
 import { {{context.constant}}_SCHEMA } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
 import { DelegationMapper } from '{{alias.context}}/infrastructure/persistence/delegation.mapper{{alias.ext}}';
-import type { DelegationColumns, DelegationRow } from '{{alias.context}}/infrastructure/persistence/delegation-row.schema{{alias.ext}}';
+import type { DelegationRow } from '{{alias.context}}/infrastructure/persistence/delegation-row.schema{{alias.ext}}';
 
-type VersionedDelegation = DelegationColumns & { readonly version: number };
+const TABLE = { schema: {{context.constant}}_SCHEMA, table: 'delegations' };
 
 {{#if style.declared}}
 @Repository(DelegationRepository)
@@ -53,28 +53,12 @@ export class KnexDelegationRepository implements DelegationRepository {
   }
 
   async save(saved: Delegation): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...DelegationMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : this.update(state, expected);
+    await saveAggregate(this.database, TABLE, {
+      aggregate: saved,
+      row: DelegationMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: VersionedDelegation): Promise<number> {
-    const row = { ...state, ...auditRow(stampCreation(this.scope, this.clock)) };
-
-    const inserted = await insertIgnoringConflict(this.database.executor(), tableOf(this.database), {
-      row,
-      conflict: 'id',
-    });
-
-    return inserted ? 1 : 0;
-  }
-
-  private async update(state: VersionedDelegation, expected: number): Promise<number> {
-    return tableOf(this.database)
-      .where({ id: state.id, version: expected })
-      .update({ ...state, ...auditRow(stampUpdate(this.scope, this.clock)) });
   }
 }
 

@@ -2,7 +2,9 @@ import {
   LOG_LEVELS,
   UNWRITABLE_FIELDS,
   describeErrorFields,
+  hiddenKeys,
   type Clock,
+  type IsHiddenKey,
   type LogFields,
   type LogLevel,
   type Logger,
@@ -25,6 +27,8 @@ export interface StdoutLoggerOptions {
    * `DomainError`. Default `false`: see "StdoutLogger" in the README for the trade-off.
    */
   readonly scrubMessages?: boolean;
+  /** Field names hidden in addition to `CREDENTIAL_KEYS`, at the top of an entry and one level below, whatever their case. */
+  readonly redact?: readonly string[];
   /** Defaults to the clock of the aspect runtime, then to the system clock. */
   readonly clock?: Clock;
   /** Receives each line, newline included. Defaults to `stream`. */
@@ -41,11 +45,16 @@ interface Header {
 
 /**
  * The `Logger` port as JSON lines: one object per entry with `time`, `level`, `message`, then
- * the fields, the value of every credential key hidden at the top and one level below. What a
+ * the fields, the value of every credential key and of every key of `redact` hidden at the top
+ * and one level below. What a
  * container platform collects as it is.
  */
 export class StdoutLogger implements Logger {
-  constructor(private readonly options: StdoutLoggerOptions = {}) {}
+  private readonly isHidden: IsHiddenKey;
+
+  constructor(private readonly options: StdoutLoggerOptions = {}) {
+    this.isHidden = hiddenKeys(options.redact);
+  }
 
   debug(message: string, fields?: LogFields): void {
     this.writeEntry('debug', message, fields);
@@ -105,6 +114,7 @@ export class StdoutLogger implements Logger {
     try {
       const written = withoutCredentials(
         describeErrorFields({ ...this.options.base, ...this.ambientFields(), ...fields }, this.options),
+        this.isHidden,
       );
 
       return JSON.stringify({ ...header, ...written, ...header });

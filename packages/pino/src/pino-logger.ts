@@ -1,4 +1,11 @@
-import { UNWRITABLE_FIELDS, type LogFields, type LogLevel, type Logger } from '@ddd-ts-kit/kernel';
+import {
+  UNWRITABLE_FIELDS,
+  hiddenKeys,
+  type IsHiddenKey,
+  type LogFields,
+  type LogLevel,
+  type Logger,
+} from '@ddd-ts-kit/kernel';
 import type { Logger as Pino } from 'pino';
 import { lineFields } from './fields/line-fields';
 import { holdWhileFlushing } from './hold-while-flushing';
@@ -9,6 +16,12 @@ export interface PinoLoggerOptions {
    * `DomainError`. Default `false`: see "Privacy" in the README for the trade-off.
    */
   readonly scrubMessages?: boolean;
+  /**
+   * Field names hidden in addition to `CREDENTIAL_KEYS`, at the top of a line and one level
+   * below, whatever their case. Around an instance of yours, the keys its `credentialRedaction`
+   * was given: pino hides them as they are written, the adapter in any other case.
+   */
+  readonly redact?: readonly string[];
 }
 
 /** Children of an instance the adapter already prepared: they are adopted as they are. */
@@ -22,12 +35,14 @@ const adopted = new WeakSet<Pino>();
  */
 export class PinoLogger implements Logger {
   private readonly pino: Pino;
+  private readonly isHidden: IsHiddenKey;
 
   constructor(
     pino: Pino,
     private readonly options: PinoLoggerOptions = {},
   ) {
     this.pino = adopted.has(pino) ? pino : describingErrorsItself(pino);
+    this.isHidden = hiddenKeys(options.redact);
   }
 
   debug(message: string, fields?: LogFields): void {
@@ -79,7 +94,7 @@ export class PinoLogger implements Logger {
 
   private nativeChild(fields: LogFields): Pino {
     try {
-      return this.pino.child(lineFields(fields, this.options));
+      return this.pino.child(lineFields(fields, this.options, this.isHidden));
     } catch {
       return this.pino.child(UNWRITABLE_FIELDS);
     }
@@ -91,7 +106,7 @@ export class PinoLogger implements Logger {
     }
 
     try {
-      this.pino[level](lineFields(fields, this.options), message);
+      this.pino[level](lineFields(fields, this.options, this.isHidden), message);
     } catch {
       this.writeWithoutFields(level, message);
     }

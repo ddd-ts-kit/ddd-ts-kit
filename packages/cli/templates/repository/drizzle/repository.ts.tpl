@@ -1,16 +1,12 @@
+{{#if tenant.scoped}}
 import { and, eq } from 'drizzle-orm';
-{{#if tenant.scoped}}
-import { insertIgnoringConflict, optimisticUpdate, ownTenantCondition, tenantCondition } from '@ddd-ts-kit/drizzle/postgres';
+import { saveTenantAggregate, tenantCondition } from '@ddd-ts-kit/drizzle/postgres';
 {{/if}}
 {{#unless tenant.scoped}}
-import { insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/drizzle/postgres';
+import { eq } from 'drizzle-orm';
+import { saveAggregate } from '@ddd-ts-kit/drizzle/postgres';
 {{/unless}}
-{{#if tenant.scoped}}
-import { stampCreation, stampUpdate, tenantScopeOf, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
-{{/if}}
-{{#unless tenant.scoped}}
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
-{{/unless}}
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
@@ -23,9 +19,7 @@ import type { {{aggregate.pascal}}Repository } from '{{alias.context}}/domain/re
 {{/unless}}
 {{storage.adapterImport}}
 import { {{aggregate.tableCamel}} } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
-import { {{aggregate.pascal}}Mapper, type {{aggregate.pascal}}Columns } from '{{alias.context}}/infrastructure/persistence/{{aggregate.kebab}}.mapper{{alias.ext}}';
-
-type Versioned{{aggregate.pascal}} = {{aggregate.pascal}}Columns & { readonly version: number };
+import { {{aggregate.pascal}}Mapper } from '{{alias.context}}/infrastructure/persistence/{{aggregate.kebab}}.mapper{{alias.ext}}';
 
 {{#if style.declared}}
 @Repository({{aggregate.pascal}}Repository)
@@ -51,29 +45,11 @@ export class Drizzle{{aggregate.pascal}}Repository implements {{aggregate.pascal
   }
 
   async save(saved: {{aggregate.pascal}}): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...{{aggregate.pascal}}Mapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : (await this.update(state, expected)).length;
+    await {{#if tenant.scoped}}saveTenantAggregate{{/if}}{{#unless tenant.scoped}}saveAggregate{{/unless}}(this.database, {{aggregate.tableCamel}}, {
+      aggregate: saved,
+      row: {{aggregate.pascal}}Mapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: Versioned{{aggregate.pascal}}): Promise<number> {
-    const row = { ...state, {{#if tenant.scoped}}...tenantScopeOf(this.scope), {{/if}}...stampCreation(this.scope, this.clock) };
-    const insertion = () => this.database.executor().insert({{aggregate.tableCamel}}).values(row);
-
-    return (await insertIgnoringConflict(insertion, {{aggregate.tableCamel}})) ? 1 : 0;
-  }
-
-  private update(state: Versioned{{aggregate.pascal}}, expected: number) {
-    const sameId = eq({{aggregate.tableCamel}}.id, state.id);
-    const sameVersion = eq({{aggregate.tableCamel}}.version, expected);
-
-    return this.database
-      .executor()
-      .update({{aggregate.tableCamel}})
-      .set({ ...state, ...stampUpdate(this.scope, this.clock) })
-      .where(and(sameId, sameVersion{{#if tenant.scoped}}, ownTenantCondition({{aggregate.tableCamel}}.tenantId, this.scope){{/if}}))
-      .returning({ id: {{aggregate.tableCamel}}.id });
   }
 }

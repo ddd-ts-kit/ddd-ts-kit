@@ -1,5 +1,5 @@
-import { optimisticUpdate, rowsCreated } from '@ddd-ts-kit/prisma';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { saveAggregate } from '@ddd-ts-kit/prisma';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
@@ -11,9 +11,7 @@ import { InvitationRepository } from '{{alias.context}}/domain/repositories/invi
 import type { InvitationRepository } from '{{alias.context}}/domain/repositories/invitation.repository{{alias.ext}}';
 {{/unless}}
 import type { Database } from '{{alias.platform}}/database/database{{alias.ext}}';
-import { InvitationMapper, type InvitationColumns } from '{{alias.context}}/infrastructure/persistence/invitation.mapper{{alias.ext}}';
-
-type VersionedInvitation = InvitationColumns & { readonly version: number };
+import { InvitationMapper } from '{{alias.context}}/infrastructure/persistence/invitation.mapper{{alias.ext}}';
 
 {{#if style.declared}}
 @Repository(InvitationRepository)
@@ -38,27 +36,11 @@ export class PrismaInvitationRepository implements InvitationRepository {
   }
 
   async save(saved: Invitation): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...InvitationMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : (await this.update(state, expected)).count;
-    });
-  }
-
-  private async insert(state: VersionedInvitation): Promise<number> {
-    const row = { ...state, ...stampCreation(this.scope, this.clock) };
-    const created = await invitationsOf(this.database).createMany({ data: [row], skipDuplicates: true });
-
-    return rowsCreated(created, {
-      id: state.id,
-      holders: () => invitationsOf(this.database).count({ where: { id: state.id } }),
-    });
-  }
-
-  private update(state: VersionedInvitation, expected: number): Promise<{ count: number }> {
-    return invitationsOf(this.database).updateMany({
-      where: { id: state.id, version: expected },
-      data: { ...state, ...stampUpdate(this.scope, this.clock) },
+    await saveAggregate(invitationsOf(this.database), {
+      aggregate: saved,
+      row: InvitationMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
   }
 }

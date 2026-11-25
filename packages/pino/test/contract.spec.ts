@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { LogFields } from '@ddd-ts-kit/kernel';
-import { loggerContract } from '@ddd-ts-kit/testing/contracts';
-import { pino } from 'pino';
-import { PinoLogger, correlationMixin, createPinoLogger } from '../src';
+import { loggerContract, type LoggerContractSetup } from '@ddd-ts-kit/testing/contracts';
+import { pino, type Logger } from 'pino';
+import { PinoLogger, correlationMixin, createPinoLogger, credentialRedaction } from '../src';
 import { loggedLine } from './support/logged-line';
 import { MemorySink } from './support/memory-sink';
 
@@ -16,6 +16,7 @@ const runner = { describe, it, expect, beforeEach, afterEach };
 
 loggerContract(runner, {
   name: 'PinoLogger of createPinoLogger',
+  redacts: true,
   createLogger: (setup) => {
     const sink = new MemorySink();
 
@@ -28,11 +29,12 @@ loggerContract(runner, {
 
 loggerContract(runner, {
   name: 'PinoLogger around an instance of the project',
-  createLogger: ({ level, fields, scrubMessages }) => {
+  redacts: true,
+  createLogger: ({ level, fields, scrubMessages, redact = [] }) => {
     const sink = new MemorySink();
 
     return {
-      logger: new PinoLogger(pino({ level, mixin: correlationMixin(fields) }, sink.stream), { scrubMessages }),
+      logger: new PinoLogger(instanceOfTheProject({ level, fields, redact }, sink), { scrubMessages, redact }),
       lines: () =>
         sink
           .records()
@@ -51,6 +53,13 @@ describe('PinoLogger and LogFields', () => {
     expect(parcelOf({ parcelId: 'parcel-1' })).toBe('parcel-1');
   });
 });
+
+function instanceOfTheProject(
+  { level, fields, redact }: Pick<LoggerContractSetup, 'level' | 'fields' | 'redact'>,
+  sink: MemorySink,
+): Logger {
+  return pino({ level, mixin: correlationMixin(fields, redact), redact: credentialRedaction(redact) }, sink.stream);
+}
 
 /** Compiles only while the fields of the adapter are the merged `LogFields` of the kernel. */
 function parcelOf(fields: Parameters<PinoLogger['child']>[0]): string | undefined {

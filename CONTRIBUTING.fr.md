@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:89c6c1ed6a2c87d8 -->
+<!-- translation-of: CONTRIBUTING.md sha256:1243627ece6e75f4 -->
 
 # Contribuer
 
@@ -122,6 +122,15 @@ bout prend 2,5 à 7 Go, et plusieurs à la fois (plusieurs sessions de code, un 
   multi-tenant sur chaque ORM et lit chaque appel du code généré à une classe ou une fonction du
   kit dont les options prennent un `tenant` (lu dans les sources des paquets) : un appel sans lui
   échoue, sauf si `TENANT_GAPS` dit pourquoi.
+- Dans la CLI, un ORM est un membre de `ORM_MEMBERS` (`packages/cli/src/orm`), qui répond à ce
+  que les commandes lui demandent : comment ses migrations suivent celles d'un tronc
+  (`MigrationHistory`, et le `MigrationTool` d'un ORM qui ordonne des fichiers), où les tables
+  d'un contexte sont déclarées et ce que nomme son index de schéma (`TablesDeclaration`,
+  `IndexNames`), comment le code généré atteint sa base de données (`DatabaseAccess`). Une
+  capacité qu'un membre n'a pas est absente, jamais une fonction qui ne fait rien. Un nouvel ORM
+  est un fichier sous `orm/members` et son entrée dans le record, et le compilateur liste ce à
+  quoi il doit répondre ; une commande qui a besoin d'autre chose d'un ORM pose une nouvelle
+  question au membre, elle ne compare pas le nom de l'ORM.
 - Une ligne de ces deux registres rend vert un contrôle qui échouait : c'est donc une décision du
   mainteneur, jamais le plus court chemin vers une CI verte. Sa raison dit ce que fait le membre
   à la place (une raison trop courte, ou une promesse pour plus tard, échoue), la CI d'une pull

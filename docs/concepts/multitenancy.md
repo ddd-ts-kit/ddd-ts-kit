@@ -206,6 +206,10 @@ export class KnexAppointmentRepository {
 }
 ```
 
+The save is written out here to show where the tenant goes. A generated repository calls
+`saveTenantAggregate` of its ORM package, which writes the row in the tenant of the work and
+confines its update to it; `tenancy/scoped-statement` refuses `saveAggregate` on tenant data.
+
 A project of one customer that becomes multi-tenant keeps its data: on Knex, a migration calls
 `addTenantColumn(knex, { schema, table, tenantOfExistingRows })` for each table of tenant data
 (the rows already there go to the customer it served, then the column is required and indexed)
