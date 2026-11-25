@@ -83,6 +83,22 @@ export class ClaimSuite extends ContractSuite<JobStoreUnderContract> {
       this.expect(otherName).toEqual({ id: 'job-3', duplicate: false });
       this.expect(await this.subject.find('job-2')).toBe(undefined);
     });
+
+    this.it('answers a job already kept under the same id as a duplicate, and keeps the first as added', async () => {
+      await this.subject.add(aJob('job-1'));
+      await this.subject.add(aJob('job-2', { idempotencyKey: 'feb' }));
+
+      const again = await this.subject.add(aJob('job-1', { name: 'billing.send-statements' }));
+      const underAnotherKey = await this.subject.add(aJob('job-2', { idempotencyKey: 'mar' }));
+
+      this.expect([again, underAnotherKey]).toEqual([
+        { id: 'job-1', duplicate: true },
+        { id: 'job-2', duplicate: true },
+      ]);
+
+      this.expect((await this.subject.find('job-1'))?.name).toBe('billing.compile-statements');
+      this.expect(await this.claimedIds(10, NOW)).toEqual(['job-1', 'job-2']);
+    });
   }
 
   private keepsTheKeysOfTenantsApart(): void {

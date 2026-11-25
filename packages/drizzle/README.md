@@ -142,12 +142,17 @@ relay.start({ intervalMs: 500 });
 current transaction, an event published by a handler that then fails is rolled back with the
 business write: that is the whole point of the outbox.
 
-`run` is built on `withinUnitOfWork` of the kernel. The domain events of the aggregates saved
+`run` is built on `unitOfWorkOver` of the kernel. The domain events of the aggregates saved
 inside it wait until `work` has returned, then are dispatched inside the transaction, before
 the commit: their handlers see every save, and what they write commits or rolls back with it.
 If `work`, a handler or the commit fails, nothing is left: no row, no outbox record, no handler
 run after the commit. Handlers declared `after-commit` run once the transaction has committed.
 A nested `run` joins the unit of work in progress: one dispatch, at the end of the outermost.
+Called inside the unit of work of another database, `run` opens its own: its events are
+dispatched before its own commit.
+The unit of work commits or rolls back as a whole: once a nested `run` has failed it no longer
+commits, and when the work caught that failure and went on the outermost `run` rejects with a
+`UnitOfWorkAbortedError` whose `cause` it is.
 A `run` called directly (a consumer, a script) has the same timing as a command.
 `unitOfWorkContract` of `@ddd-ts-kit/testing/contracts` proves it on PGlite, with a deferred
 constraint for the commit that fails. The README of `@ddd-ts-kit/kernel` draws this timeline

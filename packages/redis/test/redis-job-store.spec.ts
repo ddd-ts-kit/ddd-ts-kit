@@ -135,25 +135,41 @@ describe.each(SERVERS)('RedisJobStore, %s', (_name, start) => {
 
     expect(lost).toEqual(['job-1', 'job-2']);
   });
-});
 
-describe('RedisJobStore whose server is away', () => {
   it('tells who wired it of a job a committed unit of work could not write', async () => {
     const lost: string[] = [];
-    const store = new RedisJobStore(connectToNothing(), { onLostJob: (_error, id) => lost.push(id) });
+    const own = connect(redis.url);
+    const store = new RedisJobStore(own, { namespace: aNamespace(), onLostJob: (_error, id) => lost.push(id) });
 
-    await new InMemoryUnitOfWork().run(() => store.add(job));
+    await new InMemoryUnitOfWork().run(async () => {
+      await store.add(job);
+      own.disconnect();
+    });
 
     expect(lost).toEqual(['job-1']);
   });
 
   it('logs and reports a lost write through the reporter a platform wires', async () => {
     const [logger, errors] = [new InMemoryLogger(), new InMemoryErrorReporter()];
-    const store = new RedisJobStore(connectToNothing(), { onLostJob: reportLostJobs(logger, errors) });
+    const own = connect(redis.url);
+    const store = new RedisJobStore(own, { namespace: aNamespace(), onLostJob: reportLostJobs(logger, errors) });
 
-    await new InMemoryUnitOfWork().run(() => store.add(job));
+    await new InMemoryUnitOfWork().run(async () => {
+      await store.add(job);
+      own.disconnect();
+    });
 
     expect(logger.entries).toMatchObject([{ level: 'error', fields: { jobId: 'job-1' } }]);
     expect(errors.reports).toMatchObject([{ report: { origin: 'queue', operation: 'background job write' } }]);
+  });
+});
+
+describe('RedisJobStore whose server is away', () => {
+  it('fails the add before anything is staged: what Redis holds under the id cannot be read', async () => {
+    const lost: string[] = [];
+    const store = new RedisJobStore(connectToNothing(), { onLostJob: (_error, id) => lost.push(id) });
+
+    await expect(new InMemoryUnitOfWork().run(() => store.add(job))).rejects.toThrow();
+    expect(lost).toEqual([]);
   });
 });

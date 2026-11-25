@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { InMemoryUnitOfWork, afterCommit, atCommit, withinUnitOfWork, type CommitStep } from '../src';
+import { InMemoryUnitOfWork, afterCommit, atCommit, unitOfWorkOver, type CommitStep } from '../src';
 
 function journaled(journal: string[], name: string, fails = false): CommitStep {
   return {
@@ -61,12 +61,12 @@ describe('atCommit', () => {
   it('undoes the applied steps when the commit itself fails', async () => {
     const journal: string[] = [];
 
-    const commitRefused = async (scoped: () => Promise<void>) => {
-      await scoped();
+    const commitRefused = unitOfWorkOver(async (work) => {
+      await work();
       throw new Error('commit refused');
-    };
+    });
 
-    const failure = withinUnitOfWork(() => atCommit(journaled(journal, 'move')), commitRefused);
+    const failure = commitRefused.run(() => atCommit(journaled(journal, 'move')));
 
     await expect(failure).rejects.toThrow('commit refused');
     expect(journal).toEqual(['apply move', 'undo move']);

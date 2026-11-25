@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import {
   ConcurrencyError,
-  withinUnitOfWork,
+  unitOfWorkOver,
   type Appended,
   type EventStore,
   type EventToAppend,
@@ -18,7 +18,7 @@ interface Written {
 
 /** An event store and an outbox in memory with real transactions: what a unit of work writes is forgotten when it fails. */
 export class TransactionalJournal implements EventStoreUnderContract {
-  readonly unitOfWork: UnitOfWork = { run: (work) => withinUnitOfWork(work, (scoped) => this.atomically(scoped)) };
+  readonly unitOfWork: UnitOfWork = unitOfWorkOver((work) => this.atomically(work));
 
   private readonly committed: Written = { events: [], published: [] };
 
@@ -69,10 +69,6 @@ export class TransactionalJournal implements EventStoreUnderContract {
   }
 
   private async atomically<T>(work: () => Promise<T>): Promise<T> {
-    if (this.current.getStore() !== undefined) {
-      return work();
-    }
-
     const written: Written = { events: [], published: [] };
     const result = await this.current.run(written, work);
 

@@ -21,5 +21,5 @@ export function writeLocalEnvironment(ws: Workspace): void {
     return;
   }
 
-  ws.create(LOCAL, example.replace(COPY_ASKED, WRITTEN));
+  ws.create(LOCAL, example.replace(COPY_ASKED, ws.spoken(WRITTEN)));
 }

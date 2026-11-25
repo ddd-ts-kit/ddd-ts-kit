@@ -88,10 +88,13 @@ export class TenantDatabases {
   private drain(tenantId: string, pool: TenantPool): void {
     this.pools.delete(tenantId);
 
-    const drained: Promise<void> = pool.knex.destroy().finally(() => {
-      this.draining.delete(drained);
-      this.wake();
-    });
+    const drained: Promise<void> = pool.knex
+      .destroy()
+      .catch((error: unknown) => this.options.onCloseFailure?.(error, tenantId))
+      .finally(() => {
+        this.draining.delete(drained);
+        this.wake();
+      });
 
     this.draining.add(drained);
   }

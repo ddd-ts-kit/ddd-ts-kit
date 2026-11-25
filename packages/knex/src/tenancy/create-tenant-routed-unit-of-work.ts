@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { Knex } from 'knex';
-import { tenantScopeOf, withinUnitOfWork, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { tenantScopeOf, unitOfWorkOver, type ExecutionScope } from '@ddd-ts-kit/kernel';
 import type { KnexUnitOfWork } from '../unit-of-work/create-knex-unit-of-work';
 import { CrossTenantUnitOfWorkError } from './cross-tenant-unit-of-work-error';
 import { StatementOutsideUnitOfWorkError } from './statement-outside-unit-of-work-error';
@@ -26,23 +26,28 @@ export function createTenantRoutedUnitOfWork(
 ): KnexUnitOfWork {
   const current = new AsyncLocalStorage<OpenTransaction>();
 
+  const unitOfWork = unitOfWorkOver((work) => {
+    const { tenantId } = tenantScopeOf(scope);
+
+    return databases.lease(tenantId, (database) =>
+      database.transaction((transaction) => current.run({ transaction, tenantId }, work), config),
+    );
+  });
+
+  /** What every run starts with, a nested one included: the transaction it is in is the one of its tenant. */
+  const inItsTenant = async <T>(work: () => Promise<T>): Promise<T> => {
+    const { tenantId } = tenantScopeOf(scope);
+    const open = current.getStore();
+
+    if (open !== undefined && open.tenantId !== tenantId) {
+      throw new CrossTenantUnitOfWorkError(open.tenantId, tenantId);
+    }
+
+    return work();
+  };
+
   return {
-    run<T>(work: () => Promise<T>): Promise<T> {
-      return withinUnitOfWork(work, (scoped) => {
-        const { tenantId } = tenantScopeOf(scope);
-        const open = current.getStore();
-
-        if (open !== undefined) {
-          return open.tenantId === tenantId
-            ? scoped()
-            : Promise.reject(new CrossTenantUnitOfWorkError(open.tenantId, tenantId));
-        }
-
-        return databases.lease(tenantId, (database) =>
-          database.transaction((transaction) => current.run({ transaction, tenantId }, scoped), config),
-        );
-      });
-    },
+    run: (work) => unitOfWork.run(() => inItsTenant(work)),
     executor: () => {
       const open = current.getStore();
 

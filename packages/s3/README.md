@@ -109,7 +109,7 @@ export class ExportAppointments {
 | Port method | On the bucket |
 |---|---|
 | `put(key, stream, { mediaType, maxBytes })` | a multipart upload of `partSize` parts (8 MiB by default, one in memory at a time), or a single `PutObject` when the content fits in one part; the content is counted and hashed on its way, and refused with `FILE_TOO_LARGE` beyond `maxBytes`, which aborts the upload and leaves the previous object |
-| `get`, `stat` | `GetObject` as a stream, `HeadObject`; `undefined` when the object does not exist, a rejection when the service cannot be reached |
+| `get`, `stat` | `GetObject` as a stream, `HeadObject`; `undefined` when the object does not exist (`NoSuchKey`, the `NotFound` of a head), a rejection when the service cannot be reached or answers anything else, a bucket that does not exist included (`NoSuchBucket`) |
 | `delete` | `DeleteObject`, idempotent |
 | `copy`, `move` | `CopyObject` done by the service (and `DeleteObject` for a move), up to 5 GiB per object |
 | `list(prefix)` | `ListObjectsV2`, page after page |

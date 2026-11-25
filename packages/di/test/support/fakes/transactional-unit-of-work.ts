@@ -1,4 +1,4 @@
-import type { UnitOfWork } from '@ddd-ts-kit/kernel';
+import { unitOfWorkOver, type UnitOfWork } from '@ddd-ts-kit/kernel';
 
 /** What takes part in a transaction of the fake unit of work. */
 export interface Transactional {
@@ -15,22 +15,22 @@ export class TransactionalUnitOfWork implements UnitOfWork {
   /** What became of each transaction, in order. */
   readonly outcomes: ('committed' | 'rolled back')[] = [];
 
-  private depth = 0;
+  private readonly unitOfWork = unitOfWorkOver((work) => this.transaction(work));
 
   constructor(
     private readonly participants: readonly Transactional[],
     private readonly whenBegun: () => void = () => {},
   ) {}
 
-  async run<T>(work: () => Promise<T>): Promise<T> {
-    if (this.depth > 0) {
-      return this.joined(work);
-    }
+  run<T>(work: () => Promise<T>): Promise<T> {
+    return this.unitOfWork.run(work);
+  }
 
+  private async transaction<T>(work: () => Promise<T>): Promise<T> {
     this.begin();
 
     try {
-      const result = await this.joined(work);
+      const result = await work();
 
       this.end('committed');
 
@@ -39,16 +39,6 @@ export class TransactionalUnitOfWork implements UnitOfWork {
       this.end('rolled back');
 
       throw error;
-    }
-  }
-
-  private async joined<T>(work: () => Promise<T>): Promise<T> {
-    this.depth += 1;
-
-    try {
-      return await work();
-    } finally {
-      this.depth -= 1;
     }
   }
 
