@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:22a8d51095e4ae65 -->
+<!-- translation-of: README.md sha256:2f58caefaf570d35 -->
 
 # @ddd-ts-kit/testing
 
@@ -635,13 +635,10 @@ semblables dans les tests d'un contexte.
 
 ### Quand un gestionnaire d'un événement échoue
 
-`eventBus.publish` exécute chaque gestionnaire de l'événement, puis rejette avec une
-`AggregateError` des échecs. `createTestBuses({ eventBusFailures: 'as-thrown' })` rejette avec
-l'échec d'un seul gestionnaire tel quel, si bien qu'une spec affirme sa classe ou son `code`
-(`rejects.toMatchObject({ code: 'CONCURRENCY_CONFLICT' })`) ; plusieurs échecs arrivent toujours
-ensemble dans une `AggregateError`. Un projet créé par `ddd-ts-kit init` le règle dans ses
-*worlds*, comme son application le fait sur son bus en processus ; ce sera la valeur par défaut
-d'une prochaine version mineure.
+`eventBus.publish` exécute chaque gestionnaire de l'événement, puis rejette avec l'échec d'un
+seul gestionnaire tel quel, si bien qu'une spec affirme sa classe ou son `code`
+(`rejects.toMatchObject({ code: 'CONCURRENCY_CONFLICT' })`) ; plusieurs échecs arrivent ensemble
+dans une `AggregateError`.
 
 ### Un job en arrière-plan mis en file par une version antérieure
 

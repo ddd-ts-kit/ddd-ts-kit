@@ -135,3 +135,40 @@ describe('a state machine', () => {
     ).toThrow(/Transition "go"/);
   });
 });
+
+describe('a state machine, once defined', () => {
+  const declared = () => ({
+    states: ['draft', 'sent'],
+    initial: ['draft'],
+    transitions: { send: { from: ['draft'], to: 'sent' } },
+  });
+
+  it('does not follow a declaration changed afterwards', () => {
+    const declaration = declared();
+    const machine = defineStateMachine(declaration);
+
+    declaration.transitions.send.to = 'nowhere';
+    declaration.transitions.send.from.push('sent');
+    declaration.initial.push('sent');
+
+    expect(machine.next('draft', 'send')).toBe('sent');
+    expect(machine.can('sent', 'send')).toBe(false);
+    expect(() => machine.start('sent')).toThrow(InvalidStateMachineError);
+  });
+
+  it('describes itself with lists that cannot be changed', () => {
+    const { states, initial } = defineStateMachine(declared()).describe();
+
+    expect([Object.isFrozen(states), Object.isFrozen(initial)]).toEqual([true, true]);
+  });
+
+  it.each(['archive', 'constructor'])('says that "%s" is not one of its transitions', (name) => {
+    const machine = defineStateMachine<string, string>(declared());
+
+    expect(() => machine.next('draft', name)).toThrow(
+      new InvalidStateMachineError(`"${name}" is not a transition of the machine: one of send.`),
+    );
+
+    expect(() => machine.can('draft', name)).toThrow(InvalidStateMachineError);
+  });
+});

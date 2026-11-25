@@ -202,24 +202,16 @@ describe('the failure of a single event handler on the default bus', () => {
     throw refusal;
   };
 
-  it('reaches the publisher in an AggregateError when nothing is said', async () => {
+  it('reaches the publisher as it is on the event bus of the kernel module', async () => {
     const bus = createApplication({ modules: [kernelModule()] }).resolve(EventBus);
-
-    bus.subscribe(TYPE, refusing);
-
-    await expect(bus.publish([placed('event-1')])).rejects.toMatchObject({ errors: [refusal] });
-  });
-
-  it('reaches the publisher as it is when the kernel module delivers failures as thrown', async () => {
-    const bus = createApplication({ modules: [kernelModule({ eventBusFailures: 'as-thrown' })] }).resolve(EventBus);
 
     bus.subscribe(TYPE, refusing);
 
     await expect(bus.publish([placed('event-1')])).rejects.toBe(refusal);
   });
 
-  it('reaches the publisher as it is when the test application delivers failures as thrown', async () => {
-    const app = createTestApplication({ modules: [], eventBusFailures: 'as-thrown' });
+  it('reaches the publisher as it is on the event bus of the test application', async () => {
+    const app = createTestApplication({ modules: [] });
 
     app.eventBus.subscribe(TYPE, refusing);
 

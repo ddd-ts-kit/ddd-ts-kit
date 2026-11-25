@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:77dd78c05ba1f4a6 -->
+<!-- translation-of: README.md sha256:9972c453464f5508 -->
 
 # @ddd-ts-kit/events
 
@@ -646,9 +646,8 @@ ce qu'il ne garantit pas.
   `wakeOn` (le signal en mémoire, ou `LISTEN/NOTIFY` sur PostgreSQL) et gardez un long intervalle
   comme filet de sécurité.
 - **Exigences du publisher.** Aucune au-delà du port. Le bus en mémoire exécute les gestionnaires
-  dans `publish` et rejette quand l'un d'eux échoue, avec une `AggregateError` par défaut ;
-  construit avec `{ failures: 'as-thrown' }`, il rejette avec l'erreur du seul gestionnaire en
-  échec telle quelle, et le relais enregistre son `code` (`CONCURRENCY_CONFLICT`) comme
+  dans `publish` et rejette quand l'un d'eux échoue, avec l'erreur du seul gestionnaire en
+  échec telle quelle : le relais enregistre son `code` (`CONCURRENCY_CONFLICT`) comme
   `lastErrorCode`. Le relais retente alors l'enregistrement, si bien que la politique de nouvelles
   tentatives des consommateurs EST l'attente exponentielle du relais.
 - **Exigences du consommateur.** `consume` avec le stockage des événements traités et l'unité de

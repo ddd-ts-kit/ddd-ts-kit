@@ -9,7 +9,8 @@ export abstract class DomainError extends Error {
 
   constructor(message: string, options?: { cause?: unknown }) {
     super(message, options);
-    this.name = new.target.name;
+    // Out of enumeration, as the name of an `Error` is: a spread or a structured logger writes the code alone.
+    Object.defineProperty(this, 'name', { value: new.target.name, writable: true, configurable: true });
   }
 
   /** What `JSON.stringify` writes of a refusal: never its stack, its cause or a fact it did not expose. */

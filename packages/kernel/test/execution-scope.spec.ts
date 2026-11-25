@@ -12,6 +12,7 @@ import {
   isPastDeadline,
   logFieldsOf,
   stampCreation,
+  restamped,
   stampUpdate,
   tenantScopeOf,
   withActor,
@@ -55,6 +56,13 @@ describe('ExecutionContext', () => {
     expect(asBob).toMatchObject({ correlationId: 'corr-1', actor: bob, tenantId: 'acme', origin: 'http' });
     expect(asBob.session).toBeUndefined();
     expect(withActor(request, ada)).toBe(request);
+  });
+
+  it('seen as another actor leaves the elevation with the actor it was opened for', () => {
+    const elevated = { ...request, elevation: { reason: 'SUPPORT_TICKET', tenants: 'all' as const } };
+
+    expect(withActor(elevated, bob).elevation).toBeUndefined();
+    expect(withActor(elevated, ada).elevation).toEqual({ reason: 'SUPPORT_TICKET', tenants: 'all' });
   });
 
   it('knows when its deadline has passed', () => {
@@ -222,7 +230,7 @@ describe('audit stamps and tenant scoping', () => {
     const created = stampCreation(new FixedExecutionScope(request), clock);
     const later = new FixedClock(new Date('2026-03-02T08:00:00.000Z'));
 
-    expect(stampUpdate(created, new FixedExecutionScope(job), later)).toEqual({
+    expect(restamped(created, new FixedExecutionScope(job), later)).toEqual({
       ...created,
       updatedAt: new Date('2026-03-02T08:00:00.000Z'),
       updatedBy: 'bob',

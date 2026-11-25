@@ -45,6 +45,7 @@ export * from './application/audit/audit-sort-field';
 export * from './application/audit/audit-stamp';
 export * from './application/audit/masked-value';
 export * from './application/audit/no-current-tenant-error';
+export * from './application/audit/restamped';
 export * from './application/audit/stamp-creation';
 export * from './application/audit/stamp-update';
 export * from './application/audit/tenant-scope-of';

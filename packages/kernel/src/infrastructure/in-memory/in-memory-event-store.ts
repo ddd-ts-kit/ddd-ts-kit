@@ -8,6 +8,7 @@ import { assertNamesTenant } from '../../application/tenancy/assert-names-tenant
 import { ConcurrencyError } from '../../domain/errors/concurrency-error';
 
 /** Reference implementation, for tests and single-process apps. Not transactional: a failed unit of work keeps what it appended.
+ * An append stores its whole batch or nothing.
  *
  * Given the execution scope, it holds tenant data, as the SQL stores do: it records the tenant of the
  * work at the first append of a stream, refuses a read or an append of a stream of another tenant
@@ -28,18 +29,20 @@ export class InMemoryEventStore implements EventStore {
 
     const tenantId = held[0]?.tenantId ?? this.scope?.current()?.tenantId;
 
-    events.forEach((event, index) => {
-      this.events.push(
-        structuredClone({
-          ...event,
-          metadata: event.metadata ?? {},
-          stream,
-          ...(tenantId === undefined ? {} : { tenantId }),
-          version: version + index + 1,
-          position: this.events.length + 1,
-        }),
-      );
-    });
+    const position = this.events.length;
+
+    const placed = events.map((event, index) =>
+      structuredClone({
+        ...event,
+        metadata: event.metadata ?? {},
+        stream,
+        ...(tenantId === undefined ? {} : { tenantId }),
+        version: version + index + 1,
+        position: position + index + 1,
+      }),
+    );
+
+    this.events.push(...placed);
 
     return { version: version + events.length, position: this.events.length };
   }

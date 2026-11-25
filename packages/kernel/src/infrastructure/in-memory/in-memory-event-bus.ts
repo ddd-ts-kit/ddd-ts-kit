@@ -6,22 +6,11 @@ import type { IntegrationEventSubscriber } from '../../application/ports/integra
 import { asJsonCarries } from './as-json-carries';
 
 /**
- * How `publish` rejects once its handlers ran. `aggregated`: always an `AggregateError` holding
- * every failure, even a single one. `as-thrown`: one failure is rethrown as it is, so its class
- * and its `code` (`CONCURRENCY_CONFLICT`, answered 409) reach the caller; several are rethrown
- * together in an `AggregateError`.
- */
-export type EventBusFailures = 'aggregated' | 'as-thrown';
-
-export interface InMemoryEventBusOptions {
-  /** Default `aggregated`; it becomes `as-thrown` in a later minor version. */
-  readonly failures?: EventBusFailures | undefined;
-}
-
-/**
  * Reference provider for IntegrationEvents, for tests, local dev and single-process apps.
  * Delivery is at-least-once-shaped: handlers are awaited in order, a failing handler
- * does not stop the others, and failures are collected and rethrown as `failures` says.
+ * does not stop the others. `publish` then rejects with the failure of a single handler as it
+ * is, so its class and its `code` (`CONCURRENCY_CONFLICT`, answered 409) reach the caller, and
+ * with an `AggregateError` of several.
  * An event is delivered as a broker delivers it, as JSON carries it: the handlers of a type
  * share one copy, where a `Date` is its text, and an event JSON cannot carry (a bigint, a
  * cycle) is refused at the publication.
@@ -34,12 +23,6 @@ export class InMemoryEventBus implements IntegrationEventPublisher, IntegrationE
   readonly published: IntegrationEvent[] = [];
 
   private readonly handlers = new Map<string, Set<IntegrationEventCallback>>();
-
-  private readonly failureMode: EventBusFailures;
-
-  constructor(options: InMemoryEventBusOptions = {}) {
-    this.failureMode = options.failures ?? 'aggregated';
-  }
 
   async publish(events: readonly IntegrationEvent[]): Promise<void> {
     const failures: unknown[] = [];
@@ -58,11 +41,11 @@ export class InMemoryEventBus implements IntegrationEventPublisher, IntegrationE
       }
     }
 
-    if (failures.length === 1 && this.failureMode === 'as-thrown') {
+    if (failures.length === 1) {
       throw failures[0];
     }
 
-    if (failures.length > 0) {
+    if (failures.length > 1) {
       throw new AggregateError(failures, `${failures.length} event handler(s) failed`);
     }
   }
