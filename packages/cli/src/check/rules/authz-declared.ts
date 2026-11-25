@@ -2,8 +2,8 @@ import { onKitContainer } from '../../config';
 import { declaredRoleOf } from '../../declared';
 import { classesOf } from '../declarations/classes-of';
 import type { Finding } from '../model/finding';
-import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { Project, ProjectFacts } from '../model/project';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { inLayer } from '../support/in-layer';
@@ -30,17 +30,31 @@ const DECORATOR_FIX =
 const SECURITY_FIX =
   "Add `security: ['bearer']` (the schemes the route accepts) to the definition given to defineRoute, or `security: false` when the route is public on purpose.";
 
-export const authzDeclared: Rule = {
+export const authzDeclared: FileRule = {
   id: 'authz/declared',
   description: 'Every command, query and route declares the permission it requires, or declares itself public.',
+  severity: 'error',
+  doc: {
+    why: 'A use case nobody thought about is reachable by everybody. Declaring the permission next to the registration, or declaring the use case public, makes the decision visible in review and lets the bus middleware refuse everything else. The same holds for a route: its security is part of the contract, not a default. The route type enforces it already (`defineRoute` does not compile without `security` and refuses an empty list); this rule stays as the net for a definition built loosely, from an untyped object or a cast. On a message class, @Requires(...) or @Public() of @ddd-ts-kit/kernel/declarations is the declaration, in any project; in the declared style there is no registration to read, so a command or query class carrying neither is reported.',
+    bad: `builder.command(VoidInvoiceCommand).handledBy(VoidInvoiceHandler, [InvoiceRepository]);
+defineRoute({ method: 'POST', path: '/invoices/:id/void' }, handler);
+// application/commands/void-invoice/void-invoice.command.ts, declared style
+export class VoidInvoiceCommand extends AuthorizedCommand<void> {}`,
+    good: `builder.command(VoidInvoiceCommand).requires(billingPermissions['invoice.void']).handledBy(VoidInvoiceHandler, [InvoiceRepository]);
+builder.query(GetCatalogQuery).public().handledBy(GetCatalogHandler, [CatalogReader]);
+defineRoute({ method: 'POST', path: '/invoices/:id/void', security: ['bearer'] }, handler);
+// application/commands/void-invoice/void-invoice.command.ts, declared style
+@Requires(billingPermissions['invoice.void'])
+export class VoidInvoiceCommand extends AuthorizedCommand<void> {}`,
+  },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => [
+  judge(file, project) {
+    return [
       ...undeclaredRegistrations(file, project),
       ...undeclaredMessages(file, project),
       ...routesWithoutSecurity(file),
       ...unguardedControllers(file),
-    ]);
+    ];
   },
   /** Modules wired by hand list their use cases in an authorization map: every command and query has to be in it. */
   acrossProject(project) {
@@ -54,7 +68,7 @@ export const authzDeclared: Rule = {
   },
 };
 
-function undeclaredRegistrations(file: SourceFile, project: Project): Finding[] {
+function undeclaredRegistrations(file: SourceFile, project: ProjectFacts): Finding[] {
   if (!inContext(file.location) || file.location.layer !== 'module') {
     return [];
   }
@@ -97,7 +111,7 @@ function declaresItsAccess(file: SourceFile, name: string): boolean {
 }
 
 /** In the declared style there is no registration to read: the exported class of a command or query file says who may send it. */
-function undeclaredMessages(file: SourceFile, project: Project): Finding[] {
+function undeclaredMessages(file: SourceFile, project: ProjectFacts): Finding[] {
   const role =
     isDeclaredStyle(project) && !file.isTest
       ? declaredRoleOf(pathInContext(project, file) ?? '', WITHOUT_MODULE)

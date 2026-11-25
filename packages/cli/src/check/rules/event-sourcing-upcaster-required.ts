@@ -1,33 +1,65 @@
-import { eventNameResolver } from '../events/event-name-resolver';
+import { eventNameResolver, type EventNameResolver } from '../events/event-name-resolver';
 import { readStoredEventsLock, type StoredEventsLock } from '../event-sourcing/read-stored-events-lock';
 import type { StoredEventDeclaration } from '../event-sourcing/stored-event-declaration';
 import { storedEventDeclarations } from '../event-sourcing/stored-event-declarations';
 import { STORED_EVENTS_LOCK } from '../event-sourcing/stored-events-lock-file';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
+import type { SourceFile } from '../model/source-file';
+import { oncePerProject } from '../support/once-per-project';
 import { perFile } from '../support/per-file';
 
 const NEW_VERSION_FIX =
   'A stored event is never rewritten: keep the shape of the stored version as it is, declare the new shape under a new name, raise `version` by one and add the upcaster from the stored version, `upcasters: { <stored>: (data) => ({ ...data, <new field>: <value for the old events> }) }`, then `ddd-ts-kit docs --stored-events` records the new version once it is stored.';
 
-export const eventSourcingUpcasterRequired: Rule = {
+const lockOf = oncePerProject(({ root }) => readStoredEventsLock(root));
+
+export const eventSourcingUpcasterRequired: FileRule = {
   id: 'event-sourcing/upcaster-required',
   description: `A stored event names the type of its data in \`encode\` and declares it, with every named type it reaches, in its codec file; a version above 1 has an upcaster from each version below; and the shape of a version recorded in ${STORED_EVENTS_LOCK} never changes.`,
+  severity: 'error',
+  doc: {
+    why: "Stored events are never rewritten: an event stored years ago is read by today's code. Changing the type of the data of an event that is already stored breaks every replay of it, silently when the fields keep their names. The checkable criterion: the data of a stored event is a named type declared in its codec file with every named type it reaches (the kit's own PersonalValue aside), `encode` answers it, and its fingerprint (its fields and their types, the types it reaches included, layout and order aside) is recorded per version in stored-events.lock.json by `ddd-ts-kit docs --stored-events`, which never rewrites a recorded version. `ddd-ts-kit docs --check`, in the pipeline, fails while a declared version is not recorded, so no version reaches the main branch unrecorded. Reported: an encode that names no type, a type not declared in the file, a type it reaches that the file does not declare, a version above 1 without an upcaster from each version below it, a version below the last one recorded, and a recorded version whose shape changed. The lock is committed; until a version is recorded, its shape is free to change.",
+    bad: `// infrastructure/persistence/attendance-record-events.mapper.ts
+interface NoShowNotedData { readonly appointmentId: string; readonly reason: string } // a field added in place
+[NoShowNoted.eventName]: defineStoredEvent(NoShowNoted, { version: 1, encode: (event): NoShowNotedData => ({ ... }), decode }),`,
+    good: `// infrastructure/persistence/attendance-record-events.mapper.ts
+interface NoShowNotedData { readonly appointmentId: string; readonly reason: string }
+[NoShowNoted.eventName]: defineStoredEvent(NoShowNoted, {
+  version: 2,
+  encode: (event): NoShowNotedData => ({ ... }),
+  decode,
+  upcasters: { 1: (data) => ({ ...data, reason: '' }) },
+}),`,
+  },
   scope: 'file',
-  run(project) {
-    const lock = readStoredEventsLock(project.root);
+  judge(file, project) {
+    return storedEventDeclarations(file, eventNameResolver([file])).flatMap((declaration) => [
+      ...unnamed(declaration),
+      ...unresolved(declaration),
+      ...missingUpcasters(declaration),
+      ...changedShape(declaration, lockOf(project)),
+    ]);
+  },
+  /** The stored shape of an event whose class, and so whose name, another file declares. */
+  acrossProject(project) {
     const eventNameOf = eventNameResolver(project.files);
+    const lock = lockOf(project);
 
     return perFile(project, this.id, (file) =>
-      storedEventDeclarations(file, eventNameOf).flatMap((declaration) => [
-        ...unnamed(declaration),
-        ...unresolved(declaration),
-        ...missingUpcasters(declaration),
-        ...changedShape(declaration, lock),
-      ]),
+      namedElsewhere(file, eventNameOf).flatMap((declaration) => changedShape(declaration, lock)),
     );
   },
 };
+
+/** The stored events a file names by a class it does not declare, with the name read where the class is. */
+function namedElsewhere(file: SourceFile, eventNameOf: EventNameResolver): StoredEventDeclaration[] {
+  const alone = storedEventDeclarations(file, eventNameResolver([file]));
+
+  return storedEventDeclarations(file, eventNameOf).filter(
+    ({ name }, index) => name !== undefined && alone[index]?.name === undefined,
+  );
+}
 
 function unnamed({ eventClass, payloadType, fingerprint, line }: StoredEventDeclaration): Finding[] {
   if (payloadType === undefined) {

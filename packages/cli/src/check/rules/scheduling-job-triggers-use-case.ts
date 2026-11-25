@@ -2,14 +2,13 @@ import { classesOf } from '../declarations/classes-of';
 import { dependencyLists } from '../declarations/dependency-lists';
 import type { Finding } from '../model/finding';
 import type { Location } from '../model/location';
-import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectFacts } from '../model/project';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { isJobFile } from '../scheduling/is-job-file';
 import type { ClassShape } from '../structure/class-shape';
 import { importedFrom } from '../support/imported-from';
 import { isDeclaredStyle } from '../support/is-declared-style';
-import { perFile } from '../support/per-file';
 import { callArguments } from '../text/call-arguments';
 import { identifier } from '../text/identifier';
 
@@ -23,21 +22,48 @@ const COMMAND_FIX =
 const PLACE_FIX =
   'Move the class to application/scheduling/<name>.job.ts of its context: a job is found, tested and extracted with its context from that one place.';
 
-export const schedulingJobTriggersUseCase: Rule = {
+export const schedulingJobTriggersUseCase: FileRule = {
   id: 'scheduling/job-triggers-use-case',
   description:
     'A job only triggers use cases: a class of application/scheduling/*.job.ts implements ScheduledJob, sends a command from run, and depends on no repository, no part of the model and no adapter.',
-  scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (file.isTest) {
-        return [];
-      }
+  severity: 'error',
+  doc: {
+    why: 'A job says when something happens, a use case says what. A job that loads an aggregate, calls a repository or an adapter is a use case nobody can send by another way: no permission, no unit of work, no audit entry, no test through the bus. Kept to one command sent through the CommandBus port, the job is a line of schedule, and the work is a handler like any other. It lives in application/scheduling/*.job.ts, implements ScheduledJob, and depends on buses and ports only.',
+    bad: `// application/scheduling/send-reminders.job.ts
+import { Invoice } from '@/contexts/billing/domain/aggregates/invoice.aggregate';
 
-      return isJobFile(file.path, file.location)
-        ? [...shape(file), ...reach(file)]
-        : [...declaredElsewhere(file, project), ...registeredFromElsewhere(file)];
-    });
+@Scheduled('billing.send-reminders', { every: '15m' })
+export class SendRemindersJob {
+  constructor(
+    private readonly invoices: InvoiceRepository,
+    private readonly mailer: Mailer,
+  ) {}
+
+  async run(): Promise<void> {
+    for (const invoice of await this.invoices.findOverdue()) {
+      await this.mailer.remind(invoice);
+    }
+  }
+}`,
+    good: `// application/scheduling/send-reminders.job.ts
+@Scheduled('billing.send-reminders', { every: '15m' })
+export class SendRemindersJob implements ScheduledJob {
+  constructor(private readonly commands: CommandBus) {}
+
+  async run(execution: JobExecution): Promise<void> {
+    await this.commands.execute(new SendRemindersCommand(systemActor('billing.send-reminders'), execution.scheduledAt));
+  }
+}`,
+  },
+  scope: 'file',
+  judge(file, project) {
+    if (file.isTest) {
+      return [];
+    }
+
+    return isJobFile(file.path, file.location)
+      ? [...shape(file), ...reach(file)]
+      : [...declaredElsewhere(file, project), ...registeredFromElsewhere(file)];
   },
 };
 
@@ -134,7 +160,7 @@ function reached(location: Location, isDependency: boolean): string | undefined 
 }
 
 /** Outside the declared style nothing else says that a class carrying `@Scheduled` is out of place. */
-function declaredElsewhere(file: SourceFile, project: Project): Finding[] {
+function declaredElsewhere(file: SourceFile, project: ProjectFacts): Finding[] {
   if (isDeclaredStyle(project)) {
     return [];
   }

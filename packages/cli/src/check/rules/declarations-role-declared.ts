@@ -6,13 +6,12 @@ import type { DeclaredClass } from '../declarations/declared-class';
 import type { Decoration } from '../declarations/decoration';
 import { optionOf, type OptionValue } from '../declarations/option-of';
 import type { Finding } from '../model/finding';
-import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectFacts } from '../model/project';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { isDeclaredStyle } from '../support/is-declared-style';
 import { pathInContext } from '../support/path-in-context';
-import { perFile } from '../support/per-file';
 import { WITHOUT_MODULE } from '../../model-modules';
 
 /** The option of each decorator that names what it declares, written once and never derived. */
@@ -29,23 +28,34 @@ interface Decorated {
   readonly decoration: Decoration;
 }
 
-export const declarationsRoleDeclared: Rule = {
+export const declarationsRoleDeclared: FileRule = {
   id: 'declarations/role-declared',
   description:
     'In the declared style, a role file exports a class carrying the decorator of its role, with its names written as string literals (a domain event handler writes none: it is attached under the name its event class declares), and domain/ declares nothing.',
+  severity: 'error',
+  doc: {
+    why: 'In the declared style nothing lists the classes of a context: a class is registered because its file has the name of a role and its decorator says which one. A role file whose class declares nothing, or declares another role, is wired nowhere and nobody is told. The names a declaration writes (a consumer, a policy; the name of a job is held by scheduling/job-name) are identities kept in stores and logs, so they are literals; a domain event handler writes none, it is attached under the name its event class declares once, static readonly eventName. The domain declares nothing: a decorator there would make the model depend on its own wiring. Checked in declared-style projects only.',
+    bad: `// application/commands/issue-invoice/issue-invoice.handler.ts
+export class IssueInvoiceHandler {}
+// application/policies/only-issuer-voids.policy.ts
+@Policy(billingPermissions['invoice.void'], { name: POLICY_NAME })
+// domain/aggregates/invoice.aggregate.ts
+@Repository(InvoiceRepository)
+export class Invoice {}`,
+    good: `// application/commands/issue-invoice/issue-invoice.handler.ts
+@CommandHandler(IssueInvoiceCommand)
+export class IssueInvoiceHandler {}
+// application/event-handlers/invoice-issued.event-handler.ts
+@DomainEventHandler(InvoiceIssued)
+export class InvoiceIssuedEventHandler {}`,
+  },
   scope: 'file',
-  run(project) {
-    if (!isDeclaredStyle(project)) {
+  judge(file, project) {
+    if (!isDeclaredStyle(project) || !inContext(file.location) || file.isTest) {
       return [];
     }
 
-    return perFile(project, this.id, (file) => {
-      if (!inContext(file.location) || file.isTest) {
-        return [];
-      }
-
-      return file.location.layer === 'domain' ? declaredInTheDomain(file) : outsideTheDomain(file, project);
-    });
+    return file.location.layer === 'domain' ? declaredInTheDomain(file) : outsideTheDomain(file, project);
   },
 };
 
@@ -63,7 +73,7 @@ function decorated(file: SourceFile): Decorated[] {
   );
 }
 
-function outsideTheDomain(file: SourceFile, project: Project): Finding[] {
+function outsideTheDomain(file: SourceFile, project: ProjectFacts): Finding[] {
   const inside = pathInContext(project, file) ?? '';
   const role = declaredRoleOf(inside, WITHOUT_MODULE);
   const place = role === undefined ? misplaced(file) : undeclaredRole(file, role, inside);
