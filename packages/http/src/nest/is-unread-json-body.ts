@@ -1,5 +1,6 @@
+import { isJsonContentType } from '../representation/is-json-content-type';
+
 const BAD_REQUEST = 400;
-const JSON_MEDIA = /[/+]json\b/i;
 /** What both parsers say of a body that is not JSON, as Nest keeps it in the message of its own exception. */
 const NAMES_JSON = /\bJSON\b/;
 
@@ -20,7 +21,7 @@ export function isUnreadJsonBody(exception: unknown, request: unknown): boolean 
     typeof message === 'string' &&
     NAMES_JSON.test(message) &&
     typeof contentType === 'string' &&
-    JSON_MEDIA.test(contentType) &&
+    isJsonContentType(contentType) &&
     valueAt(request, 'body') === undefined
   );
 }

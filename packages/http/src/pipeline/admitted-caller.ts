@@ -1,8 +1,9 @@
-import { DomainError, type ExecutionContext } from '@ddd-ts-kit/kernel';
+import { DomainError } from '@ddd-ts-kit/kernel';
 import { guardRefusals } from '../controller/guard-refusals';
 import type { RawHeaders } from '../route/raw-headers';
 import type { Route } from '../route/route';
 import { executionOfRequest } from './execution-of-request';
+import type { Progress } from './progress';
 
 export interface CallerAdmission {
   readonly route: Route;
@@ -10,8 +11,8 @@ export interface CallerAdmission {
   readonly correlationId: string;
   readonly principal: unknown;
   readonly deadline: Date | undefined;
-  /** Given the execution of a refused caller, for the hooks to say who was refused. */
-  readonly reached: { execution?: ExecutionContext };
+  /** Told the execution of a refused caller, for the hooks to say who was refused. */
+  readonly progress: Progress;
 }
 
 /**
@@ -20,7 +21,7 @@ export interface CallerAdmission {
  * upload for nothing. A refusal is one at the edge, reported like the refusal of a guard.
  */
 export async function admittedCaller(admission: CallerAdmission): Promise<void> {
-  const { route, headers, correlationId, principal, deadline, reached } = admission;
+  const { route, headers, correlationId, principal, deadline, progress } = admission;
 
   if (route.admit === undefined) {
     return;
@@ -37,7 +38,7 @@ export async function admittedCaller(admission: CallerAdmission): Promise<void> 
     }
 
     // The tenant the request names is not resolved yet: the execution says who, not where.
-    reached.execution = execution;
+    progress.identified(execution);
 
     throw error;
   }

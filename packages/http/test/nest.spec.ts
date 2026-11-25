@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { describe, expect, it } from 'vitest';
 import type { ArgumentsHost, DynamicModule } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
 import type { Request } from 'express';
 import type { FastifyRequest } from 'fastify';
@@ -14,12 +15,15 @@ import { describeAdapter } from './support/behaviour';
 describeAdapter(
   'NestJS over Express',
   async (routes, options) => {
-    const app = await NestFactory.create(createRoutesModule(routes, options), {
+    const app = await NestFactory.create<NestExpressApplication>(createRoutesModule(routes, options), {
       logger: false,
       abortOnError: false,
       // Nest keeps the bytes of a JSON body in `request.rawBody`, which a raw body route reads.
       rawBody: true,
     });
+
+    // The parser of Nest refuses a JSON value that is no object: given this, the schema of the route decides.
+    app.useBodyParser('json', { strict: false });
 
     await app.listen(0, '127.0.0.1');
 

@@ -112,7 +112,7 @@ export type { RawRequest } from './pipeline/raw-request';
 export type { RouteAround } from './pipeline/route-around';
 export { reportHttpErrors } from './pipeline/report-http-errors';
 export type { RouteResponse } from './pipeline/route-response';
-export { serializeBody } from './pipeline/serialize-body';
+export type { Payload } from './pipeline/payload';
 export { assertUniqueRoutes } from './route/assert-unique-routes';
 export { defineRoute } from './route/define-route';
 export { defineRoutes } from './route/define-routes';

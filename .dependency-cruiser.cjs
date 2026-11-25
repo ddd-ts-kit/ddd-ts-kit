@@ -10,6 +10,7 @@ const CROSS_PACKAGE_PINS = [
   `^${PACKAGES}/cli/test/alias-boundaries\\.spec\\.ts$`,
   `^${PACKAGES}/cli/test/payload-schema-packages-parity\\.spec\\.ts$`,
   `^${PACKAGES}/cli/test/architecture-reference\\.spec\\.ts$`,
+  `^${PACKAGES}/cli/test/purity-twins\\.spec\\.ts$`,
 ];
 
 /** @type {import('dependency-cruiser').IConfiguration} */
