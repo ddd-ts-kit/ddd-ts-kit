@@ -43,9 +43,9 @@ export abstract class Logger {
 
   /**
    * Resolves once every entry logged so far, through this logger or a child, was handed to its
-   * destination. Never rejects. Called once, when the process stops, after the last entry: an
-   * entry logged afterwards may be written or dropped, depending on the adapter, and never
-   * throws; a second call resolves too.
+   * destination. Never rejects, and ends nothing: an entry logged afterwards is written like the
+   * others, and a later call flushes it in turn. The application calls it when it stops, after
+   * the last entry of its modules.
    */
   abstract flush(): Promise<void>;
 }

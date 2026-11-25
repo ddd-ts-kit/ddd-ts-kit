@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:ab0d16cc6b267a83 -->
+<!-- translation-of: README.md sha256:d33e12d0a2bd9259 -->
 
 # @ddd-ts-kit/winston
 
@@ -63,7 +63,7 @@ const app = createApplication({
 process.once('SIGTERM', () => void shutdown());
 
 async function shutdown(): Promise<void> {
-  await app.stop(); // vide le rapporteur d'erreurs, puis le logger, en dernier : cela clôt le logger winston
+  await app.stop(); // vide le rapporteur d'erreurs, puis le logger, en dernier
   await tracing.shutdown();
 }
 ```
@@ -246,7 +246,7 @@ Une ligne sous le seuil coûte une comparaison : l'adaptateur interroge d'abord
 n'écartent la ligne. Le seuil d'une instance modifié en cours d'exécution
 (`instance.level = 'debug'`) est suivi par l'adaptateur et par ses enfants. `isLevelEnabled(level)`
 du port répond à la même question pour le niveau correspondant : interrogez-le avant de
-construire des champs coûteux. Une fois le *logger* vidé, il répond `false` pour chaque niveau.
+construire des champs coûteux. Une fois le *logger* clos, il répond `false` pour chaque niveau.
 
 `child(fields)` est un enfant winston : les champs sont liés une fois, et winston les fusionne
 sous les champs de chaque ligne. Trois choses diffèrent de ce que fait winston appelé
@@ -259,25 +259,38 @@ l'emporte sur un champ du même nom sur une ligne ou dans un enfant, là où les
 
 ## Vidage
 
-`flush(): Promise<void>` clôt le *logger* winston et se résout une fois que chacun de ses
-transports a écrit ce qui lui a été confié (leur événement `finish`). Il ne rejette jamais, et un
-second appel renvoie la même promesse. `app.stop()` l'appelle, en dernier, après l'arrêt des
-modules et le vidage du rapporteur d'erreurs : l'arrêt journalise lui aussi. Sans l'application
-du *package* di, appelez-le vous-même à cet endroit.
+`flush(): Promise<void>` se résout une fois que winston a confié à chacun de ses transports
+chaque ligne journalisée jusque-là, par le *logger* ou un enfant : aucune n'attend dans le flux
+du *logger* ni dans celui d'un transport. Il ne rejette jamais, et attend dix secondes au plus
+un transport qui ne répond pas. `app.stop()` l'appelle,
+en dernier, après l'arrêt des modules et le vidage du rapporteur d'erreurs : l'arrêt journalise
+lui aussi. Sans l'application du *package* di, appelez-le vous-même à cet endroit.
 
-| Une fois `flush()` résolu | `@ddd-ts-kit/winston` | `@ddd-ts-kit/pino` |
+Un vidage ne clôt rien, comme le dit le port et comme le fait `@ddd-ts-kit/pino` : une ligne
+journalisée ensuite est écrite comme les autres, et un vidage ultérieur l'attend à son tour. Ce
+qu'un transport fait d'une ligne qu'il a prise n'est pas attendu : le transport `File` de
+winston a pris chaque ligne quand `flush()` se résout et écrit les dernières dans son fichier
+pendant que le processus continue, et un transport sur un flux que vous avez ouvert vous-même
+(une *socket*, un flux de fichier donné au transport `Stream`) a confié ses lignes à ce flux,
+dont la fermeture vous revient.
+
+`end(): Promise<void>`, sur le `WinstonLogger`, est l'autre verbe : il clôt le *logger* winston
+et se résout une fois que chaque transport a terminé (leur événement `finish`), un fichier fermé
+sur toutes ses lignes. Il est définitif, puisqu'un *logger* winston ne se rouvre pas : ce qui
+est journalisé ensuite, par ce *logger* ou l'un de ses enfants, est écarté sans erreur,
+`isLevelEnabled` répond `false`, et un second appel renvoie la même promesse. Appelez-le là où
+le processus s'apprête à sortir de lui-même, après `app.stop()` :
+
+```ts
+await app.stop();
+await logger.end(); // avant un process.exit() : le transport File a fermé son fichier
+```
+
+| Une fois résolu | `flush()` | `end()` |
 |---|---|---|
-| une ligne journalisée | écartée, sans erreur | écrite, comme avant |
-| `isLevelEnabled(level)` | `false` pour chaque niveau | le seuil, comme avant |
-| un second `flush()` | la même promesse | un nouveau vidage |
-
-Le port appelle un vidage une fois, à l'arrêt, et ne précise pas ce qui est journalisé ensuite.
-Ici le vidage est définitif : un *logger* winston ne se rouvre pas, donc ce qui est journalisé
-ensuite, par ce *logger* ou l'un de ses enfants, est écarté sans erreur, et `isLevelEnabled`
-répond `false`. Tout ce qui doit être journalisé à propos de l'arrêt l'est avant le retour de
-`app.stop()`. Un transport sur un flux que vous avez ouvert vous-même (une *socket*, un flux de
-fichier donné au transport `Stream`) a confié ses lignes à ce flux quand `flush()` se résout :
-fermer ce flux vous revient.
+| une ligne journalisée | écrite, comme avant | écartée, sans erreur |
+| `isLevelEnabled(level)` | le seuil, comme avant | `false` pour chaque niveau |
+| un second appel | un nouveau vidage | la même promesse |
 
 ## Performances
 

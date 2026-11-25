@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:acf0ca6fd0e43901 -->
+<!-- translation-of: README.md sha256:2d99c66743c99a80 -->
 
 # @ddd-ts-kit/kernel
 
@@ -1308,11 +1308,10 @@ enfants. Interrogez-le avant de construire des champs coûteux ; le kit le fait,
 `loggingMiddleware` et le planificateur. `NoopLogger` répond `false`.
 
 **`flush()`** se résout une fois que chaque entrée journalisée jusque-là, par le *logger* ou un
-enfant, a été remise à sa destination, et ne rejette jamais. On l'appelle une fois, à l'arrêt du
-processus, après la dernière entrée : l'application de `@ddd-ts-kit/di` l'appelle à la fin de
-`stop()`. Ce qui est journalisé après un *flush* n'est pas spécifié, et ne lève jamais : pino et
-`StdoutLogger` l'écrivent encore, winston, dont le *flush* termine le *logger*, l'abandonne. Un
-second appel se résout aussi.
+enfant, a été remise à sa destination, et ne rejette jamais. Il ne clôt rien : une entrée
+journalisée ensuite est écrite comme les autres, par chaque *logger* du kit, et un appel
+ultérieur la vide à son tour. L'application de `@ddd-ts-kit/di` l'appelle à la fin de `stop()`,
+après la dernière entrée de ses modules.
 
 `InMemoryLogger` prend `{ level?, fields?, base?, scrubMessages? }` comme un vrai adaptateur : un
 seuil (par défaut `debug`, chaque entrée), des champs lus à chaque entrée, des champs ajoutés à

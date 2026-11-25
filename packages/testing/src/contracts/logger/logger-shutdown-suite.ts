@@ -12,7 +12,7 @@ class ParcelLost extends DomainError {
   readonly code = 'PARCEL_LOST';
 }
 
-/** An error passed as a field, and the flush that ends the life of a logger. */
+/** An error passed as a field, and the flush a logger stays usable after. */
 export class LoggerShutdownSuite extends ContractSuite<LoggerUnderContract> {
   constructor(
     runner: ContractRunner,
@@ -107,7 +107,7 @@ export class LoggerShutdownSuite extends ContractSuite<LoggerUnderContract> {
 
   private flushes(): void {
     this.it(
-      'has handed every entry to its sink once the flush resolves, and takes what follows without a throw',
+      'has handed every entry to its sink once the flush resolves, and writes what follows like the others',
       async () => {
         const shipping = this.subject.logger.child({ context: 'shipping' });
 
@@ -121,14 +121,17 @@ export class LoggerShutdownSuite extends ContractSuite<LoggerUnderContract> {
           'carrier slow',
         ]);
 
-        this.subject.logger.error('logged after the flush');
-        shipping.info('logged after the flush');
-        shipping.isLevelEnabled('info');
+        this.subject.logger.error('carrier failed');
+        shipping.info('parcel returned');
         await shipping.flush();
 
-        this.expect((await this.subject.lines()).slice(0, 2).map(({ message }) => message)).toEqual([
+        this.expect(shipping.isLevelEnabled('info')).toBe(true);
+
+        this.expect((await this.subject.lines()).map(({ message }) => message)).toEqual([
           'order shipped',
           'carrier slow',
+          'carrier failed',
+          'parcel returned',
         ]);
       },
     );

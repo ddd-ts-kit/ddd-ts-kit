@@ -301,9 +301,8 @@ process with nothing else to do, and what the shutdown does after the flush woul
 `app.stop()` calls it, last, after the modules stopped and the error reporter was flushed:
 stopping logs too. Without the application of the di package, call it yourself at that place.
 
-The port calls a flush once, at shutdown, and leaves what is logged afterwards unspecified.
-Here the logger stays usable: a line logged after the flush is written like the others, and
-with `asynchronous: true` it waits in the buffer for pino's exit hook.
+A flush ends nothing, as the port says: a line logged after it is written like the others, and
+with `asynchronous: true` it waits in the buffer for the next flush or for pino's exit hook.
 
 ## Performance
 

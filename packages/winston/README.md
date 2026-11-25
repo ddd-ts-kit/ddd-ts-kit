@@ -60,7 +60,7 @@ const app = createApplication({
 process.once('SIGTERM', () => void shutdown());
 
 async function shutdown(): Promise<void> {
-  await app.stop(); // flushes the error reporter, then the logger, last: that ends the winston logger
+  await app.stop(); // flushes the error reporter, then the logger, last
   await tracing.shutdown();
 }
 ```
@@ -234,7 +234,7 @@ A line below the threshold costs one comparison: the adapter asks `isLevelEnable
 because winston alone would run every format before its transports drop the line. The
 threshold of an instance changed while running (`instance.level = 'debug'`) is followed by the
 adapter and by its children. `isLevelEnabled(level)` of the port answers the same question for
-the mapped level: ask it before building fields that cost. Once the logger was flushed it
+the mapped level: ask it before building fields that cost. Once the logger was ended it
 answers `false` for every level.
 
 `child(fields)` is a winston child: the fields are bound once, and winston merges them under
@@ -248,25 +248,36 @@ the child win.
 
 ## Flush
 
-`flush(): Promise<void>` ends the winston logger and resolves once each of its transports has
-written what it was handed (their `finish` event). It never rejects, and a second call answers
-the same promise. `app.stop()` calls it, last, after the modules stopped and the error reporter
-was flushed: stopping logs too. Without the application of the di package, call it yourself at
-that place.
+`flush(): Promise<void>` resolves once winston has handed each of its transports every line
+logged so far, through the logger or a child: none waits in the stream of the logger or of a
+transport. It never rejects, and waits ten seconds at most for a transport that does not answer. `app.stop()` calls it, last, after
+the modules stopped and the error reporter was flushed: stopping logs too. Without the
+application of the di package, call it yourself at that place.
 
-| After `flush()` resolved | `@ddd-ts-kit/winston` | `@ddd-ts-kit/pino` |
+A flush ends nothing, as the port says and as `@ddd-ts-kit/pino` does: a line logged after it
+is written like the others, and a later flush waits for it in turn. What a transport does with
+a line it took is not waited for: the `File` transport of winston has taken every line when
+`flush()` resolves and writes the last of them to its file while the process runs on, and
+a transport over a stream you opened yourself (a socket, a file stream given to the `Stream`
+transport) has handed its lines to that stream, whose end is yours.
+
+`end(): Promise<void>`, on the `WinstonLogger`, is the other verb: it ends the winston logger
+and resolves once each transport has finished (their `finish` event), a file closed over all
+its lines. It is final, since a winston logger does not reopen: what is logged afterwards,
+through this logger or one of its children, is dropped without an error, `isLevelEnabled`
+answers `false`, and a second call answers the same promise. Call it where the process is about
+to leave by itself, after `app.stop()`:
+
+```ts
+await app.stop();
+await logger.end(); // before a process.exit(): the File transport has closed its file
+```
+
+| After it resolved | `flush()` | `end()` |
 |---|---|---|
-| a line logged | dropped, without an error | written, like before |
-| `isLevelEnabled(level)` | `false` for every level | the threshold, as before |
-| a second `flush()` | the same promise | a new flush |
-
-The port calls a flush once, at shutdown, and leaves what is logged afterwards unspecified.
-Here the flush is final: a winston logger does not reopen, so what is logged afterwards,
-through this logger or one of its children, is dropped without an error, and `isLevelEnabled`
-answers `false`. Whatever must be logged about the shutdown is logged before `app.stop()`
-returns. A transport over a stream you opened yourself
-(a socket, a file stream given to the `Stream` transport) has handed its lines to that stream
-when `flush()` resolves: ending that stream is yours.
+| a line logged | written, like before | dropped, without an error |
+| `isLevelEnabled(level)` | the threshold, as before | `false` for every level |
+| a second call | a new flush | the same promise |
 
 ## Performance
 

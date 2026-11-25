@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:009547507059aa2a -->
+<!-- translation-of: README.md sha256:cdf16b8048155c8c -->
 
 # @ddd-ts-kit/pino
 
@@ -313,9 +313,9 @@ après le vidage ne s'exécuterait jamais. `app.stop()` l'appelle, en dernier, a
 d'erreurs : l'arrêt journalise lui aussi. Sans l'application du *package* di, appelez-le
 vous-même à cet endroit.
 
-Le port appelle un vidage une fois, à l'arrêt, et ne précise pas ce qui est journalisé ensuite.
-Ici le *logger* reste utilisable : une ligne journalisée après le vidage est écrite comme les
-autres, et avec `asynchronous: true` elle attend dans le tampon le crochet de sortie de pino.
+Un vidage ne clôt rien, comme le dit le port : une ligne journalisée ensuite est écrite comme
+les autres, et avec `asynchronous: true` elle attend dans le tampon le vidage suivant ou le
+crochet de sortie de pino.
 
 ## Performances
 
