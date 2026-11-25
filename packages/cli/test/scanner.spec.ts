@@ -224,6 +224,37 @@ describe('the literals a scan blanks', () => {
   });
 });
 
+describe('a slash after an expression', () => {
+  const codeOf = (source: string): string => scan(source).code;
+
+  it.each([
+    'return total! / count; const now = Date.now(); const half = count / 2;',
+    'const mean = totals[0]! / count; const now = Date.now(); const half = count / 2;',
+    'const mean = sum()! / count; const now = Date.now(); const half = count / 2;',
+    'const share = count++ / total; const now = Date.now(); const half = count / 2;',
+    'const share = count-- / total; const now = Date.now(); const half = count / 2;',
+    'const ratio = { value: 4 }.value / { value: 2 } / 2; const now = Date.now(); const half = 1 / 2;',
+  ])('divides: %s', (source) => {
+    expect(codeOf(source)).toBe(source);
+    expect(scan(source).uncertain).toBe(false);
+  });
+
+  it('keeps a comment after such a division a comment', () => {
+    expect(codeOf('const mean = total! / count; // Date.now()')).toBe(`const mean = total! / count; ${' '.repeat(13)}`);
+  });
+
+  it.each([
+    ["const odd = !/^a'b$/.test(name);", 'const odd = !/     /.test(name);'],
+    ["const odd = !!/^a'b$/.test(name);", 'const odd = !!/     /.test(name);'],
+    ["if (known && !/^a'b$/.test(name)) {}", 'if (known && !/     /.test(name)) {}'],
+    ["function odd() { return!/^a'b$/.test(name); }", 'function odd() { return!/     /.test(name); }'],
+    ["const sum = count + /^a'b$/.source;", 'const sum = count + /     /.source;'],
+    ["if (known) {\n}\n/^a'b$/.test(name);", 'if (known) {\n}\n/     /.test(name);'],
+  ])('opens a regular expression: %s', (source, code) => {
+    expect(codeOf(source)).toBe(code);
+  });
+});
+
 function specifiers(source: string): string[] {
   return scan(source).imports.map((record) => `${record.kind}:${record.specifier}`);
 }

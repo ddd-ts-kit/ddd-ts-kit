@@ -3,3 +3,5 @@
 **The checker sees an import whatever stands between its keyword and its specifier.** Four forms let a domain file import infrastructure with `layer/domain-purity` clean: `import(/* a comment */ '...')`, a dynamic import broken over two lines under 20 spaces of indentation, a named list longer than 4000 characters, and a binding named by a string (`import { "a-b" as ab } from '...'`). A statement is now read forward from its `import`, `export` or `require` to its specifier, with no limit of distance. `ddd-ts-kit build`, which rewrites the aliases of the same statements, reads them the same way.
 
 To move: run `ddd-ts-kit check`; an import it did not see is now judged by the layer and context rules.
+
+**A division after `!`, `++`, `--` or `}` no longer hides the rest of its line from the checker.** `return total! / count; const now = Date.now(); const half = count / 2;` was clean for `purity/no-system-clock`: the slash was read as the start of a regular expression, up to the next slash. A slash now divides after a non-null assertion (`total!`, `rows[0]!`, `sum()!`), after a postfix `++` or `--`, and after a closing brace on the same line.

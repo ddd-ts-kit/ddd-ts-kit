@@ -172,6 +172,23 @@ describe('the layer and naming rules of the checker, on code written otherwise t
     expect(reported(root, 'layer/domain-purity').map(({ line }) => line)).toEqual([1, 2, 5, 6]);
   });
 
+  it('purity/no-system-clock reads the code after a division of an asserted or an incremented value', () => {
+    const root = projectWith({
+      [AGGREGATE]: lines(
+        'export class Invoice {',
+        '  mean(total: number | undefined, count: number): number {',
+        '    return total! / count; const now = Date.now(); const half = count / 2;',
+        '  }',
+        '  share(count: number, total: number): number {',
+        '    return count++ / total; const now = Date.now(); const half = count / 2;',
+        '  }',
+        '}',
+      ),
+    });
+
+    expect(reported(root, 'purity/no-system-clock').map(({ line }) => line)).toEqual([3, 6]);
+  });
+
   it('naming/business-name suggests the element of the collection a loop walks when it names no concept', () => {
     const root = projectWith({
       [`${BILLING}/domain/services/reminding.ts`]: lines(
