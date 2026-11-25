@@ -1,5 +1,12 @@
 import { and, eq } from 'drizzle-orm';
-import { FixedClock, stampCreation, stampUpdate, tenantScopeOf, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import {
+  FixedClock,
+  loadedAt,
+  stampCreation,
+  stampUpdate,
+  tenantScopeOf,
+  type ExecutionScope,
+} from '@ddd-ts-kit/kernel';
 import { insertIgnoringConflict, optimisticUpdate, ownTenantCondition, tenantCondition } from '../../../src/postgres';
 import type { Database } from '../platform/database/database';
 import { Invoice, type InvoiceState } from '../billing-core/domain/invoice';
@@ -33,11 +40,7 @@ export class TenantInvoiceRepository implements InvoiceRepository {
       return undefined;
     }
 
-    const invoice = Invoice.rehydrate(row);
-
-    invoice.version = row.version;
-
-    return invoice;
+    return loadedAt(Invoice.rehydrate(row), row.version);
   }
 
   async save(invoice: Invoice): Promise<void> {

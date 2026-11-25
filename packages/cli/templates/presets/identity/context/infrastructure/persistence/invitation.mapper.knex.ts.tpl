@@ -1,10 +1,11 @@
+import { aggregateMapper } from '@ddd-ts-kit/kernel';
 import { Invitation } from '{{alias.context}}/domain/aggregates/invitation.aggregate{{alias.ext}}';
 import { EmailAddress } from '{{alias.context}}/domain/value-objects/email-address.vo{{alias.ext}}';
 import type { InvitationColumns, InvitationRow } from '{{alias.context}}/infrastructure/persistence/invitation-row.schema{{alias.ext}}';
 
-export const InvitationMapper = {
+export const InvitationMapper = aggregateMapper({
   toDomain(row: InvitationRow): Invitation {
-    const loaded = Invitation.rehydrate(row.id, {
+    return Invitation.rehydrate(row.id, {
       organisationId: row.organisation_id,
       email: EmailAddress.create(row.email),
       role: row.role,
@@ -16,10 +17,6 @@ export const InvitationMapper = {
       status: row.status,
       answeredAt: row.answered_at ?? undefined,
     });
-
-    loaded.version = row.version;
-
-    return loaded;
   },
 
   toRow(saved: Invitation): InvitationColumns {
@@ -39,4 +36,4 @@ export const InvitationMapper = {
       answered_at: state.answeredAt ?? null,
     };
   },
-};
+});

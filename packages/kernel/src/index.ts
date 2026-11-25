@@ -257,6 +257,7 @@ export * from './infrastructure/cache/repeated-cache-purger';
 export * from './infrastructure/error-reporting/dead-letter-error';
 export * from './infrastructure/error-reporting/dead-letter-reports';
 export * from './infrastructure/error-reporting/report-process-failures';
+export * from './infrastructure/aggregates';
 export * from './infrastructure/domain-events';
 export * from './infrastructure/persistence/advisory-lock-key';
 export * from './infrastructure/persistence/advisory-lock-outside-unit-of-work-error';

@@ -1,8 +1,8 @@
-import type { ClaimedJob } from '@ddd-ts-kit/scheduling';
+import { JobLease, type ClaimedJob } from '@ddd-ts-kit/scheduling';
 import { enqueuedByOf } from './enqueued-by-of';
 import type { PrismaJobRow } from './prisma-job-delegate';
 
-/** A row as the worker receives it, read after the claim counted the attempt. */
+/** A row as the worker receives it, read after the claim counted the attempt and the lease. */
 export function claimedOfRow(row: PrismaJobRow): ClaimedJob {
   const checkpoint: unknown = row.checkpoint === null ? null : JSON.parse(row.checkpoint);
 
@@ -14,6 +14,7 @@ export function claimedOfRow(row: PrismaJobRow): ClaimedJob {
     enqueuedBy: enqueuedByOf(row.enqueuedBy),
     enqueuedAt: row.enqueuedAt,
     attempt: row.attempts,
+    lease: JobLease.ofClaim(row.id, row.claims),
     ...(checkpoint === null ? {} : { checkpoint }),
   };
 }

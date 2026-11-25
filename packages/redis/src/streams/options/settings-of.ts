@@ -6,6 +6,7 @@ import type { ReconnectOptions } from './reconnect-options';
 import type { RedisStreamsEventBusOptions } from './redis-streams-event-bus-options';
 import type { RetryOptions } from './retry-options';
 import type { Settings } from './settings';
+import { startFromOf } from './start-from';
 
 export function settingsOf(options: RedisStreamsEventBusOptions): Settings {
   const prefix = options.prefix ?? DEFAULT_PREFIX;
@@ -17,7 +18,7 @@ export function settingsOf(options: RedisStreamsEventBusOptions): Settings {
     batchSize: options.batchSize ?? 10,
     blockMs: options.blockMs ?? 1_000,
     visibilityTimeoutMs: options.visibilityTimeoutMs ?? 60_000,
-    startFrom: options.startFrom ?? 'new',
+    startFrom: startFromOf(options.startFrom ?? 'beginning'),
     retry: retryOf(options.retry),
     reconnect: reconnectOf(options.reconnect),
     retention: options.retention,

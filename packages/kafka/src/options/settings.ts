@@ -3,6 +3,7 @@ import type { KafkaDelivery } from './kafka-delivery';
 import type { KafkaFailure } from './kafka-failure';
 import type { ReconnectOptions } from './reconnect-options';
 import type { RetryOptions } from './retry-options';
+import type { StartFrom } from './start-from';
 import type { TopicOptions } from './topic-options';
 
 /**
@@ -15,7 +16,7 @@ export interface Settings {
   readonly keyOf: (event: IntegrationEvent) => string | undefined;
   readonly publishedTypes: readonly string[];
   readonly topics: Required<TopicOptions>;
-  readonly startFromEarliest: boolean;
+  readonly startFrom: StartFrom;
   readonly concurrency: number;
   readonly publishTimeoutMs: number;
   readonly connectTimeoutMs: number;

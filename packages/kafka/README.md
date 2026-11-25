@@ -332,7 +332,12 @@ of one partition are never handled concurrently.
 4. A record whose value is not an envelope (unparseable, or without `id`, `type`, `version`,
    `occurredAt`) is poison: it goes straight to the dead-letter topic with
    `x-dead-reason: poison` and `x-error-code: POISON_MESSAGE`, and no handler sees it.
-5. Only codes travel: `x-error-code` is the `code` of the error or its class name. The message
+5. A record whose type has no handler left (they all unsubscribed) waits for the next handler:
+   its partition is paused until one subscribes or the bus closes, it counts as no attempt and
+   never goes to the dead-letter topic for it. The four brokers of the kit keep such a message
+   for the next handler. A record of a type the consumer never subscribed to, on a topic several
+   types share, is committed unhandled.
+6. Only codes travel: `x-error-code` is the `code` of the error or its class name. The message
    of an error is never logged, reported or attached, because it may quote payload data. The
    client logs messages and stacks of what it catches: the bus turns its logger off.
 
@@ -487,10 +492,12 @@ holds its partition until a handler comes back or the bus closes.
 - **A handler must finish within `maxHandlingMs`** (`max.poll.interval.ms`, 5 minutes by
   default). Beyond it the member is taken for dead, its partitions move, and the record is
   handled twice, concurrently.
-- **A new group starts at the earliest record** of its topics (`startFrom: 'earliest'`): a
-  consumer deployed after the producers misses nothing, and a consumer added a year later
-  reads a year of retained events. Choose `latest` deliberately, knowing that what is
-  published between the creation of the group and its first assignment is then skipped.
+- **A new group starts at the earliest record** of its topics (`startFrom: 'beginning'`, the
+  default of every broker of the kit that has a history): a consumer deployed after the
+  producers misses nothing, and a consumer added a year later reads a year of retained events.
+  Choose `startFrom: 'end'` deliberately, knowing that what is published between the creation
+  of the group and its first assignment is then skipped. The former words `earliest` and
+  `latest` are refused at construction with `START_FROM_REFUSED`, which names the new one.
 - **A retry runs every handler of the type again**, those that succeeded included, when
   several handlers of one consumer subscribe to the same type. Each must be idempotent.
 - **A batch is not atomic.** When `publish` rejects, some records may have been written. The

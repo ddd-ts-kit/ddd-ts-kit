@@ -39,4 +39,6 @@ export type { EventMatcher } from './scenarios/event-matcher';
 export type { EventSource } from './scenarios/event-source';
 export { given } from './scenarios/given';
 export type { Outcome } from './scenarios/outcome';
+export { recordedBy } from './scenarios/recorded-by';
 export { scenario, type Scenario } from './scenarios/scenario';
+export { withoutRecordedEvents } from './scenarios/without-recorded-events';

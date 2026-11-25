@@ -17,6 +17,8 @@ export interface JobRow {
   subject: string | null;
   status: QueuedJobStatus;
   attempts: number;
+  /** How many times it was claimed: the lease of the claim that holds it. */
+  claims: number;
   runAt: Date;
   leaseUntil: Date | null;
   progress: JobProgress | null;

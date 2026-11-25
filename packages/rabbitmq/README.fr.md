@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:59c4d00f9d43a2f9 -->
+<!-- translation-of: README.md sha256:54dcd6ca5a214152 -->
 
 # @ddd-ts-kit/rabbitmq
 
@@ -261,7 +261,13 @@ Deux instances d'un même consommateur partagent sa file : chaque événement va
    `occurredAt`, ou avec un `tenantId` que `isTenantId` du noyau refuse) est empoisonné (poison) :
    il va directement dans la file de rejet avec `x-dead-reason: poison` et
    `x-error-code: POISON_MESSAGE`, et aucun gestionnaire ne le voit.
-5. Seuls des codes voyagent : `x-error-code` est le `code` de l'erreur ou le nom de sa classe. Le
+5. Un message qui atteint un consommateur dont tous les gestionnaires se sont désabonnés (il
+   était en route quand le dernier est parti) attend le prochain gestionnaire : le bus l'envoie
+   dans la file de nouvelles tentatives avec son `x-attempt` inchangé, si bien qu'il revient après
+   `retry.delayMs`, jamais sur-le-champ, ne compte pour aucune tentative et ne va jamais dans la
+   file de rejet pour cela. Les quatre brokers du kit gardent un tel message pour le prochain
+   gestionnaire.
+6. Seuls des codes voyagent : `x-error-code` est le `code` de l'erreur ou le nom de sa classe. Le
    message d'une erreur n'est jamais journalisé, remonté ni joint, car il peut citer des données
    du *payload*.
 
@@ -350,6 +356,10 @@ liées, et la file de travail continue de se remplir.
 - **`publishTimeoutMs`** (30000 par défaut) : une publication que le broker n'a pas confirmée
   d'ici là est rejetée avec `PUBLISH_NOT_CONFIRMED`, comme sur NATS et Kafka, si bien que le
   relais la retente au lieu d'attendre une confirmation qu'un broker bloqué n'envoie jamais.
+  La même borne vaut pour la copie d'un message en échec vers sa file de nouvelles tentatives ou
+  sa file de rejet, le message étant alors rendu à sa file de travail, et pour chaque copie de
+  `replayDead`, qui est alors rejeté et laisse le message dans la file de rejet : `close()`
+  n'attend jamais une confirmation plus longtemps.
 - **Un consommateur qui plante en plein gestionnaire** récupère ses messages sans que `x-attempt`
   soit incrémenté. Les files quorum bornent cela par leur limite de livraisons, au-delà de
   laquelle le *broker* envoie le message dans la file de rejet ; les files classiques ne le

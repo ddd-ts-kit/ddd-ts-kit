@@ -1,4 +1,4 @@
-import { Builder, sequence, type Defaults } from '@ddd-ts-kit/testing';
+import { Builder, sequence, withoutRecordedEvents, type Defaults } from '@ddd-ts-kit/testing';
 import { Calendar } from '@/contexts/scheduling/calendars/domain/aggregates/calendar.aggregate';
 import {
   AppointmentType,
@@ -96,7 +96,7 @@ export class CalendarBuilder extends Builder<CalendarIngredients, Calendar> {
     );
 
     furnish(built, ingredients);
-    built.pullEvents();
+    withoutRecordedEvents(built);
 
     return built;
   }

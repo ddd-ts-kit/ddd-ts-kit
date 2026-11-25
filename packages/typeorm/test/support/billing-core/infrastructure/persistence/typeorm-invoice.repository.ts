@@ -1,4 +1,11 @@
-import { stampCreation, stampUpdate, tenantScopeOf, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import {
+  loadedAt,
+  stampCreation,
+  stampUpdate,
+  tenantScopeOf,
+  type Clock,
+  type ExecutionScope,
+} from '@ddd-ts-kit/kernel';
 import {
   insertIgnoringConflict,
   optimisticUpdate,
@@ -32,11 +39,7 @@ export class TypeOrmInvoiceRepository implements InvoiceRepository {
       return undefined;
     }
 
-    const invoice = Invoice.rehydrate(row);
-
-    invoice.version = row.version;
-
-    return invoice;
+    return loadedAt(Invoice.rehydrate(row), row.version);
   }
 
   async save(invoice: Invoice): Promise<void> {

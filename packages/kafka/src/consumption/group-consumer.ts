@@ -13,6 +13,7 @@ import type { KafkaTopology } from '../topology/kafka-topology';
 import { topologyOf } from '../topology/topology-of';
 import type { TopologySettings } from '../topology/topology-settings';
 import { Backoff } from './backoff';
+import { GroupJoin } from './group-join';
 import { postpone } from './postpone';
 import { RecordHandling } from './record-handling';
 import { Timers } from './timers';
@@ -54,9 +55,7 @@ export class GroupConsumer {
 
   private work: Promise<void> = Promise.resolve();
 
-  private joined: Promise<void> = Promise.resolve();
-
-  private join: () => void = ignore;
+  private readonly join = new GroupJoin();
 
   private draining = false;
 
@@ -105,7 +104,7 @@ export class GroupConsumer {
   /** Resolves once the group has its partitions for the subscriptions made so far, or failed to. */
   async started(): Promise<void> {
     await this.work;
-    await this.joined;
+    await this.join.over();
   }
 
   /** Stops reading, lets the handlers in progress finish and commit, leaves the group. */
@@ -134,10 +133,7 @@ export class GroupConsumer {
       await this.dependencies.link.declare(this.topology().topics);
       const client = await this.connected();
 
-      this.joined = new Promise((resolve) => {
-        this.join = resolve;
-      });
-
+      this.join.asked();
       await client.subscribe({ topics: pending });
       await this.run(client);
       pending.forEach((topic) => this.subscribed.add(topic));
@@ -167,7 +163,7 @@ export class GroupConsumer {
 
   private rebalanced({ assigned, partitions }: Rebalance): void {
     if (assigned) {
-      this.join();
+      this.join.settled();
 
       return;
     }
@@ -204,7 +200,7 @@ export class GroupConsumer {
     this.running = false;
     this.subscribed.clear();
     void client?.disconnect().catch(ignore);
-    this.join();
+    this.join.settled();
 
     this.timers.later(() => {
       this.synchronize();

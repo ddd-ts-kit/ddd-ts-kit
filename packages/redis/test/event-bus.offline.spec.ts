@@ -58,8 +58,8 @@ describe('RedisStreamsEventBus while the server is away', () => {
         { name: 'shop-events:ordering.order.placed:shipping:dead', role: 'dead', type: PLACED, consumer: 'shipping' },
       ],
       groups: [
-        { stream: 'shop-events:ordering.order.placed', name: 'billing', startFrom: 'new' },
-        { stream: 'shop-events:ordering.order.placed', name: 'shipping', startFrom: 'new' },
+        { stream: 'shop-events:ordering.order.placed', name: 'billing', startFrom: 'beginning' },
+        { stream: 'shop-events:ordering.order.placed', name: 'shipping', startFrom: 'beginning' },
       ],
     });
 

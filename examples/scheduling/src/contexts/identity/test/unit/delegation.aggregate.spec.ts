@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { given } from '@ddd-ts-kit/testing';
+import { given, recordedBy } from '@ddd-ts-kit/testing';
 import { Delegation } from '@/contexts/identity/domain/aggregates/delegation.aggregate';
 import { Desk } from '@/contexts/identity/domain/value-objects/desk.vo';
 import { aDelegation } from '@/contexts/identity/test/builders/delegation.builder';
@@ -22,7 +22,7 @@ describe('Delegation', () => {
     const loaded = Delegation.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 
   it('is granted on a desk to an assistant, active, and announces its terms', () => {
@@ -37,7 +37,7 @@ describe('Delegation', () => {
 
     expect(granted.isActive).toBe(true);
 
-    expect(granted.pullEvents()).toEqual([
+    expect(recordedBy(granted)).toEqual([
       {
         name: 'identity.delegation.granted',
         aggregateId: 'delegation-7',

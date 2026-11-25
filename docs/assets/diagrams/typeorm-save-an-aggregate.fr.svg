@@ -41,7 +41,7 @@
   <text x="404" y="442" font-size="13" fill="#1f2328" text-anchor="middle">0</text>
   <!-- outcomes -->
   <rect x="32" y="468" width="280" height="68" rx="10" fill="#e7eef5" stroke="#2b5d8a" stroke-width="2"/>
-  <text x="172" y="494" font-size="15" font-weight="700" fill="#2b5d8a" text-anchor="middle">invoice.version = next</text>
+  <text x="172" y="494" font-size="15" font-weight="700" fill="#2b5d8a" text-anchor="middle">invoice.version vaut next</text>
   <text x="172" y="516" font-size="13" fill="#1f2328" text-anchor="middle">le même objet peut être réenregistré</text>
   <rect x="328" y="468" width="280" height="68" rx="10" fill="#e8f1ec" stroke="#2f6f4f" stroke-width="2"/>
   <text x="468" y="494" font-size="15" font-weight="700" fill="#2f6f4f" text-anchor="middle">ConcurrencyError</text>

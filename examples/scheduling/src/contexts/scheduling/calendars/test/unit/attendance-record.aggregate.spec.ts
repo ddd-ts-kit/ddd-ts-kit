@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { expectSnapshotEquivalence, givenEvents } from '@ddd-ts-kit/testing';
+import { expectSnapshotEquivalence, givenEvents, recordedBy } from '@ddd-ts-kit/testing';
 import {
   AttendanceRecord,
   type AttendanceRecordEvent,
@@ -21,7 +21,7 @@ describe('AttendanceRecord', () => {
 
     expect(record.id).toBe(ID);
     expect(record.registeredAt).toEqual(bornAt);
-    expect(record.pullEvents()).toEqual([created]);
+    expect(recordedBy(record)).toEqual([created]);
   });
 
   it('starts with nothing noted and nothing missed', () => {
@@ -81,7 +81,7 @@ describe('AttendanceRecord', () => {
 
     expect(record.version).toBe(3);
     expect(record.missed).toBe(2);
-    expect(record.pullEvents()).toEqual([]);
+    expect(recordedBy(record)).toEqual([]);
   });
 
   it('keeps the appointments it noted, in the order they were, in its state', () => {

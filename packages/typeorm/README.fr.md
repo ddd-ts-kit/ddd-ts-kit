@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:153692a284a5253f -->
+<!-- translation-of: README.md sha256:e2de723bf886f29b -->
 
 # @ddd-ts-kit/typeorm
 
@@ -198,7 +198,7 @@ export abstract class InvoiceRepository extends Repository<Invoice> {}
 ```ts
 // contexts/billing-core/infrastructure/persistence/type-orm-invoice.repository.ts
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
-import { insertIgnoringConflict, optimisticUpdate, TypeOrmContext } from '@ddd-ts-kit/typeorm';
+import { insertIgnoringConflict, loadedAt, optimisticUpdate, TypeOrmContext } from '@ddd-ts-kit/typeorm';
 
 @Repository(InvoiceRepository)
 export class TypeOrmInvoiceRepository implements InvoiceRepository {
@@ -211,10 +211,7 @@ export class TypeOrmInvoiceRepository implements InvoiceRepository {
       return undefined;
     }
 
-    const invoice = Invoice.rehydrate(row);
-    invoice.version = row.version;
-
-    return invoice;
+    return loadedAt(Invoice.rehydrate(row), row.version);
   }
 
   async save(invoice: Invoice): Promise<void> {

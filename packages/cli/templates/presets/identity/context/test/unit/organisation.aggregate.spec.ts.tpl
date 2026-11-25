@@ -1,4 +1,5 @@
 import { describe, expect, it } from '{{tests.module}}';
+import { recordedBy } from '@ddd-ts-kit/testing';
 import { Organisation } from '{{alias.context}}/domain/aggregates/organisation.aggregate{{alias.ext}}';
 import { OrganisationName } from '{{alias.context}}/domain/value-objects/organisation-name.vo{{alias.ext}}';
 import { OrganisationSlug } from '{{alias.context}}/domain/value-objects/organisation-slug.vo{{alias.ext}}';
@@ -13,7 +14,7 @@ describe('Organisation', () => {
 
     expect([opened.id, opened.name.value, opened.openedBy, opened.openedAt]).toEqual(['acme', 'Acme', 'subject-ada', openedAt]);
 
-    expect(opened.pullEvents()).toEqual([
+    expect(recordedBy(opened)).toEqual([
       {
         name: '{{context.kebab}}.organisation.opened',
         aggregateId: 'acme',
@@ -28,6 +29,6 @@ describe('Organisation', () => {
     const loaded = Organisation.rehydrate(stored.id, stored.toState());
 
     expect(loaded.toState()).toEqual(stored.toState());
-    expect(loaded.pullEvents()).toEqual([]);
+    expect(recordedBy(loaded)).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:90dac976e9b68f56 -->
+<!-- translation-of: README.md sha256:d13a74ca2a1490a1 -->
 
 # ddd-ts-kit
 
@@ -552,7 +552,7 @@ l'une ou l'autre forme, et ajoute `fast-check` aux dépendances de développemen
 
 **Les événements du domaine partent avec la sauvegarde.** Un gestionnaire de commande généré
 construit ou charge son agrégat, appelle une méthode d'intention, `await repository.save(aggregate)`
-et répond : pas de `pullEvents()`, et pas de `DomainEventDispatcher` dans un gestionnaire ni dans
+et répond : pas de `takeRecordedEvents()`, et pas de `DomainEventDispatcher` dans un gestionnaire ni dans
 un adaptateur de *repository*, qui ne fait que persister. Les événements que l'agrégat a
 enregistrés sont distribués une fois la sauvegarde résolue, dans l'unité de travail de la
 commande : par le module du kernel sur tsyringe, par `dispatchingOnSave` autour de chaque
@@ -567,7 +567,7 @@ async execute(command: IssueInvoiceCommand): Promise<void> {
 
   invoice.issue(this.clock.now());
   await this.invoiceRepository.save(invoice);
-  await this.dispatcher.dispatch(invoice.pullEvents()); // domain-events/dispatched-on-save
+  await this.dispatcher.dispatch(takeRecordedEvents(invoice)); // domain-events/dispatched-on-save
 }
 ```
 
@@ -2599,7 +2599,7 @@ règle.
 | `standard/no-parallel-interface` | une classe, une interface ou un alias de type déclaré comme `ILogger`, `AppLogger`, `LoggerService`, `LoggerInterface`, `IMetrics`, `MetricsService`, `ICache`, `CacheService`, `UserContext`, `CurrentUser`, `AuthContext`, `RequestContext` (hors de `presentation/` et de la plateforme), `UserSession`, `AuthSession`, `SessionData`, `PaginatedResult`, `PageResult`, `PaginatedResponse`, `Paginated`, `PaginationParams`, `PageParams`, `AuditLog`, `AuditLogEntry`, `AuditRecord`, `IJobScheduler`, `JobSchedulerService`, `CronScheduler`, `TaskScheduler`, `IScheduledJob`, `CronJob`, `ScheduledTask`, `BackgroundJob`, `IErrorReporter`, `ErrorReporterService`, `ErrorTracker`, `ExceptionReporter`, `CrashReporter`, `CacheInvalidator`, `CacheInvalidationService`, `CachePurgeService`, `CdnPurger`, `I` suivi d'un nom standard (`IClock`, `IIdGenerator`, `IUnitOfWork`, `ISession`, ...) ou un nom de `standardInterfaces` ; une classe qui implémente ou étend l'interface standard est un adaptateur et n'est pas signalée |
 | `events/outbox-required` | `stack.events` autre que `outbox` avec un ORM et sans dérogation `stack.events` ; dans `domain/` et `application/`, l'import d'un client de *broker* ou d'une implémentation de bus ou de relais ; un *publisher* qui dépend de plus que `IntegrationEventPublisher` ; un module de la plateforme qui distribue un *publisher* et ne nomme jamais `OutboxPublisher` |
 | `events/consumer-idempotent` | une classe de gestionnaire d'événement d'intégration (`application/integration/handlers/*.integration-handler.ts`) qui ne porte pas `@IntegrationEventHandler` et n'est pas non plus enregistrée dans son fichier de module sous un nom de consommateur ; un `@IntegrationEventHandler` dont le `consumer` n'est pas une chaîne littérale non vide ; un `on(` ou un `consume(` libre sans `processed` ; un nom de consommateur utilisé deux fois, dans les déclarations comme dans les enregistrements |
-| `domain-events/dispatched-on-save` | un appel de `pullEvents()` dans `application/` ou `infrastructure/` d'un contexte ; `DomainEventDispatcher` importé, listé comme dépendance ou reçu par un constructeur dans `application/commands/`, `application/queries/` ou un adaptateur de *repository*. Le fichier de module, les tests, la plateforme et `main.ts` sont laissés tranquilles |
+| `domain-events/dispatched-on-save` | un appel de `takeRecordedEvents()` dans `application/` ou `infrastructure/` d'un contexte ; `DomainEventDispatcher` importé, listé comme dépendance ou reçu par un constructeur dans `application/commands/`, `application/queries/` ou un adaptateur de *repository*. Le fichier de module, les tests, la plateforme et `main.ts` sont laissés tranquilles |
 | `domain-events/transactional-before-commit` | un gestionnaire d'événement du domaine (une classe de `application/event-handlers/*.event-handler.ts` ou de `application/integration/publishers/*.publisher.ts`, ou toute classe portant `@DomainEventHandler`) qui s'exécute avant la validation (commit) et dépend de `Cache`, `CachePurger`, `Lock`, `RateLimiter`, `JobScheduler` ou `EventBus` du kernel, d'un port de `application/ports/` qui n'est pas un port de persistance (aucun adaptateur sous `infrastructure/persistence/`, ou un adaptateur ailleurs sous `infrastructure/`), de quoi que ce soit importé de `infrastructure/`, d'un autre contexte, de la plateforme ou d'un *package* autre que `@ddd-ts-kit/kernel` et `@ddd-ts-kit/auth` ; un gestionnaire après la validation (`phase: 'after-commit'` dans son décorateur, ou dans le troisième argument de chaque `.on(` du fichier de module qui le mentionne) qui dépend de `IntegrationEventPublisher`. `check-file` laisse les adaptateurs d'un port à la vérification complète |
 | `event-sourcing/state-in-apply` | dans une classe de `domain/aggregates/` qui étend `EventSourcedAggregate`, une écriture sur quelque chose de `this` (affectation, incrément, appel qui modifie) hors du constructeur, des méthodes statiques, des méthodes `apply<Fact>` et de `restore` ; `this.record(..)` dans une méthode apply |
 | `event-sourcing/past-tense` | dans un fichier de `domain/aggregates/` qui contient un agrégat en *event sourcing*, un nom importé de `domain/events/` dont le fait (les mots après le nom de l'agrégat) ne contient aucun participe passé, ou seulement un participe qui s'écrit comme son impératif en tête (`SetPrice`) |

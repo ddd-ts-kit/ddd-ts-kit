@@ -92,9 +92,7 @@ describe('generate aggregate --birth, the fact an aggregate is born with', () =>
       "it('records the fact of its birth, invoice issued, at the instant it is given'",
     );
 
-    expect(read(root, SPEC)).toContain(
-      "expect(born.pullEvents()).toEqual([new InvoiceIssued('invoice-7', issuedAt)]);",
-    );
+    expect(read(root, SPEC)).toContain("expect(recordedBy(born)).toEqual([new InvoiceIssued('invoice-7', issuedAt)]);");
 
     expect(read(root, SPEC)).not.toContain("it.todo('records the fact of its birth')");
 
@@ -189,7 +187,7 @@ describe('generate aggregate --birth, the fact an aggregate is born with', () =>
     expect(schema).not.toMatch(/registered|timestamp/);
 
     expect(read(root, `${BILLING}/infrastructure/persistence/invoice.mapper.ts`)).toContain(
-      'const loaded = Invoice.rehydrate(row.id, {});',
+      'return Invoice.rehydrate(row.id, {});',
     );
   });
 });

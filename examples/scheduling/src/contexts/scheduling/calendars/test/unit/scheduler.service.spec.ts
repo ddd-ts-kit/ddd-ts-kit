@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { recordedBy, withoutRecordedEvents } from '@ddd-ts-kit/testing';
 import type { Appointment } from '@/contexts/scheduling/calendars/domain/aggregates/appointment.aggregate';
 import { SchedulerService } from '@/contexts/scheduling/calendars/domain/services/scheduler.service';
 import { anAppointment } from '@/contexts/scheduling/calendars/test/builders/appointment.builder';
@@ -41,7 +42,7 @@ describe('SchedulerService', () => {
     expect(booked.slot.startsAt).toEqual(at('08:00'));
     expect(booked.slot.endsAt).toEqual(at('08:30'));
     expect(booked.slot.heldUntil).toEqual(at('08:40'));
-    expect(booked.pullEvents()).toMatchObject([{ name: 'scheduling.appointment.booked', occurredAt: now }]);
+    expect(recordedBy(booked)).toMatchObject([{ name: 'scheduling.appointment.booked', occurredAt: now }]);
   });
 
   it('names the day of the practice, not the one of the instant, for a slot late in the evening', () => {
@@ -184,7 +185,7 @@ describe('SchedulerService, moving an appointment', () => {
   it('moves an appointment to another free slot of its calendar', () => {
     const appointment = heldAt('08:00').forPatient('patient-a').build();
 
-    appointment.pullEvents();
+    withoutRecordedEvents(appointment);
 
     scheduler.reschedule({ appointment, startsAt: at('14:00'), now }, calendar, {
       onCalendar: [appointment],
@@ -193,7 +194,7 @@ describe('SchedulerService, moving an appointment', () => {
 
     expect(appointment.slot.startsAt).toEqual(at('14:00'));
     expect(appointment.slot.heldUntil).toEqual(at('14:40'));
-    expect(appointment.pullEvents()).toMatchObject([{ name: 'scheduling.appointment.rescheduled' }]);
+    expect(recordedBy(appointment)).toMatchObject([{ name: 'scheduling.appointment.rescheduled' }]);
   });
 
   it('lets an appointment move onto a part of the time it holds itself', () => {
@@ -245,7 +246,7 @@ describe('SchedulerService, moving an appointment', () => {
     const appointment = heldAt('08:00').forPatient('patient-a').build();
     const other = heldAt('14:00').build();
 
-    appointment.pullEvents();
+    withoutRecordedEvents(appointment);
 
     const refusal = errorOf(() =>
       scheduler.reschedule({ appointment, startsAt: at('14:00'), now }, calendar, {
@@ -256,7 +257,7 @@ describe('SchedulerService, moving an appointment', () => {
 
     expect(refusal).toMatchObject({ code: 'SLOT_TAKEN' });
     expect(appointment.slot.startsAt).toEqual(at('08:00'));
-    expect(appointment.pullEvents()).toEqual([]);
+    expect(recordedBy(appointment)).toEqual([]);
   });
 
   it('refuses to move an appointment outside the availability of its calendar', () => {

@@ -217,7 +217,7 @@ describe('the files of an explicit context', () => {
       "export const invoices = billingSchema.table('invoices', {",
     );
 
-    expect(read(root, `${persistence}/invoice.mapper.ts`)).toContain('export const InvoiceMapper = {');
+    expect(read(root, `${persistence}/invoice.mapper.ts`)).toContain('export const InvoiceMapper = aggregateMapper({');
 
     expect(read(root, `${persistence}/drizzle-invoice.repository.ts`)).toContain(
       'export class DrizzleInvoiceRepository implements InvoiceRepository {\n  constructor(\n    private readonly database: Database,',

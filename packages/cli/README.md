@@ -524,7 +524,7 @@ the laws of an existing value object as a spec on generated values, in either fo
 `fast-check` to the development dependencies when it is missing.
 
 **Domain events leave with the save.** A generated command handler builds or loads its aggregate,
-calls one intention method, `await repository.save(aggregate)` and returns: no `pullEvents()`, and
+calls one intention method, `await repository.save(aggregate)` and returns: no `takeRecordedEvents()`, and
 no `DomainEventDispatcher` in a handler or in a repository adapter, which only persists. The events
 the aggregate recorded are dispatched once the save resolves, inside the unit of work of the
 command: by the kernel module on tsyringe, by `dispatchingOnSave` around each repository in
@@ -538,7 +538,7 @@ async execute(command: IssueInvoiceCommand): Promise<void> {
 
   invoice.issue(this.clock.now());
   await this.invoiceRepository.save(invoice);
-  await this.dispatcher.dispatch(invoice.pullEvents()); // domain-events/dispatched-on-save
+  await this.dispatcher.dispatch(takeRecordedEvents(invoice)); // domain-events/dispatched-on-save
 }
 ```
 
@@ -2431,7 +2431,7 @@ const due = handler.isDueNow(new Reminder(new Date('2026-03-01T09:00:00Z'))); //
 | `standard/no-parallel-interface` | a class, interface or type alias declared as `ILogger`, `AppLogger`, `LoggerService`, `LoggerInterface`, `IMetrics`, `MetricsService`, `ICache`, `CacheService`, `UserContext`, `CurrentUser`, `AuthContext`, `RequestContext` (outside `presentation/` and the platform), `UserSession`, `AuthSession`, `SessionData`, `PaginatedResult`, `PageResult`, `PaginatedResponse`, `Paginated`, `PaginationParams`, `PageParams`, `AuditLog`, `AuditLogEntry`, `AuditRecord`, `IJobScheduler`, `JobSchedulerService`, `CronScheduler`, `TaskScheduler`, `IScheduledJob`, `CronJob`, `ScheduledTask`, `BackgroundJob`, `IErrorReporter`, `ErrorReporterService`, `ErrorTracker`, `ExceptionReporter`, `CrashReporter`, `CacheInvalidator`, `CacheInvalidationService`, `CachePurgeService`, `CdnPurger`, `I` followed by a standard name (`IClock`, `IIdGenerator`, `IUnitOfWork`, `ISession`, ...) or a name of `standardInterfaces`; a class that implements or extends the standard interface is an adapter and is not reported |
 | `events/outbox-required` | `stack.events` other than `outbox` with an ORM and no `stack.events` deviation; in `domain/` and `application/`, the import of a broker client or of a bus or relay implementation; a publisher depending on more than `IntegrationEventPublisher`; a platform module that hands out a publisher and never names `OutboxPublisher` |
 | `events/consumer-idempotent` | an integration event handler class (`application/integration/handlers/*.integration-handler.ts`) that neither carries `@IntegrationEventHandler` nor is registered in its module file under a consumer name; an `@IntegrationEventHandler` whose `consumer` is not a non-empty string literal; a free `on(` or `consume(` without `processed`; a consumer name used twice, in declarations and registrations alike |
-| `domain-events/dispatched-on-save` | a call of `pullEvents()` in `application/` or `infrastructure/` of a context; `DomainEventDispatcher` imported, listed as a dependency or received by a constructor in `application/commands/`, `application/queries/` or a repository adapter. The module file, the tests, the platform and `main.ts` are left alone |
+| `domain-events/dispatched-on-save` | a call of `takeRecordedEvents()` in `application/` or `infrastructure/` of a context; `DomainEventDispatcher` imported, listed as a dependency or received by a constructor in `application/commands/`, `application/queries/` or a repository adapter. The module file, the tests, the platform and `main.ts` are left alone |
 | `domain-events/transactional-before-commit` | a domain event handler (a class of `application/event-handlers/*.event-handler.ts` or `application/integration/publishers/*.publisher.ts`, or any class carrying `@DomainEventHandler`) that runs before the commit and depends on `Cache`, `CachePurger`, `Lock`, `RateLimiter`, `JobScheduler` or `EventBus` of the kernel, on a port of `application/ports/` that is not a persistence port (no adapter under `infrastructure/persistence/`, or one anywhere else under `infrastructure/`), on anything imported from `infrastructure/`, another context, the platform or a package other than `@ddd-ts-kit/kernel` and `@ddd-ts-kit/auth`; an after-commit handler (`phase: 'after-commit'` in its decorator, or in the third argument of every `.on(` of the module file that mentions it) depending on `IntegrationEventPublisher`. `check-file` leaves the adapters of a port to the whole check |
 | `event-sourcing/state-in-apply` | in a class of `domain/aggregates/` extending `EventSourcedAggregate`, a write to something of `this` (assignment, increment, mutating call) outside the constructor, static methods, `apply<Fact>` methods and `restore`; `this.record(..)` inside an apply method |
 | `event-sourcing/past-tense` | in a file of `domain/aggregates/` holding an event-sourced aggregate, a name imported from `domain/events/` whose fact (the words after the name of the aggregate) holds no past participle, or only one spelled like its imperative at its head (`SetPrice`) |

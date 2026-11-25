@@ -1,4 +1,4 @@
-import type { AuditStamp } from '@ddd-ts-kit/kernel';
+import { aggregateMapper, type AuditStamp } from '@ddd-ts-kit/kernel';
 import { Delegation } from '{{alias.context}}/domain/aggregates/delegation.aggregate{{alias.ext}}';
 import { DelegationPeriod } from '{{alias.context}}/domain/value-objects/delegation-period.vo{{alias.ext}}';
 import { MemberRight } from '{{alias.context}}/domain/vocabularies/member-right.vocabulary{{alias.ext}}';
@@ -10,9 +10,9 @@ type DelegationRow = typeof delegations.$inferSelect;
 
 export type DelegationColumns = Omit<DelegationRow, 'version' | keyof AuditStamp>;
 
-export const DelegationMapper = {
+export const DelegationMapper = aggregateMapper({
   toDomain(row: DelegationRow): Delegation {
-    const loaded = Delegation.rehydrate(row.id, {
+    return Delegation.rehydrate(row.id, {
       organisationId: row.organisationId,
       delegatorId: row.delegatorId,
       delegateId: row.delegateId,
@@ -20,10 +20,6 @@ export const DelegationMapper = {
       period: DelegationPeriod.create(row.startsAt, row.endsAt),
       endedAt: row.endedAt ?? undefined,
     });
-
-    loaded.version = row.version;
-
-    return loaded;
   },
 
   toRow(saved: Delegation): DelegationColumns {
@@ -40,7 +36,7 @@ export const DelegationMapper = {
       endedAt: state.endedAt ?? null,
     };
   },
-};
+});
 
 /** The rights of a stored delegation, those the vocabulary no longer names left out. */
 function rightsOf(stored: string): MemberRight[] {

@@ -1,3 +1,4 @@
+import { aggregateMapper } from '@ddd-ts-kit/kernel';
 import { Calendar } from '@/contexts/scheduling/calendars/domain/aggregates/calendar.aggregate';
 import {
   AppointmentType,
@@ -20,9 +21,9 @@ type StoredWeek = Readonly<Record<Weekday, readonly StoredRange[]>>;
 type StoredException = { readonly day: string; readonly ranges: readonly StoredRange[] };
 type StoredTimeOff = { readonly startsAt: string; readonly endsAt: string };
 
-export const CalendarMapper = {
+export const CalendarMapper = aggregateMapper({
   toDomain(row: CalendarRow): Calendar {
-    const loaded = Calendar.rehydrate(row.id, {
+    return Calendar.rehydrate(row.id, {
       registeredAt: row.registered_at,
       practiceId: row.practice_id,
       practitionerId: row.practitioner_id,
@@ -40,10 +41,6 @@ export const CalendarMapper = {
       bookingWindow: BookingWindow.create(row.notice, row.horizon),
       limit: row.patient_limit,
     });
-
-    loaded.version = row.version;
-
-    return loaded;
   },
 
   toRow(saved: Calendar): CalendarColumns {
@@ -73,7 +70,7 @@ export const CalendarMapper = {
       patient_limit: state.limit,
     };
   },
-};
+});
 
 function rangeOf([start, end]: StoredRange): Range {
   return Range.create(start, end);

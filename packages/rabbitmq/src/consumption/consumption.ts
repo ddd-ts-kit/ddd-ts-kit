@@ -10,7 +10,7 @@ import { MESSAGING_SYSTEM } from '../messaging-system';
 import type { RabbitMqDelivery } from '../options/rabbit-mq-delivery';
 import type { RabbitMqFailure } from '../options/rabbit-mq-failure';
 import type { RetryOptions } from '../options/retry-options';
-import { sendConfirmed } from '../publication/send-confirmed';
+import { Confirmations } from '../publication/confirmations';
 import type { ConsumerBinding } from '../topology/consumer-binding';
 import { declareTopology } from '../topology/declare-topology';
 import type { QueueNames } from '../topology/queue-names';
@@ -28,7 +28,10 @@ export interface ConsumptionSettings {
   readonly retry: Required<RetryOptions>;
   readonly onFailure: (failure: RabbitMqFailure) => void;
   readonly onDelivery: (delivery: RabbitMqDelivery) => void;
-  /** How long a close waits for each answer of the broker: one that stopped answering does not hold it. */
+  /**
+   * How long the copy of a message to its retry or dead queue waits for its confirmation, and a
+   * close for each answer of the broker: one that stopped answering holds neither.
+   */
   readonly publishTimeoutMs: number;
   /** Called when the channel dies while the connection lives. */
   readonly channelLost: () => void;
@@ -50,7 +53,8 @@ interface Delivery {
 /**
  * The consuming side: one durable queue per consumer and event type, manual acknowledgement
  * once every handler resolved, and for a failure a wait in the retry queue, then the dead
- * queue when the attempts are spent. A message is never requeued at once: no hot loop.
+ * queue when the attempts are spent. A message whose handlers all left waits there too, for
+ * the next one, counted as no attempt. A message is never requeued at once: no hot loop.
  */
 export class Consumption {
   private readonly subscriptions = new Map<string, QueueSubscription>();
@@ -59,9 +63,13 @@ export class Consumption {
 
   private readonly handling = new Set<Promise<void>>();
 
+  private readonly confirmations: Confirmations;
+
   private channel: ConfirmChannel | undefined;
 
-  constructor(private readonly settings: ConsumptionSettings) {}
+  constructor(private readonly settings: ConsumptionSettings) {
+    this.confirmations = new Confirmations(settings.publishTimeoutMs);
+  }
 
   get inFlight(): number {
     return this.handling.size;
@@ -106,6 +114,7 @@ export class Consumption {
 
   detach(): void {
     this.channel = undefined;
+    this.confirmations.abandon();
 
     for (const subscription of this.subscriptions.values()) {
       subscription.consumerTag = undefined;
@@ -178,7 +187,7 @@ export class Consumption {
     subscription.consumerTag = consumerTag;
 
     // The subscription left while its consumer was being registered: the consumer leaves too,
-    // or every message of the queue would reach a consumer without handler and come back at once.
+    // or every message of the queue would reach a consumer without handler and wait a retry delay.
     if (this.subscriptions.get(subscription.queues.work) !== subscription) {
       void channel.cancel(consumerTag).catch(ignore);
     }
@@ -195,9 +204,7 @@ export class Consumption {
     }
 
     if (subscription.handlers.size === 0) {
-      quietly(() => {
-        channel.nack(message, false, true);
-      });
+      await this.leave(delivery);
 
       return;
     }
@@ -215,6 +222,16 @@ export class Consumption {
     }
 
     await this.retryOrBury(delivery, event, code);
+  }
+
+  /**
+   * Every handler left while the message was on its way: it waits for the next one in the retry
+   * queue, with the attempt number it came with. Finding nobody is no attempt.
+   */
+  private async leave(delivery: Delivery): Promise<void> {
+    const { retry } = delivery.subscription.queues;
+
+    await this.move(delivery, retry, { [ATTEMPT_HEADER]: attemptOf(delivery.message) });
   }
 
   private deliveryOf({ subscription, message }: Delivery): EventDelivery {
@@ -257,14 +274,17 @@ export class Consumption {
     }
   }
 
-  /** Confirmed copy to the other queue first, acknowledgement second: never lost in between. */
+  /**
+   * Confirmed copy to the other queue first, acknowledgement second: never lost in between. A
+   * copy the broker refused, or did not confirm in time, hands the message back to its queue.
+   */
   private async move(
     { channel, message }: Delivery,
     queue: string,
     headers: Record<string, string | number>,
   ): Promise<void> {
     try {
-      await sendConfirmed(channel, queue, republication(message, headers));
+      await this.confirmations.ofCopy(channel, queue, republication(message, headers));
     } catch {
       quietly(() => {
         channel.nack(message, false, true);

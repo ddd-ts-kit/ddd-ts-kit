@@ -2,7 +2,7 @@ import { AssertionError } from 'node:assert';
 import { runInNewContext } from 'node:vm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DomainError } from '@ddd-ts-kit/kernel';
-import { given, resetSequences, scenario } from '../src';
+import { given, recordedBy, resetSequences, scenario, withoutRecordedEvents } from '../src';
 import { aLine, anOrder } from './support/builders';
 import { EmptyOrder, Order, OrderAlreadyPaid, OrderPaid, at } from './support/order';
 
@@ -30,6 +30,28 @@ describe('given / when / then', () => {
     given(order)
       .when((o) => o.pay(at))
       .thenEventNames(['ordering.order.paid']);
+  });
+
+  it('reads what an aggregate recorded, and leaves it on the aggregate: the arrangement, then the act', () => {
+    const order = anOrder().build();
+
+    expect(recordedBy(order).map((event) => event.name)).toEqual(['ordering.order.placed']);
+
+    given(order)
+      .when((o) => o.pay(at))
+      .thenEventNames(['ordering.order.paid']);
+
+    expect(recordedBy(order).map((event) => event.name)).toEqual(['ordering.order.placed', 'ordering.order.paid']);
+  });
+
+  it('hands an aggregate with nothing left to announce, for a spec that reads the events of its own act', () => {
+    const order = withoutRecordedEvents(anOrder().build());
+
+    expect(recordedBy(order)).toEqual([]);
+
+    order.pay(at);
+
+    expect(recordedBy(order)).toEqual([new OrderPaid(order.id, at, 10)]);
   });
 
   it('accepts a builder as the given state', () => {

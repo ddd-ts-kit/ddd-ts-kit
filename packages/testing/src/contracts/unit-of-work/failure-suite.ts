@@ -1,4 +1,4 @@
-import { InMemoryUnitOfWork, UnitOfWorkAbortedError } from '@ddd-ts-kit/kernel';
+import { InMemoryUnitOfWork, UnitOfWorkAbortedError, recordedEventsOf } from '@ddd-ts-kit/kernel';
 import { ContractSuite } from '../contract-suite';
 import { failureOf } from '../../scenarios/failure-of';
 import { Parcel } from './parcel';
@@ -47,7 +47,7 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
         );
 
         this.expect(bench.journal).toEqual([]);
-        this.expect([inside.pullEvents().length, outside.pullEvents().length]).toEqual([1, 1]);
+        this.expect([recordedEventsOf(inside).length, recordedEventsOf(outside).length]).toEqual([1, 1]);
         this.expect(await bench.pending()).toBe(0);
       },
     );
@@ -101,24 +101,29 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
       await this.expectNothingLeft(bench, ['saved p1']);
     });
 
-    this.it('drops the events of a rolled back unit of work: the retry dispatches what it records, once', async () => {
-      const bench = this.everyEffect();
-      const first = Parcel.register('p1');
+    this.it(
+      'puts an aggregate back as a rolled back unit of work found it: the same instance is saved again, its events dispatched once',
+      async () => {
+        const bench = this.everyEffect();
+        const parcel = Parcel.register('p1');
 
-      await failureOf(() =>
-        bench.run(async () => {
-          await bench.parcels.save(first);
-          throw new CarrierDown();
-        }),
-      );
+        await failureOf(() =>
+          bench.run(async () => {
+            await bench.parcels.save(parcel);
+            throw new CarrierDown();
+          }),
+        );
 
-      this.expect(first.pullEvents()).toEqual([]);
+        this.expect([parcel.version, recordedEventsOf(parcel).length]).toEqual([0, 1]);
 
-      await bench.run(() => bench.register('p1'));
+        await bench.run(() => bench.parcels.save(parcel));
 
-      this.expect(bench.journal).toEqual(['saved p1', 'published p1', 'committed p1']);
-      this.expect(await bench.relayed()).toEqual(['evt-p1']);
-    });
+        this.expect([parcel.version, recordedEventsOf(parcel).length]).toEqual([1, 0]);
+        this.expect(await this.subject.ids()).toEqual(['p1']);
+        this.expect(bench.journal).toEqual(['published p1', 'committed p1']);
+        this.expect(await bench.relayed()).toEqual(['evt-p1']);
+      },
+    );
   }
 
   private failingNestedRun(): void {

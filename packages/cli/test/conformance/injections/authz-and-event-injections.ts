@@ -217,7 +217,12 @@ export const AUTHZ_AND_EVENT_INJECTIONS: readonly Injection[] = [
       {
         file: PLAN_HANDLER,
         from: SAVED,
-        to: `${SAVED}    reminder.pullEvents();\n`,
+        to: `${SAVED}    takeRecordedEvents(reminder);\n`,
+      },
+      {
+        file: PLAN_HANDLER,
+        from: "import type { Clock, IdGenerator } from '@ddd-ts-kit/kernel';",
+        to: "import { takeRecordedEvents, type Clock, type IdGenerator } from '@ddd-ts-kit/kernel';",
       },
     ],
     checker: true,

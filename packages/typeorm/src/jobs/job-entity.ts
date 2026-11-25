@@ -49,6 +49,8 @@ function jobColumns(): JobColumns {
     subject: { type: 'varchar', length: INDEXABLE_LENGTH, nullable: true },
     status: { type: 'varchar', length: 16, default: 'waiting' },
     attempts: { type: 'int', default: 0 },
+    // The lease of the claim that holds the job: counted at each claim, never given back.
+    claims: { type: 'int', default: 0 },
     runAt: { ...instant, name: 'run_at' },
     leaseUntil: { ...instant, name: 'lease_until', nullable: true },
     progress: { type: 'jsonb', nullable: true },

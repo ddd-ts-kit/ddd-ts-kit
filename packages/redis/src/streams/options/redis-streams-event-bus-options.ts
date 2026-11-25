@@ -38,8 +38,11 @@ export interface RedisStreamsEventBusOptions {
    */
   readonly visibilityTimeoutMs?: number;
 
-  /** Where a group created by this bus starts: entries published from now on (default), or the whole stream. */
-  readonly startFrom?: 'new' | 'beginning';
+  /**
+   * Where a group created by this bus starts: the whole stream, or `end` for the entries
+   * published from then on. Default `beginning`, as on the other brokers.
+   */
+  readonly startFrom?: 'beginning' | 'end';
 
   readonly retry?: RetryOptions;
 

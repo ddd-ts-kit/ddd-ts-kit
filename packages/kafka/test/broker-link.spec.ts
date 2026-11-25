@@ -4,7 +4,7 @@ import { InMemoryKafka } from './support/cluster/in-memory-kafka';
 
 const settings = {
   createTopics: true,
-  startFromEarliest: false,
+  startFrom: 'end' as const,
   publishTimeoutMs: 1_000,
   connectTimeoutMs: 1_000,
   maxHandlingMs: 60_000,

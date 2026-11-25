@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:2f58caefaf570d35 -->
+<!-- translation-of: README.md sha256:86bcf3b833ed4b43 -->
 
 # @ddd-ts-kit/testing
 
@@ -358,8 +358,13 @@ it('refuses to pay an order twice', () => {
 });
 ```
 
-`given` prend un agrégat ou son *builder* et écarte les événements de la mise en place
-(`pullEvents()`), si bien que seuls les événements de `when` sont vérifiés. `scenario(() => aggregate)` fait
+`given` prend un agrégat ou son *builder* et laisse de côté les événements de la mise en place, si
+bien que seuls les événements de `when` sont vérifiés ; il les lit et ne retire rien de l'agrégat.
+Hors d'un scénario, `recordedBy(aggregate)` lit ce qu'un agrégat a enregistré et n'a pas encore
+annoncé (`expect(recordedBy(order)).toEqual([new OrderPlaced('o-1', at)])`), et
+`withoutRecordedEvents(aggregate)` rend l'agrégat sans aucun, pour un *builder* qui met en place un
+état par des intentions. Un agrégat n'a de méthode pour ni l'un ni l'autre : sa version et ses
+événements sont à l'infrastructure. `scenario(() => aggregate)` fait
 de même avec la mise en place sous forme de fonction, rejouée à partir d'un agrégat neuf à chaque `when`,
 comme l'est `given(builder)`. Un agrégat déjà construit est donné à un seul `when` : un second `when` sur
 le même `given(aggregate)` agirait sur ce que le premier a laissé, et lève une `TypeError` qui le dit.
@@ -907,7 +912,7 @@ repositoryContract(runner, { ...options, name: 'DrizzleOrderRepository', createR
 | `eventStoreContract` | tout `EventStore` : un flux créé à la version 0 et relu dans l'ordre, numéroté à partir de 1, avec son type, sa version de forme, ses données, ses métadonnées et son instant ; un ajout à une version que le flux n'a plus (en retard ou en avance) refusé avec `CONCURRENCY_CONFLICT` et rien n'en est gardé ; un seul de deux ajouts à la même version passe ; des flux numérotés séparément ; tout le stockage lu dans l'ordre des ajouts, positions croissantes à partir de 1, après une position et dans une limite ; `head()` ; avec `createTenantStore`, un flux gardé au *tenant* de son premier ajout quelle que soit la version depuis laquelle on le lit, le travail qui ne nomme aucun *tenant* refusé avant de lire ou d'ajouter, un agrégat d'un autre *tenant* répondu comme un identifiant inconnu |
 | `eventStoreUnitOfWorkContract` | un `EventStore` transactionnel avec l'outbox de sa base de données sous une même `UnitOfWork` : le flux et les enregistrements de l'outbox publiés pour ses événements sont validés ensemble ; rien ne reste dans l'outbox pour un ajout défait par un retour arrière (rollback), ni pour un ajout refusé par un conflit de concurrence. `createSubject()` rend `{ unitOfWork, store, outbox }` |
 | `processStoreContract` | tout `ProcessStore` de gestionnaires de processus : une instance telle qu'enregistrée (état JSON, délais armés, fin), une version qui n'est pas la suivante refusée avec `CONCURRENCY_CONFLICT`, un seul de deux premiers enregistrements qui l'emporte, avec `unitOfWork` rien de laissé par une sauvegarde défaite par un retour arrière (rollback), et avec `storeInTenant` une instance cachée à un autre tenant, deux tenants avec chacun une instance sous la même clé, et un travail qui ne nomme aucun tenant refusé |
-| `jobStoreContract` | tout `JobStore` de *jobs* en arrière-plan : les *jobs* dus, le plus ancien d'abord et chacun à une seule prise, les *jobs* différés, les clés d'idempotence restreintes au *tenant* (deux *tenants* n'en partagent jamais une), un *job* déjà gardé sous le même identifiant répondu comme un doublon et laissé tel qu'il a été ajouté, le *tenant* et le sujet que montre `find`, le bail et ses battements de cœur, les comptes rendus entendus seulement de la tentative qui tient le *job* (progression, point de reprise remis à la tentative suivante, succès, nouvelle tentative, mort et ranimé, libération), l'annulation d'un *job* en attente et d'un *job* en cours, la purge. Avec `unitOfWork` (sur le même contexte que le stockage qui vient d'être créé), un *job* ajouté, annulé ou ranimé dans une unité de travail qui revient en arrière (rollback) reste tel qu'il était, et un *job* dont l'unité de travail est validée est ajouté, annulé ou ranimé. Les prises demandent un bail de 30 s |
+| `jobStoreContract` | tout `JobStore` de *jobs* en arrière-plan : les *jobs* dus, le plus ancien d'abord et chacun à une seule prise, les *jobs* différés, les clés d'idempotence restreintes au *tenant* (deux *tenants* n'en partagent jamais une), un *job* déjà gardé sous le même identifiant répondu comme un doublon et laissé tel qu'il a été ajouté, le *tenant* et le sujet que montre `find`, le bail et ses battements de cœur, les comptes rendus entendus seulement de la prise qui tient le *job* (progression, point de reprise remis à la tentative suivante, succès, nouvelle tentative, mort et ranimé, libération), un bail jamais remis deux fois (un *job* libéré ou ranimé est pris sous un nouveau bail, et l'exécution laissée derrière n'est pas entendue), l'annulation d'un *job* en attente et d'un *job* en cours, la purge. Avec `unitOfWork` (sur le même contexte que le stockage qui vient d'être créé), un *job* ajouté, annulé ou ranimé dans une unité de travail qui revient en arrière (rollback) reste tel qu'il était, et un *job* dont l'unité de travail est validée est ajouté, annulé ou ranimé. Les prises demandent un bail de 30 s |
 | `cacheContract` | tout `Cache` : aller-retour de chaque forme de valeur, une copie qui lui est propre (une valeur modifiée après son écriture ou après sa lecture n'est pas ce que le cache détient), une valeur rendue telle que JSON la porte (une `Date` sous forme de texte), isolement des entrées, suppression, durée de vie |
 | `cachePurgerContract` | tout `CachePurger` avec son cache partagé (`store`, `holds`) : un tag purge ce qu'il nomme et rien d'autre, une sorte atteint chaque élément, les *tenants* restent séparés, la purge est idempotente |
 | `lockContract` | tout `Lock` : un seul détenteur à la fois, aussi sous des demandes concurrentes, libération, expiration, une libération tardive ignorée, jeton de clôture (*fencing token*) croissant, `waitMs` |

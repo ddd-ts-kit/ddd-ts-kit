@@ -33,12 +33,12 @@ export class KeepSuite extends ContractSuite<JobStoreUnderContract> {
       this.holds(await this.subject.cancel('job-1', NOW), 'the cancellation of a running job answered false');
 
       this.holds(
-        !(await this.subject.heartbeat({ id: 'job-1', attempt: 1 }, later(LEASE_MS))),
+        !(await this.subject.heartbeat({ id: 'job-1', claim: 1 }, later(LEASE_MS))),
         'the heartbeat of a cancelled job was accepted',
       );
 
       this.holds(
-        !(await this.subject.complete({ id: 'job-1', attempt: 1 }, NOW)),
+        !(await this.subject.complete({ id: 'job-1', claim: 1 }, NOW)),
         'the completion of a cancelled job was accepted',
       );
     });
@@ -46,7 +46,7 @@ export class KeepSuite extends ContractSuite<JobStoreUnderContract> {
     this.it('cannot cancel what is over or unknown', async () => {
       await this.subject.add(aJob('job-1'));
       await this.claim(NOW);
-      await this.subject.complete({ id: 'job-1', attempt: 1 }, NOW);
+      await this.subject.complete({ id: 'job-1', claim: 1 }, NOW);
 
       this.holds(!(await this.subject.cancel('job-1', NOW)), 'the cancellation of a job that is over answered true');
       this.holds(!(await this.subject.cancel('unknown', NOW)), 'the cancellation of an unknown job answered true');
@@ -101,12 +101,12 @@ export class KeepSuite extends ContractSuite<JobStoreUnderContract> {
       this.expect(await this.subject.eraseSubject('cus-1')).toBe(1);
 
       this.holds(
-        !(await this.subject.heartbeat({ id: 'job-1', attempt: 1 }, later(LEASE_MS))),
+        !(await this.subject.heartbeat({ id: 'job-1', claim: 1 }, later(LEASE_MS))),
         'the heartbeat of a job whose subject was erased was accepted',
       );
 
       this.holds(
-        !(await this.subject.complete({ id: 'job-1', attempt: 1 }, NOW)),
+        !(await this.subject.complete({ id: 'job-1', claim: 1 }, NOW)),
         'the completion of a job whose subject was erased was accepted',
       );
     });
@@ -139,12 +139,12 @@ export class KeepSuite extends ContractSuite<JobStoreUnderContract> {
 
   private async finished(
     id: string,
-    finish: (lease: { id: string; attempt: number }) => Promise<boolean>,
+    finish: (lease: { id: string; claim: number }) => Promise<boolean>,
     subject?: string,
   ) {
     await this.subject.add(aJob(id, subject === undefined ? {} : { subject }));
     await this.claim(NOW);
-    await finish({ id, attempt: 1 });
+    await finish({ id, claim: 1 });
   }
 
   private claim(now: Date) {

@@ -1,4 +1,4 @@
-import { Builder, sequence, type Defaults } from '@ddd-ts-kit/testing';
+import { Builder, sequence, withoutRecordedEvents, type Defaults } from '@ddd-ts-kit/testing';
 import { Waitlist } from '@/contexts/scheduling/waitlist/domain/aggregates/waitlist.aggregate';
 import { Waiter } from '@/contexts/scheduling/waitlist/domain/value-objects/waiter.vo';
 
@@ -48,7 +48,7 @@ export class WaitlistBuilder extends Builder<WaitlistIngredients, Waitlist> {
       built.join(Waiter.create({ patientId, appointmentTypeId, joinedAt }), joinedAt);
     });
 
-    built.pullEvents();
+    withoutRecordedEvents(built);
 
     return built;
   }

@@ -40,7 +40,7 @@ describe('KafkaEventBus: what it shows of its credentials', () => {
   it('shows none of them through its link to the cluster either', async () => {
     const settings = {
       createTopics: true,
-      startFromEarliest: true,
+      startFrom: 'beginning' as const,
       publishTimeoutMs: 1_000,
       connectTimeoutMs: 1_000,
       maxHandlingMs: 1_000,

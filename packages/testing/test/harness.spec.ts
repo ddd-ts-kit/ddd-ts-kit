@@ -7,7 +7,7 @@ import {
   type IntegrationEventPublisher,
   type QueryHandler,
 } from '@ddd-ts-kit/kernel';
-import { ConcurrencyError, InMemoryRepository, createTestBuses, snapshots, type TestBuses } from '../src';
+import { ConcurrencyError, InMemoryRepository, createTestBuses, recordedBy, snapshots, type TestBuses } from '../src';
 import { Order, at, type OrderSnapshot } from './support/order';
 
 class PlaceOrder extends Command<string> {
@@ -111,7 +111,7 @@ describe('createTestBuses', () => {
     await orders.save(order);
 
     expect(heard).toEqual(['ordering.order.placed order-1', 'ordering.order.paid order-1']);
-    expect(order.pullEvents()).toEqual([]);
+    expect(recordedBy(order)).toEqual([]);
     expect(orders.count()).toBe(1);
   });
 

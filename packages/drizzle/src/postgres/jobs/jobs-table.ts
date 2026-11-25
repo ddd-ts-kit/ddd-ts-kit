@@ -28,6 +28,8 @@ export function jobsTable(schemaName?: string) {
       subject: text('subject'),
       status: text('status').$type<QueuedJobStatus>().notNull().default('waiting'),
       attempts: integer('attempts').notNull().default(0),
+      // The lease of the claim that holds the job: counted at each claim, never given back.
+      claims: integer('claims').notNull().default(0),
       runAt: instant('run_at').notNull(),
       leaseUntil: instant('lease_until'),
       progress: jsonb('progress').$type<JobProgress>(),
