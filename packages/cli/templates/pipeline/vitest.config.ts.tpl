@@ -62,6 +62,8 @@ export default defineConfig(({ mode }) => ({
     // The integration project has no spec before the first repository or adapter of the project: its run passes until then.
     passWithNoTests: mode === INTEGRATION_MODE,
     ...WORKERS,
+    // Before each test the sequences of the builders start again at 1 and the data generator at its seed: no value depends on the order of the tests of a file.
+    setupFiles: ['@ddd-ts-kit/testing/setup/vitest'],
     // Each spec file is held to the time budget of its level ("budget" in ddd-ts-kit.config.json, the reference when it is absent): the slowest named at the end of the run, a file over its budget fails it.
     // The reporters Vitest picks itself (a terse one under a coding agent), and the budget one after them.
     reporters: [...configDefaults.reporters, '@ddd-ts-kit/testing/budget/vitest'],

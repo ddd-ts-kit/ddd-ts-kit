@@ -83,6 +83,14 @@ describe('check --baseline', () => {
     expect(refused.stderr).toContain('--baseline write judges every rule on every file.');
     expect(cli(root, 'check', '--baseline', 'keep').stderr).toContain('Use --baseline write or --baseline prune.');
   });
+
+  it.each(['--explain', '--clean-only'])('refuses %s, which it would not honour', (option) => {
+    const refused = cli(legacyProject('baseline-other-mode'), 'check', '--baseline', 'prune', option);
+
+    expect(refused.code).toBe(2);
+    expect(refused.stderr).toContain('--baseline prune judges every rule on every file.');
+    expect(refused.stderr).toContain('Run it without --rule, a path, --changed-since, --clean-only or --explain.');
+  });
 });
 
 describe('check --baseline, when files move', () => {

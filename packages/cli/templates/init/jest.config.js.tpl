@@ -14,6 +14,8 @@ export default {
 {{/if}}
   },
   testMatch: ['<rootDir>/{{config.sourceRoot}}/**/*.spec.ts', '<rootDir>/test/architecture/**/*.spec.ts'],
+  // Before each test the sequences of the builders start again at 1 and the data generator at its seed: no value depends on the order of the tests of a file.
+  setupFilesAfterEnv: ['@ddd-ts-kit/testing/setup/jest'],
 {{#if persistence.hasDatabase}}
   // PostgreSQL in process is initialised once per run, and each spec opens a copy of that cluster instead of an initdb of its own.
   globalSetup: '<rootDir>/test/support/test-database-template.ts',

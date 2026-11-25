@@ -21,6 +21,8 @@ export default defineConfig({
   test: {
     include: ['{{config.sourceRoot}}/**/*.spec.ts'],
     exclude: ['{{config.contextsDir}}/*/test/integration/**', '{{config.contextsDir}}/*/*/test/integration/**'],
+    // Before each test the sequences of the builders start again at 1 and the data generator at its seed: no value depends on the order of the tests of a file.
+    setupFiles: ['@ddd-ts-kit/testing/setup/vitest'],
     {{#if assembly.discovery}}
     // Discovery imports the role files of a context itself: inlined, the package loads them through the runner, which compiles them.
     server: { deps: { inline: ['@ddd-ts-kit/di'] } },

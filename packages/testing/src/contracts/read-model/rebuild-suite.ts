@@ -14,6 +14,7 @@ export class RebuildSuite extends ReadModelStoreSuite<ReadModelStoreUnderContrac
   protected tests(): void {
     this.closesAfterEach();
     this.rebuilds();
+    this.leavesTheTableOnAFailedExport();
     this.rebuildsUnderEvents();
     this.rebuildsAroundAMissingRow();
     this.appliesAfterTheSwap();
@@ -37,20 +38,34 @@ export class RebuildSuite extends ReadModelStoreSuite<ReadModelStoreUnderContrac
         this.expect(source.exportedPages).toBe(2);
         this.expect(await this.ids()).toEqual(['a1', 'a3', 'a4', 'a5']);
         this.expect(await this.store.get('a1')).toEqual(row('a1'));
-        this.expect(await this.subject.table.rebuilding()).toBe(false);
+
+        this.holds(
+          !(await this.subject.table.rebuilding()),
+          'the table still says it is being rebuilt once the rebuild has ended',
+        );
       },
     );
+  }
 
+  private leavesTheTableOnAFailedExport(): void {
     this.it('leaves the table as it was when the export fails', async () => {
       const source = this.sourceOf(['a1', 'a3', 'a4'], 2);
 
       source.duringExport = () => Promise.reject(new Error('the source is down'));
       await this.put(row('a2'), at('evt-1', 1));
 
-      this.expect((await failureOf(() => this.rebuild(source))) !== undefined).toBe(true);
+      this.holds(
+        (await failureOf(() => this.rebuild(source))) !== undefined,
+        'the rebuild resolved although the export failed',
+      );
 
       this.expect(await this.ids()).toEqual(['a2']);
-      this.expect(await this.subject.table.rebuilding()).toBe(false);
+
+      this.holds(
+        !(await this.subject.table.rebuilding()),
+        'the table still says it is being rebuilt once the rebuild has failed',
+      );
+
       this.expect(await this.put(row('a5'), at('evt-2', 2))).toBe('applied');
     });
   }
@@ -194,7 +209,11 @@ export class RebuildSuite extends ReadModelStoreSuite<ReadModelStoreUnderContrac
       await this.rebuild(this.sourceOf(['a1', 'a3'], 2));
       await this.rebuild(this.sourceOf(['a1', 'a3', 'a4'], 3));
 
-      this.expect(await this.subject.table.insert({ key: 'a4', row: row('a4'), stamp: at('evt-9', 9) })).toBe(false);
+      this.holds(
+        !(await this.subject.table.insert({ key: 'a4', row: row('a4'), stamp: at('evt-9', 9) })),
+        'a key the rebuilt table holds was inserted a second time',
+      );
+
       this.expect(await this.put(row('a5'), at('evt-9', 9))).toBe('applied');
       this.expect(await this.ids()).toEqual(['a1', 'a3', 'a4', 'a5']);
     });

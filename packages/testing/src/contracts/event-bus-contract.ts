@@ -23,7 +23,8 @@ export interface EventBusContractOptions {
 
 /**
  * What every integration event provider guarantees. Delivery is at-least-once: the suite
- * accepts redeliveries everywhere and never relies on the order of arrival.
+ * accepts redeliveries everywhere and never relies on the order of arrival. An event crosses a
+ * process as JSON: a subscriber receives what JSON carries of it.
  */
 export function eventBusContract(runner: ContractRunner, options: EventBusContractOptions): void {
   new EventBusSuite(runner, options).describe(`${options.name} (event bus contract)`);
@@ -31,6 +32,7 @@ export function eventBusContract(runner: ContractRunner, options: EventBusContra
 
 const HAPPENED = 'contract.thing.happened';
 const IGNORED = 'contract.thing.ignored';
+const HAPPENED_AT = '2026-03-01T10:00:00.000Z';
 
 class EventBusSuite extends ContractSuite<EventBusUnderContract> {
   constructor(runner: ContractRunner, options: EventBusContractOptions) {
@@ -45,6 +47,7 @@ class EventBusSuite extends ContractSuite<EventBusUnderContract> {
     this.deliversToTheSubscribersOfTheType();
     this.stopsDeliveringOnceUnsubscribed();
     this.handsTheEnvelopeOverUntouched();
+    this.handsTheEventAsJsonCarriesIt();
     this.survivesAFailingHandler();
   }
 
@@ -100,8 +103,8 @@ class EventBusSuite extends ContractSuite<EventBusUnderContract> {
       await this.publish([busEvent('evt-2')]);
 
       this.expect(kept.ids()).toEqual(['evt-1', 'evt-2']);
-      this.expect(removed.includes('evt-2')).toBe(false);
-      this.expect(before > 0).toBe(true);
+      this.holds(!removed.includes('evt-2'), 'a handler received an event published after it was unsubscribed');
+      this.holds(before > 0, 'the handler received nothing while it was subscribed');
     });
   }
 
@@ -127,6 +130,22 @@ class EventBusSuite extends ContractSuite<EventBusUnderContract> {
     });
   }
 
+  private handsTheEventAsJsonCarriesIt(): void {
+    this.it('hands a subscriber the event as JSON carries it, never the object that was published', async () => {
+      const happened = this.collect(HAPPENED);
+      const payload = { thingId: 'thing-evt-1', at: new Date(HAPPENED_AT), parts: ['published'] };
+
+      await this.publish([{ ...busEvent('evt-1'), payload }]);
+      payload.parts.push('changed after the publication');
+
+      this.expect(happened.events[0]?.payload).toEqual({
+        thingId: 'thing-evt-1',
+        at: HAPPENED_AT,
+        parts: ['published'],
+      });
+    });
+  }
+
   private survivesAFailingHandler(): void {
     this.it('surfaces the failure of a handler without starving the other subscribers', async () => {
       let attempts = 0;
@@ -144,7 +163,11 @@ class EventBusSuite extends ContractSuite<EventBusUnderContract> {
       const failure = await this.publish([busEvent('evt-1')]);
 
       // Either the publication is rejected (in-process) or the event comes back (broker).
-      this.expect(failure !== undefined || attempts > 1).toBe(true);
+      this.holds(
+        failure !== undefined || attempts > 1,
+        'the failure of a handler was neither surfaced by the publication nor followed by a redelivery',
+      );
+
       this.expect(healthy.ids()).toEqual(['evt-1']);
     });
   }
@@ -174,7 +197,7 @@ function busEvent(id: string, type = HAPPENED): IntegrationEvent {
     id,
     type,
     version: 1,
-    occurredAt: '2026-03-01T10:00:00.000Z',
+    occurredAt: HAPPENED_AT,
     payload: { thingId: `thing-${id}` },
   };
 }

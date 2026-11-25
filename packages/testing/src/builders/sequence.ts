@@ -1,4 +1,5 @@
 import { lazy } from './lazy';
+import { restartedWithTestData } from './restart-test-data';
 import type { Resolvable } from './resolvable';
 
 const counters = new Map<string, number>();
@@ -20,7 +21,12 @@ export function sequence(name: string, format: (n: number) => unknown = (n) => `
   });
 }
 
-/** Restarts every sequence at 1. Call it in `beforeEach` so tests do not depend on their order. */
+/**
+ * Restarts every sequence at 1, so that tests do not depend on their order. The setup entries of
+ * the package do it before each test (`restartTestData`); call it in `beforeEach` without them.
+ */
 export function resetSequences(): void {
   counters.clear();
 }
+
+restartedWithTestData(resetSequences);

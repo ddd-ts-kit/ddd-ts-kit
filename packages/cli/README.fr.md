@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:19ae7da406e09b21 -->
+<!-- translation-of: README.md sha256:1b47fa72e96132da -->
 
 # ddd-ts-kit
 
@@ -2516,7 +2516,12 @@ règle.
 - Désactivez une ligne avec `// ddd-ts-kit-disable-next-line <rule-id> -- ADR-0007: <reason>`.
   Sans raison, le commentaire est lui-même une violation, tout comme une raison qui ne nomme aucun
   enregistrement de décision existant. Sur la première ligne d'un fichier, il couvre aussi les
-  violations au niveau du fichier.
+  violations au niveau du fichier. Une ligne qui enfreint deux règles prend une liste
+  (`<rule-id>, <rule-id> -- ...`) ou une directive par règle, l'une au-dessus de l'autre : toutes
+  couvrent la ligne qui suit la dernière. Une directive qui nomme un identifiant qu'aucune règle ne
+  porte, ou une règle qui n'a rien à signaler sur cette ligne, est aussi une violation
+  (`config/unused-suppression`) ; la seconde est jugée par `check` quand il exécute toutes les
+  règles, pour une règle qu'ESLint ne tient pas lui aussi.
 - `--clean-only` exécute les règles qui jugent un fichier seul (`clean/stepdown`,
   `clean/function-size`, `clean/no-commented-out-code`, `clean/no-noise-comment`,
   `clean/no-escape-hatch`, `clean/no-hash-private`, `clean/blank-lines`, `clean/braces`,
@@ -2570,6 +2575,7 @@ règle.
 | `imports/alias-declared` | un `importAlias` qui n'est pas `@/` ou `$<name>/`, ou qui est `$test/`, `$scripts/`, `$generated/` ; une entrée `paths` de `tsconfig.json` manquante ou différente de ce que donne `importAlias` (la correction donne l'entrée) ; une autre entrée `paths` sous un alias ; un `baseUrl` ; un `tsconfig.build.json` dont les `paths` diffèrent ; des `paths` de `knip.json` qui associent un alias ; un script qui compile (`tsc` sans `--noEmit`) et ne lance pas `ddd-ts-kit build-aliases` ensuite ; un script qui lance `tsx --tsconfig` sur un autre fichier ; une configuration `vitest` à la racine sans `tsconfigPaths: true`, une configuration `jest` sans les entrées `moduleNameMapper` dérivées, ou `.dependency-cruiser.cjs` sans `tsConfig` ; un `module` et un `moduleResolution` de `tsconfig.json` (ou d'un `tsconfig.build.json` qui pose les siens) qui ne sont pas ce que donne `importExtension` : `ESNext`, `Bundler` et `customConditions` contenant `node` sous `none`, et sous `js` une valeur écrite qui n'est pas une résolution Node ; une association jest dont le motif ne se termine pas comme les imports ; sous `js`, un fichier placé directement sous `test/support/` qui importe un voisin par son `.ts` alors que `tsconfig.json` ne fixe ni `allowImportingTsExtensions` ni `rewriteRelativeImportExtensions` ; quelle que soit la terminaison, un `tsconfig.build.json`, ou un tsconfig qu'un script compile pour ce qui est livré, qui résout `noEmit` à `true`, ou `allowImportingTsExtensions` à `true` sans `rewriteRelativeImportExtensions` ni `emitDeclarationOnly`. Un projet sans `package.json` n'est pas jugé |
 | `config/valid` | un amont, une classification, une relation, un identifiant de règle, un mode de `guard` ou un `importExtension` inconnu ; un répertoire de la configuration qui sort du projet ; un contexte absent du disque ou de la configuration ; une limite de `commit` qui n'est pas un entier positif |
 | `config/suppression-needs-reason` | une désactivation sans identifiant de règle ou sans raison (gardée comme alias à côté de `governance/recorded-deviation`, qui juge la raison) |
+| `config/unused-suppression` | une désactivation qui nomme un identifiant qu'aucune règle ne porte ; dans une exécution de toutes les règles, la désactivation d'une règle que ce *checker* est seul à tenir, active sur le fichier, qui n'a rien à signaler sur la ligne que la directive couvre |
 | `authz/declared` | dans un fichier de module, `builder.command(X)` ou `builder.query(X)` sans `.requires(` ni `.public(` dans sa chaîne, sauf si la classe du message porte `@Requires` ou `@Public` de `@ddd-ts-kit/kernel/declarations` ; en câblage manuel ou nest, une classe de commande ou de requête absente de tous les `requires(X, ...)` et `publicUseCase(X)` du fichier de module et de `application/authorization/` ; un `defineRoute` sans `security` (le type de la route le refuse déjà, et une liste vide aussi : c'est le filet au niveau du texte pour une définition construite de façon lâche) ; dans le style déclaré, la classe exportée d'un fichier `*.command.ts` ou `*.query.ts` qui ne porte ni `@Requires` ni `@Public` |
 | `authz/granted` | avec `stack.authz` `rbac`, une permission du `definePermissions` d'un contexte que ni `platform/auth/roles/roles.ts` ni `platform/auth/authorization/signed-in-grants.ts` n'accorde par son nom (par l'entrée de son ensemble, son identifiant ou `<contexte>:*`) ; le `*` du super-administrateur ne compte pas (un avertissement) ; avec `rebac`, une permission que le schéma laisse sur le contexte alors qu'aucune source hors des tests n'écrit de relation `operator` (d'une personne ou d'un acteur système) sur ce contexte et qu'aucun droit de toute personne connectée ne la tient, dans un projet qui fait déjà d'une personne l'opérateur d'un contexte ; muette avec un *authorizer* propre au projet (un avertissement) |
 | `authz/system-actor-granted` | avec `stack.authz` `rebac`, un `systemActor(<name>)` d'un contexte (un littéral, ou `<Classe>.name`) dans un fichier qui envoie une commande ou une requête non déclarée publique, alors qu'aucun fichier de `platform/auth/relationships/` ne nomme le sujet `system:system:<name>` |

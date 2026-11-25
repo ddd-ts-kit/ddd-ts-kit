@@ -3,6 +3,7 @@ import type { BlockCommentRecord } from './block-comment-record';
 import type { CommentRecord } from './comment-record';
 import type { StringRecord } from './string-record';
 
+/** The characters a slash opens a regular expression after: an operand is expected there, not an operator. */
 const REGEX_PRECEDERS = new Set([
   '(',
   ',',
@@ -14,7 +15,6 @@ const REGEX_PRECEDERS = new Set([
   '|',
   '?',
   '{',
-  '}',
   ';',
   '+',
   '-',
@@ -27,6 +27,10 @@ const REGEX_PRECEDERS = new Set([
 ]);
 
 const REGEX_KEYWORDS = /(?:^|[^\w$.])(?:return|typeof|case|do|else|in|of|void|throw|new|delete|await|yield)$/;
+/** `count++` and `count--`: before a slash the operator is postfix, since a prefix one takes a name. */
+const POSTFIX = /(?:\+\+|--)$/;
+/** `total!`, `rows[0]!`, `sum()!`: a non-null assertion, which ends a value. */
+const ASSERTED = /[\w$)\]]!$/;
 
 /**
  * A deliberately small lexer: it walks the source once, copying code and blanking what is not
@@ -228,14 +232,24 @@ export class Lexer {
     }
   }
 
+  /** Whether a slash here opens a regular expression: it does where a value is expected, and divides after one. */
   private regexMayStart(): boolean {
-    const trimmed = this.code.trimEnd();
+    const before = this.code.trimEnd();
 
-    if (trimmed.length === 0) {
-      return true;
+    if (POSTFIX.test(before)) {
+      return false;
     }
 
-    return REGEX_PRECEDERS.has(trimmed.charAt(trimmed.length - 1)) || REGEX_KEYWORDS.test(trimmed.slice(-12));
+    if (ASSERTED.test(before)) {
+      return endsWithKeyword(before.slice(0, -1));
+    }
+
+    if (before.endsWith('}')) {
+      // A block ends its line and a statement may open with a regular expression; a value in braces is divided on its line.
+      return this.code.includes('\n', before.length);
+    }
+
+    return before === '' || REGEX_PRECEDERS.has(before.charAt(before.length - 1)) || endsWithKeyword(before);
   }
 
   private readRegex(): void {
@@ -271,4 +285,8 @@ export class Lexer {
       this.at += 1;
     }
   }
+}
+
+function endsWithKeyword(code: string): boolean {
+  return REGEX_KEYWORDS.test(code.slice(-12));
 }

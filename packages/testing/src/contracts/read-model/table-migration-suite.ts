@@ -65,7 +65,10 @@ export class TableMigrationSuite extends ReadModelTablesSuite {
 
         const live = await failureOf(() => this.subject.execute(this.agendaRow('live', "null, '11:00', null")));
 
-        this.expect(live === undefined).toBe(false);
+        this.holds(
+          live !== undefined,
+          'a live row with a field left NULL was accepted after the migration: the constraint is not held',
+        );
       },
     );
   }
@@ -100,8 +103,15 @@ export class TableMigrationSuite extends ReadModelTablesSuite {
 
       const modes = locks.map((lock) => String(lock['mode']));
 
-      this.expect(modes.includes('ShareUpdateExclusiveLock')).toBe(true);
-      this.expect(modes.includes('AccessExclusiveLock')).toBe(false);
+      this.holds(
+        modes.includes('ShareUpdateExclusiveLock'),
+        `the validation of the constraint did not take the lock of a validation, ShareUpdateExclusiveLock: it took ${modes.join(', ')}`,
+      );
+
+      this.holds(
+        !modes.includes('AccessExclusiveLock'),
+        'the validation of the constraint took AccessExclusiveLock, which stops the readers of the table',
+      );
     });
   }
 
