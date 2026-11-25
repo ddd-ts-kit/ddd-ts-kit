@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:04bba12c97117cb8 -->
+<!-- translation-of: README.md sha256:d890ff2e58a62971 -->
 
 # @ddd-ts-kit/redis
 
@@ -723,7 +723,7 @@ process.on('SIGTERM', async () => {
 | `blockMs` | 1000 | combien de temps une lecture attend (`BLOCK`) : cela borne `close()` et la précision du délai avant une nouvelle tentative |
 | `retry` | 5 tentatives, 5000 ms | les livraisons avant le flux de rejet, et l'attente après un échec |
 | `visibilityTimeoutMs` | 60000 | temps d'inactivité après lequel les entrées en attente d'une autre instance sont reprises ; jamais moins que `retry.delayMs` |
-| `startFrom` | `new` | où commence un groupe que ce bus crée : ce qui est publié à partir de ce moment, ou `beginning` pour tout le flux |
+| `startFrom` | `beginning` | où commence un groupe que ce bus crée : tout le flux, ou `end` pour ce qui est publié à partir de ce moment |
 | `retention` | aucune | `{ maxLength }` ou `{ maxAgeMs }` : élagage appliqué par chaque publication. Voir les limites |
 | `deduplication` | aucune | `{ windowMs }` : la garde côté publication décrite plus bas |
 | `reconnect` | 200 ms, doublé jusqu'à 30 s | délai entre les reconnexions, et entre les tentatives d'un lecteur qui échoue |
@@ -739,7 +739,7 @@ revenu sans ses données les a perdus). Pour `forConsumer('billing')` abonné à
 | Objet | Nom | Propriétés |
 |---|---|---|
 | flux d'événements | `integration-events:ordering.order.placed` | un par type d'événement, partagé par tous les consommateurs ; créé vide par le premier groupe (`MKSTREAM`) ou par la première publication |
-| groupe de consommateurs | `billing`, sur ce flux | un par nom de consommateur ; détient sa position et ses entrées en attente ; créé à `$` (ou à `0` avec `startFrom: 'beginning'`) |
+| groupe de consommateurs | `billing`, sur ce flux | un par nom de consommateur ; détient sa position et ses entrées en attente ; créé à `0` (ou à `$` avec `startFrom: 'end'`) |
 | membre du groupe | le nom `instance` | un par processus ; retiré à `close()` quand il ne laisse rien en attente |
 | flux de rejet | `integration-events:ordering.order.placed:billing:dead` | un par consommateur et par type, créé par la première entrée rejetée ; aucun groupe ne le lit |
 
@@ -924,7 +924,9 @@ Entretien :
 - **Les positions sont dans le même serveur.** Les groupes, les entrées en attente et les
   compteurs de livraisons sont perdus ou ramenés en arrière avec les données. Un serveur restauré
   depuis un *snapshot* plus ancien livre de nouveau ce qui a été traité depuis (les consommateurs
-  dédupliquent) ; un serveur qui a tout perdu voit ses groupes recréés à la fin de flux vides.
+  dédupliquent) ; un serveur qui a tout perdu voit ses groupes recréés sur des flux vides.
+  Un groupe perdu seul, son flux gardé, est recréé à `startFrom` : au début par défaut, si bien
+  que ce que le flux contient encore est livré de nouveau.
 - **Aucune déduplication côté publication**, comme dit plus haut.
 - **La rétention est bornée par la mémoire.** Un flux vit en mémoire, tout entier. Par défaut, rien
   n'est élagué. `retention: { maxLength }` (`MAXLEN ~`) et `retention: { maxAgeMs }` (`MINID ~`,
@@ -952,9 +954,11 @@ Entretien :
 - **Un lot est une transaction sur un serveur** : toutes ses entrées sont ajoutées, ou la
   publication rejette. Un rejet ne prouve pas que rien n'a été ajouté (la réponse a pu être
   perdue) ; le relais retente et les consommateurs dédupliquent.
-- **Un nouveau groupe commence à la fin du flux** par défaut : ce qui a été publié avant qu'un
-  consommateur s'abonne pour la première fois ne lui est pas livré. `startFrom: 'beginning'` lit
-  ce que le flux contient encore.
+- **Un nouveau groupe commence au début du flux** (`startFrom: 'beginning'`, la valeur par
+  défaut de chaque broker du kit qui a un historique) : un consommateur déployé après les
+  producteurs lit ce que le flux contient encore. Choisissez `startFrom: 'end'` en connaissance
+  de cause : ce qui a été publié avant la création du groupe ne lui est alors pas livré. L'ancien
+  mot `new` est refusé à la construction avec `START_FROM_REFUSED`, qui nomme `end`.
 - **Un abonnement ajouté pendant que le consommateur lit** est lu à partir du tour suivant, jusqu'à
   `blockMs` plus tard. Rien n'est manqué : son groupe existe avant que le bus publie.
 - **Un serveur, ou un primaire avec des répliques.** Une lecture couvre les flux d'un consommateur
@@ -986,7 +990,7 @@ données métier : cela vit dans la base de données.
 | `RedisRateLimiter` | `EVAL` d'un script appelant `ZREMRANGEBYSCORE`, `ZCARD`, `ZADD`, `PEXPIRE`, `ZRANGE` (avec `WITHSCORES`) |
 | `RedisRelaySignal` | `PUBLISH`, `SUBSCRIBE` |
 | `RedisStreamsEventBus`, publication | `MULTI`, `EXEC`, `XADD` (avec `MAXLEN ~` ou `MINID ~` sous `retention`) ; sous `deduplication`, `EVAL` d'un script appelant `GET`, `XADD`, `SET` (avec `PX`) |
-| `RedisStreamsEventBus`, consommation | `XGROUP CREATE` (avec `MKSTREAM`), `XREADGROUP` (avec `GROUP`, `COUNT`, `BLOCK`, plusieurs flux), `XACK`, `XPENDING` (forme étendue, avec `IDLE` et avec un consommateur), `XCLAIM` (avec un temps d'inactivité minimal, et avec `JUSTID`), `XGROUP DELCONSUMER`, `EVAL` d'un script appelant `XADD`, `XACK` |
+| `RedisStreamsEventBus`, consommation | `XGROUP CREATE` (avec `MKSTREAM`), `XREADGROUP` (avec `GROUP`, `COUNT`, `BLOCK`, plusieurs flux), `XACK`, `XPENDING` (forme étendue, avec `IDLE` et avec un consommateur), `XCLAIM` (avec un temps d'inactivité minimal, et avec `JUSTID`, seul ou après `RETRYCOUNT`), `XGROUP DELCONSUMER`, `EVAL` d'un script appelant `XADD`, `XACK` |
 | `RedisStreamsEventBus`, `replayDead` | `XRANGE` (avec `COUNT`), `EVAL` d'un script appelant `XRANGE`, `XADD`, `XDEL` |
 | `redisHealth`, `close` | `PING`, `QUIT` |
 | ioredis lui-même, à la connexion | `HELLO 3` (ioredis 6 ; les réponses sont ramenées à leur forme classique), `INFO`, `CLIENT SETINFO`, et `AUTH`, `SELECT` quand l'URL le demande |

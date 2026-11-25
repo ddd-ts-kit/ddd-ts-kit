@@ -4,6 +4,7 @@ import type { RedisStreamsDelivery } from './redis-streams-delivery';
 import type { RedisStreamsFailure } from './redis-streams-failure';
 import type { RetentionOptions } from './retention-options';
 import type { RetryOptions } from './retry-options';
+import type { StartFrom } from './start-from';
 
 /**
  * The options of a bus with their defaults applied. The connection is not among them: a URL
@@ -16,7 +17,7 @@ export interface Settings {
   readonly batchSize: number;
   readonly blockMs: number;
   readonly visibilityTimeoutMs: number;
-  readonly startFrom: 'new' | 'beginning';
+  readonly startFrom: StartFrom;
   readonly retry: Required<RetryOptions>;
   readonly reconnect: Required<ReconnectOptions>;
   readonly retention: RetentionOptions | undefined;

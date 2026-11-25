@@ -704,7 +704,7 @@ process.on('SIGTERM', async () => {
 | `blockMs` | 1000 | how long a read waits (`BLOCK`): it bounds `close()` and the precision of the retry delay |
 | `retry` | 5 attempts, 5000 ms | deliveries before the dead stream, and the wait after a failure |
 | `visibilityTimeoutMs` | 60000 | idle time after which the pending entries of another instance are taken over; never less than `retry.delayMs` |
-| `startFrom` | `new` | where a group this bus creates starts: what is published from then on, or `beginning` for the whole stream |
+| `startFrom` | `beginning` | where a group this bus creates starts: the whole stream, or `end` for what is published from then on |
 | `retention` | none | `{ maxLength }` or `{ maxAgeMs }`: trimming applied by each publication. See the limits |
 | `deduplication` | none | `{ windowMs }`: the publish-side guard below |
 | `reconnect` | 200 ms doubling up to 30 s | delay between reconnections, and between the attempts of a reader that fails |
@@ -720,7 +720,7 @@ that came back without its data has lost them). For `forConsumer('billing')` sub
 | Object | Name | Properties |
 |---|---|---|
 | events stream | `integration-events:ordering.order.placed` | one per event type, shared by every consumer; created empty by the first group (`MKSTREAM`) or by the first publication |
-| consumer group | `billing`, on that stream | one per consumer name; holds its position and its pending entries; created at `$` (or `0` with `startFrom: 'beginning'`) |
+| consumer group | `billing`, on that stream | one per consumer name; holds its position and its pending entries; created at `0` (or `$` with `startFrom: 'end'`) |
 | group member | the `instance` name | one per process; removed at `close()` when it leaves nothing pending |
 | dead stream | `integration-events:ordering.order.placed:billing:dead` | one per consumer and type, created by the first dead letter; no group reads it |
 
@@ -892,7 +892,8 @@ Housekeeping:
 - **The positions are in the same server.** Groups, pending entries and delivery counters are
   lost or rewound with the data. A server restored from an older snapshot delivers again what
   was handled since (consumers deduplicate); a server that lost everything gets its groups
-  created again at the end of empty streams.
+  created again on empty streams. A group lost alone, its stream kept, is created again at
+  `startFrom`: at the beginning by default, so what the stream still holds is delivered again.
 - **No publish-side deduplication**, as said above.
 - **Retention is bounded by memory.** A stream lives in memory, entirely. By default nothing
   is trimmed. `retention: { maxLength }` (`MAXLEN ~`) and `retention: { maxAgeMs }`
@@ -918,9 +919,11 @@ Housekeeping:
 - **A batch is one transaction on one server**: all its entries are appended, or the
   publication rejects. A rejection does not prove nothing was appended (the answer may have
   been lost); the relay retries and consumers deduplicate.
-- **A new group starts at the end of the stream** by default: what was published before a
-  consumer first subscribed is not delivered to it. `startFrom: 'beginning'` reads what the
-  stream still holds.
+- **A new group starts at the beginning of the stream** (`startFrom: 'beginning'`, the default
+  of every broker of the kit that has a history): a consumer deployed after the producers reads
+  what the stream still holds. Choose `startFrom: 'end'` deliberately: what was published
+  before the group was created is then not delivered to it. The former word `new` is refused
+  at construction with `START_FROM_REFUSED`, which names `end`.
 - **A subscription added while the consumer is reading** is read from the next turn, up to
   `blockMs` later. Nothing is missed: its group exists before the bus publishes.
 - **One server or a primary with replicas.** A read covers the streams of a consumer in one
@@ -950,7 +953,7 @@ business data: it lives in the database.
 | `RedisRateLimiter` | `EVAL` of one script calling `ZREMRANGEBYSCORE`, `ZCARD`, `ZADD`, `PEXPIRE`, `ZRANGE` (with `WITHSCORES`) |
 | `RedisRelaySignal` | `PUBLISH`, `SUBSCRIBE` |
 | `RedisStreamsEventBus`, publishing | `MULTI`, `EXEC`, `XADD` (with `MAXLEN ~` or `MINID ~` under `retention`); under `deduplication`, `EVAL` of one script calling `GET`, `XADD`, `SET` (with `PX`) |
-| `RedisStreamsEventBus`, consuming | `XGROUP CREATE` (with `MKSTREAM`), `XREADGROUP` (with `GROUP`, `COUNT`, `BLOCK`, several streams), `XACK`, `XPENDING` (extended form, with `IDLE` and with a consumer), `XCLAIM` (with a minimum idle time, and with `JUSTID`), `XGROUP DELCONSUMER`, `EVAL` of one script calling `XADD`, `XACK` |
+| `RedisStreamsEventBus`, consuming | `XGROUP CREATE` (with `MKSTREAM`), `XREADGROUP` (with `GROUP`, `COUNT`, `BLOCK`, several streams), `XACK`, `XPENDING` (extended form, with `IDLE` and with a consumer), `XCLAIM` (with a minimum idle time, and with `JUSTID`, alone or after `RETRYCOUNT`), `XGROUP DELCONSUMER`, `EVAL` of one script calling `XADD`, `XACK` |
 | `RedisStreamsEventBus`, `replayDead` | `XRANGE` (with `COUNT`), `EVAL` of one script calling `XRANGE`, `XADD`, `XDEL` |
 | `redisHealth`, `close` | `PING`, `QUIT` |
 | ioredis itself, at connection | `HELLO 3` (ioredis 6; replies are mapped to their classic shape), `INFO`, `CLIENT SETINFO`, and `AUTH`, `SELECT` when the URL asks |

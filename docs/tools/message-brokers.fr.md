@@ -1,5 +1,5 @@
 [English](message-brokers.md) · **Français**
-<!-- translation-of: message-brokers.md sha256:6132d8117f26a046 -->
+<!-- translation-of: message-brokers.md sha256:c75cb003b43cd5e7 -->
 
 # Brokers de messages : en processus, RabbitMQ, Kafka, NATS JetStream, Redis Streams
 
@@ -108,7 +108,7 @@ fichiers de licence). Les lignes « kit » reprennent ce qu'affirment les README
 | Survit à un plantage du serveur | non (l'outbox, oui) | oui, avec des files quorum durables | oui, avec un facteur de réplication de 3 et `min.insync.replicas=2` | oui, selon le stockage et les réplicas du stream | dépend des réglages de persistance ; peut perdre des entrées acquittées |
 | Ordre | par clé avec un seul relais, dans un processus | aucun | par partition, donc par clé | aucun | aucun entre instances |
 | Rétention | aucune | jusqu'à la consommation | par durée ou par taille, rejouable | selon les limites que vous fixez ; rejouable | bornée par la mémoire ; le rognage ignore les entrées non lues |
-| Un nouveau consommateur voit l'historique | non | non | oui (commence au plus ancien par défaut) | oui (politique de distribution `all`) | non par défaut (commence à la fin) |
+| Un nouveau consommateur voit l'historique | non | non | oui (`startFrom: 'beginning'` par défaut, `'end'` pour le sauter) | oui (politique de distribution `all`) | oui (`startFrom: 'beginning'` par défaut, `'end'` pour le sauter) |
 | Déduplication côté publication | pas nécessaire | aucune | nouvelles tentatives du client seulement, pas celles du relais | par identifiant de message, dans une fenêtre courte (deux minutes par défaut) | aucune (clé de garde facultative) |
 | Nouvelles tentatives dans le *provider* du kit | le délai croissant du relais | délai fixe, file de nouvelle tentative | délai fixe, sur place, bloque la partition | délai fixe | délai fixe |
 | Files de rejet (dead letters) | l'outbox (`dead`) | une file de rejet par file de consommateur | un topic de rejet | un stream de rejet | un stream de rejet |

@@ -30,8 +30,11 @@ export interface KafkaEventBusOptions {
   /** Event types this service publishes: `assertTopology` creates their topics at startup. */
   readonly publishedTypes?: readonly string[];
   readonly topics?: TopicOptions;
-  /** Where a consumer group that has no committed offset starts. Default `earliest`. */
-  readonly startFrom?: 'earliest' | 'latest';
+  /**
+   * Where a consumer group that has no committed offset starts: the earliest record its topics
+   * hold, or `end` for what is published from then on. Default `beginning`, as on the other brokers.
+   */
+  readonly startFrom?: 'beginning' | 'end';
   /** Partitions a consumer handles at once; records of one partition are never concurrent. Default 1. */
   readonly concurrency?: number;
   /** Time the in-sync replicas have to acknowledge a record before `publish` rejects. Default 30000. */

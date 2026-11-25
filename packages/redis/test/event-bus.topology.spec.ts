@@ -35,13 +35,13 @@ describe.each(SERVERS)('RedisStreamsEventBus, topology, %s', { timeout: 30_000 }
     expect(await server.consumers(`${prefix}:${PLACED}`, consumer)).toBe(1);
   });
 
-  it('starts a new consumer at the events published from then on, or at the beginning when asked to', async () => {
+  it('starts a new consumer at the beginning of the stream, or at the events published from then on when asked to', async () => {
     const prefix = unique('test-events');
     const publisher = server.bus({ prefix });
 
     await publisher.publish([anEvent('evt-1')]);
-    const latecomer = server.bus({ prefix });
-    const historian = server.bus({ prefix, startFrom: 'beginning' });
+    const latecomer = server.bus({ prefix, startFrom: 'end' });
+    const historian = server.bus({ prefix });
     const [late, whole] = [recorder(), recorder()];
 
     latecomer.subscribe(PLACED, late.handler);

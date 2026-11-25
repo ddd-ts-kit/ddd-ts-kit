@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { KafkaDelivery } from '../src/options/kafka-delivery';
+import type { KafkaEventBusOptions } from '../src/options/kafka-event-bus-options';
 import type { KafkaFailure } from '../src/options/kafka-failure';
 import { settingsOf } from '../src/options/settings-of';
 import { anEvent, PLACED } from './support/events';
@@ -25,7 +26,7 @@ describe('the settings of a bus', () => {
     expect(settings).toMatchObject({
       publishedTypes: [],
       topics: { partitions: -1, replicationFactor: -1, create: true },
-      startFromEarliest: true,
+      startFrom: 'beginning',
       concurrency: 1,
       publishTimeoutMs: 30_000,
       connectTimeoutMs: 10_000,
@@ -43,7 +44,7 @@ describe('the settings of a bus', () => {
       keyOf: () => 'order-1',
       publishedTypes: ['billing.invoice.issued'],
       topics: { partitions: 6, replicationFactor: 3, create: false },
-      startFrom: 'latest',
+      startFrom: 'end',
       concurrency: 4,
       publishTimeoutMs: 1_000,
       connectTimeoutMs: 2_000,
@@ -59,7 +60,7 @@ describe('the settings of a bus', () => {
       consumer: 'billing',
       publishedTypes: ['billing.invoice.issued'],
       topics: { partitions: 6, replicationFactor: 3, create: false },
-      startFromEarliest: false,
+      startFrom: 'end',
       concurrency: 4,
       publishTimeoutMs: 1_000,
       connectTimeoutMs: 2_000,
@@ -126,5 +127,27 @@ describe('the settings of a bus', () => {
       settings.onFailure(failure);
       settings.onDelivery(delivery);
     }).not.toThrow();
+  });
+});
+
+describe('the startFrom of a bus', () => {
+  it.each([
+    ['earliest', 'beginning'],
+    ['latest', 'end'],
+  ])("refuse the former word of startFrom '%s', and name '%s' that replaced it", (former, word) => {
+    const options = { brokers: '127.0.0.1:9092', startFrom: former } as unknown as KafkaEventBusOptions;
+
+    expect(() => settingsOf(options)).toThrow(
+      expect.objectContaining({
+        code: 'START_FROM_REFUSED',
+        message: `startFrom: '${former}' is refused: write startFrom: '${word}'`,
+      }),
+    );
+  });
+
+  it('refuse a word startFrom never took, and name the two it takes', () => {
+    const options = { brokers: '127.0.0.1:9092', startFrom: 'now' } as unknown as KafkaEventBusOptions;
+
+    expect(() => settingsOf(options)).toThrow("startFrom: 'now' is refused: write startFrom: 'beginning' or 'end'");
   });
 });

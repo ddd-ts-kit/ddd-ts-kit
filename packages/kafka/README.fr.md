@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:a9a2df30b6683d8d -->
+<!-- translation-of: README.md sha256:79853a4c0f4fe3c3 -->
 
 # @ddd-ts-kit/kafka
 
@@ -517,10 +517,12 @@ que le bus se ferme.
   5 minutes par défaut). Au-delà, le membre est tenu pour mort, ses partitions changent de main,
   et l'enregistrement est traité deux fois, en parallèle.
 - **Un nouveau groupe commence au plus ancien enregistrement** de ses *topics*
-  (`startFrom: 'earliest'`) : un consommateur déployé après les producteurs ne manque rien, et un
-  consommateur ajouté un an plus tard lit un an d'événements retenus. Choisissez `latest` en
-  connaissance de cause, en sachant que ce qui est publié entre la création du groupe et sa
-  première affectation est alors sauté.
+  (`startFrom: 'beginning'`, la valeur par défaut de chaque broker du kit qui a un historique) :
+  un consommateur déployé après les producteurs ne manque rien, et un consommateur ajouté un an
+  plus tard lit un an d'événements retenus. Choisissez `startFrom: 'end'` en connaissance de
+  cause, en sachant que ce qui est publié entre la création du groupe et sa première affectation
+  est alors sauté. Les anciens mots `earliest` et `latest` sont refusés à la construction avec
+  `START_FROM_REFUSED`, qui nomme le nouveau.
 - **Une nouvelle tentative exécute de nouveau tous les gestionnaires du type**, y compris ceux
   qui ont réussi, quand plusieurs gestionnaires d'un même consommateur sont abonnés au même
   type. Chacun doit être idempotent.

@@ -102,7 +102,7 @@ Server versions and licences checked on 2026-10-10 (GitHub releases and licence 
 | Survives a server crash | no (the outbox does) | yes, with durable quorum queues | yes, with replication factor 3 and `min.insync.replicas=2` | yes, per the stream's storage and replicas | depends on persistence settings; can lose acknowledged entries |
 | Order | per key with one relay, in one process | none | per partition, so per key | none | none across instances |
 | Retention | none | until consumed | by time or size, replayable | by limits you set; replayable | bounded by memory; trimming ignores unread entries |
-| A new consumer sees history | no | no | yes (starts at earliest by default) | yes (deliver policy `all`) | no by default (starts at the end) |
+| A new consumer sees history | no | no | yes (`startFrom: 'beginning'` by default, `'end'` to skip it) | yes (deliver policy `all`) | yes (`startFrom: 'beginning'` by default, `'end'` to skip it) |
 | Publish-side deduplication | not needed | none | client retries only, not relay retries | by message id, in a short window (two minutes by default) | none (optional guard key) |
 | Retries in the kit's provider | the relay's backoff | fixed delay, retry queue | fixed delay, in place, blocks the partition | fixed delay | fixed delay |
 | Dead letters | the outbox (`dead`) | dead queue per consumer queue | dead-letter topic | dead-letter stream | dead stream |

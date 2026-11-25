@@ -492,10 +492,12 @@ holds its partition until a handler comes back or the bus closes.
 - **A handler must finish within `maxHandlingMs`** (`max.poll.interval.ms`, 5 minutes by
   default). Beyond it the member is taken for dead, its partitions move, and the record is
   handled twice, concurrently.
-- **A new group starts at the earliest record** of its topics (`startFrom: 'earliest'`): a
-  consumer deployed after the producers misses nothing, and a consumer added a year later
-  reads a year of retained events. Choose `latest` deliberately, knowing that what is
-  published between the creation of the group and its first assignment is then skipped.
+- **A new group starts at the earliest record** of its topics (`startFrom: 'beginning'`, the
+  default of every broker of the kit that has a history): a consumer deployed after the
+  producers misses nothing, and a consumer added a year later reads a year of retained events.
+  Choose `startFrom: 'end'` deliberately, knowing that what is published between the creation
+  of the group and its first assignment is then skipped. The former words `earliest` and
+  `latest` are refused at construction with `START_FROM_REFUSED`, which names the new one.
 - **A retry runs every handler of the type again**, those that succeeded included, when
   several handlers of one consumer subscribe to the same type. Each must be idempotent.
 - **A batch is not atomic.** When `publish` rejects, some records may have been written. The
