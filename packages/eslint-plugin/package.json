@@ -50,13 +50,13 @@
     "typescript-eslint": "^8.71.0"
   },
   "dependencies": {
-    "@stylistic/eslint-plugin": "^5.10.0",
+    "@stylistic/eslint-plugin": "^6.0.1",
     "@typescript-eslint/utils": "^8.72.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@typescript-eslint/rule-tester": "^8.72.1",
-    "eslint": "^10.14.0",
+    "eslint": "^10.15.0",
     "typescript-eslint": "^8.72.1"
   }
 }

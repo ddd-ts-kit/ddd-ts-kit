@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { assertTheWholeTrace } from './first-class-trace';
 import { cli, exists, read, write } from './helpers';
 
@@ -5,6 +7,11 @@ const SHIPPING_HANDLER =
   'src/contexts/shipping/application/integration/handlers/billing-invoice-issued.integration-handler.ts';
 
 const SHIPPING_HANDLER_SPEC = 'src/contexts/shipping/test/unit/billing-invoice-issued.integration-handler.spec.ts';
+const SHIPPING_E2E = 'test/e2e/ship-parcel.e2e.spec.ts';
+const ISSUED_HANDLER = 'src/contexts/billing/application/event-handlers/invoice-issued.event-handler.ts';
+const ISSUED_HANDLER_SPEC = 'src/contexts/billing/test/unit/invoice-issued.event-handler.spec.ts';
+const PREPARE_PARCEL = 'src/contexts/shipping/application/commands/prepare-parcel/prepare-parcel.handler.ts';
+const PREPARE_PARCEL_SPEC = 'src/contexts/shipping/test/unit/prepare-parcel.handler.spec.ts';
 
 const DECLARED_READER =
   'src/contexts/billing/infrastructure/persistence/in-memory-search-invoices-reader.repository.ts';
@@ -52,11 +59,16 @@ export function writeBusinessDecisions(root: string): void {
       /(import \{[^}]*\} from '@ddd-ts-kit\/kernel';\n)/,
       "$1import { PrepareParcelCommand } from '@/contexts/shipping/application/commands/prepare-parcel/prepare-parcel.command';\n",
     ],
+    // The decision takes the place of the marker and of the refusal the generator left after it.
     [
-      /(async handle\(event: InvoiceIssuedV2\): Promise<void> \{\n)[^\n]*\n/,
+      /(async handle\(event: InvoiceIssuedV2\): Promise<void> \{\n)[^\n]*\n[^\n]*throw undecided\([^\n]*\n/,
       '$1    await this.commands.execute(new PrepareParcelCommand());\n',
     ],
+    ['undecided, ', ''],
   ]);
+
+  writePrepareParcel(root);
+  writeTheReactionOfBilling(root);
 
   // The command the handler executes is decided: the pending entry of its spec becomes the test of it.
   edit(root, SHIPPING_HANDLER_SPEC, [
@@ -65,10 +77,18 @@ export function writeBusinessDecisions(root: string): void {
       "$1import { PrepareParcelCommand } from '$2contexts/shipping/application/commands/prepare-parcel/prepare-parcel.command';\n",
     ],
     [
-      / {2}\/\/ TODO\(domain\): replace this test by the entries below[^\n]*\n {2}it\('receives the event[\s\S]*?\n {2}\}\);\n\n {2}it\.todo\('executes the command that follows the upstream fact'\);\n/,
+      / {2}\/\/ TODO\(domain\): a generated handler refuses[^\n]*\n {2}it\('refuses the event[\s\S]*?\n {2}\}\);\n\n {2}it\.todo\('executes the command that follows the upstream fact'\);\n/,
       PREPARES_A_PARCEL,
     ],
+    ["import { NOT_IMPLEMENTED } from '@ddd-ts-kit/kernel';\n", ''],
   ]);
+
+  // The handler is written: the scenario of its end-to-end spec waits for nothing, and is generated again without `pending(...)`.
+  fs.rmSync(path.join(root, SHIPPING_E2E));
+
+  if (cli(root, 'generate', 'e2e', 'shipping', 'ShipParcel', '--event', 'billing.invoice.issued').code !== 0) {
+    throw new Error('generate e2e shipping ShipParcel refused the handler the proof wrote.');
+  }
 
   edit(root, exists(root, DECLARED_READER) ? DECLARED_READER : EXPLICIT_READER, [
     ['readonly SearchInvoicesItem[] = []', `readonly SearchInvoicesItem[] = ${LINES}`],
@@ -121,6 +141,46 @@ export function writeBusinessDecisions(root: string): void {
 
   assertTheWholeTrace(root);
   write(root, 'test/e2e/first-class.e2e.spec.ts', PROOF_SPEC);
+}
+
+/**
+ * What "prepare parcel" does, which the proof keeps to nothing: the refusal the generator left in its
+ * handler goes, and the test of its spec that said so becomes the test of what it answers.
+ */
+function writePrepareParcel(root: string): void {
+  edit(root, PREPARE_PARCEL, [
+    [/^ {4}throw undecided\([^\n]*\n/m, ''],
+    // Declared, the handler imports the refusal alone; in a module file, beside the type of its role.
+    [/(?:^import \{ undecided \} from '@ddd-ts-kit\/kernel';\n|\bundecided, )/m, ''],
+  ]);
+
+  edit(root, PREPARE_PARCEL_SPEC, [
+    [/ {2}\/\/ TODO\(domain\): a generated handler refuses[^\n]*\n/, ''],
+    [/it\('is refused until what "prepare parcel" does is written'/, "it('prepares a parcel and answers nothing'"],
+    ['rejects.toMatchObject({ code: NOT_IMPLEMENTED })', 'resolves.toBeUndefined()'],
+    [/^import \{ NOT_IMPLEMENTED \} from '@ddd-ts-kit\/kernel';\n/m, ''],
+  ]);
+}
+
+/**
+ * What billing does when an invoice is issued, which the proof keeps to nothing: the aggregate now
+ * records that fact, and the refusal the generator left in its handler would refuse every invoice.
+ */
+function writeTheReactionOfBilling(root: string): void {
+  edit(root, ISSUED_HANDLER, [
+    [/^ {4}throw undecided\([^\n]*\n/m, ''],
+    ['import { undecided, type CommandBus }', 'import type { CommandBus }'],
+  ]);
+
+  edit(root, ISSUED_HANDLER_SPEC, [
+    [/ {2}\/\/ TODO\(domain\): a generated handler refuses[^\n]*\n/, ''],
+    [
+      "it('refuses the fact until the policy that follows it is written'",
+      "it('sends no command when an invoice is issued'",
+    ],
+    ['rejects.toMatchObject({ code: NOT_IMPLEMENTED })', 'resolves.toBeUndefined()'],
+    [/^import \{ NOT_IMPLEMENTED \} from '@ddd-ts-kit\/kernel';\n/m, ''],
+  ]);
 }
 
 /** The import of the permission set of billing, as the generated registry of permissions writes it. */

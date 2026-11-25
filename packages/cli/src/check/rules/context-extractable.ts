@@ -6,14 +6,13 @@ import type { Flaw } from '../model/flaw';
 import type { ImportTarget } from '../model/import-target';
 import type { Project } from '../model/project';
 import type { ResolvedImport } from '../model/resolved-import';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { isDeclaredStyle } from '../support/is-declared-style';
 import { isPortFile } from '../support/is-port-file';
 import { lineOfSequence } from '../support/line-of-sequence';
 import { pathInContext } from '../support/path-in-context';
-import { perFile } from '../support/per-file';
 import { reporter } from '../support/reporter';
 import { toViolations } from '../support/to-violations';
 import { braceDepthAt } from '../text/brace-depth-at';
@@ -30,28 +29,39 @@ const GATEWAY_FIX =
 const STATE_FIX =
   'Hold the state in an object created in the composition root (the module file) and passed by constructor, or behind a port, so that the context still works once it runs in its own process.';
 
-export const contextExtractable: Rule = {
+export const contextExtractable: FileRule = {
   id: 'context/extractable',
   description:
     'A context can run alone: its module and its declared classes wire nothing of another context, it reads no table of another context, shares no repository nor port with one and exports no mutable state.',
+  severity: 'error',
+  doc: {
+    why: 'A bounded context is a deployable unit in waiting. Moving one to its own service must change a composition root and adapters, never domain or application code. A module that wires another context, a repository that reads its tables, a handler that loads its aggregates or a map shared through an export all hold only while both live in one process and one database. In the declared style the wiring is written on the classes: a role file that imports a port of another context (anything of its domain/repositories/*.repository.ts or application/ports/*.port.ts) ties the composition of the two, so ports come from the context itself, the kernel, @ddd-ts-kit/auth and the platform.',
+    bad: `// contexts/shipping/infrastructure/persistence/drizzle-parcel.repository.ts
+import { invoices } from '@/contexts/billing/infrastructure/persistence/invoice.schema';
+export const cache = new Map<string, Parcel>();
+// contexts/shipping/application/commands/ship-parcel/ship-parcel.handler.ts, declared style
+import { InvoiceRepository } from '@/contexts/billing/domain/repositories/invoice.repository';`,
+    good: `// contexts/shipping/application/ports/invoice-status.gateway.port.ts
+export abstract class InvoiceStatusGateway { abstract isPaid(invoiceId: string): Promise<boolean>; }
+// contexts/shipping/infrastructure/external/in-process-invoice-status.gateway.ts
+import type { InvoiceStatus } from '@/contexts/billing/published-language';
+// contexts/shipping/application/commands/ship-parcel/ship-parcel.handler.ts, declared style
+import { InvoiceStatusGateway } from '@/contexts/shipping/application/ports/invoice-status.gateway.port';`,
+  },
   scope: 'file',
-  run(project) {
-    const contexts = Object.keys(project.config.contexts);
+  judge(file, project) {
+    const here = inContext(file.location) && !file.isTest ? file.location : undefined;
 
-    return perFile(project, this.id, (file) => {
-      const here = inContext(file.location) && !file.isTest ? file.location : undefined;
+    if (here === undefined) {
+      return [];
+    }
 
-      if (here === undefined) {
-        return [];
-      }
+    const declares =
+      isDeclaredStyle(project) && declaredRoleOf(pathInContext(project, file) ?? '', WITHOUT_MODULE) !== undefined;
 
-      const declares =
-        isDeclaredStyle(project) && declaredRoleOf(pathInContext(project, file) ?? '', WITHOUT_MODULE) !== undefined;
+    const ties = file.imports.flatMap((module) => foreignTie(module, here, declares));
 
-      const ties = file.imports.flatMap((module) => foreignTie(module, here, declares));
-
-      return [...ties, ...foreignSchemas(file, here, contexts), ...sharedState(file)];
-    });
+    return [...ties, ...foreignSchemas(file, here, Object.keys(project.config.contexts)), ...sharedState(file)];
   },
   acrossProject(project) {
     const deployable = Object.entries(project.config.contexts).flatMap(([name, context]) =>

@@ -117,10 +117,10 @@ it; a model that cannot say more than its reason leaves it out.
 | | `RoleBasedAuthorizer` | `PolicyBasedAuthorizer` | `RelationBasedAuthorizer` |
 |---|---|---|---|
 | Subpath | `@ddd-ts-kit/auth` | `@ddd-ts-kit/auth` | `@ddd-ts-kit/auth/rebac` |
-| Uses `resource` | only for the tenant check | to load the attributes of the element | as the object of the relationship |
-| Refusal codes | `NO_MATCHING_ROLE`, `TENANT_MISMATCH` | `EXPLICIT_DENY`, `NO_MATCHING_POLICY` | `NO_RELATION`, `DEPTH_EXCEEDED`, `UNMAPPED_PERMISSION` |
+| Uses `resource` | not at all | to load the attributes of the element | as the object of the relationship |
+| Refusal codes | `NO_MATCHING_ROLE` | `EXPLICIT_DENY`, `NO_MATCHING_POLICY` | `NO_RELATION`, `DEPTH_EXCEEDED`, `UNMAPPED_PERMISSION` |
 | `listAccessible` | yes, in constant time | no | yes, by reverse expansion |
-| `explain` | the roles of the actor and what each grants, then the tenant check | each policy that bears on the permission, held or not | every question asked of the tuples |
+| `explain` | the roles of the actor and what each grants | each policy that bears on the permission, held or not | every question asked of the tuples |
 
 ### Roles
 
@@ -128,20 +128,14 @@ it; a model that cannot say more than its reason leaves it out.
 `scheduling:*` for a whole context, or `*` for everything. `inherits` lets a role include
 others (`{ admin: ['receptionist'] }`). The effective grants of every role are computed once,
 in the constructor, and an unknown role or a cycle in the hierarchy raises
-`AuthorizationSetupError` at start rather than at the first request, as do a cross-tenant role
-or a system role no role declares and `crossTenantRoles` without `tenantOf`.
+`AuthorizationSetupError` at start rather than at the first request, as does a system role no
+role declares.
 
 A check refuses the anonymous actor, then looks for a role of the actor that covers the
-permission, then, when `tenantOf` is configured, refuses a request that targets a tenant the
-actor does not belong to (its `tenantId` or its `tenants`), that is not a tenant id, or that is
-another tenant than the one the work runs in (`workTenantId`, given by the guard and `Access`
-from the execution scope), unless one of its roles is in `crossTenantRoles`. Actors of type
-`system` carry no roles; `systemRole` gives them one, and they belong to the tenant their work
-runs in. The list is `none` without the right, `all` when tenants are not managed or the actor
-crosses them, `filter: { tenantId }` on the tenant of the work or the one tenant of the actor
-otherwise, and `none` for an actor of several tenants outside of a tenant's work.
+permission. Actors of type `system` carry no roles; `systemRole` gives them one. The list is
+`all` with the right, `none` without.
 `explain` says the same in words: the roles of the actor, what each one grants and through
-which included role, then where the request may act.
+which included role.
 
 In a generated project, the roles live in `platform/auth/roles/roles.ts`, and the super-admin holds
 `*`. A new permission is therefore reached by administrators only until a role holds it by
@@ -182,6 +176,21 @@ words. The schema is described in the README of `@ddd-ts-kit/auth`, and
 Changing the model replaces the authorizer given to `authorizationModule` and the data it needs.
 Permissions, commands, handlers, policies and routes do not change.
 
+### The tenant, for every model
+
+No model knows a tenant. `TenantBoundAuthorizer` goes around the one the project chose, and
+around what stands in front of it (`SignedInGrantsAuthorizer`): what the model allows, it
+refuses with `TENANT_MISMATCH` when the request targets a tenant the actor does not belong to
+(its `tenantId` or its `tenants`), something that is not a tenant id, or another tenant than
+the one the work runs in (`workTenantId`, given by the guard and `Access` from the execution
+scope), unless one of the roles of the actor is in `crossTenantRoles`. A system actor belongs
+to the tenant its work runs in. What the model lists is kept to one tenant: `all` becomes
+`filter: { tenantId }` on the tenant of the work or the one tenant of the actor, and `none` for
+an actor of several tenants outside of a tenant's work or of none; where the stores confine
+every statement to the tenant of the work (`rowsConfinedBy: 'stores'`, what `init` writes in a
+project with tenants), the scope of the model stays as it is. `explain` adds its line after
+those of the model. The contract suite of the authorizers proves the rule of each of them.
+
 ## What `Access` adds: policies on the loaded element
 
 The middleware only has the identifier. It cannot decide "only the practitioner of this
@@ -193,7 +202,7 @@ through the `Access` port once it holds the element.
 npx ddd-ts-kit generate policy scheduling ConfirmAppointment --permission appointment.confirm --json
 ```
 
-The generator writes the file with a body that only refuses the anonymous actor, and a
+The generator writes the file with a body that refuses everybody until the rule is written, and a
 `TODO(domain)` where the rule goes. Filled in, in the declared style:
 
 ```ts
@@ -249,8 +258,8 @@ every caller, it moves into the aggregate.
 ### Its spec
 
 A policy is a plain object, so its spec needs no application and no mock. The generator writes
-the first two tests (the declaration, and the refusal of the anonymous actor) and leaves
-`it.todo` entries for the rule.
+one test, which says that the policy refuses everybody until its rule is written, and leaves
+`it.todo` entries for the rule: the first real test replaces the generated one.
 
 ```ts
 describe('Confirm appointment policy', () => {

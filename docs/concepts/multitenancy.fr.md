@@ -1,5 +1,5 @@
 [English](multitenancy.md) · **Français**
-<!-- translation-of: multitenancy.md sha256:faf09a4e75e86180 -->
+<!-- translation-of: multitenancy.md sha256:cdfe3069ee5c52a4 -->
 
 # Multitenance
 
@@ -108,7 +108,10 @@ Ce que fournit chaque adaptateur, prouvé par `tenantIsolationContract`
 *repository* passe par les *helpers*, l'outbox garde le *tenant*, et la règle
 `tenancy/scoped-statement` du *checker* signale une instruction qui atteint une table directement
 depuis l'exécuteur, le client ou le *manager*, une ligne atteinte par sa seule clé, un registre de
-modèles de lecture construit sans son *tenant*. Les trois autres se câblent à la main à partir des *packages* pour l'instant ;
+modèles de lecture construit sans son *tenant*. Elle tient aussi l'autorisateur aux *tenants* de
+l'acteur, quel que soit le modèle d'accès (`TenantBoundAuthorizer` de `@ddd-ts-kit/auth`, autour
+de `createAuthorizer()`) : un cas d'usage dont l'exigence nomme un *tenant* est refusé à qui n'y
+appartient pas, et une liste à qui n'appartient pas au *tenant* du travail. Les trois autres se câblent à la main à partir des *packages* pour l'instant ;
 `init` les refuse et dit quoi ajouter. Avec
 `init --search opensearch`, les modèles de lecture tenus dans OpenSearch suivent la même stratégie :
 un index, chaque *tenant* derrière un alias filtré, depuis la plateforme seule
@@ -398,8 +401,9 @@ Un projet qui veut une purge confinée la lance plutôt par *tenant*, dans des c
   posé sur un élément n'atteint que cet élément, dont aucun autre *tenant* ne partage
   l'identifiant, mais celui posé sur le contexte d'un cas d'usage
   (`context:ordering operator user:olivia`) tient dans chaque *tenant* où la personne travaille.
-  Décidez par *tenant* ce que permet un cas d'usage sur aucun élément, par des rôles avec la
-  vérification du *tenant* ou sur un objet qui nomme le *tenant*
+  Décidez par *tenant* ce que permet un cas d'usage sur aucun élément, par une exigence qui nomme
+  son *tenant*, que `TenantBoundAuthorizer` refuse à qui n'y appartient pas quel que soit le
+  modèle, ou sur un objet qui nomme le *tenant*
   ([Choisir le contrôle d'accès](../guides/choosing-access-control.fr.md#préréglage-3--des-relations-zanzibar)).
 - **Un tenant par unité de travail.** Une requête HTTP qui doit écrire dans deux *tenants* fait
   deux unités de travail, à dessein : une transaction ne couvre jamais plusieurs *tenants*. Avec

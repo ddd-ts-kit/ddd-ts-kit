@@ -52,7 +52,7 @@ export interface PrismaOutboxWhere {
   id?: string | { in: string[] };
   type?: { in: string[] };
   status?: OutboxStatus | { not: OutboxStatus };
-  attempts?: number;
+  attempts?: number | { gt: number };
   nextAttemptAt?: { lte: Date };
   publishedAt?: { lt: Date };
   lastErrorCode?: { not: null };
@@ -61,7 +61,7 @@ export interface PrismaOutboxWhere {
 export interface PrismaOutboxUpdate {
   payload?: PrismaJsonInput;
   status?: OutboxStatus;
-  attempts?: number | { increment: number };
+  attempts?: number | { increment: number } | { decrement: number };
   nextAttemptAt?: Date;
   lastErrorCode?: string;
   publishedAt?: Date;

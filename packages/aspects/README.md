@@ -62,7 +62,7 @@ export class HttpRates implements ExchangeRates {
   }
 }
 
-// ...and the composition root puts the policy around it: the same object, still an HttpRates.
+// ...and the composition root puts the policy around it: a wrapper, still an HttpRates, and `new HttpRates()` is left as it was.
 export const rates: ExchangeRates = compose(retry({ attempts: 3 }), timeout(2000))(new HttpRates(), { kind: 'external' });
 ```
 
@@ -244,8 +244,8 @@ constructor: the decorators read them from the aspect runtime when a call is mad
 | `timed({ name?, metrics?, clock? })` | histogram `<name>_duration_ms`, counter `<name>_total` | `name` is `dependency_call`; labels `class`, `method`, `kind`, `context`, `outcome`, `error_code` | arguments, results, error messages, identifiers |
 | `retry({ attempts, backoff?, retryOn?, sleep? })` | calls again after a failure | never after a `DomainError`, an open circuit or a full bulkhead (`isTransient`); 100 ms doubling up to 30 s with full jitter | nothing: it records nothing |
 | `timeout(ms, { signal?, scheduler?, statedBy? })` | rejects with `TimeoutError` (`TIMEOUT`) | the underlying call keeps running unless `signal: true` | the message names the class and method only, then who stated the limit when `statedBy` says it |
-| `circuitBreaker({ failureThreshold, resetAfterMs, halfOpenMax?, scope?, isFailure?, onStateChange?, clock? })` | refuses calls with `CircuitOpenError` (`CIRCUIT_OPEN`) after consecutive failures, then lets trial calls through | one circuit per instance and method; a `DomainError` is not a failure; one trial call | `onStateChange` gets class, method, context and the two states |
-| `cached({ key, ttlMs, cache?, shared?, allowKinds? })` | answers a repeated read from the `Cache` port | refuses kinds `repository` and `use-case`; needs `scope` in the runtime or `shared: true`, and throws at the call without either; an entry belongs to the tenant of the work unless `shared: true`, work that names no tenant keeps the key as written, and work under an elevation (`acrossTenants`) neither reads nor writes the cache; a call whose key is `undefined` is not cached; failures are not cached; concurrent identical calls of one tenant share one call; a failing cache is a miss | the key is built by the project from the arguments and goes to the cache only |
+| `circuitBreaker({ failureThreshold, resetAfterMs, halfOpenMax?, scope?, isFailure?, onStateChange?, clock? })` | refuses calls with `CircuitOpenError` (`CIRCUIT_OPEN`) after consecutive failures, then lets trial calls through | one circuit per instance and method; a `DomainError` is not a failure; one trial call; a state only listens to the calls it let in: the late outcome of a call let in during an earlier state decides nothing | `onStateChange` gets class, method, context and the two states |
+| `cached({ key, ttlMs, cache?, metrics?, shared?, allowKinds? })` | answers a repeated read from the `Cache` port | refuses kinds `repository` and `use-case`; needs `scope` in the runtime or `shared: true`, and throws at the call without either; an entry belongs to the tenant of the work unless `shared: true`, work that names no tenant keeps the key as written, and work under an elevation (`acrossTenants`) neither reads nor writes the cache; a call whose key is `undefined` is not cached; failures are not cached; concurrent identical calls of one tenant share one call; an entry belongs to one port of one context: its key holds the context, the port the instance is bound to (its class name without one), the method and the key of the call, and an object that has neither a port nor a class name is refused; a failing cache is a miss, counted as `cache_errors_total` (labels `operation`, `context`, `class`, `method`) on `metrics` or on the metrics of the runtime | the key is built by the project from the arguments and goes to the cache only |
 | `bulkhead({ maxConcurrent, maxQueued?, scope? })` | bounds the calls running at once, refuses beyond with `BulkheadFullError` (`BULKHEAD_FULL`) | no queue; one compartment per instance and method | nothing |
 
 **Privacy.** The rule is the one of tracing: an entry, a label or an error raised by this
@@ -343,7 +343,7 @@ export function warnWhenSlow(thresholdMs: number, logger: Logger, clock: Clock):
 import { allOf, cached, forKinds, forMethods, when } from '@ddd-ts-kit/aspects';
 
 // The one place arguments are read: build the key from an identifier, never from personal data.
-// `undefined` leaves the call uncached. The cache key also holds the class and the method, and the
+// `undefined` leaves the call uncached. The cache key also holds the context, the port and the method, and the
 // tenant of the work, which needs `scope` in the aspect runtime: `shared: true` keeps one entry for a
 // read whose answer depends on no tenant, and needs no scope.
 const key = (_method: string, [id]: readonly unknown[]): string | undefined => (typeof id === 'string' ? id : undefined);
@@ -506,9 +506,14 @@ passed are never written to.
 
 ## What wrapping guarantees
 
-- The instance is wrapped in place: same object, `instanceof`, `this` and `private` members
-  intact. A frozen instance is fronted by a proxy of the same type, and its methods run with
-  that proxy as `this`.
+- An aspect answers a wrapper and leaves the instance it is given as it was: nothing is added
+  to it, and whoever calls the instance itself is not advised. The wrapper is a proxy of the
+  same class: `instanceof` and `private` members keep working, its methods run with the wrapper
+  as `this`, and a field read or assigned through it is the field of the instance. Two aspects
+  put around one instance are two wrappers, each with its own advice. An aspect that advises no
+  method answers the instance itself.
+- A class that keeps its state in hard-private (`#`) members cannot be wrapped: such a member
+  is only reached on the object that declares it, never through a proxy. Write `private`.
 - **An aspect applied to an instance advises the calls that reach it from outside.** `private`
   is erased by the compiler, and a name does not say whether a method is public (an underscore
   is a habit, not a rule), so the public API cannot be picked out reliably: every asynchronous
@@ -530,7 +535,7 @@ passed are never written to.
   a call an instance makes on itself. A span describes a step, where an advice acts on it.
 - A frozen instance stays frozen: its fields, `private` ones included, cannot be assigned. State
   it must change lives in an object it holds (a `Map`, an array).
-- Applying the same aspect twice to an instance is a no-op.
+- Applying an aspect to its own wrapper is a no-op.
 - Getters, symbols, generators, synchronous methods and lifecycle hooks (`LIFECYCLE_HOOKS`) are
   left alone.
 - A method declared `async` is advised from its first call. A method that merely returns a

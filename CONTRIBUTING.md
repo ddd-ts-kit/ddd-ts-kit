@@ -24,7 +24,10 @@ how to start, then the rules every change follows.
    out in [the decision record of the measure](docs/adr/0001-lines-left-out-of-the-coverage-measure.md),
    never moved onto a line that already runs. The hooks of the plugin are held to 100
    percent of their lines, branches and functions (`npm run test:plugin`): a branch no test
-   reaches fails it, and a branch no hook input can reach is removed. The table names the file,
+   reaches fails it, and a branch no hook input can reach is removed. The guard is
+   `plugin/hooks/guard.mjs`, the entry that holds the modes and the order of the rules, and the
+   modules beside it, each opening with what it holds; all are loaded with it, but
+   `shell-commands.mjs` and `builder-runs.mjs`, loaded when a call needs them. The table names the file,
    not the branch: `node pipeline/monorepo/uncovered-branches.mjs coverage/plugin.lcov` names
    each branch the run did not take, from the lcov the run wrote.
 4. **Open a pull request.** Its title is a conventional commit subject; its template asks what
@@ -122,10 +125,18 @@ restarted a desktop. Two things bound them:
   instead (a reason too short, or a promise for later, fails), the run of a pull request annotates
   each line it adds (`pipeline/monorepo/asymmetries.mjs`), and in Claude Code the hook of
   `.claude/settings.json` asks before any edit of them, whatever the permission mode.
-- A new check rule comes with a passing and a failing fixture, a `fix` sentence and an
-  `explain` entry.
+- A check rule is one file of `packages/cli/src/check/rules/`, named after its id, that says
+  everything about the rule: its `id` and `description`, its default `severity`, its `doc` (the
+  reason and the two examples `ddd-ts-kit explain` shows), its `scope` and its `judge`. A `file`
+  rule judges one source at a time, `judge(file, project)`, and answers findings; the engine walks
+  the sources. It may ask the project for the config, the place of a file and a source it imports,
+  never for the tree, so that `check-file` and `check` agree: what needs every source is its
+  `acrossProject`, or a `project` rule. `standalone: true` says the rule judges a source whatever
+  the project around it (`check --clean-only`). A new rule is listed in
+  `catalogue/architecture-rules.ts` and comes with a passing and a failing fixture and a `fix`
+  sentence.
 - Before 1.0, a rule that prevents a problem is an error at once: a new rule takes `error` as its
-  default (nothing in `default-severities.ts` for `ddd-ts-kit check`, `recommended: 'error'` for
+  default (`severity: 'error'` in its rule file for `ddd-ts-kit check`, `recommended: 'error'` for
   the ESLint rule), and so does what a rule judges more. There is no warning first and no version
   in which it becomes an error later: a rule left a warning to soften an upgrade is one that a
   project learns to ignore. A rule is `warn` only when what it reports may be right and a reader
@@ -301,7 +312,7 @@ version folds the files of `changes/` into it, in the order they reached `main`,
 the CLI package ships a copy, which agents read in `node_modules`. The plugin is released with the
 packages, under their version: setting it also writes `version` of
 `plugin/.claude-plugin/plugin.json` and the version the skills describe, in
-`plugin/hooks/guard.mjs`, so that every agent shows one number. The plugin numbered itself apart
+`plugin/hooks/briefing.mjs`, so that every agent shows one number. The plugin numbered itself apart
 until then, ahead of the packages: the first common version is above its version, which `--set`
 holds (it names the first version it accepts), and `--expect` of the release workflow holds the
 plugin to the tag. An urgent fix of the plugin is a patch release of the kit, not a version of

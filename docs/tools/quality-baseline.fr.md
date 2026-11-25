@@ -1,5 +1,5 @@
 [English](quality-baseline.md) · **Français**
-<!-- translation-of: quality-baseline.md sha256:273c77e8552764a3 -->
+<!-- translation-of: quality-baseline.md sha256:6f0d829e97881143 -->
 
 # Base de qualité
 
@@ -264,7 +264,7 @@ ne peuvent pas dériver (la moitié droite du dessin en haut de cette page) :
 
 ```json
 {
-  "$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
   "root": false,
   "extends": "//"
 }

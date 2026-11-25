@@ -2,20 +2,20 @@ import type { AdviceFactory } from '../aspect/advice-factory';
 import type { AspectInfo } from '../aspect/aspect-info';
 import { advised } from './advised';
 import { fromOutside } from './from-outside';
+import { fronted } from './fronted';
 import { isWrappable } from './is-wrappable';
 import { knownAsync } from './known-async';
 import { LIFECYCLE_HOOKS } from './lifecycle-hooks';
 import type { Method } from './method';
 import { named } from './named';
-import { shadowed } from './shadowed';
 import { siteOf } from './site-of';
 
 // A function standing in for another is asynchronous when the other is.
 const standsFor = new WeakMap<Method, Method>();
 
 /**
- * Puts the advice around the calls that reach the instance from outside, on every asynchronous
- * method. Public cannot be told from `private` once compiled, so every method is wrapped; what
+ * Answers a front for the instance, with the advice around the calls that reach it from outside,
+ * on every asynchronous method; the instance itself when no method is advised. Public cannot be told from `private` once compiled, so every method is wrapped; what
  * tells the calls apart is where they come from: a call the instance makes on itself while one
  * of its advised calls is running is not advised again. A method declared `async` is advised
  * from its first call; a method that merely returns a promise is advised from its second call
@@ -39,7 +39,7 @@ export function adviseMethods<T extends object>(instance: T, info: AspectInfo, a
     return instance;
   }
 
-  return Object.isExtensible(instance) ? shadowed(instance, wrappers) : proxied(instance, wrappers);
+  return fronted(instance, wrappers);
 }
 
 /** Own and inherited methods as they are reached now, without invoking any getter. */
@@ -59,7 +59,7 @@ function wrappableMethods(instance: object): Map<string, Method> {
         continue;
       }
 
-      // Read through the instance: a proxy put by another aspect answers its own wrapper.
+      // Read through the instance: the front of another aspect answers its own wrapper.
       const current: unknown = Reflect.get(instance, name);
 
       if (isWrappable(current)) {
@@ -85,7 +85,7 @@ function prototypeChain(instance: object): object[] {
   return chain;
 }
 
-/** A read-only own property cannot be shadowed, neither in place nor through a proxy. */
+/** A read-only own property cannot be answered otherwise by a front: a proxy must tell it as it is. */
 function holdsShadowableMethod(owner: object, name: string, instance: object): boolean {
   const descriptor = Object.getOwnPropertyDescriptor(owner, name);
 
@@ -141,20 +141,4 @@ function isThenable(value: unknown): boolean {
     'then' in value &&
     typeof value.then === 'function'
   );
-}
-
-/**
- * A sealed or frozen instance cannot receive own methods, so it is fronted by a proxy that
- * answers the wrappers. A method runs with the proxy as `this`, as it would with the instance
- * itself: a method it calls through `this` meets the same wrappers, and its fields are read
- * through.
- */
-function proxied<T extends object>(instance: T, wrappers: ReadonlyMap<string, Method>): T {
-  return new Proxy(instance, {
-    get(target, property, receiver: unknown) {
-      const wrapper = typeof property === 'string' ? wrappers.get(property) : undefined;
-
-      return wrapper ?? Reflect.get(target, property, receiver);
-    },
-  });
 }

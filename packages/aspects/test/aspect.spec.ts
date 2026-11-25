@@ -4,16 +4,88 @@ import { PROBE } from './support/probe';
 import { QuoteGateway } from './support/quote-gateway';
 import { recording } from './support/recording';
 
-describe('an aspect applied to an instance', () => {
-  it('answers the same object, still an instance of its class', () => {
+describe('the wrapper an aspect answers', () => {
+  it('answers a wrapper of the same class and leaves the instance alone', async () => {
+    const journal: string[] = [];
     const gateway = new QuoteGateway();
 
-    const wrapped = recording([])(gateway);
+    const wrapped = recording(journal)(gateway);
 
-    expect(wrapped).toBe(gateway);
+    expect(wrapped).not.toBe(gateway);
     expect(wrapped).toBeInstanceOf(QuoteGateway);
+    expect(Object.getOwnPropertyNames(gateway)).toEqual(Object.getOwnPropertyNames(new QuoteGateway()));
+
+    await gateway.quote('EUR-USD');
+
+    expect(journal).toEqual([]);
   });
 
+  it('gives two aspects around one instance a wrapper each, with its own advice and the state of the instance', async () => {
+    const outer: string[] = [];
+    const other: string[] = [];
+    const gateway = new QuoteGateway();
+    const first = recording(outer)(gateway);
+    const second = recording(other)(gateway);
+
+    await first.reprice(1.2);
+
+    expect(first).not.toBe(second);
+    expect(await second.quote('EUR-USD')).toEqual({ pair: 'EUR-USD', rate: 1.2 });
+    expect(outer).toEqual(['around > QuoteGateway.reprice', 'around < QuoteGateway.reprice']);
+    expect(other).toEqual(['around > QuoteGateway.quote', 'around < QuoteGateway.quote']);
+    expect(gateway.rate).toBe(1.2);
+  });
+
+  it('answers the instance itself when no method is advised', () => {
+    const gateway = new QuoteGateway();
+
+    expect(defineAspect(() => undefined)(gateway)).toBe(gateway);
+  });
+
+  it('keeps on the wrapper a method put on it afterwards, as a tracer that shadows in place does', async () => {
+    const journal: string[] = [];
+    const gateway = new QuoteGateway();
+    const wrapped = recording(journal)(gateway);
+    const advised = wrapped.quote;
+
+    Object.defineProperty(wrapped, 'quote', {
+      value: async (pair: string) => {
+        journal.push('span');
+
+        return advised.call(wrapped, pair);
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    await wrapped.quote('EUR-USD');
+
+    expect(journal).toEqual(['span', 'around > QuoteGateway.quote', 'around < QuoteGateway.quote']);
+    expect(Object.hasOwn(gateway, 'quote')).toBe(false);
+  });
+
+  it('lets a field assigned or defined on the wrapper reach the instance, a function included', () => {
+    class Feed {
+      label = 'none';
+
+      onQuote: ((pair: string) => void) | undefined = undefined;
+
+      async poll(): Promise<void> {}
+    }
+
+    const feed = new Feed();
+    const wrapped = recording([])(feed);
+    const listener = (): void => undefined;
+
+    wrapped.onQuote = listener;
+    Object.defineProperty(wrapped, 'label', { value: 'rates', writable: true, configurable: true, enumerable: true });
+
+    expect(feed.onQuote).toBe(listener);
+    expect(feed.label).toBe('rates');
+  });
+});
+
+describe('an aspect applied to an instance', () => {
   it('runs around asynchronous methods, which keep this and their private state', async () => {
     const journal: string[] = [];
     const gateway = recording(journal)(new QuoteGateway());

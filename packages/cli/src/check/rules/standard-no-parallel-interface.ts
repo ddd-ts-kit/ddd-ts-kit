@@ -1,26 +1,40 @@
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { BOUNDARY_NAMES } from '../standard/boundary-names';
 import { parallelNames } from '../standard/parallel-names';
 import { STANDARD_INTERFACES_FIX } from '../standard/standard-interfaces-fix';
 import { standardNamesIn } from '../standard/standard-names-in';
-import { perFile } from '../support/per-file';
 import { identifier } from '../text/identifier';
 
 /** A class or an interface with its heritage, or a type alias: `import { type X }` and `import type X from` declare nothing. */
 const DECLARATION =
   /(?<![\w$.])(?:(class|interface)\s+([A-Za-z_$][\w$]*)([^{;]*)\{|(?<!import\s+)type\s+([A-Za-z_$][\w$]*)\s*(?:<[^=;{}]*>)?\s*=)/g;
 
-export const standardNoParallelInterface: Rule = {
+export const standardNoParallelInterface: FileRule = {
   id: 'standard/no-parallel-interface',
   description:
     'No home-made copy of a standard interface of the kernel (ILogger, UserContext, PaginatedResult, CronJob, ErrorTracker): use the kernel one and extend it by declaration merging.',
+  severity: 'warn',
+  doc: {
+    why: 'The kernel defines the shapes every project shares (Actor, Session, ExecutionContext, Logger, Metrics, Cache, Page and PageRequest, AuditStamp, Clock, IdGenerator, UnitOfWork, JobScheduler, ScheduledJob, ErrorReporter) so that adapters, middlewares and tooling written once fit them all. A home-made ILogger or UserContext next to them forks the shape: every adapter then needs a translation, and the fields of the project never reach the standard logs, spans and audit entries. A project adds its fields by declaration merging of the extension interfaces the kernel leaves open.',
+    bad: `// application/ports/logger.port.ts
+export abstract class ILogger { abstract info(message: string): void; }
+// platform/cron-scheduler.ts
+export class CronScheduler {}
+// shared-kernel/user-context.ts
+export interface UserContext { userId: string; tenantId: string; plan: string }`,
+    good: `import type { Logger, ExecutionContext } from '@ddd-ts-kit/kernel';
+// platform/kernel-extensions.ts
+declare module '@ddd-ts-kit/kernel' {
+  interface ExecutionContextExtensions { plan: string }
+}
+// infrastructure/external/pino.logger.ts
+export class PinoLogger implements Logger {}`,
+  },
   scope: 'file',
-  run(project) {
-    const names = parallelNames(project.config.standardInterfaces);
-
-    return perFile(project, this.id, (file) => (file.isTest ? [] : parallelDeclarations(file, names)));
+  judge(file, project) {
+    return file.isTest ? [] : parallelDeclarations(file, parallelNames(project.config.standardInterfaces));
   },
 };
 

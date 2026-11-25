@@ -8,6 +8,7 @@ import { named } from '../named';
 import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { vars } from '../vars';
+import { wire } from '../wire';
 import { applyWiring } from '../apply-wiring';
 import { wirings } from '../wirings';
 import { wiringFamily } from '../wiring-family';
@@ -41,22 +42,21 @@ export const gatewayKind: Kind = {
       ['gateway/contract.spec.ts.tpl', `test/integration/${name.kebab}-gateway.contract.spec.ts`],
     ]);
 
-    wireOnce(scope, name, context);
+    bindContractOnce(scope, name, context);
+    wire(scope, 'gateway', context);
     explain(scope, upstream, name);
   },
 };
 
 /**
- * A second context that needs the same contract finds it bound already, to the implementation a person wrote
- * in place of the empty value: binding it again to `{}` below would replace that implementation at run time.
+ * The contract is bound once, to a refusal: a second context that needs it finds it bound already, maybe to the
+ * implementation a person wrote in place of the refusal, which binding it again would replace at run time.
  */
-function wireOnce(scope: Scope, name: Name, context: RenderContext): void {
-  const empty = `builder.bind(${name.pascal}Contract).toValue({});\n`;
-
-  for (const { file, wiring } of wirings(scope, { kind: 'gateway' }, context)) {
-    const bound = scope.ws.read(file)?.includes(`bind(${name.pascal}Contract)`) === true;
-
-    applyWiring(scope.ws, file, bound ? wiring.replace(empty, '') : wiring);
+function bindContractOnce(scope: Scope, name: Name, context: RenderContext): void {
+  for (const { file, wiring } of wirings(scope, { kind: 'gateway/contract' }, context)) {
+    if (scope.ws.read(file)?.includes(`bind(${name.pascal}Contract)`) !== true) {
+      applyWiring(scope.ws, file, wiring);
+    }
   }
 }
 
@@ -98,8 +98,8 @@ function explain(scope: Scope, upstream: string, name: Name): void {
   const { ws, config, context } = scope;
 
   const where: Readonly<Record<string, string>> = {
-    declared: `${name.pascal}Contract is bound to an empty value in ${platformPath(scope, 'composition/platform.module.ts')} and in ${platformPath(scope, 'composition/platform-test.module.ts')}: bind the implementation ${upstream} gives of it there.`,
-    container: `${name.pascal}Contract is bound to an empty value in ${context.kebab}.module.ts: bind the implementation ${upstream} gives of it there.`,
+    declared: `${name.pascal}Contract refuses every call until it is bound, in ${platformPath(scope, 'composition/platform.module.ts')} and in ${platformPath(scope, 'composition/platform-test.module.ts')}: bind the implementation ${upstream} gives of it there, where the TODO(platform) stands.`,
+    container: `${name.pascal}Contract refuses every call until it is bound, in ${context.kebab}.module.ts: bind the implementation ${upstream} gives of it there, where the TODO(platform) stands.`,
     manual: `Instantiate InProcess${name.pascal}Gateway in ${context.kebab}.module.ts, with the implementation of ${name.pascal}Contract the platform hands over, and give it to the handlers that need it.`,
   };
 

@@ -1,5 +1,5 @@
 [English](entities-and-value-objects.md) · **Français**
-<!-- translation-of: entities-and-value-objects.md sha256:5945c42b5cfb4bbb -->
+<!-- translation-of: entities-and-value-objects.md sha256:4966a2dc8186d3c0 -->
 
 # Entités et objets-valeurs
 
@@ -111,12 +111,20 @@ Ce que cette forme apporte :
   concerne, au lieu d'être répété partout où deux paires de dates se rencontrent.
 - **Aucune horloge cachée.** `startsWithin` reçoit `now` ; le domaine ne lit jamais l'heure du
   système (`purity/no-system-clock`).
-- **L'égalité offerte.** `ValueObject` gèle les propriétés à la construction et les compare dans
-  `equals`, les dates par leur instant et les tableaux élément par élément : deux créneaux
-  construits à partir des mêmes instants sont égaux, `===` n'est pas la question.
-- **Les propriétés sont un `type`, pas une `interface`.** `ValueObject<Props>` exige
-  `Record<string, unknown>` : un alias de type objet le satisfait, une interface non, parce que
-  TypeScript donne une signature d'index implicite au premier seulement.
+- **L'égalité offerte.** `ValueObject` garde une copie des propriétés, gelée en profondeur, et
+  les compare dans `equals` : les dates par leur instant, les listes élément par élément, les
+  enregistrements simples nom par nom et un objet-valeur qu'il tient par le `equals` de celui-ci.
+  Deux créneaux construits à partir des mêmes instants sont égaux, `===` n'est pas la question,
+  et la liste ou la date dont un créneau a été construit peut changer ensuite sans changer le
+  créneau.
+- **Les propriétés sont un `type`, pas une `interface`, et ne tiennent que des valeurs.**
+  `ValueObject<Props>` exige `ValueObjectProps` : chaque propriété est une primitive, une `Date`,
+  un autre objet-valeur, ou une liste ou un enregistrement simple de ceux-ci, pour que
+  l'objet-valeur puisse copier, geler et comparer tout ce qu'il tient. Une `Map`, un `Set`, une
+  fonction, une entité ou `unknown` ne compile pas : tenez le contenu en données simples. Un alias
+  de type objet satisfait la contrainte, une interface non, parce que TypeScript donne une
+  signature d'index implicite au premier seulement ; cela vaut aussi pour un enregistrement
+  imbriqué dans les propriétés.
 
 Dans une *spec*, la valeur s'emploie comme le métier en parle :
 

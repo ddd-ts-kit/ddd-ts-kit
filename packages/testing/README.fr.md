@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:c73383f79473cbb6 -->
+<!-- translation-of: README.md sha256:2f58caefaf570d35 -->
 
 # @ddd-ts-kit/testing
 
@@ -635,13 +635,10 @@ semblables dans les tests d'un contexte.
 
 ### Quand un gestionnaire d'un événement échoue
 
-`eventBus.publish` exécute chaque gestionnaire de l'événement, puis rejette avec une
-`AggregateError` des échecs. `createTestBuses({ eventBusFailures: 'as-thrown' })` rejette avec
-l'échec d'un seul gestionnaire tel quel, si bien qu'une spec affirme sa classe ou son `code`
-(`rejects.toMatchObject({ code: 'CONCURRENCY_CONFLICT' })`) ; plusieurs échecs arrivent toujours
-ensemble dans une `AggregateError`. Un projet créé par `ddd-ts-kit init` le règle dans ses
-*worlds*, comme son application le fait sur son bus en processus ; ce sera la valeur par défaut
-d'une prochaine version mineure.
+`eventBus.publish` exécute chaque gestionnaire de l'événement, puis rejette avec l'échec d'un
+seul gestionnaire tel quel, si bien qu'une spec affirme sa classe ou son `code`
+(`rejects.toMatchObject({ code: 'CONCURRENCY_CONFLICT' })`) ; plusieurs échecs arrivent ensemble
+dans une `AggregateError`.
 
 ### Un job en arrière-plan mis en file par une version antérieure
 
@@ -905,7 +902,7 @@ repositoryContract(runner, { ...options, name: 'DrizzleOrderRepository', createR
 | `tenantIsolationContract` | un *repository* sous une stratégie d'isolement des *tenants* : ce qu'un *tenant* a enregistré est caché à un autre ; un autre *tenant* qui enregistre sous le même id le laisse intact, par une mise à jour ou (si `recreate(aggregate)` est donné, un nouvel agrégat sous le même id) par une insertion ; le personnel de la plateforme, avec une élévation sur tous les *tenants*, n'écrit rien, et lit l'agrégat de l'autre *tenant* quand `elevatedReads` est vrai (tables partagées, sécurité au niveau des lignes) ; une écriture d'un travail qui ne nomme aucun *tenant* est refusée (`NoCurrentTenantError`) et une lecture est refusée ou ne trouve rien. Sans `mutate`, le cas de la mise à jour sous un id déjà détenu reste en attente. `createRepository(scope)` lit le *tenant* dans la portée qu'on lui donne, sur un stockage où existent les *tenants* `acme` et `globex`. Pour prouver la sécurité au niveau des lignes elle-même, exécutez-la sur un *repository* qui n'écrit aucune condition de *tenant* |
 | `eventBusContract` | tout fournisseur d'`EventBus` : routage par type, plusieurs abonnés, désabonnement, aller-retour exact de l'enveloppe (`traceparent`, `correlationId`, `tenantId`), un événement reçu tel que JSON le porte et jamais l'objet publié (une `Date` de la charge utile sous forme de texte), remontée de l'échec d'un gestionnaire. Les relivraisons sont acceptées ; rendez `settle()` depuis `createBus` pour les fournisseurs qui livrent de façon asynchrone |
 | `unitOfWorkContract` | toute `UnitOfWork`, appelée par `run` sans bus de commandes : les événements du domaine attendent la fin et sont distribués avant la validation (commit), si bien que les gestionnaires voient chaque sauvegarde et que ce qu'ils écrivent, l'outbox comprise, est validé avec ; un échec dans une sauvegarde, dans le travail, dans un gestionnaire ou dans la validation (une contrainte différée) ne laisse rien derrière lui, pas plus qu'un `run` imbriqué qui a échoué bien que le travail ait intercepté son échec ; exécutée dans l'unité de travail d'une autre base de données, elle ouvre la sienne, les deux phases autour de sa propre validation ; les gestionnaires `after-commit` s'exécutent une fois les lignes validées, jamais autrement. Un adaptateur qui n'est pas construit sur `unitOfWorkOver` échoue ici |
-| `outboxStoreContract` | tout stockage d'outbox : ordre, limite, bail, prises concurrentes, publié, échoué, mort, `retryDead`, purge ; avec `carriesTenant: true`, le *tenant* de chaque événement conservé |
+| `outboxStoreContract` | tout stockage d'outbox : ordre, limite, bail, prises concurrentes, publié, échoué, reporté sans tentative, mort, `retryDead`, purge ; avec `carriesTenant: true`, le *tenant* de chaque événement conservé |
 | `processedEventStoreContract` | tout `ProcessedEventStore` : une fois par consommateur et par événement, aussi sous des livraisons concurrentes |
 | `eventStoreContract` | tout `EventStore` : un flux créé à la version 0 et relu dans l'ordre, numéroté à partir de 1, avec son type, sa version de forme, ses données, ses métadonnées et son instant ; un ajout à une version que le flux n'a plus (en retard ou en avance) refusé avec `CONCURRENCY_CONFLICT` et rien n'en est gardé ; un seul de deux ajouts à la même version passe ; des flux numérotés séparément ; tout le stockage lu dans l'ordre des ajouts, positions croissantes à partir de 1, après une position et dans une limite ; `head()` ; avec `createTenantStore`, un flux gardé au *tenant* de son premier ajout quelle que soit la version depuis laquelle on le lit, le travail qui ne nomme aucun *tenant* refusé avant de lire ou d'ajouter, un agrégat d'un autre *tenant* répondu comme un identifiant inconnu |
 | `eventStoreUnitOfWorkContract` | un `EventStore` transactionnel avec l'outbox de sa base de données sous une même `UnitOfWork` : le flux et les enregistrements de l'outbox publiés pour ses événements sont validés ensemble ; rien ne reste dans l'outbox pour un ajout défait par un retour arrière (rollback), ni pour un ajout refusé par un conflit de concurrence. `createSubject()` rend `{ unitOfWork, store, outbox }` |

@@ -102,7 +102,11 @@ on PostgreSQL:
 `init --tenancy shared-table` generates the first strategy on the four ORMs: every repository
 through the helpers, the outbox keeping the tenant, and the rule `tenancy/scoped-statement` of the
 checker reporting a statement that reaches a table straight from the executor, the client or the
-manager, a row reached by its key alone, a read model store built without its tenant. The three others
+manager, a row reached by its key alone, a read model store built without its tenant. It holds
+the authorizer to the tenants of the actor too, whatever the access model
+(`TenantBoundAuthorizer` of `@ddd-ts-kit/auth`, around `createAuthorizer()`): a use case whose
+requirement names a tenant is refused to who does not belong to it, and a list to who does not
+belong to the tenant of the work. The three others
 are wired by hand from the packages for now; `init` refuses them and says what to add. With
 `init --search opensearch` the read models kept in OpenSearch follow the same tenancy: one index,
 each tenant behind a filtered alias, from the platform alone ([Search read models](../tools/search-read-models.md)).
@@ -376,7 +380,8 @@ A purge that a project wants confined runs per tenant instead, in contexts of th
 - **A relationship holds in every tenant.** A tuple of ReBAC names no tenant: one on an element
   reaches that element alone, its id shared by no other tenant, but one on the context of a use
   case (`context:ordering operator user:olivia`) holds in every tenant the person works in.
-  Decide per tenant what a use case on no element allows, by roles with the tenant check or on an
+  Decide per tenant what a use case on no element allows, by a requirement that names its tenant,
+  which `TenantBoundAuthorizer` refuses to who does not belong to it whatever the model, or on an
   object that names the tenant ([Choosing access control](../guides/choosing-access-control.md#preset-3-relationships-zanzibar)).
 - **One tenant per unit of work.** A request that must write to two tenants is two units of
   work, on purpose: one transaction never spans tenants. On database per tenant, work of another

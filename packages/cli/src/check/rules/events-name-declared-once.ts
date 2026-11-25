@@ -1,10 +1,9 @@
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import type { StringRecord } from '../scan/string-record';
 import type { ClassShape } from '../structure/class-shape';
 import { inContext } from '../support/in-context';
-import { perFile } from '../support/per-file';
 
 /** `static readonly eventName = '...'`, typed or not, or `extends NamedDomainEvent('...')`. */
 const STATIC_NAME =
@@ -13,27 +12,34 @@ const STATIC_NAME =
 /** `name = '...'`, `name: '...'`, `name: string = '...'`: the name written a second time. */
 const NAME_LITERAL = /(?<![\w$.])name\s*\??\s*(?:[:=]|:[^=;\n'"]+=)\s*$/;
 
-export const eventsNameDeclaredOnce: Rule = {
+export const eventsNameDeclaredOnce: FileRule = {
   id: 'events/name-declared-once',
   description:
     'Every domain event class declares its name once, `static readonly eventName`, and its `readonly name` reads it.',
+  severity: 'error',
+  doc: {
+    why: 'A domain event handler and a projection are attached under the name the event class declares, static readonly eventName: the compiler refuses a reaction to an event class without it. Checked on every domain event, a missing name is found when the event is written, not later when someone first reacts to it. A name written a second time, as a literal in readonly name, drifts from the one the reactions read: extend NamedDomainEvent and the instance name reads the static one.',
+    bad: `export class InvoiceIssued implements DomainEvent {
+  readonly name = 'billing.invoice.issued';
+}`,
+    good: `export class InvoiceIssued extends NamedDomainEvent('billing.invoice.issued') {
+}`,
+  },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (!inContext(file.location) || file.isTest) {
-        return [];
-      }
+  judge(file) {
+    if (!inContext(file.location) || file.isTest) {
+      return [];
+    }
 
-      const { layer, inside, context } = file.location;
+    const { layer, inside, context } = file.location;
 
-      if (layer !== 'domain' || inside[0] !== 'events') {
-        return [];
-      }
+    if (layer !== 'domain' || inside[0] !== 'events') {
+      return [];
+    }
 
-      return file.structure.classes
-        .filter((declared) => declared.depth === 0 && !declared.isAbstract)
-        .flatMap((declared) => judge(file, declared, context));
-    });
+    return file.structure.classes
+      .filter((declared) => declared.depth === 0 && !declared.isAbstract)
+      .flatMap((declared) => judge(file, declared, context));
   },
 };
 

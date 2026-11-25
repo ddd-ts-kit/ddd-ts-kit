@@ -1,11 +1,10 @@
 import path from 'node:path';
 import { CONFIG_FILE, type Config } from '../../config';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inLayers } from '../support/in-layers';
 import { lineOfSequence } from '../support/line-of-sequence';
-import { perFile } from '../support/per-file';
 import { reporter } from '../support/reporter';
 import { identifier } from '../text/identifier';
 import { platformFilePaths } from '../../platform-layout';
@@ -36,17 +35,29 @@ const OUTBOX_FIX =
 const STACK_FIX =
   'Set "stack.events" to "outbox", so that an event commits or rolls back with the state change it describes; a deliberate exception is a "deviations" entry whose "what" is "stack.events", pointing to its decision record.';
 
-export const eventsOutboxRequired: Rule = {
+export const eventsOutboxRequired: FileRule = {
   id: 'events/outbox-required',
   description:
     'With a database, integration events are published through the transactional outbox, never straight to a broker or a bus from a handler.',
+  severity: 'error',
+  doc: {
+    why: 'Publishing an event and committing the state change it describes must succeed or fail together. A handler that talks to a broker or a bus publishes events of transactions that roll back, and loses events when the broker is down. Written to the outbox in the transaction of the command, the event is relayed afterwards, whatever the transport.',
+    bad: `// application/commands/issue-invoice/issue-invoice.handler.ts
+import { connect } from 'amqplib';
+// ddd-ts-kit.config.json
+"stack": { "orm": "drizzle", "events": "in-memory" }`,
+    good: `// application/commands/issue-invoice/issue-invoice.handler.ts
+constructor(private readonly publisher: IntegrationEventPublisher) {}
+// platform/composition/platform.module.ts
+eventPublisher: new OutboxPublisher(persistence.outbox),`,
+  },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => [
+  judge(file, project) {
+    return [
       ...straightToTheBroker(file),
       ...publisherBesideThePort(file),
       ...platformWithoutOutbox(file, project.config),
-    ]);
+    ];
   },
   acrossProject(project) {
     const { stack, deviations } = project.config;

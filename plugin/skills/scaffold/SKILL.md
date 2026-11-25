@@ -49,7 +49,10 @@ skill `ddd-ts-kit:use-case`; events between contexts, skill `ddd-ts-kit:integrat
    the decision expected. Decide, write, delete the marker. A marker you cannot resolve is a
    question for the user, not a guess. `notes` says what the generator could not do.
 4. **Replace each `it.todo`** of the generated spec by a real test (skill
-   `ddd-ts-kit:testing`).
+   `ddd-ts-kit:testing`). What is left to decide refuses until then: a handler, a reader, a
+   reaction or a translator throws `undecided(...)` (501 at the edge), a policy and a guard
+   refuse everybody, and the one running test of the spec says so. Write the decision, then
+   replace that test: never make a stub answer a success to turn a spec green.
 5. `npx ddd-ts-kit check --changed-since HEAD` and the tests of the context.
 
 ## What the generator settles for you

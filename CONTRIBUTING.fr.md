@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:bda48ea261b1e1e3 -->
+<!-- translation-of: CONTRIBUTING.md sha256:2ad2715365eb5be2 -->
 
 # Contribuer
 
@@ -26,7 +26,10 @@ une règle. Cette page dit comment commencer, puis les règles que suit chaque c
    de la mesure dans [l'enregistrement de décision de la mesure](docs/adr/0001-lines-left-out-of-the-coverage-measure.fr.md),
    jamais déplacée sur une ligne déjà exécutée. Les *hooks* du plugin sont tenus à 100 % de leurs lignes, branches
    et fonctions (`npm run test:plugin`) : une branche qu'aucun test n'atteint le fait échouer, et
-   une branche qu'aucune entrée de *hook* ne peut atteindre est retirée. Le tableau nomme le fichier,
+   une branche qu'aucune entrée de *hook* ne peut atteindre est retirée. La garde, c'est
+   `plugin/hooks/guard.mjs`, l'entrée qui tient les modes et l'ordre des règles, et les modules à
+   côté, chacun ouvrant sur ce qu'il tient ; tous sont chargés avec elle, sauf `shell-commands.mjs`
+   et `builder-runs.mjs`, chargés quand un appel en a besoin. Le tableau nomme le fichier,
    pas la branche : `node pipeline/monorepo/uncovered-branches.mjs coverage/plugin.lcov` nomme chaque
    branche que le passage n'a pas prise, depuis le lcov qu'il a écrit.
 4. **Ouvrir une pull request.** Son titre est un sujet de commit conventionnel ; son modèle
@@ -130,10 +133,18 @@ bout prend 2,5 à 7 Go, et plusieurs à la fois (plusieurs sessions de code, un 
   request annote chaque ligne qu'elle ajoute (`pipeline/monorepo/asymmetries.mjs`), et dans
   Claude Code le hook de `.claude/settings.json` demande avant toute modification de ces
   fichiers, quel que soit le mode de permission.
-- Une nouvelle règle de vérification vient avec une fixture qui passe et une fixture qui
-  échoue, une phrase `fix` et une entrée `explain`.
+- Une règle de vérification est un fichier de `packages/cli/src/check/rules/`, nommé d'après son
+  id, qui dit tout de la règle : son `id` et sa `description`, sa `severity` par défaut, sa `doc`
+  (la raison et les deux exemples que montre `ddd-ts-kit explain`), son `scope` et son `judge`.
+  Une règle `file` juge une source à la fois, `judge(file, project)`, et répond des constats ; le
+  moteur parcourt les sources. Elle peut demander au projet la config, la place d'un fichier et
+  une source qu'elle importe, jamais l'arbre, pour que `check-file` et `check` soient d'accord :
+  ce qui a besoin de toutes les sources est son `acrossProject`, ou une règle `project`.
+  `standalone: true` dit que la règle juge une source quel que soit le projet autour
+  (`check --clean-only`). Une nouvelle règle est listée dans `catalogue/architecture-rules.ts` et
+  vient avec une fixture qui passe, une fixture qui échoue et une phrase `fix`.
 - Avant 1.0, une règle qui prévient un problème est une erreur tout de suite : une nouvelle règle
-  prend `error` par défaut (rien dans `default-severities.ts` pour `ddd-ts-kit check`,
+  prend `error` par défaut (`severity: 'error'` dans le fichier de la règle pour `ddd-ts-kit check`,
   `recommended: 'error'` pour la règle ESLint), et ce qu'une règle juge de plus aussi. Il n'y a
   pas d'avertissement d'abord, ni de version où elle deviendrait une erreur plus tard : une règle
   laissée en avertissement pour adoucir une montée de version est une règle qu'un projet apprend
@@ -321,7 +332,7 @@ fixer la version y fond les fichiers de `changes/`, dans l'ordre où ils ont att
 supprime ; le package de la CLI en livre une copie, que les agents lisent dans `node_modules`. Le
 *plugin* sort avec les packages, sous leur version : la fixer écrit aussi `version` de
 `plugin/.claude-plugin/plugin.json` et la version que décrivent les skills, dans
-`plugin/hooks/guard.mjs`, pour que chaque agent affiche un seul numéro. Le *plugin* se numérotait
+`plugin/hooks/briefing.mjs`, pour que chaque agent affiche un seul numéro. Le *plugin* se numérotait
 à part jusque-là, en avance sur les packages : la première version commune est au-dessus de la
 sienne, ce que `--set` tient (il nomme la première version qu'il accepte), et `--expect` du
 workflow de release tient le *plugin* à l'étiquette. Un correctif urgent du *plugin* est une
