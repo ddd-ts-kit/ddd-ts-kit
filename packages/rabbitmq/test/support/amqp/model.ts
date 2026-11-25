@@ -43,15 +43,30 @@ export interface Consumer {
   unacked: number;
 }
 
+/** A request of a client that a stalled broker may leave unanswered. */
+export type BrokerRequest = 'channel' | 'get';
+
 /** What a connection asks of the network it was opened on. */
 export interface Wire {
   holdingReplies(): boolean;
+  /** False once the broker stopped answering this request: it never returns. */
+  answering(request: BrokerRequest): boolean;
   /** The closing of the channels started and the broker did not answer yet: they refuse to send. */
   closingChannels(): boolean;
   sent(): void;
 }
 
-export const RELIABLE: Wire = { holdingReplies: () => false, closingChannels: () => false, sent: () => undefined };
+/** What a client gets back from a broker that stopped answering: a promise that never settles. */
+export function unanswered<T>(): Promise<T> {
+  return new Promise(() => undefined);
+}
+
+export const RELIABLE: Wire = {
+  holdingReplies: () => false,
+  answering: () => true,
+  closingChannels: () => false,
+  sent: () => undefined,
+};
 
 /** A queue, as the broker and the channels reach it. */
 export interface QueueState {

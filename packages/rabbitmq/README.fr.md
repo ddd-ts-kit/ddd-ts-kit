@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:54dcd6ca5a214152 -->
+<!-- translation-of: README.md sha256:9b884533246fcdde -->
 
 # @ddd-ts-kit/rabbitmq
 
@@ -357,9 +357,11 @@ liées, et la file de travail continue de se remplir.
   d'ici là est rejetée avec `PUBLISH_NOT_CONFIRMED`, comme sur NATS et Kafka, si bien que le
   relais la retente au lieu d'attendre une confirmation qu'un broker bloqué n'envoie jamais.
   La même borne vaut pour la copie d'un message en échec vers sa file de nouvelles tentatives ou
-  sa file de rejet, le message étant alors rendu à sa file de travail, et pour chaque copie de
-  `replayDead`, qui est alors rejeté et laisse le message dans la file de rejet : `close()`
-  n'attend jamais une confirmation plus longtemps.
+  sa file de rejet, le message étant alors rendu à sa file de travail, et pour chaque attente de
+  `replayDead`, qui est alors rejeté et laisse le message dans la file de rejet : avec
+  `PUBLISH_NOT_CONFIRMED` pour une copie, et avec `BROKER_UNAVAILABLE` de raison
+  `REQUEST_TIMEOUT` (comme sur Kafka) quand le *broker* n'ouvre pas son canal ou ne remet pas le
+  message de rejet suivant à temps. `close()` n'attend jamais une confirmation plus longtemps.
 - **Un consommateur qui plante en plein gestionnaire** récupère ses messages sans que `x-attempt`
   soit incrémenté. Les files quorum bornent cela par leur limite de livraisons, au-delà de
   laquelle le *broker* envoie le message dans la file de rejet ; les files classiques ne le
