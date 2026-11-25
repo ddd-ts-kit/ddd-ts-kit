@@ -62,7 +62,7 @@ export class HttpRates implements ExchangeRates {
   }
 }
 
-// ...and the composition root puts the policy around it: the same object, still an HttpRates.
+// ...and the composition root puts the policy around it: a wrapper, still an HttpRates, and `new HttpRates()` is left as it was.
 export const rates: ExchangeRates = compose(retry({ attempts: 3 }), timeout(2000))(new HttpRates(), { kind: 'external' });
 ```
 
@@ -506,9 +506,14 @@ passed are never written to.
 
 ## What wrapping guarantees
 
-- The instance is wrapped in place: same object, `instanceof`, `this` and `private` members
-  intact. A frozen instance is fronted by a proxy of the same type, and its methods run with
-  that proxy as `this`.
+- An aspect answers a wrapper and leaves the instance it is given as it was: nothing is added
+  to it, and whoever calls the instance itself is not advised. The wrapper is a proxy of the
+  same class: `instanceof` and `private` members keep working, its methods run with the wrapper
+  as `this`, and a field read or assigned through it is the field of the instance. Two aspects
+  put around one instance are two wrappers, each with its own advice. An aspect that advises no
+  method answers the instance itself.
+- A class that keeps its state in hard-private (`#`) members cannot be wrapped: such a member
+  is only reached on the object that declares it, never through a proxy. Write `private`.
 - **An aspect applied to an instance advises the calls that reach it from outside.** `private`
   is erased by the compiler, and a name does not say whether a method is public (an underscore
   is a habit, not a rule), so the public API cannot be picked out reliably: every asynchronous
@@ -530,7 +535,7 @@ passed are never written to.
   a call an instance makes on itself. A span describes a step, where an advice acts on it.
 - A frozen instance stays frozen: its fields, `private` ones included, cannot be assigned. State
   it must change lives in an object it holds (a `Map`, an array).
-- Applying the same aspect twice to an instance is a no-op.
+- Applying an aspect to its own wrapper is a no-op.
 - Getters, symbols, generators, synchronous methods and lifecycle hooks (`LIFECYCLE_HOOKS`) are
   left alone.
 - A method declared `async` is advised from its first call. A method that merely returns a

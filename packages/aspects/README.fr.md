@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:6332661c5d2c6ed0 -->
+<!-- translation-of: README.md sha256:41f34166ed31963d -->
 
 # @ddd-ts-kit/aspects
 
@@ -66,7 +66,7 @@ export class HttpRates implements ExchangeRates {
   }
 }
 
-// ...et la racine de composition pose la politique autour de lui : le même objet, toujours un HttpRates.
+// ...et la racine de composition pose la politique autour de lui : une enveloppe, toujours un HttpRates, et `new HttpRates()` reste tel qu'il était.
 export const rates: ExchangeRates = compose(retry({ attempts: 3 }), timeout(2000))(new HttpRates(), { kind: 'external' });
 ```
 
@@ -523,9 +523,16 @@ Rien de plus profond, ni dans une liste. Les objets passés ne sont jamais modif
 
 ## Ce que garantit l'enveloppement
 
-- L'instance est enveloppée sur place : même objet, `instanceof`, `this` et membres `private`
-  intacts. Une instance gelée est placée derrière un proxy du même type, et ses méthodes
-  s'exécutent avec ce proxy comme `this`.
+- Un aspect rend une enveloppe et laisse l'instance qu'il reçoit telle qu'elle était : rien ne
+  lui est ajouté, et qui appelle l'instance elle-même n'est pas intercepté. L'enveloppe est un
+  proxy de la même classe : `instanceof` et les membres `private` fonctionnent toujours, ses
+  méthodes s'exécutent avec l'enveloppe comme `this`, et un champ lu ou affecté à travers elle
+  est le champ de l'instance. Deux aspects posés autour d'une même instance sont deux
+  enveloppes, chacune avec son propre *advice*. Un aspect qui n'intercepte aucune méthode rend
+  l'instance elle-même.
+- Une classe qui garde son état dans des membres privés stricts (`#`) ne peut pas être
+  enveloppée : un tel membre ne s'atteint que sur l'objet qui le déclare, jamais à travers un
+  proxy. Écrivez `private`.
 - **Un aspect appliqué à une instance intercepte les appels qui lui parviennent de l'extérieur.**
   `private` est effacé par le compilateur, et un nom ne dit pas si une méthode est publique (un
   tiret bas est une habitude, pas une règle) : l'API publique ne peut donc pas être distinguée
@@ -552,7 +559,7 @@ Rien de plus profond, ni dans une liste. Les objets passés ne sont jamais modif
 - Une instance gelée reste gelée : ses champs, y compris les champs `private`, ne peuvent pas
   être affectés. L'état qu'elle doit changer vit dans un objet qu'elle détient (une `Map`, un
   tableau).
-- Appliquer deux fois le même aspect à une instance est sans effet.
+- Appliquer un aspect à sa propre enveloppe est sans effet.
 - Les accesseurs, les symboles, les générateurs, les méthodes synchrones et les *hooks* de cycle
   de vie (`LIFECYCLE_HOOKS`) sont laissés tranquilles.
 - Une méthode déclarée `async` est interceptée dès son premier appel. Une méthode qui se contente
