@@ -1,10 +1,9 @@
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
-import { perFile } from '../support/per-file';
 import { ownEntry } from '../../config/values/own-entry';
 
-export const contextDeclaredRelationship: Rule = {
+export const contextDeclaredRelationship: FileRule = {
   id: 'context/declared-relationship',
   description:
     'Importing the published language of another context requires the relationship to be declared in the config.',
@@ -16,23 +15,21 @@ export const contextDeclaredRelationship: Rule = {
   "upstreams": [{ "context": "billing", "relationship": "published-language" }] }`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (!inContext(file.location)) {
-        return [];
-      }
+  judge(file, project) {
+    if (!inContext(file.location)) {
+      return [];
+    }
 
-      const here = file.location.context;
-      const upstreams = ownEntry(project.config.contexts, here)?.upstreams.map((upstream) => upstream.context) ?? [];
+    const here = file.location.context;
+    const upstreams = ownEntry(project.config.contexts, here)?.upstreams.map((upstream) => upstream.context) ?? [];
 
-      return importedLanguages(file, here)
-        .filter(({ context }) => !upstreams.includes(context))
-        .map(({ context: there, line }) => ({
-          line,
-          message: `"${here}" depends on "${there}" but the relationship is not declared.`,
-          fix: `Add { "context": "${there}", "relationship": "published-language" } to contexts.${here}.upstreams in ddd-ts-kit.config.json, after checking that the dependency direction is intended.`,
-        }));
-    });
+    return importedLanguages(file, here)
+      .filter(({ context }) => !upstreams.includes(context))
+      .map(({ context: there, line }) => ({
+        line,
+        message: `"${here}" depends on "${there}" but the relationship is not declared.`,
+        fix: `Add { "context": "${there}", "relationship": "published-language" } to contexts.${here}.upstreams in ddd-ts-kit.config.json, after checking that the dependency direction is intended.`,
+      }));
   },
 };
 

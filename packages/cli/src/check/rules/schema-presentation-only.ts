@@ -1,17 +1,16 @@
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { holdsSchemas } from '../schemas/holds-schemas';
 import { sharedPresentation } from '../schemas/shared-presentation';
 import { sharesSchemas } from '../schemas/shares-schemas';
 import { VALIDATION_PACKAGES } from '../schemas/validation-packages';
-import { perFile } from '../support/per-file';
 
 /** Where a context reads a type of the contract: its presentation layer; the module file and the specs wire and drive it. */
 const READERS_OUTSIDE = ['domain', 'application', 'infrastructure', 'published-language'];
 
-export const schemaPresentationOnly: Rule = {
+export const schemaPresentationOnly: FileRule = {
   id: 'schema/presentation-only',
   description:
     'Under "stack.schemas": "shared", a schema of the HTTP contract lives in presentation/: of its context, or of the shared kernel when several contexts answer with it. The shared kernel declares no schema anywhere else, and no domain, application, infrastructure or published language imports one of its presentation/.',
@@ -30,16 +29,14 @@ import type { Money } from '@/shared-kernel/presentation/money.schema';
 // maps Money to the command, which carries plain values`,
   },
   scope: 'file',
-  run(project) {
+  judge(file, project) {
     if (!sharesSchemas(project)) {
       return [];
     }
 
-    return perFile(project, this.id, (file) =>
-      file.isTest || holdsSchemas(project, file)
-        ? []
-        : [...declaredInSharedKernel(file), ...readOutsidePresentation(project, file)],
-    );
+    return file.isTest || holdsSchemas(project, file)
+      ? []
+      : [...declaredInSharedKernel(file), ...readOutsidePresentation(project, file)];
   },
 };
 

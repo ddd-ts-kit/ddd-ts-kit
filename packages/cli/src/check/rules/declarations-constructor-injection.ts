@@ -3,15 +3,14 @@ import type { ClassInjection } from '../../declared/injection/class-injection';
 import { readInjections } from '../../declared/injection/read-injections';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import { sourceAt } from '../project/source-at';
 import { inContext } from '../support/in-context';
 import { isDeclaredStyle } from '../support/is-declared-style';
 import { pathInContext } from '../support/path-in-context';
-import { perFile } from '../support/per-file';
 import { WITHOUT_MODULE } from '../../model-modules';
 
-export const declarationsConstructorInjection: Rule = {
+export const declarationsConstructorInjection: FileRule = {
   id: 'declarations/constructor-injection',
   description:
     'In the declared style, a class whose decorator lists no dependency states them in its constructor: each parameter is typed by one class, with no `?`, default value, rest or destructuring, and an inherited constructor is one the project can read. Under "stack.dependencies": "signature" a decorator carries no list.',
@@ -38,24 +37,19 @@ export class IssueInvoiceHandler {
 }`,
   },
   scope: 'file',
-  run(project) {
-    if (!isDeclaredStyle(project)) {
+  judge(file, project) {
+    if (
+      !isDeclaredStyle(project) ||
+      !inContext(file.location) ||
+      file.isTest ||
+      declaredRoleOf(pathInContext(project, file) ?? '', WITHOUT_MODULE) === undefined
+    ) {
       return [];
     }
 
-    return perFile(project, this.id, (file) => {
-      if (
-        !inContext(file.location) ||
-        file.isTest ||
-        declaredRoleOf(pathInContext(project, file) ?? '', WITHOUT_MODULE) === undefined
-      ) {
-        return [];
-      }
-
-      return readInjections((path) => sourceAt(project, path), file).flatMap((injection) =>
-        injection.listed === undefined ? unstated(project, injection) : listed(project, injection),
-      );
-    });
+    return readInjections((path) => sourceAt(project, path), file).flatMap((injection) =>
+      injection.listed === undefined ? unstated(project, injection) : listed(project, injection),
+    );
   },
 };
 

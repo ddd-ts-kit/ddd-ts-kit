@@ -4,7 +4,7 @@ import { adapterPolicies } from '../aspects/adapter-policies';
 import type { AdapterPolicy } from '../aspects/adapter-policy';
 import { bindingCalls } from '../declarations/binding-calls';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import type { ClassShape } from '../structure/class-shape';
 import { importedFrom } from '../support/imported-from';
@@ -40,7 +40,7 @@ interface Outer {
   readonly shape: ClassShape;
 }
 
-export const aspectsTimeoutCoversDelegate: Rule = {
+export const aspectsTimeoutCoversDelegate: ProjectRule = {
   id: 'aspects/timeout-covers-delegate',
   description:
     'An `external` or `gateway` adapter left to the default policy of the platform (no `ownPolicy(...)`, no `timeout(...)` of its own) is not given a port (a constructor parameter typed by it) whose adapter states a longer time limit for all its methods: the default limit, the fallback of `OUTBOUND_TIMEOUT_MS` in the configuration of the platform, else `timeoutMs` of `resilience/default-resilience-settings.ts`, would cut every call the slower adapter still answers. Read from the declarations (`@Adapter`, `@Gateway`) and the bindings of the container of the kit, where the port and the adapter are bound once, without condition, and the durations are written as numbers. An adapter that states its own limit, even a shorter one, chose it.',
@@ -62,7 +62,7 @@ export class RemoteQuoteReader implements QuoteReader {
 }`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const sources = project.files.filter((file) => !file.isTest);
     const policies = adapterPolicies(project);
 

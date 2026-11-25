@@ -1,8 +1,7 @@
 import type { Finding } from '../model/finding';
 import type { Location } from '../model/location';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
-import { perFile } from '../support/per-file';
 
 const WRITERS: Readonly<Record<string, readonly string[]>> = {
   domain: ['aggregates', 'entities', 'repositories', 'services'],
@@ -12,7 +11,7 @@ const WRITERS: Readonly<Record<string, readonly string[]>> = {
 const FIX =
   'Remove the import and add the command that does the work to the decision of the step: a process never writes an aggregate nor calls an outside system, the handler of each command does, authorized and transactional.';
 
-export const processSendsCommandsOnly: Rule = {
+export const processSendsCommandsOnly: FileRule = {
   id: 'process/sends-commands-only',
   description:
     'A process manager of application/processes/*.process.ts changes the world only through the commands it decides: it imports no aggregate, entity, repository, domain service, port or infrastructure, of its context or another.',
@@ -33,8 +32,8 @@ export class AppointmentReminderProcess implements ProcessManager<ReminderProces
 }`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => (isProcessFile(file) ? writers(file) : []));
+  judge(file) {
+    return isProcessFile(file) ? writers(file) : [];
   },
 };
 

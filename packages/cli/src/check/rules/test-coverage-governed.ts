@@ -1,12 +1,11 @@
 import { ignoreHints } from '../coverage/ignore-hints';
 import { runnerSettings } from '../coverage/runner-settings';
 import { scriptFlags } from '../coverage/script-flags';
-import { DecisionRecords } from '../governance/decision-records';
-import type { Rule } from '../model/rule';
-import { perFile } from '../support/per-file';
+import { recordsOf } from '../governance/records-of';
+import type { FileRule } from '../model/rule';
 import { reporter } from '../support/reporter';
 
-export const testCoverageGoverned: Rule = {
+export const testCoverageGoverned: FileRule = {
   id: 'test/coverage-governed',
   description:
     'Coverage cannot be gamed by exclusion: the test runner config reads the measured layers and their thresholds from ddd-ts-kit.config.json and writes no include, exclude or thresholds by hand, no script sets them by a flag, and no production source carries a coverage ignore comment without a decision record.',
@@ -28,10 +27,8 @@ coverage: { provider: 'v8', reporter: ['text', 'cobertura', 'lcov'], ...governed
 /* istanbul ignore next -- ADR-0012: reached only by the legacy import, removed with it */`,
   },
   scope: 'file',
-  run(project) {
-    const records = new DecisionRecords(project.root);
-
-    return perFile(project, this.id, (file) => ignoreHints(file, records));
+  judge(file, project) {
+    return ignoreHints(file, recordsOf(project));
   },
   acrossProject(project) {
     const report = reporter(project, this.id);

@@ -6,7 +6,7 @@ import { type PermissionSet, permissionSets } from '../authz/permission-sets';
 import { signedInGrants } from '../authz/signed-in-grants';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { Violation } from '../model/violation';
 import type { SourceFile } from '../model/source-file';
 import { reporter } from '../support/reporter';
@@ -35,7 +35,7 @@ import { isInProject } from '../authz/is-in-project';
  *
  * Silent when the rights are attributes or an authorizer of the project's own.
  */
-export const authzGranted: Rule = {
+export const authzGranted: ProjectRule = {
   id: 'authz/granted',
   description:
     'Every permission a context declares is granted: by name to a role or to every signed-in person, not only through the super-admin wildcard (roles), or held by operators some source makes (relationships).',
@@ -56,7 +56,7 @@ export const roles = {
 // or, when generating the use case: --permission invoice.void --grant accountant`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (project.config.stack.authz === 'rebac') {
       return ownAuthorizer(project) ? [] : unheldByOperators(project);
     }

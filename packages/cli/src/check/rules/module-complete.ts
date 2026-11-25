@@ -11,7 +11,7 @@ import {
   WITHOUT_MODULE,
 } from '../../model-modules';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { pathInContext } from '../support/path-in-context';
 import { reporter } from '../support/reporter';
@@ -19,7 +19,7 @@ import { reporter } from '../support/reporter';
 /** How many files a finding names before it counts the rest. */
 const NAMED = 5;
 
-export const moduleComplete: Rule = {
+export const moduleComplete: ProjectRule = {
   id: 'module/complete',
   description:
     'Once a context declares modules of its model, every file of its layers sits in one of them (<module>/domain/, <module>/application/, <module>/infrastructure/, <module>/presentation/) with its specs, fakes and builders (<module>/test/), what belongs to no module aside: the code list and the permission set at the root of the context, and in shared/ the schema and tables of its database, its route groups, guards and shared shapes, its worlds, and the generated declarations. A file of a layer left at the level of the context, or a file of a module left in shared/, is a warning, one finding per folder, so that a context moves into its modules one commit at a time. A layout of an earlier version is an error whatever the severity of the rule, and `context-layout` moves it: test/ at the level of the context, or a layer folder there that holds nothing but what shared/ holds now.',
@@ -40,7 +40,7 @@ contexts/scheduling/shared/test/worlds/scheduling.world.ts
 contexts/scheduling/scheduling.codes.ts                                      // one per context, at its root`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const report = reporter(project, this.id);
 
     return Object.keys(project.config.contexts).flatMap((context) => {

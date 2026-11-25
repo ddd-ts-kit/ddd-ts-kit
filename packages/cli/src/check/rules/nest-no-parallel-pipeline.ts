@@ -1,10 +1,9 @@
 import type { Finding } from '../model/finding';
 import type { Layer } from '../model/layer';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { nestEquivalentsOf } from '../nest/nest-equivalents-of';
-import { perFile } from '../support/per-file';
 
 /** `domain/`, `application/` and the published language refuse every framework already (`layer/*`, `context/*`). */
 const JUDGED: readonly Layer[] = ['presentation', 'infrastructure', 'module', 'root'];
@@ -16,7 +15,7 @@ const BUSES = ['CommandBus', 'QueryBus'];
 const ROUTED_BY_NEST_FIX =
   'Make it a route of the kit: `@KitRoute` of `@ddd-ts-kit/http/nest` on each method, served by `createControllersModule`, with its guards, its refusals and its place in the contract. A controller of Nest stays for what reaches no use case (health, metrics).';
 
-export const nestNoParallelPipeline: Rule = {
+export const nestNoParallelPipeline: FileRule = {
   id: 'nest/no-parallel-pipeline',
   description:
     "A context uses none of the tools of Nest that the kit does its own way (guards, pipes, exception filters, interceptors, its logger, Swagger, CQRS, its scheduler, a controller Nest serves): they would bypass the security, the errors and the contract of the kit. A Nest controller the kit serves (`@KitRoute`) declares its routes with Nest's decorators. Outside the contexts, a controller Nest serves reaches no use case. Nest stays in the platform for the rest.",
@@ -40,18 +39,16 @@ export class InvoicesController {
 }`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (file.isTest) {
-        return [];
-      }
+  judge(file, project) {
+    if (file.isTest) {
+      return [];
+    }
 
-      if (file.location.area === 'context') {
-        return JUDGED.includes(file.location.layer) ? nestToolsIn(file) : [];
-      }
+    if (file.location.area === 'context') {
+      return JUDGED.includes(file.location.layer) ? nestToolsIn(file) : [];
+    }
 
-      return isUnderSources(file, project) ? routedByNest(file) : [];
-    });
+    return isUnderSources(file, project) ? routedByNest(file) : [];
   },
 };
 

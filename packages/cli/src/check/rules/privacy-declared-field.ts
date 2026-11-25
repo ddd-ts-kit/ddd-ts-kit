@@ -1,5 +1,5 @@
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { Violation } from '../model/violation';
 import type { SourceFile } from '../model/source-file';
 import { JUDGED_ONLY_WHEN_ON } from '../privacy/judged-only-when-on';
@@ -36,7 +36,7 @@ interface Kept {
  * and is not a column; a snapshot mapper holds no column either, `privacy/snapshot-sealed` reads it.
  * Silent with `stack.privacy` off.
  */
-export const privacyDeclaredField: Rule = {
+export const privacyDeclaredField: ProjectRule = {
   id: 'privacy/declared-field',
   description:
     'A column whose name says it holds personal data is named by a personalFields declaration of its context, which the erasure, the export and the register read.',
@@ -57,7 +57,7 @@ export const InvoicePersonalFields = personalFields(TABLE, declaration);
 // ddd-ts-kit-disable-next-line privacy/declared-field -- ADR-0012: the shared mailbox of the accounting team`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!privacyJudged(project)) {
       return [];
     }

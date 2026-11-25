@@ -5,7 +5,7 @@ import type { HandlerDependency } from '../domain-events/handler-dependency';
 import { refusedBeforeCommit } from '../domain-events/refused-before-commit';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import { perFile } from '../support/per-file';
 
 const KERNEL = '@ddd-ts-kit/kernel';
@@ -18,7 +18,7 @@ const BEFORE_FIX =
 const AFTER_FIX =
   'Send a command through the CommandBus port and let the publisher of the event that command records write to the outbox, or leave this handler before the commit: after the commit nothing makes the outbox row atomic with a state change.';
 
-export const domainEventsTransactionalBeforeCommit: Rule = {
+export const domainEventsTransactionalBeforeCommit: FileRule = {
   id: 'domain-events/transactional-before-commit',
   description:
     'A domain event handler that runs before the commit has only effects the rollback undoes: it depends on the domain of its context, on persistence ports and on kernel ports other than Cache, CachePurger, Lock, RateLimiter, JobScheduler and EventBus; an after-commit handler never depends on IntegrationEventPublisher.',
@@ -61,11 +61,9 @@ export class InvoiceIssuedPublisher {
 }`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) =>
-      eventHandlersOf(project, file).flatMap((handler) =>
-        handler.isAfterCommit ? publishing(handler) : outsideTheTransaction(handler),
-      ),
+  judge(file, project) {
+    return eventHandlersOf(project, file).flatMap((handler) =>
+      handler.isAfterCommit ? publishing(handler) : outsideTheTransaction(handler),
     );
   },
   acrossProject(project) {

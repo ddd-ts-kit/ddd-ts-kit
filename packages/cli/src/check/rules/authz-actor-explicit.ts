@@ -1,8 +1,7 @@
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inLayers } from '../support/in-layers';
-import { perFile } from '../support/per-file';
 
 /** The ports and the classes that give the ambient execution context: named as a type or as a value, in a signature or in a dependency list. */
 const AMBIENT_NAME =
@@ -18,7 +17,7 @@ const AMBIENT_READ =
 const FIX =
   'Take the actor from the message: make the command or query extend AuthorizedCommand or AuthorizedQuery and read `command.actor`, and pass anything else the use case needs as data of the message; audit columns, tenant scoping and correlation are read from the ExecutionScope port by infrastructure and the platform only (stampCreation, stampUpdate and tenantScopeOf belong in a repository adapter).';
 
-export const authzActorExplicit: Rule = {
+export const authzActorExplicit: FileRule = {
   id: 'authz/actor-explicit',
   description:
     'Use cases receive the actor in the command or query: domain/ and application/ never name nor read the ambient ExecutionScope or ActorContext.',
@@ -38,9 +37,7 @@ const { actor } = command;
 const row = { ...toRow(invoice), ...stampCreation(this.scope, this.clock), ...tenantScopeOf(this.scope) };`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, ambientActor);
-  },
+  judge: ambientActor,
 };
 
 function ambientActor(file: SourceFile): Finding[] {

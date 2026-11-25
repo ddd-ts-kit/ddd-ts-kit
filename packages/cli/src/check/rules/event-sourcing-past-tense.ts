@@ -1,15 +1,14 @@
 import { eventSourcedClasses } from '../event-sourcing/event-sourced-classes';
 import { factWords } from '../event-sourcing/fact-words';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { isPastFact } from '../../naming';
-import { perFile } from '../support/per-file';
 
 const FIX =
   'Name the event after what happened, with a verb in the past tense: `InvoiceIssued`, `NoShowNoted`, `AmountWithdrawn`, `AppointmentMarkedNoShow`. A stored event is a fact that will be replayed for years; a name in the present or the imperative reads as a command.';
 
-export const eventSourcingPastTense: Rule = {
+export const eventSourcingPastTense: FileRule = {
   id: 'event-sourcing/past-tense',
   description:
     'The events an event-sourced aggregate imports from domain/events/ are named in the past tense: one word of the fact, the name after the aggregate, is a past participle that does not read as a command at its head.',
@@ -22,12 +21,10 @@ import { NoteNoShow } from '@/contexts/scheduling/domain/events/note-no-show.eve
 import { NoShowNoted } from '@/contexts/scheduling/domain/events/no-show-noted.event';`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      const aggregates = eventSourcedClasses(file).map(({ name }) => name);
+  judge(file) {
+    const aggregates = eventSourcedClasses(file).map(({ name }) => name);
 
-      return aggregates.length === 0 ? [] : misnamed(file, aggregates);
-    });
+    return aggregates.length === 0 ? [] : misnamed(file, aggregates);
   },
 };
 

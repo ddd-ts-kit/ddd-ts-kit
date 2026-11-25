@@ -4,7 +4,7 @@ import { inOutsideRecord } from '../language/in-outside-record';
 import { otherLanguageOf } from '../language/other-language-of';
 import { typedByOtherLanguage } from '../language/typed-by-other-language';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import type { StringRecord } from '../scan/string-record';
 import { inContext } from '../support/in-context';
@@ -17,7 +17,7 @@ const FIRST_ARGUMENT = /(?<![\w$])(?!default\s*\()[\w$]+\s*\(\s*$/;
 /** `{ name: 'note' }`, `tableName: 'invoice'`: the name of a column, a table or a schema in an object. */
 const NAME_PROPERTY = /(?<![\w$])(?:name|tableName|schema)\s*:\s*$/;
 
-export const languageDeclaredVocabulary: Rule = {
+export const languageDeclaredVocabulary: ProjectRule = {
   id: 'language/declared-vocabulary',
   description:
     'Under "stack.literals": "named", a value of a closed vocabulary the project declares (an object `as const` with the union type of its name, a permission set of definePermissions) is read through it, never written again as a string literal outside its declaration, a quoted key included: the vocabulary of a context in that context, the one of the platform in the platform and the route groups of the contexts, a permission id and one of the shared kernel everywhere; tests, published languages, the relationship schema and the storage names of the persistence (a column, a table, a schema) are not judged, nor, outside `domain/`, a word whose type says it belongs to another language (a key of an object typed `Record<T, ..>`, a value of one typed `Record<.., T>`, a literal written `satisfies T`, `T` one type of a published language, of a package or of `infrastructure/anti-corruption/` or `infrastructure/external/`) and the types of an outside record declared there; an object is read when each entry is a key and a string literal.',
@@ -33,7 +33,7 @@ if (appointment.status === 'no-show') {
 }`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (project.config.stack.literals !== 'named') {
       return [];
     }

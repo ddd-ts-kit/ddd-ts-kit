@@ -8,7 +8,7 @@ import { namesRefusals } from '../errors/names-refusals';
 import { readCodeList } from '../errors/read-code-list';
 import { refusalClasses } from '../errors/refusal-classes';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import type { Violation } from '../model/violation';
 import type { ClassShape } from '../structure/class-shape';
@@ -35,7 +35,7 @@ interface Refusal {
   readonly shape: ClassShape;
 }
 
-export const errorsCodeListed: Rule = {
+export const errorsCodeListed: ProjectRule = {
   id: 'errors/code-listed',
   description:
     'Under "stack.refusals": "named", every refusal class of domain/errors/ (a class extending DomainRefusal) reads its code from the code list of its context, `readonly code = <Context>Codes.<Class>`, which <context>.codes.ts declares `as const`; every key of the list is a refusal class of the context and every value a string literal in constant case.',
@@ -69,7 +69,7 @@ export class SlotTaken extends DomainRefusal {
 }`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!namesRefusals(project)) {
       return [];
     }

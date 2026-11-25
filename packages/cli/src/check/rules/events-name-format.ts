@@ -3,18 +3,17 @@ import { eventDeclarations } from '../events/event-declarations';
 import { inDeclaration } from '../events/in-declaration';
 import { isTypeLiteral } from '../events/is-type-literal';
 import type { ContextLocation } from '../model/context-location';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { KEBAB_SEGMENT } from '../support/kebab-segment';
-import { perFile } from '../support/per-file';
 
 interface Named {
   readonly line: number;
   readonly value: string;
 }
 
-export const eventsNameFormat: Rule = {
+export const eventsNameFormat: FileRule = {
   id: 'events/name-format',
   description: 'Domain and integration event names follow <context>.<aggregate>.<fact-in-past-tense>, in kebab-case.',
   severity: 'error',
@@ -24,22 +23,20 @@ export const eventsNameFormat: Rule = {
     good: `static readonly eventName = 'billing.invoice.issued';`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (!inContext(file.location) || file.isTest) {
-        return [];
-      }
+  judge(file) {
+    if (!inContext(file.location) || file.isTest) {
+      return [];
+    }
 
-      const { context } = file.location;
+    const { context } = file.location;
 
-      return eventNames(file, file.location)
-        .filter(({ value }) => !isEventName(value, context))
-        .map(({ line, value }) => ({
-          line,
-          message: `The event name "${value}" does not follow <context>.<aggregate>.<fact>.`,
-          fix: `Name it "${context}.<aggregate>.<fact-in-past-tense>" in kebab-case, for example "${context}.invoice.issued".`,
-        }));
-    });
+    return eventNames(file, file.location)
+      .filter(({ value }) => !isEventName(value, context))
+      .map(({ line, value }) => ({
+        line,
+        message: `The event name "${value}" does not follow <context>.<aggregate>.<fact>.`,
+        fix: `Name it "${context}.<aggregate>.<fact-in-past-tense>" in kebab-case, for example "${context}.invoice.issued".`,
+      }));
   },
 };
 

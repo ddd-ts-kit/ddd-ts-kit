@@ -1,11 +1,10 @@
 import path from 'node:path';
 import { CONFIG_FILE, type Config } from '../../config';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inLayers } from '../support/in-layers';
 import { lineOfSequence } from '../support/line-of-sequence';
-import { perFile } from '../support/per-file';
 import { reporter } from '../support/reporter';
 import { identifier } from '../text/identifier';
 import { platformFilePaths } from '../../platform-layout';
@@ -36,7 +35,7 @@ const OUTBOX_FIX =
 const STACK_FIX =
   'Set "stack.events" to "outbox", so that an event commits or rolls back with the state change it describes; a deliberate exception is a "deviations" entry whose "what" is "stack.events", pointing to its decision record.';
 
-export const eventsOutboxRequired: Rule = {
+export const eventsOutboxRequired: FileRule = {
   id: 'events/outbox-required',
   description:
     'With a database, integration events are published through the transactional outbox, never straight to a broker or a bus from a handler.',
@@ -53,12 +52,12 @@ constructor(private readonly publisher: IntegrationEventPublisher) {}
 eventPublisher: new OutboxPublisher(persistence.outbox),`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => [
+  judge(file, project) {
+    return [
       ...straightToTheBroker(file),
       ...publisherBesideThePort(file),
       ...platformWithoutOutbox(file, project.config),
-    ]);
+    ];
   },
   acrossProject(project) {
     const { stack, deviations } = project.config;

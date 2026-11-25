@@ -1,6 +1,6 @@
 import path from 'node:path';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { perFile } from '../support/per-file';
@@ -9,7 +9,7 @@ import { testFolderOf } from '../support/test-folder-of';
 const AGGREGATE_SUFFIX = '.aggregate.ts';
 const BUILDER_SUFFIX = '.builder.ts';
 
-export const testBuilderRequired: Rule = {
+export const testBuilderRequired: ProjectRule = {
   id: 'test/builder-required',
   description: 'An aggregate has a test data builder in test/builders/.',
   severity: 'warn',
@@ -20,7 +20,7 @@ export const testBuilderRequired: Rule = {
 anInvoice().issued().build();`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const builders = buildersOf(project);
 
     return perFile(project, this.id, (file) => {

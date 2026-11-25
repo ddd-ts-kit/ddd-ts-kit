@@ -2,7 +2,7 @@ import { eventDeclarations, type EventDeclaration } from '../events/event-declar
 import { inDeclaration } from '../events/in-declaration';
 import { isTypeLiteral } from '../events/is-type-literal';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { KEBAB_SEGMENT } from '../support/kebab-segment';
@@ -11,7 +11,7 @@ import { perFile } from '../support/per-file';
 const MISPLACED_FIX =
   'Move the declaration to the published-language/ folder of the context that produces the event (`ddd-ts-kit generate integration-event <context> <Aggregate> <Fact>` creates it) and import it from there.';
 
-export const eventsDefinedInPublishedLanguage: Rule = {
+export const eventsDefinedInPublishedLanguage: FileRule = {
   id: 'events/defined-in-published-language',
   description:
     "An integration event is declared once with defineIntegrationEvent in the producer's published-language/, with a payload schema.",
@@ -26,24 +26,31 @@ export const invoiceIssuedV1 = defineIntegrationEvent({
 });`,
   },
   scope: 'file',
-  run(project) {
+  judge(file) {
+    if (file.isTest) {
+      return [];
+    }
+
+    const declarations = eventDeclarations(file);
+
+    return isPublished(file)
+      ? [...judged(file, declarations), ...handwritten(file, declarations)]
+      : misplaced(file, declarations);
+  },
+  /** A version of an event that another file of the project declared first. */
+  acrossProject(project) {
     // Remembers, across the files of the project, where each version of an event was first seen.
     const declared = new Map<string, string>();
 
-    return perFile(project, this.id, (file) => {
-      if (file.isTest) {
-        return [];
-      }
-
-      const declarations = eventDeclarations(file);
-      const isPublished = inContext(file.location) && file.location.layer === 'published-language';
-
-      return isPublished
-        ? [...judged(file, declarations, declared), ...handwritten(file, declarations)]
-        : misplaced(file, declarations);
-    });
+    return perFile(project, this.id, (file) =>
+      file.isTest || !isPublished(file) ? [] : declaredElsewhere(file, declared),
+    );
   },
 };
+
+function isPublished(file: SourceFile): boolean {
+  return inContext(file.location) && file.location.layer === 'published-language';
+}
 
 function misplaced(file: SourceFile, declarations: readonly EventDeclaration[]): Finding[] {
   return declarations.map((declaration) => ({
@@ -53,7 +60,10 @@ function misplaced(file: SourceFile, declarations: readonly EventDeclaration[]):
   }));
 }
 
-function judged(file: SourceFile, declarations: readonly EventDeclaration[], declared: Map<string, string>): Finding[] {
+/** What a published language shows on its own: a declaration without a payload, a version the file declares twice. */
+function judged(file: SourceFile, declarations: readonly EventDeclaration[]): Finding[] {
+  const declared = new Map<string, string>();
+
   return declarations.flatMap((declaration) => {
     const line = file.scan.lineAt(declaration.start);
     const first = firstDeclarationOf(declaration, file.path, declared);
@@ -63,6 +73,19 @@ function judged(file: SourceFile, declarations: readonly EventDeclaration[], dec
       ...(first === undefined ? [] : [declaredTwice(declaration, line, first)]),
     ];
   });
+}
+
+/** The versions this file is the second to declare; one it declares twice itself is reported once, on its first declaration. */
+function declaredElsewhere(file: SourceFile, declared: Map<string, string>): Finding[] {
+  const here = new Map<string, string>();
+
+  return eventDeclarations(file)
+    .filter((declaration) => firstDeclarationOf(declaration, file.path, here) === undefined)
+    .flatMap((declaration) => {
+      const first = firstDeclarationOf(declaration, file.path, declared);
+
+      return first === undefined ? [] : [declaredTwice(declaration, file.scan.lineAt(declaration.start), first)];
+    });
 }
 
 function withoutPayload(declaration: EventDeclaration, line: number): Finding[] {

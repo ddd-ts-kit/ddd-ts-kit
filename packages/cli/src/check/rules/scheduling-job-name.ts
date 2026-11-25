@@ -1,6 +1,6 @@
 import { wholeLiteral } from '../declarations/whole-literal';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { isJobFile } from '../scheduling/is-job-file';
 import { jobNames, type JobName } from '../scheduling/job-names';
@@ -13,7 +13,7 @@ const SYSTEM_ACTOR = /(?<![\w$.])systemActor\s*\(/g;
 const UNIQUE_FIX =
   'Give each job its own name, `<context>.<job-name>`: the scheduler, its lock, its settings and the audit trail all know a job by that name.';
 
-export const schedulingJobName: Rule = {
+export const schedulingJobName: FileRule = {
   id: 'scheduling/job-name',
   description:
     'A job is named by a string literal `<context>.<job-name>` in lower-case kebab-case, the context being its own; systemActor(..) of a job file passes that same name; a job name is unique in the project.',
@@ -30,16 +30,14 @@ builder.job('billing.send-reminders', { every: '15m' }).handledBy(SendRemindersJ
 new SendRemindersCommand(systemActor('billing.send-reminders'), execution.scheduledAt);`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (file.isTest) {
-        return [];
-      }
+  judge(file) {
+    if (file.isTest) {
+      return [];
+    }
 
-      const names = jobNames(file);
+    const names = jobNames(file);
 
-      return [...names.flatMap((name) => misnamed(name, file)), ...otherActors(file, names)];
-    });
+    return [...names.flatMap((name) => misnamed(name, file)), ...otherActors(file, names)];
   },
   acrossProject(project) {
     // Remembers, across the files of the project, where each job name was first written.

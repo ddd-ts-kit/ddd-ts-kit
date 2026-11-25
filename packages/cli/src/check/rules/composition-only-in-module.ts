@@ -1,9 +1,8 @@
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { bindingPlace } from '../support/binding-place';
-import { perFile } from '../support/per-file';
 import { escapeRegExp } from '../text/escape-reg-exp';
 
 const DI_PACKAGE = '@ddd-ts-kit/di';
@@ -14,7 +13,7 @@ const INCLUDE = /\.\s*include\s*\(/g;
 const ASSEMBLY_FIX =
   'Assemble declared classes in the composition root only (src/main.ts, src/apps/<context>/main.ts, the platform directory, <context>.module.ts or the <module>/<module>.module.ts of a module of its model): everywhere else a class receives what it needs through its constructor.';
 
-export const compositionOnlyInModule: Rule = {
+export const compositionOnlyInModule: FileRule = {
   id: 'composition/only-in-module',
   description:
     'Adapters are instantiated or bound, and declared classes assembled, only in <context>.module.ts (and the <module>/<module>.module.ts it composes), main.ts and platform/.',
@@ -34,11 +33,11 @@ export class PgInvoiceRepository implements InvoiceRepository {}
 contextModule('billing', billingDeclarations);`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => [
+  judge(file, project) {
+    return [
       ...(isOutsideComposition(file) ? usedAdapters(file, project) : []),
       ...(isOutsideAssembly(file, project) ? assemblies(file) : []),
-    ]);
+    ];
   },
 };
 

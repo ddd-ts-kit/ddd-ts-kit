@@ -1,9 +1,8 @@
 import type { Finding } from '../model/finding';
 import type { ResolvedImport } from '../model/resolved-import';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
-import { perFile } from '../support/per-file';
 
 const OPENSEARCH = '@ddd-ts-kit/opensearch';
 
@@ -36,7 +35,7 @@ const PORT_FIX =
 const ADAPTER_FIX =
   'Extend `OpenSearchReadModelStore` and pass it `search.options(name, definition)`, `search` being the `SearchIndexes` of the platform (`init --search opensearch`), which sets the node and the tenancy of the project.';
 
-export const searchStoreFromPlatform: Rule = {
+export const searchStoreFromPlatform: FileRule = {
   id: 'search/store-from-platform',
   description:
     'A context builds a store of @ddd-ts-kit/opensearch from the `SearchIndexes` of the platform only: an adapter extends `OpenSearchReadModelStore` and calls `super(<search>.options(..))`; no file of a context spreads that answer, names the store anywhere else, opens a transport or names a tenancy, and its domain/ and application/ name the `ReadModelStore` port, never the store.',
@@ -60,10 +59,10 @@ export class SearchInvoiceList extends OpenSearchReadModelStore<InvoiceRow> impl
 }`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) =>
-      judged(file) ? [...file.imports.flatMap((imported) => findingsOf(imported, file)), ...builtByHand(file)] : [],
-    );
+  judge(file) {
+    return judged(file)
+      ? [...file.imports.flatMap((imported) => findingsOf(imported, file)), ...builtByHand(file)]
+      : [];
   },
 };
 

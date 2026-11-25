@@ -3,20 +3,19 @@ import { bindingCalls } from '../declarations/binding-calls';
 import { classesOf } from '../declarations/classes-of';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { classDeclaring } from '../ports/class-declaring';
 import { portMisuse } from '../ports/port-misuse';
 import { importedFrom } from '../support/imported-from';
 import { inLayer } from '../support/in-layer';
 import { isPortFile } from '../support/is-port-file';
-import { perFile } from '../support/per-file';
 
 const ADAPTER_DECORATORS = ['Repository', 'Gateway', 'Adapter'];
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 const TO_CLASS = /^\s*\.\s*toClass\s*\(\s*([A-Za-z_$][\w$]*)/;
 
-export const portsImplementsNeverExtends: Rule = {
+export const portsImplementsNeverExtends: FileRule = {
   id: 'ports/implements-never-extends',
   description:
     'An adapter implements its port and never extends it: a class declared with @Repository, @Gateway or @Adapter, a class bound with toClass, and any class of infrastructure/.',
@@ -35,21 +34,19 @@ export class KnexInvoiceRepository implements InvoiceRepository {}
 export class StripePaymentGateway implements PaymentGateway {}`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (file.isTest) {
-        return [];
-      }
+  judge(file, project) {
+    if (file.isTest) {
+      return [];
+    }
 
-      const declared = declaredAdapters(file);
-      const reported = new Set(declared.map((finding) => finding.line));
+    const declared = declaredAdapters(file);
+    const reported = new Set(declared.map((finding) => finding.line));
 
-      return [
-        ...declared,
-        ...boundClasses(file, project),
-        ...extendedPorts(file).filter((finding) => !reported.has(finding.line)),
-      ];
-    });
+    return [
+      ...declared,
+      ...boundClasses(file, project),
+      ...extendedPorts(file).filter((finding) => !reported.has(finding.line)),
+    ];
   },
 };
 

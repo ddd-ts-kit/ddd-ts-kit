@@ -10,7 +10,7 @@ import { readCodeList } from '../errors/read-code-list';
 import { namesRefusals } from '../errors/names-refusals';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { perFile } from '../support/per-file';
 import { matchingBracket } from '../text/matching-bracket';
@@ -29,7 +29,7 @@ interface Judged {
   exists(code: string): boolean;
 }
 
-export const errorsKnownCode: Rule = {
+export const errorsKnownCode: ProjectRule = {
   id: 'errors/known-code',
   description:
     'Under "stack.refusals": "factories" or "named", every code a route or a controller declares in `errors`, as a string or as a member of a code list (`BillingCodes.UnknownInvoice`, `KitCodes.Forbidden`), exists: a factory or an error class of its context sets it, or the <context>.codes.ts of its context lists it, a class outside the contexts does, or it is a code of the kit.',
@@ -44,7 +44,7 @@ defineRoute({ method: 'POST', path: '/appointments', errors: ['FORBIDDEN', 'SLOT
 defineRoute({ method: 'POST', path: '/appointments', errors: [KitCodes.Forbidden, SchedulingCodes.SlotTaken], security: ['bearer'] }, book);`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!buildsThroughFactories(project)) {
       return [];
     }

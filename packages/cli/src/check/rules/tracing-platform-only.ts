@@ -1,13 +1,12 @@
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { isUnder } from '../project/is-under';
-import { perFile } from '../support/per-file';
 
 const TRACING_PACKAGE = '@ddd-ts-kit/tracing';
 const OPEN_TELEMETRY_SCOPE = '@opentelemetry/';
 
-export const tracingPlatformOnly: Rule = {
+export const tracingPlatformOnly: FileRule = {
   id: 'tracing/platform-only',
   description:
     'Tracing is wired once: @ddd-ts-kit/tracing and @opentelemetry/* are imported only by the platform directory, main.ts and apps/.',
@@ -21,23 +20,21 @@ import { traceApplication, tracedPublisher } from '@ddd-ts-kit/tracing';
 import { initTracing } from '@ddd-ts-kit/tracing/node';`,
   },
   scope: 'file',
-  run(project) {
+  judge(file, project) {
+    if (!isJudged(file, project)) {
+      return [];
+    }
+
     const { platformDir } = project.config;
     const fix = `Remove the import: adapters are wrapped by the \`decorate\` hook of the composition root and use cases by a bus middleware; what has to open a span of its own lives in ${platformDir}/.`;
 
-    return perFile(project, this.id, (file) => {
-      if (!isJudged(file, project)) {
-        return [];
-      }
-
-      return file.imports
-        .filter(({ target }) => target.kind === 'package' && isTracing(target.name))
-        .map(({ line, specifier }) => ({
-          line,
-          message: `"${specifier}" is imported in ${placeOf(file)}: tracing is wired once, by the platform.`,
-          fix,
-        }));
-    });
+    return file.imports
+      .filter(({ target }) => target.kind === 'package' && isTracing(target.name))
+      .map(({ line, specifier }) => ({
+        line,
+        message: `"${specifier}" is imported in ${placeOf(file)}: tracing is wired once, by the platform.`,
+        fix,
+      }));
   },
 };
 

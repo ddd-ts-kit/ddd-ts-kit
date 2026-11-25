@@ -13,17 +13,17 @@ import {
 } from '../../config';
 import { commentLines } from '../comments/comment-lines';
 import { ADR_DIRECTORY } from '../governance/adr-directory';
-import { DecisionRecords } from '../governance/decision-records';
+import type { DecisionRecords } from '../governance/decision-records';
 import { recordNumber } from '../governance/record-number';
+import { recordsOf } from '../governance/records-of';
 import { referencedRecord } from '../governance/referenced-record';
 import type { Finding } from '../model/finding';
 import type { Flaw } from '../model/flaw';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { findSuppressions } from '../suppressions/find-suppressions';
 import { lineOfSequence } from '../support/line-of-sequence';
-import { perFile } from '../support/per-file';
 import { reporter } from '../support/reporter';
 import { toViolations } from '../support/to-violations';
 
@@ -47,7 +47,7 @@ interface ConfigFinding extends Flaw {
   readonly where: readonly string[];
 }
 
-export const governanceRecordedDeviation: Rule = {
+export const governanceRecordedDeviation: FileRule = {
   id: 'governance/recorded-deviation',
   description:
     'A suppression, a lowered severity, a lowered coverage threshold, an extra directory, a context outside the tenancy or an extra allowed package carries a reason and points to a decision record in docs/adr/.',
@@ -62,13 +62,11 @@ export const governanceRecordedDeviation: Rule = {
 // docs/adr/0004-startup-banner.md, docs/adr/0009-no-spec-for-generated-adapters.md`,
   },
   scope: 'file',
-  run(project) {
-    const records = new DecisionRecords(project.root);
-
-    return perFile(project, this.id, (file) => unrecordedSuppressions(file, records));
+  judge(file, project) {
+    return unrecordedSuppressions(file, recordsOf(project));
   },
   acrossProject(project) {
-    const records = new DecisionRecords(project.root);
+    const records = recordsOf(project);
     const { config, configText } = project;
 
     const findings = [

@@ -1,4 +1,4 @@
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import { JUDGED_ONLY_WHEN_ON } from '../privacy/judged-only-when-on';
 import { personalTermOf } from '../privacy/personal-term-of';
 import { privacyJudged } from '../privacy/privacy-judged';
@@ -14,7 +14,7 @@ import { reporter } from '../support/reporter';
  * it keeps a copy to erase. Read from the `z.object({...})` of the declaration and from the class or
  * the interface of its `.payload.ts`. Silent with `stack.privacy` off.
  */
-export const privacyEventPayloadDeclared: Rule = {
+export const privacyEventPayloadDeclared: ProjectRule = {
   id: 'privacy/event-payload-declared',
   description:
     'A field of the payload of an integration event named like personal data is listed in the personal option of its declaration.',
@@ -34,7 +34,7 @@ export const privacyEventPayloadDeclared: Rule = {
 });`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!privacyJudged(project)) {
       return [];
     }

@@ -6,11 +6,11 @@ import { migrationNameFindings } from '../migrations/migration-name-findings';
 import { readDrizzleMigrations } from '../migrations/read-drizzle-migrations';
 import { readMigrationFolder } from '../migrations/read-migration-folder';
 import { workingMigrationFindings } from '../migrations/working-migration-findings';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import { reporter } from '../support/reporter';
 import { toViolations } from '../support/to-violations';
 
-export const persistenceMigrationHistory: Rule = {
+export const persistenceMigrationHistory: ProjectRule = {
   id: 'persistence/migration-history',
   description:
     'Every migration is named `<timestamp>_<what-it-does>` and no two share a number; a working migration stays in the worktree of its worker; under drizzle-kit, the journal and the files match, the entries keep the order they were generated in and each snapshot follows the one before it.',
@@ -27,7 +27,7 @@ export const persistenceMigrationHistory: Rule = {
   meta/_journal.json                # one entry each, in order, each snapshot from the one before`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const { orm } = project.config.stack;
     const report = reporter(project, this.id);
     const folder = readMigrationFolder(project.root, orm);

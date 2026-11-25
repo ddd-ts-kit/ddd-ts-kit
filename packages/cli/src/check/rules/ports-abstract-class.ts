@@ -1,11 +1,10 @@
 import path from 'node:path';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { bodilessMembers, type BodilessMember } from '../ports/bodiless-members';
 import type { ClassShape } from '../structure/class-shape';
 import { isPortFile } from '../support/is-port-file';
-import { perFile } from '../support/per-file';
 import { braceDepthAt } from '../text/brace-depth-at';
 
 const EXPORTED_INTERFACE = /(?<![\w$.])export\s+(?:declare\s+)?interface\s+([A-Za-z_$][\w$]*)/g;
@@ -16,7 +15,7 @@ const NAME = /(#?[A-Za-z_$][\w$]*)\s*[?!]?\s*(?:[(:=<]|$)/;
 const SHAPE_FIX =
   'Keep abstract members only (`abstract charge(..): Promise<void>;`, `abstract readonly apiKey: string;`): the behaviour belongs to the adapter that implements the port, and a fake or a plain object can then stand for it.';
 
-export const portsAbstractClass: Rule = {
+export const portsAbstractClass: FileRule = {
   id: 'ports/abstract-class',
   description:
     'A port is an abstract class with abstract members only: no constructor, no body, no initializer, no private or protected member; a port file declares one abstract class and no interface.',
@@ -37,28 +36,26 @@ export abstract class PaymentGateway {
 export abstract class InvoiceRepository extends Repository<Invoice> {}`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (!isPortFile(file.path, file.location)) {
-        return [];
-      }
+  judge(file) {
+    if (!isPortFile(file.path, file.location)) {
+      return [];
+    }
 
-      const classes = file.structure.classes.filter((shape) => shape.depth === 0);
-      const declaredAsInterface = interfaces(file);
+    const classes = file.structure.classes.filter((shape) => shape.depth === 0);
+    const declaredAsInterface = interfaces(file);
 
-      if (classes.length === 0 && declaredAsInterface.length === 0) {
-        return [noClass(file)];
-      }
+    if (classes.length === 0 && declaredAsInterface.length === 0) {
+      return [noClass(file)];
+    }
 
-      return [
-        ...declaredAsInterface,
-        ...classes.flatMap((shape) => [
-          ...concrete(shape),
-          ...bodies(shape),
-          ...bodilessMembers(file, shape).flatMap((member) => notAbstract(member, shape)),
-        ]),
-      ];
-    });
+    return [
+      ...declaredAsInterface,
+      ...classes.flatMap((shape) => [
+        ...concrete(shape),
+        ...bodies(shape),
+        ...bodilessMembers(file, shape).flatMap((member) => notAbstract(member, shape)),
+      ]),
+    ];
   },
 };
 

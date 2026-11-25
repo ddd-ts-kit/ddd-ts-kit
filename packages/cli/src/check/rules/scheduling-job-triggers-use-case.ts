@@ -3,13 +3,12 @@ import { dependencyLists } from '../declarations/dependency-lists';
 import type { Finding } from '../model/finding';
 import type { Location } from '../model/location';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { isJobFile } from '../scheduling/is-job-file';
 import type { ClassShape } from '../structure/class-shape';
 import { importedFrom } from '../support/imported-from';
 import { isDeclaredStyle } from '../support/is-declared-style';
-import { perFile } from '../support/per-file';
 import { callArguments } from '../text/call-arguments';
 import { identifier } from '../text/identifier';
 
@@ -23,7 +22,7 @@ const COMMAND_FIX =
 const PLACE_FIX =
   'Move the class to application/scheduling/<name>.job.ts of its context: a job is found, tested and extracted with its context from that one place.';
 
-export const schedulingJobTriggersUseCase: Rule = {
+export const schedulingJobTriggersUseCase: FileRule = {
   id: 'scheduling/job-triggers-use-case',
   description:
     'A job only triggers use cases: a class of application/scheduling/*.job.ts implements ScheduledJob, sends a command from run, and depends on no repository, no part of the model and no adapter.',
@@ -57,16 +56,14 @@ export class SendRemindersJob implements ScheduledJob {
 }`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (file.isTest) {
-        return [];
-      }
+  judge(file, project) {
+    if (file.isTest) {
+      return [];
+    }
 
-      return isJobFile(file.path, file.location)
-        ? [...shape(file), ...reach(file)]
-        : [...declaredElsewhere(file, project), ...registeredFromElsewhere(file)];
-    });
+    return isJobFile(file.path, file.location)
+      ? [...shape(file), ...reach(file)]
+      : [...declaredElsewhere(file, project), ...registeredFromElsewhere(file)];
   },
 };
 

@@ -4,11 +4,11 @@ import { previousPrimaryKeys } from '../../migration/previous-primary-keys';
 import { primaryKeyOrderFindings } from '../../migration/primary-key-order-findings';
 import { drizzleOutFolder } from '../migrations/drizzle-out-folder';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import { reporter } from '../support/reporter';
 import { toViolations } from '../support/to-violations';
 
-export const persistencePrimaryKeyOrder: Rule = {
+export const persistencePrimaryKeyOrder: ProjectRule = {
   id: 'persistence/primary-key-order',
   description:
     'Under drizzle-kit, no migration adds the new primary key of a table before its old one is dropped, nor drops a column before the primary key that holds it: PostgreSQL refuses the migration when it runs.',
@@ -21,7 +21,7 @@ ALTER TABLE "invoices" DROP CONSTRAINT "invoices_pkey";   -- too late: the ADD a
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_id_issuer_pk" PRIMARY KEY("id","issuer");`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (project.config.stack.orm !== 'drizzle') {
       return [];
     }

@@ -11,7 +11,7 @@ import type { ReadModelStore } from '../../read-models/read-model-store';
 import { readModelStoresOf } from '../../read-models/read-model-stores-of';
 import { WITH_DATABASE } from '../../stack/with-database';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import type { Violation } from '../model/violation';
 import { sourceAt } from '../project/source-at';
@@ -21,7 +21,7 @@ import { toViolations } from '../support/to-violations';
 
 const NOTHING_CHECKS = 'nothing checks its table, at the start or before a deployment.';
 
-export const persistenceReadModelListed: Rule = {
+export const persistenceReadModelListed: ProjectRule = {
   id: 'persistence/read-model-listed',
   description:
     'Every read model store of a context kept in a table (a class that is not abstract over `DrizzleReadModelStore`, `KnexReadModelStore`, `PrismaReadModelStore` or `TypeOrmReadModelStore`, directly or through classes of the project) is answered for by `<platformDir>/database/read-model-tables.ts`: an entry of `LISTED` under its context names it or a class that extends it, `NOT_LISTED` names it, or a comment between the markers of the file holds `<context>: <Store>` with the reason it is left out. An entry of the list names a class that exists, under the context that declares it, and `NOT_LISTED` names no store that is gone or that `LISTED` answers for. A project on one of the four ORM that holds a store and no list is reported once.',
@@ -44,7 +44,7 @@ const LISTED = [
 ];`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const file = `${project.config.platformDir}/database/read-model-tables.ts`;
     const source = sourceAt(project, file);
 

@@ -6,10 +6,9 @@ import { matchesGlob } from '../exports/matches-glob';
 import { namedAfter } from '../exports/named-after';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { isGeneratedContextFile } from '../support/is-generated-context-file';
-import { perFile } from '../support/per-file';
 import { braceDepthAt } from '../text/brace-depth-at';
 
 const STATEMENT =
@@ -23,7 +22,7 @@ const ENTRY_FIX =
 const COUNT_FIX =
   'Keep one and move each other to its own file named after it; only the types of its signature stay next to it. Exports that really are one thing are listed, with their reason, under "onePerFile.allow" in ddd-ts-kit.config.json.';
 
-export const cleanOneExportPerFile: Rule = {
+export const cleanOneExportPerFile: FileRule = {
   id: 'clean/one-export-per-file',
   description:
     'One exported class, interface or function per file, the file named after it in kebab-case; an index file only re-exports. The types of a signature and the small closed families are read as text: an approximation of what ESLint holds.',
@@ -44,18 +43,16 @@ export interface IssueInvoiceResult { readonly invoiceId: string }`,
   },
   scope: 'file',
   standalone: true,
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (!isJudged(file, project)) {
-        return [];
-      }
+  judge(file, project) {
+    if (!isJudged(file, project)) {
+      return [];
+    }
 
-      if (isGeneratedContextFile(file)) {
-        return [];
-      }
+    if (isGeneratedContextFile(file)) {
+      return [];
+    }
 
-      return isEntry(file) ? declaredInEntry(file) : judged(file, project);
-    });
+    return isEntry(file) ? declaredInEntry(file) : judged(file, project);
   },
 };
 

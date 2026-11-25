@@ -1,8 +1,7 @@
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { statementBlocks } from '../structure/statement-blocks';
-import { perFile } from '../support/per-file';
 
 const RETURN = /^return(?![\w$]|\s*:)/;
 const LABEL = /^(?:case\b.*|default\s*):$/;
@@ -25,7 +24,7 @@ interface Line {
   readonly closesBlock: boolean;
 }
 
-export const cleanBlankLines: Rule = {
+export const cleanBlankLines: FileRule = {
   id: 'clean/blank-lines',
   description:
     'A blank line before every `return` that is not alone in its block, and no blank line padding a block of statements (an object, array or type literal is not one). An approximation of the layout ESLint and the formatter hold in full.',
@@ -45,12 +44,10 @@ export const cleanBlankLines: Rule = {
   },
   scope: 'file',
   standalone: true,
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      const lines = linesOf(file);
+  judge(file) {
+    const lines = linesOf(file);
 
-      return lines.flatMap((_, index) => [...crampedReturn(lines, index), ...paddedBlock(lines, index)]);
-    });
+    return lines.flatMap((_, index) => [...crampedReturn(lines, index), ...paddedBlock(lines, index)]);
   },
 };
 

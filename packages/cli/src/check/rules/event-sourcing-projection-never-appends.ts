@@ -1,10 +1,9 @@
 import { kernelNames, type NamedImport } from '../event-sourcing/kernel-names';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { callArguments } from '../text/call-arguments';
 import type { ListPart } from '../text/list-part';
-import { perFile } from '../support/per-file';
 
 const APPENDING = new Set(['EventStore', 'EventSourcedRepository']);
 const DECLARED = /(?<![\w$.])@Projection\s*\(/;
@@ -13,7 +12,7 @@ const DECLARED_CALLS = new RegExp(DECLARED.source, 'g');
 const FIX =
   'A projection reads events and writes its read model through the port of its read model, nothing else: a fact worth keeping is decided by a command, which a policy or a handler of domain events sends.';
 
-export const eventSourcingProjectionNeverAppends: Rule = {
+export const eventSourcingProjectionNeverAppends: FileRule = {
   id: 'event-sourcing/projection-never-appends',
   description:
     'A projection never appends to a stream: it names no event store, and a projection fed by the event store names no repository of domain/repositories/ either.',
@@ -32,8 +31,8 @@ export class AttendanceHistoryProjection {
 }`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => (isProjection(file) ? appending(file) : []));
+  judge(file) {
+    return isProjection(file) ? appending(file) : [];
   },
 };
 

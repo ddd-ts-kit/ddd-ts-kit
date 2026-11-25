@@ -1,10 +1,10 @@
 import { CONFIG_FILE } from '../../config';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import { lineOfSequence } from '../support/line-of-sequence';
 import { reporter } from '../support/reporter';
 import { toViolations } from '../support/to-violations';
 
-export const configRuleOffEverywhere: Rule = {
+export const configRuleOffEverywhere: ProjectRule = {
   id: 'config/rule-off-everywhere',
   description:
     'A rule turned off is turned off for the files it is meant for: "off" alone silences it in every file of the project, the ones nobody thought of included.',
@@ -17,7 +17,7 @@ export const configRuleOffEverywhere: Rule = {
 "deviations": [{ "what": "rules.clean/function-size", "adr": "0004", "reason": "The generated mappers of the legacy ledger are long." }]`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const { config, configText } = project;
 
     const findings = Object.entries(config.rules)

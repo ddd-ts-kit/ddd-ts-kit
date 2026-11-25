@@ -1,9 +1,8 @@
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { besideTheSources } from '../project/beside-the-sources';
 import { isGeneratedContextFile } from '../support/is-generated-context-file';
-import { perFile } from '../support/per-file';
 import { reporter } from '../support/reporter';
 import { toViolations } from '../support/to-violations';
 
@@ -23,7 +22,7 @@ const SPLIT_AN_AGGREGATE =
 const SPLIT_AN_E2E_SPEC =
   'Split it by behaviour into parts named after it, beside it: test/e2e/<use-case>-<behaviour>.e2e.spec.ts next to test/e2e/<use-case>.e2e.spec.ts (the guard lets that name be written by hand), each part with its own describe. Move what the parts share (signing a person in, a world) to test/e2e/support/<context>/ instead of copying it.';
 
-export const cleanFileSize: Rule = {
+export const cleanFileSize: FileRule = {
   id: 'clean/file-size',
   description: `A file is at most ${MAX_FILE_LINES} lines, sources and tests alike, under the source root, \`test/\` (end-to-end specs included) and \`scripts/\`: past that it holds more than one responsibility.`,
   severity: 'error',
@@ -36,9 +35,7 @@ export const cleanFileSize: Rule = {
   },
   scope: 'file',
   standalone: true,
-  run(project) {
-    return perFile(project, this.id, tooLong);
-  },
+  judge: tooLong,
   acrossProject(project) {
     const report = reporter(project, this.id);
 

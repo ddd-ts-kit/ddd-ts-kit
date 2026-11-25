@@ -4,19 +4,18 @@ import { dependencyLists } from '../declarations/dependency-lists';
 import type { Finding } from '../model/finding';
 import type { Location } from '../model/location';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { sourceAt } from '../project/source-at';
 import { importedFrom } from '../support/imported-from';
 import { isDeclaredStyle } from '../support/is-declared-style';
 import { pathInContext } from '../support/path-in-context';
-import { perFile } from '../support/per-file';
 import { WITHOUT_MODULE } from '../../model-modules';
 
 const NAME_THE_PORT =
   'an abstract class of application/ports or domain/repositories, or a port of the kernel: the adapter, or the fake in a test, is bound to that port at the composition root.';
 
-export const portsNoConcreteDependency: Rule = {
+export const portsNoConcreteDependency: FileRule = {
   id: 'ports/no-concrete-dependency',
   description:
     'A dependency is named by its port: no class imported from infrastructure/ or from test/fakes/ of a context in a dependency list, nor as the type of a constructor parameter of a declared class.',
@@ -41,8 +40,8 @@ export class IssueInvoiceHandler {
 }`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => [...listed(file), ...typed(project, file)]);
+  judge(file, project) {
+    return [...listed(file), ...typed(project, file)];
   },
 };
 

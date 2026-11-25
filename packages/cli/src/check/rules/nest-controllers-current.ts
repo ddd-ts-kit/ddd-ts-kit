@@ -6,7 +6,7 @@ import { readNestControllers } from '../../nest-controllers/read-nest-controller
 import { renderControllersFile } from '../../nest-controllers/render-controllers-file';
 import { toName } from '../../naming';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { Violation } from '../model/violation';
 import { reporter } from '../support/reporter';
 import { ownEntry } from '../../config/values/own-entry';
@@ -21,7 +21,7 @@ const EXAMPLES: Readonly<Record<NestRequestPart['source'], string>> = {
 const REGENERATE =
   'Run `ddd-ts-kit docs` or `ddd-ts-kit generate`, or restart `npm run dev`, which rewrite it from the Nest controllers of the context and the signatures of their methods: the file is never edited by hand.';
 
-export const nestControllersCurrent: Rule = {
+export const nestControllersCurrent: ProjectRule = {
   id: 'nest/controllers-current',
   description:
     'With Nest controllers ("stack.routes": "nest"), the generated <context>.controllers.ts of each context lists its Nest controllers with what the signature of each method says, and every route method takes and answers types the kit reads into schemas: a part of the request taken whole is typed by a DTO class, or given in `request` of `@KitRoute`; the answer is a DTO class, `Accepted` or `void`, or given in `response` of `@KitRoute`.',
@@ -37,7 +37,7 @@ lines(): Promise<InvoiceLinesAnswer> { ... }
 @KitRoute({ response: { body: linesSchema } })`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (project.config.stack.routes !== 'nest') {
       return [];
     }

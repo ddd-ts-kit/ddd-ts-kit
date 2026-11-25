@@ -1,4 +1,4 @@
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import { JUDGED_ONLY_WHEN_ON } from '../privacy/judged-only-when-on';
 import { clearSnapshotValuesIn } from '../privacy/clear-snapshot-values-in';
 import { isSnapshotMapper } from '../privacy/is-snapshot-mapper';
@@ -16,7 +16,7 @@ const FIX =
  * with the aggregate. Read by name in `<aggregate>-snapshots.mapper.ts`, on both sides of the
  * mapper. Silent with `stack.privacy` off.
  */
-export const privacySnapshotSealed: Rule = {
+export const privacySnapshotSealed: ProjectRule = {
   id: 'privacy/snapshot-sealed',
   description:
     'A value of a snapshot named like personal data is sealed with personalData, the only form an erasure reaches.',
@@ -35,7 +35,7 @@ export const privacySnapshotSealed: Rule = {
 };`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!privacyJudged(project)) {
       return [];
     }

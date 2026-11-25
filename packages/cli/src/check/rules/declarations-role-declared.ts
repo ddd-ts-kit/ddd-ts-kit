@@ -7,12 +7,11 @@ import type { Decoration } from '../declarations/decoration';
 import { optionOf, type OptionValue } from '../declarations/option-of';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { isDeclaredStyle } from '../support/is-declared-style';
 import { pathInContext } from '../support/path-in-context';
-import { perFile } from '../support/per-file';
 import { WITHOUT_MODULE } from '../../model-modules';
 
 /** The option of each decorator that names what it declares, written once and never derived. */
@@ -29,7 +28,7 @@ interface Decorated {
   readonly decoration: Decoration;
 }
 
-export const declarationsRoleDeclared: Rule = {
+export const declarationsRoleDeclared: FileRule = {
   id: 'declarations/role-declared',
   description:
     'In the declared style, a role file exports a class carrying the decorator of its role, with its names written as string literals (a domain event handler writes none: it is attached under the name its event class declares), and domain/ declares nothing.',
@@ -51,18 +50,12 @@ export class IssueInvoiceHandler {}
 export class InvoiceIssuedEventHandler {}`,
   },
   scope: 'file',
-  run(project) {
-    if (!isDeclaredStyle(project)) {
+  judge(file, project) {
+    if (!isDeclaredStyle(project) || !inContext(file.location) || file.isTest) {
       return [];
     }
 
-    return perFile(project, this.id, (file) => {
-      if (!inContext(file.location) || file.isTest) {
-        return [];
-      }
-
-      return file.location.layer === 'domain' ? declaredInTheDomain(file) : outsideTheDomain(file, project);
-    });
+    return file.location.layer === 'domain' ? declaredInTheDomain(file) : outsideTheDomain(file, project);
   },
 };
 

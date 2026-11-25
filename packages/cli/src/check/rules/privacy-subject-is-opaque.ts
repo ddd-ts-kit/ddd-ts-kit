@@ -1,5 +1,5 @@
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import { JUDGED_ONLY_WHEN_ON } from '../privacy/judged-only-when-on';
 import { personalDeclarationsOf } from '../privacy/personal-declarations-of';
 import { personalTermOf } from '../privacy/personal-term-of';
@@ -18,7 +18,7 @@ const FIX =
  * a person), never one of the personal fields. The kernel refuses a subject listed among the
  * fields at start-up; the rule says it, and the vocabulary, before. Silent with `stack.privacy` off.
  */
-export const privacySubjectIsOpaque: Rule = {
+export const privacySubjectIsOpaque: ProjectRule = {
   id: 'privacy/subject-is-opaque',
   description:
     'The subject of a personalFields declaration or of the personal option of an integration event is an opaque identifier, never personal data itself.',
@@ -29,7 +29,7 @@ export const privacySubjectIsOpaque: Rule = {
     good: `personalFields(TABLE, { subject: 'person_id', fields: ['email', 'display_name'], erasure: 'row' });`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!privacyJudged(project)) {
       return [];
     }

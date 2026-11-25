@@ -3,14 +3,14 @@ import { machinesImported } from '../lifecycle/machines-imported';
 import { statusWrites } from '../lifecycle/status-writes';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { perFile } from '../support/per-file';
 import { escapeRegExp } from '../text/escape-reg-exp';
 
 const COPIED = /^(?:[\w$]+(?:\s*\.\s*[\w$]+)*\s*\.\s*)?status$/;
 
-export const lifecycleStatusThroughMachine: Rule = {
+export const lifecycleStatusThroughMachine: FileRule = {
   id: 'lifecycle/status-through-machine',
   description:
     'The status of an aggregate that has a state machine changes only through it: an aggregate that writes a status imports domain/state-machines/<aggregate>.state-machine.ts and writes it from machine.next(..) or machine.start(..), or copies a status already read.',
@@ -31,8 +31,8 @@ confirm(now: Date): void {
 }`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => (isAggregateFile(file) ? byHand(file) : []));
+  judge(file) {
+    return isAggregateFile(file) ? byHand(file) : [];
   },
   acrossProject(project) {
     return perFile(project, this.id, (file) => (isAggregateFile(file) ? machineUnused(file, project) : []));

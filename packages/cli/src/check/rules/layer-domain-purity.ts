@@ -4,10 +4,9 @@ import { outsideConcern } from '../layers/outside-concern';
 import type { Flaw } from '../model/flaw';
 import type { ImportTarget } from '../model/import-target';
 import type { ResolvedImport } from '../model/resolved-import';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import { describeTarget } from '../support/describe-target';
 import { inLayer } from '../support/in-layer';
-import { perFile } from '../support/per-file';
 
 type ImportedFile = Extract<ImportTarget, { kind: 'file' }>;
 
@@ -20,7 +19,7 @@ const DECLARES_NOTHING: Flaw = {
 const BUILTIN_FIX =
   'Receive the value (an id, a date, a hash) as a parameter, produced by a port such as IdGenerator or Clock in the application layer.';
 
-export const layerDomainPurity: Rule = {
+export const layerDomainPurity: FileRule = {
   id: 'layer/domain-purity',
   description:
     'domain/ imports only its own domain/, the shared kernel and the allowed kernel packages: no framework, ORM, validation library or Node built-in.',
@@ -38,20 +37,18 @@ import { AggregateRoot } from '@ddd-ts-kit/kernel';
 import { Money } from '@/contexts/billing/domain/value-objects/money.vo';`,
   },
   scope: 'file',
-  run(project) {
+  judge(file, project) {
+    const here = inLayer(file, 'domain');
+
+    if (here === undefined) {
+      return [];
+    }
+
     const allowed = project.config.domainAllowedPackages;
 
-    return perFile(project, this.id, (file) => {
-      const here = inLayer(file, 'domain');
-
-      if (here === undefined) {
-        return [];
-      }
-
-      return file.imports.flatMap((imported) =>
-        impure(imported, here.context, allowed).map((flaw) => ({ line: imported.line, ...flaw })),
-      );
-    });
+    return file.imports.flatMap((imported) =>
+      impure(imported, here.context, allowed).map((flaw) => ({ line: imported.line, ...flaw })),
+    );
   },
 };
 

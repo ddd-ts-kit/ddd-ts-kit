@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { roleOf } from '../canonical/role-of';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { isAbstractBase } from '../support/is-abstract-base';
@@ -21,7 +21,7 @@ interface Subject {
   readonly module: string | undefined;
 }
 
-export const testSpecRequired: Rule = {
+export const testSpecRequired: ProjectRule = {
   id: 'test/spec-required',
   description:
     "Every aggregate, value object, domain service, command handler, query handler, domain event handler, integration event handler and job has a *.spec.ts in the context's test/; an abstract base is held by the specs of its implementations.",
@@ -32,7 +32,7 @@ export const testSpecRequired: Rule = {
     good: `test/unit/invoice.aggregate.spec.ts`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const specs = specsOf(project);
 
     return perFile(project, this.id, (file) => {

@@ -17,7 +17,7 @@ import {
 import { declaredModules } from '../../model-modules';
 import type { Flaw } from '../model/flaw';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import { sourceAt } from '../project/source-at';
 import { isDeclaredStyle } from '../support/is-declared-style';
 import { reporter } from '../support/reporter';
@@ -31,7 +31,7 @@ interface Judged {
   readonly flaw: Flaw | undefined;
 }
 
-export const declarationsBarrelCurrent: Rule = {
+export const declarationsBarrelCurrent: ProjectRule = {
   id: 'declarations/barrel-current',
   description:
     'In the declared style, the generated files of a context are what its tree says: with a barrel, the <layer>.declarations.ts of each layer lists exactly its role files and registers the dependency list read from each constructor, and <context>.declarations.ts re-exports those files; under discovery <context>.dependencies.ts registers the lists alone.',
@@ -63,7 +63,7 @@ export * from '@/contexts/billing/application/application.declarations';
 export * from '@/contexts/billing/infrastructure/infrastructure.declarations';`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!isDeclaredStyle(project)) {
       return [];
     }

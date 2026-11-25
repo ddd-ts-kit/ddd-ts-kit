@@ -2,10 +2,9 @@ import { DECLARATIONS_ENTRY } from '../declarations/declarations-entry';
 import type { Finding } from '../model/finding';
 import type { Layer } from '../model/layer';
 import type { ResolvedImport } from '../model/resolved-import';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inLayer } from '../support/in-layer';
-import { perFile } from '../support/per-file';
 
 interface Shortcut {
   readonly pattern: RegExp;
@@ -97,7 +96,7 @@ const DUTIES: readonly LayerDuty[] = [
   },
 ];
 
-export const authzInApplication: Rule = {
+export const authzInApplication: FileRule = {
   id: 'authz/in-application',
   description:
     'The permission is decided in the application layer: no role test in presentation/, no authorization in infrastructure/, no knowledge of the actor in domain/.',
@@ -119,8 +118,8 @@ await this.access.authorize(command.actor, billingPermissions['invoice.void'], i
 export class OnlyIssuerVoidsPolicy {}`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => DUTIES.flatMap((duty) => breaches(file, duty)));
+  judge(file) {
+    return DUTIES.flatMap((duty) => breaches(file, duty));
   },
 };
 

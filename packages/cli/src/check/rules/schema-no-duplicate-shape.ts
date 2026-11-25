@@ -1,5 +1,5 @@
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { Violation } from '../model/violation';
 import { classShapes } from '../schemas/class-shapes';
 import type { DeclaredShape } from '../schemas/declared-shape';
@@ -27,7 +27,7 @@ interface Placed extends DeclaredShape {
   readonly home: string;
 }
 
-export const schemaNoDuplicateShape: Rule = {
+export const schemaNoDuplicateShape: ProjectRule = {
   id: 'schema/no-duplicate-shape',
   description:
     'Under "stack.schemas": "shared", one shape of the HTTP contract is declared once in its context: no two DTO classes, and no two object schemas (zod, valibot, TypeBox), of the presentation layer of one context, or of a context and presentation/ of the shared kernel, declare the same properties with the same constraints. Two contexts may declare the same shape; request parameters and shapes the generator left to fill are not judged.',
@@ -45,7 +45,7 @@ response: { status: 201, description: 'Done.', body: acceptedSchema },
 export const slotSchema = z.object({ startsAt: z.iso.datetime(), endsAt: z.iso.datetime() }).meta({ id: 'Slot' });`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!sharesSchemas(project)) {
       return [];
     }

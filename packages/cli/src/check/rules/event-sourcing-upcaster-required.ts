@@ -4,13 +4,12 @@ import type { StoredEventDeclaration } from '../event-sourcing/stored-event-decl
 import { storedEventDeclarations } from '../event-sourcing/stored-event-declarations';
 import { STORED_EVENTS_LOCK } from '../event-sourcing/stored-events-lock-file';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
-import { perFile } from '../support/per-file';
+import type { FileRule } from '../model/rule';
 
 const NEW_VERSION_FIX =
   'A stored event is never rewritten: keep the shape of the stored version as it is, declare the new shape under a new name, raise `version` by one and add the upcaster from the stored version, `upcasters: { <stored>: (data) => ({ ...data, <new field>: <value for the old events> }) }`, then `ddd-ts-kit docs --stored-events` records the new version once it is stored.';
 
-export const eventSourcingUpcasterRequired: Rule = {
+export const eventSourcingUpcasterRequired: FileRule = {
   id: 'event-sourcing/upcaster-required',
   description: `A stored event names the type of its data in \`encode\` and declares it, with every named type it reaches, in its codec file; a version above 1 has an upcaster from each version below; and the shape of a version recorded in ${STORED_EVENTS_LOCK} never changes.`,
   severity: 'error',
@@ -29,18 +28,16 @@ interface NoShowNotedData { readonly appointmentId: string; readonly reason: str
 }),`,
   },
   scope: 'file',
-  run(project) {
+  judge(file, project) {
     const lock = readStoredEventsLock(project.root);
     const eventNameOf = eventNameResolver(project.files);
 
-    return perFile(project, this.id, (file) =>
-      storedEventDeclarations(file, eventNameOf).flatMap((declaration) => [
-        ...unnamed(declaration),
-        ...unresolved(declaration),
-        ...missingUpcasters(declaration),
-        ...changedShape(declaration, lock),
-      ]),
-    );
+    return storedEventDeclarations(file, eventNameOf).flatMap((declaration) => [
+      ...unnamed(declaration),
+      ...unresolved(declaration),
+      ...missingUpcasters(declaration),
+      ...changedShape(declaration, lock),
+    ]);
   },
 };
 

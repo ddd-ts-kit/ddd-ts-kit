@@ -1,14 +1,13 @@
 import { ASPECTS_PACKAGE } from '../layers/aspects-package';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
-import { perFile } from '../support/per-file';
 
 const DECORATORS = `${ASPECTS_PACKAGE}/decorators`;
 
 const FIX =
   'Apply the aspect at the composition root instead (`.with(...)` on the binding, or the `decorate` hook), or move the decorated class to infrastructure/ of its context or to the platform.';
 
-export const aspectsOutsideIn: Rule = {
+export const aspectsOutsideIn: FileRule = {
   id: 'aspects/outside-in',
   description:
     'The decorator form of an aspect is imported only by an adapter in infrastructure/ or by the platform; everywhere else an aspect is applied at the composition root.',
@@ -23,20 +22,18 @@ builder.bind(PaymentGateway).toClass(StripePaymentGateway, [PaymentSettings]).wi
 import { Retry } from '@ddd-ts-kit/aspects/decorators';`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (!isJudged(file)) {
-        return [];
-      }
+  judge(file) {
+    if (!isJudged(file)) {
+      return [];
+    }
 
-      return file.imports
-        .filter(({ specifier }) => specifier === DECORATORS || specifier.startsWith(`${DECORATORS}/`))
-        .map(({ line }) => ({
-          line,
-          message: `"${DECORATORS}" is imported in ${placeOf(file)}: an aspect decorator belongs on an adapter class.`,
-          fix: FIX,
-        }));
-    });
+    return file.imports
+      .filter(({ specifier }) => specifier === DECORATORS || specifier.startsWith(`${DECORATORS}/`))
+      .map(({ line }) => ({
+        line,
+        message: `"${DECORATORS}" is imported in ${placeOf(file)}: an aspect decorator belongs on an adapter class.`,
+        fix: FIX,
+      }));
   },
 };
 

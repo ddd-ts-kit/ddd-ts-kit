@@ -3,7 +3,7 @@ import { declaredRoleOf } from '../../declared';
 import { classesOf } from '../declarations/classes-of';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { inLayer } from '../support/in-layer';
@@ -30,7 +30,7 @@ const DECORATOR_FIX =
 const SECURITY_FIX =
   "Add `security: ['bearer']` (the schemes the route accepts) to the definition given to defineRoute, or `security: false` when the route is public on purpose.";
 
-export const authzDeclared: Rule = {
+export const authzDeclared: FileRule = {
   id: 'authz/declared',
   description: 'Every command, query and route declares the permission it requires, or declares itself public.',
   severity: 'error',
@@ -48,13 +48,13 @@ defineRoute({ method: 'POST', path: '/invoices/:id/void', security: ['bearer'] }
 export class VoidInvoiceCommand extends AuthorizedCommand<void> {}`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => [
+  judge(file, project) {
+    return [
       ...undeclaredRegistrations(file, project),
       ...undeclaredMessages(file, project),
       ...routesWithoutSecurity(file),
       ...unguardedControllers(file),
-    ]);
+    ];
   },
   /** Modules wired by hand list their use cases in an authorization map: every command and query has to be in it. */
   acrossProject(project) {

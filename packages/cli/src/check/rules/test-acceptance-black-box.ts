@@ -1,7 +1,7 @@
 import type { Finding } from '../model/finding';
 import type { Location } from '../model/location';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { besideTheSources } from '../project/beside-the-sources';
 import { inContext } from '../support/in-context';
@@ -10,7 +10,7 @@ import { toViolations } from '../support/to-violations';
 
 const ACCEPTANCE_SPEC = /^test\/acceptance\/[^/]+\.acceptance\.spec\.ts$/;
 
-export const testAcceptanceBlackBox: Rule = {
+export const testAcceptanceBlackBox: ProjectRule = {
   id: 'test/acceptance-black-box',
   description:
     'An acceptance spec of `test/acceptance/` drives the application as a client does: it imports nothing from the source root but the builders of a context and its published language.',
@@ -25,7 +25,7 @@ it('#US5.02 AC1 an accountant issues an invoice', pending(async () => {
 }));`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const report = reporter(project, this.id);
 
     return besideTheSources(project)

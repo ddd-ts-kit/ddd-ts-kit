@@ -3,10 +3,9 @@ import { CONFIG_FILE } from '../../config';
 import type { Finding } from '../model/finding';
 import type { Flaw } from '../model/flaw';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { besideTheSources } from '../project/beside-the-sources';
-import { perFile } from '../support/per-file';
 import { reporter } from '../support/reporter';
 import { toViolations } from '../support/to-violations';
 
@@ -14,7 +13,7 @@ import { toViolations } from '../support/to-violations';
 const EXTENSION = /\.(?:[cm]?js|[cm]?ts)$/;
 const EMITTED = /\.[cm]?js$/;
 
-export const importsExtension: Rule = {
+export const importsExtension: FileRule = {
   id: 'imports/extension',
   description:
     'An import of a file of the project ends as "importExtension" says: with no extension under `none`, with `.js` under `js`. Holds under the source root, `test/` and `scripts/`.',
@@ -33,8 +32,8 @@ import { Invoice } from '@/contexts/billing/domain/aggregates/invoice.aggregate'
 import { InvoiceIssued } from '@/contexts/billing/published-language';`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => findingsIn(project, file));
+  judge(file, project) {
+    return findingsIn(project, file);
   },
   acrossProject(project) {
     const report = reporter(project, this.id);

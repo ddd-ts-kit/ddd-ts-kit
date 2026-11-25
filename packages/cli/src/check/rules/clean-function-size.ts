@@ -1,12 +1,10 @@
 import { FUNCTION_LINES_CEILING, type Limits } from '../../config';
 import type { Finding } from '../model/finding';
 import type { Flaw } from '../model/flaw';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
-import type { Violation } from '../model/violation';
 import type { FunctionShape } from '../structure/function-shape';
 import { inlineFunctions } from '../structure/inline-functions';
-import { reporter } from '../support/reporter';
 
 interface Measured {
   readonly label: string;
@@ -22,7 +20,7 @@ interface Measured {
 const SPLIT_FIX =
   'Extract each step into a function named after what it does, placed below this one, until the body reads as a list of intentions; a test suite is split into several top-level `describe` blocks of the same spec file, one per behaviour (a nested `describe` counts in its parent), and into a second spec file only past the 350 lines of clean/file-size.';
 
-export const cleanFunctionSize: Rule = {
+export const cleanFunctionSize: FileRule = {
   id: 'clean/function-size',
   description: `A function has at most 3 parameters and 30 lines (configurable under \`limits\`), and never more than ${FUNCTION_LINES_CEILING} lines, which is an error whatever the severity of the rule.`,
   severity: 'warn',
@@ -33,34 +31,21 @@ export const cleanFunctionSize: Rule = {
   },
   scope: 'file',
   standalone: true,
-  run(project) {
-    const report = reporter(project, this.id);
-    const { limits } = project.config;
+  judge(file, { config }) {
+    const declared = measured(file).flatMap((shape): Finding[] => {
+      const ceiling = overTheCeiling(shape);
 
-    return project.files.flatMap((file) => {
-      const declared = measured(file).flatMap((shape): Violation[] => {
-        const at = { file: file.path, line: shape.line };
-        const ceiling = overTheCeiling(shape);
+      if (ceiling !== undefined) {
+        return [{ line: shape.line, ...ceiling }];
+      }
 
-        if (ceiling !== undefined) {
-          return [{ ...report(at, ceiling.message, ceiling.fix), severity: 'error' }];
-        }
-
-        return [...tooManyParameters(shape, limits), ...tooLong(shape, limits)].map(({ message, fix }) =>
-          report(at, message, fix),
-        );
-      });
-
-      return [
-        ...declared,
-        ...inline(file).map(
-          ({ line, message, fix }): Violation => ({
-            ...report({ file: file.path, line }, message, fix),
-            severity: 'error',
-          }),
-        ),
-      ];
+      return [...tooManyParameters(shape, config.limits), ...tooLong(shape, config.limits)].map((flaw) => ({
+        line: shape.line,
+        ...flaw,
+      }));
     });
+
+    return [...declared, ...inline(file)];
   },
 };
 
@@ -97,14 +82,18 @@ function inline(file: SourceFile): Finding[] {
 }
 
 /** The ceiling holds everywhere, module files and tests included, and is not configurable. */
-function overTheCeiling(shape: Measured): Flaw | undefined {
+function overTheCeiling(shape: Measured): Blocking | undefined {
   return shape.bodyLines <= FUNCTION_LINES_CEILING ? undefined : ceilingFlaw(shape.label, shape.bodyLines);
 }
 
-function ceilingFlaw(label: string, bodyLines: number): Flaw {
+/** A flaw that is an error whatever the severity of the rule. */
+type Blocking = Flaw & { readonly severity: 'error' };
+
+function ceilingFlaw(label: string, bodyLines: number): Blocking {
   return {
     message: `${label} is ${bodyLines} lines long: no function is longer than ${FUNCTION_LINES_CEILING} lines.`,
     fix: SPLIT_FIX,
+    severity: 'error',
   };
 }
 

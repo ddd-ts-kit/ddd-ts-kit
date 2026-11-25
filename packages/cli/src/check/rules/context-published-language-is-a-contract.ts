@@ -1,13 +1,12 @@
 import type { ImportTarget } from '../model/import-target';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import { describeTarget } from '../support/describe-target';
 import { inLayer } from '../support/in-layer';
-import { perFile } from '../support/per-file';
 
 const FIX =
   'Declare the contract with plain serializable types written in this folder: copy the few fields other contexts need instead of exposing an internal model.';
 
-export const contextPublishedLanguageIsAContract: Rule = {
+export const contextPublishedLanguageIsAContract: FileRule = {
   id: 'context/published-language-is-a-contract',
   description:
     'published-language/ imports only the kernel, the event declaration helper with the schema library of the project, and other published languages.',
@@ -20,22 +19,20 @@ export { Invoice } from '@/contexts/billing/domain/aggregates/invoice.aggregate'
 export interface InvoiceIssuedV1Payload { readonly invoiceId: string }`,
   },
   scope: 'file',
-  run(project) {
+  judge(file, project) {
+    if (inLayer(file, 'published-language') === undefined) {
+      return [];
+    }
+
     const allowed = project.config.publishedLanguageAllowedPackages;
 
-    return perFile(project, this.id, (file) => {
-      if (inLayer(file, 'published-language') === undefined) {
-        return [];
-      }
-
-      return file.imports
-        .filter(({ target }) => !isContract(target, allowed))
-        .map(({ target, line }) => ({
-          line,
-          message: `The published language imports ${describeTarget(target)}.`,
-          fix: FIX,
-        }));
-    });
+    return file.imports
+      .filter(({ target }) => !isContract(target, allowed))
+      .map(({ target, line }) => ({
+        line,
+        message: `The published language imports ${describeTarget(target)}.`,
+        fix: FIX,
+      }));
   },
 };
 

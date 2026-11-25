@@ -1,13 +1,12 @@
 import type { Finding } from '../model/finding';
 import type { ResolvedImport } from '../model/resolved-import';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import { inLayer } from '../support/in-layer';
-import { perFile } from '../support/per-file';
 
 /** The connectors of the kernel: a model or a use case that names one has chosen where files live. */
 const CONNECTORS = ['InMemoryFileStorage', 'LocalFileStorage', 'SelfSignedFileStorage'];
 
-export const filesPortNotConnector: Rule = {
+export const filesPortNotConnector: FileRule = {
   id: 'files/port-not-connector',
   description:
     'domain/ and application/ name the `FileStorage` port of the kernel, never one of its connectors (`InMemoryFileStorage`, `LocalFileStorage`): where files live is chosen by the platform.',
@@ -26,12 +25,10 @@ export class AttachReceiptHandler {
 }`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      const here = inLayer(file, 'domain') ?? inLayer(file, 'application');
+  judge(file) {
+    const here = inLayer(file, 'domain') ?? inLayer(file, 'application');
 
-      return here === undefined ? [] : file.imports.flatMap((imported) => connectorsOf(imported, here.layer));
-    });
+    return here === undefined ? [] : file.imports.flatMap((imported) => connectorsOf(imported, here.layer));
   },
 };
 

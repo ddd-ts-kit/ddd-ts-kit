@@ -1,12 +1,11 @@
 import type { ContextLocation } from '../model/context-location';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { bodilessMembers } from '../ports/bodiless-members';
 import type { ClassShape } from '../structure/class-shape';
 import { inContext } from '../support/in-context';
 import { isPortFile } from '../support/is-port-file';
-import { perFile } from '../support/per-file';
 
 const LIST_METHOD = /^list(?=[A-Z]|$)/;
 const LIST_CLASS = /^List(?=[A-Z]|$)/;
@@ -19,7 +18,7 @@ const KIT_METHODS: readonly string[] = ['listAccessible'];
 
 const WHY = 'A read that takes criteria, a scope or a page is a search';
 
-export const namingSearchNotList: Rule = {
+export const namingSearchNotList: FileRule = {
   id: 'naming/search-not-list',
   description:
     'A method of a port or of an adapter and a query are named `search...`, never `list...`: a read that takes criteria, a scope or a page is a search.',
@@ -39,14 +38,12 @@ abstract findById(id: string): Promise<InvoiceLine | undefined>;
 export class SearchInvoicesQuery {}`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (!inContext(file.location) || /\.(?:spec|test)\.ts$/.test(file.path)) {
-        return [];
-      }
+  judge(file) {
+    if (!inContext(file.location) || /\.(?:spec|test)\.ts$/.test(file.path)) {
+      return [];
+    }
 
-      return [...listMethods(file, file.location), ...listQuery(file, file.location)];
-    });
+    return [...listMethods(file, file.location), ...listQuery(file, file.location)];
   },
 };
 

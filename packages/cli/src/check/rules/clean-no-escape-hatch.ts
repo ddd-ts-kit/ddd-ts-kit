@@ -1,9 +1,7 @@
 import { commentLines } from '../comments/comment-lines';
-import type { Rule } from '../model/rule';
+import type { Finding } from '../model/finding';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
-import type { Violation } from '../model/violation';
-import type { Report } from '../model/report';
-import { reporter } from '../support/reporter';
 
 const ANY = /:\s*any(?![\w$])|(?<![\w$.])as\s+any(?![\w$])|<\s*any\s*[>,]|,\s*any\s*>|(?<![\w$.])any\s*\[\]/g;
 const NON_NULL = /(?<=[\w$)\]])!(?=\s*(?:[.;,)\]}:]|\[|$))(?!\s*==?)/gm;
@@ -18,7 +16,7 @@ const NON_NULL_FIX =
 const SILENCER_FIX =
   'Fix the diagnostic; if it cannot be fixed, use @ts-expect-error or eslint-disable-next-line <rule> followed by the reason and its decision record (`-- ADR-NNNN: why`).';
 
-export const cleanNoEscapeHatch: Rule = {
+export const cleanNoEscapeHatch: FileRule = {
   id: 'clean/no-escape-hatch',
   description:
     'No any, no non-null assertion, no @ts-ignore, no @ts-expect-error without a reason, no eslint-disable without a reason.',
@@ -30,45 +28,34 @@ export const cleanNoEscapeHatch: Rule = {
   },
   scope: 'file',
   standalone: true,
-  run(project) {
-    const report = reporter(project, this.id);
-
-    return project.files.flatMap((file) => [
-      ...untyped(file, report),
-      ...asserted(file, report),
-      ...silenced(file, report),
-    ]);
+  judge(file) {
+    return [...untyped(file), ...asserted(file), ...silenced(file)];
   },
 };
 
 /** In a test, an untyped value cannot reach production: it advises instead of blocking. */
-function untyped(file: SourceFile, report: Report): Violation[] {
-  return [...file.scan.code.matchAll(ANY)].map((match) => {
-    const violation = report(
-      { file: file.path, line: file.scan.lineAt(match.index) },
-      `The type any is used (${match[0].trim()}).`,
-      ANY_FIX,
-    );
-
-    return file.isTest ? { ...violation, severity: 'warn' } : violation;
-  });
+function untyped(file: SourceFile): Finding[] {
+  return [...file.scan.code.matchAll(ANY)].map((match) => ({
+    line: file.scan.lineAt(match.index),
+    message: `The type any is used (${match[0].trim()}).`,
+    fix: ANY_FIX,
+    ...(file.isTest ? { severity: 'warn' } : {}),
+  }));
 }
 
-function asserted(file: SourceFile, report: Report): Violation[] {
-  return [...file.scan.code.matchAll(NON_NULL)].map((match) =>
-    report(
-      { file: file.path, line: file.scan.lineAt(match.index) },
-      'A non-null assertion (!) silences the compiler.',
-      NON_NULL_FIX,
-    ),
-  );
+function asserted(file: SourceFile): Finding[] {
+  return [...file.scan.code.matchAll(NON_NULL)].map((match) => ({
+    line: file.scan.lineAt(match.index),
+    message: 'A non-null assertion (!) silences the compiler.',
+    fix: NON_NULL_FIX,
+  }));
 }
 
-function silenced(file: SourceFile, report: Report): Violation[] {
+function silenced(file: SourceFile): Finding[] {
   return commentLines(file).flatMap((comment) => {
     const problem = silencerProblem(comment.text);
 
-    return problem === undefined ? [] : [report({ file: file.path, line: comment.line }, `${problem}.`, SILENCER_FIX)];
+    return problem === undefined ? [] : [{ line: comment.line, message: `${problem}.`, fix: SILENCER_FIX }];
   });
 }
 

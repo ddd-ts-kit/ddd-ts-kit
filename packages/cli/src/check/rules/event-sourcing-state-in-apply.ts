@@ -2,11 +2,10 @@ import { eventSourcedClasses } from '../event-sourcing/event-sourced-classes';
 import { isApplyMethod } from '../event-sourcing/is-apply-method';
 import { stateWrites } from '../event-sourcing/state-writes';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import type { ClassShape } from '../structure/class-shape';
 import type { MethodShape } from '../structure/method-shape';
-import { perFile } from '../support/per-file';
 
 const RECORD = /(?<![\w$.])this\s*\.\s*record\s*\(/g;
 
@@ -16,7 +15,7 @@ const COMMAND_FIX =
 const APPLY_FIX =
   'An apply method only changes the state from the event it is given: recording an event there records it again at every replay. Record the follow-up fact from the command that decided it.';
 
-export const eventSourcingStateInApply: Rule = {
+export const eventSourcingStateInApply: FileRule = {
   id: 'event-sourcing/state-in-apply',
   description:
     'An event-sourced aggregate changes its state only in its apply methods (`apply<Fact>`, and `restore` for a snapshot), and an apply method records no event.',
@@ -38,10 +37,8 @@ private applyNoShowNoted(event: NoShowNoted): void {
 }`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) =>
-      eventSourcedClasses(file).flatMap((shape) => shape.methods.flatMap((method) => judged(file, shape, method))),
-    );
+  judge(file) {
+    return eventSourcedClasses(file).flatMap((shape) => shape.methods.flatMap((method) => judged(file, shape, method)));
   },
 };
 

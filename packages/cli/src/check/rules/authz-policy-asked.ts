@@ -2,7 +2,7 @@ import { argumentsOf } from '../declarations/arguments-of';
 import { classesOf } from '../declarations/classes-of';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inLayer } from '../support/in-layer';
 import { reporter } from '../support/reporter';
@@ -28,7 +28,7 @@ const DECIDES = /\.\s*(?:decide|decideOn)\s*\(/g;
 const RECEIVER_BEFORE = /(?:(?:\bawait|\bvoid)\s+)*(?:[A-Za-z_$][\w$]*\s*\??\.\s*)*[A-Za-z_$][\w$]*\s*$/;
 const LEFT_TO_DO = /\bTODO\((?:domain|review)\)/;
 
-export const authzPolicyAsked: Rule = {
+export const authzPolicyAsked: ProjectRule = {
   id: 'authz/policy-asked',
   description:
     'A use case whose permission has a policy has a handler that asks it through Access, with that permission, and keeps the decision.',
@@ -47,7 +47,7 @@ await this.access.authorize(command.actor, billingPermissions['invoice.void'], i
 invoice.void(this.clock.now());`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const refined = refinedPermissions(project);
     const report = reporter(project, this.id);
 

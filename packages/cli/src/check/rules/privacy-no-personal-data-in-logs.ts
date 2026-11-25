@@ -1,4 +1,4 @@
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { JUDGED_ONLY_WHEN_ON } from '../privacy/judged-only-when-on';
 import { personalDeclarationsOf } from '../privacy/personal-declarations-of';
@@ -26,7 +26,7 @@ const NAME = /[A-Za-z_$][\w$]*/g;
  * platform; a field of one word outside the vocabulary (`name`) is left out, too common to judge.
  * Silent with `stack.privacy` off, and without a declaration.
  */
-export const privacyNoPersonalDataInLogs: Rule = {
+export const privacyNoPersonalDataInLogs: ProjectRule = {
   id: 'privacy/no-personal-data-in-logs',
   description:
     'A call to the logger or to the metrics names no field a personalFields declaration or the personal option of an integration event says is personal data.',
@@ -37,7 +37,7 @@ export const privacyNoPersonalDataInLogs: Rule = {
     good: `this.logger.info('invoice sent', { invoiceId: invoice.id, customerId: invoice.customerId });`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!privacyJudged(project)) {
       return [];
     }

@@ -1,9 +1,8 @@
 import { isControlPlane, type Config } from '../../config';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inLayers } from '../support/in-layers';
-import { perFile } from '../support/per-file';
 import { drizzleUnscoped } from '../tenancy/drizzle-unscoped';
 import { knexUnscoped } from '../tenancy/knex-unscoped';
 import { prismaUnscoped } from '../tenancy/prisma-unscoped';
@@ -21,7 +20,7 @@ const ADVISORY_LOCK = /\bpg_(?:try_)?advisory_(?:xact_)?lock(?:_shared)?\b/i;
 
 const READ_MODEL = 'A read model store is built without the `tenant` option: its rows are shared by every tenant.';
 
-export const tenancyScopedStatement: Rule = {
+export const tenancyScopedStatement: FileRule = {
   id: 'tenancy/scoped-statement',
   description:
     'In a multi-tenant project ("stack.tenancy" other than "none"), a persistence adapter of a context that is not the control plane of the tenants confines every statement to the tenant of the work through the helpers of its ORM package: never the executor, client or manager used straight, raw SQL, a relational query, a row reached by its key alone, or a read model store without its tenant; a lock on a business key is taken with `advisoryLock` or `tryAdvisoryLock` of the ORM package. The condition is a conjunct of the statement: never beside an `or` at its top, or under an `or`, a `not` or a `sql` template.',
@@ -63,14 +62,14 @@ await this.database.client().billingInvoice.findMany({ where: { ...tenantWhere(t
 await this.database.manager().find(invoices, { where: [{ id, ...tenantWhere(this.scope) }, { reference: id, ...tenantWhere(this.scope) }] });`,
   },
   scope: 'file',
-  run(project) {
+  judge(file, project) {
     const { tenancy, orm } = project.config.stack;
 
     if (tenancy === 'none') {
       return [];
     }
 
-    return perFile(project, this.id, (file) => (isAdapter(file, project.config) ? unscoped(file, orm) : []));
+    return isAdapter(file, project.config) ? unscoped(file, orm) : [];
   },
 };
 

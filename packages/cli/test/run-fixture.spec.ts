@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Fixture } from '../src/check/fixtures/fixture';
-import type { Rule } from '../src/check/model/rule';
+import type { FileRule } from '../src/check/model/rule';
 import { FIXTURES } from '../src/check/fixtures/fixtures';
 import { runFixture } from '../src/check/fixtures/run-fixture';
 
@@ -59,22 +59,13 @@ describe('a rule fixture that does not behave as it says', () => {
 });
 
 /** A rule of a spec, not of the kit: it reports every source and says nothing of what to do. */
-const WITHOUT_FIX: Rule = {
+const WITHOUT_FIX: FileRule = {
   id: 'spec/without-fix',
   description: 'Reports every source without a fix.',
   severity: 'error',
   doc: { why: 'A spec needs a rule that says nothing of the repair.', bad: 'any source', good: 'no source' },
   scope: 'file',
-  run(project) {
-    return project.files.map(({ path }) => ({
-      ruleId: this.id,
-      severity: 'error',
-      file: path,
-      line: 1,
-      message: 'Reported without a fix.',
-      fix: '',
-    }));
-  },
+  judge: () => [{ line: 1, message: 'Reported without a fix.', fix: '' }],
 };
 
 describe('a rule fixture of a rule that writes no fix', () => {

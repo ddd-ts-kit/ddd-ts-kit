@@ -3,13 +3,13 @@ import { moduleNameFlaw } from '../../model-modules';
 import { Glossaries } from '../language/glossaries';
 import { unknownWords } from '../language/unknown-words';
 import type { Report } from '../model/report';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { Violation } from '../model/violation';
 import { MODULES_HEADING, modulesSection } from '../modules/modules-section';
 import { lineOfSequence } from '../support/line-of-sequence';
 import { reporter } from '../support/reporter';
 
-export const moduleDeclared: Rule = {
+export const moduleDeclared: ProjectRule = {
   id: 'module/declared',
   description:
     'Every module of the model a context declares in contexts.<name>.modules is named with terms of the ubiquitous language of the context, never with a technical word (common, core, utils...; `shared`, the folder of what belongs to no module, is refused by config/valid), and has its row, with its purpose, in the "## Modules" table of the CONTEXT.md of the context.',
@@ -27,7 +27,7 @@ export const moduleDeclared: Rule = {
 | \`waitlist\` | The waitlist of a calendar and the offers made to waiters. |`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const report = reporter(project, this.id);
     const glossaries = new Glossaries(project.root, project.config.contextsDir);
 

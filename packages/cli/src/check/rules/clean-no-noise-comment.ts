@@ -2,9 +2,8 @@ import { commentLines, type CommentLine } from '../comments/comment-lines';
 import { isDirective } from '../comments/is-directive';
 import { restatesName } from '../comments/restates-name';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
-import { perFile } from '../support/per-file';
 
 const BANNER = /^(?:[-=*#~_+/\\]\s?){4,}|^[-=*#~]{2,}.*[-=*#~]{3,}$/;
 
@@ -59,7 +58,7 @@ const DETECTORS: readonly Detector[] = [
   },
 ];
 
-export const cleanNoNoiseComment: Rule = {
+export const cleanNoNoiseComment: FileRule = {
   id: 'clean/no-noise-comment',
   description:
     'No comment that restates the code, no banner, no journal, no closing-brace comment, no @param without description.',
@@ -74,8 +73,8 @@ round(amount: Money): Money {}`,
   },
   scope: 'file',
   standalone: true,
-  run(project) {
-    return perFile(project, this.id, (file) => [...noise(file), ...restatements(file)]);
+  judge(file) {
+    return [...noise(file), ...restatements(file)];
   },
 };
 

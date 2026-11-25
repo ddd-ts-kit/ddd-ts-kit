@@ -4,14 +4,13 @@ import type { NamedBinding } from '../business-names/named-binding';
 import { namedBindings } from '../business-names/named-bindings';
 import { suggestedName } from '../business-names/suggested-name';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
-import { perFile } from '../support/per-file';
 
 const WHY =
   'the code of the model speaks the ubiquitous language of its context, and a generic word hides which concept the value is';
 
-export const namingBusinessName: Rule = {
+export const namingBusinessName: FileRule = {
   id: 'naming/business-name',
   description:
     'A variable, parameter, property, destructured or loop binding of domain/ and application/ (and of the shared kernel) is named after the concept it holds, never a generic word such as target, data or item.',
@@ -28,18 +27,16 @@ for (const reminder of dueReminders) {
 }`,
   },
   scope: 'file',
-  run(project) {
+  judge(file, project) {
     const words = genericWordsOf(project.config);
 
-    return perFile(project, this.id, (file) => {
-      if (words.size === 0 || !judgesNames(file, project.config.sharedKernelDir)) {
-        return [];
-      }
+    if (words.size === 0 || !judgesNames(file, project.config.sharedKernelDir)) {
+      return [];
+    }
 
-      return namedBindings(file.scan.code)
-        .filter((binding) => words.has(binding.name))
-        .map((binding) => finding(file, binding));
-    });
+    return namedBindings(file.scan.code)
+      .filter((binding) => words.has(binding.name))
+      .map((binding) => finding(file, binding));
   },
 };
 

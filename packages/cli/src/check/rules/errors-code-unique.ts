@@ -3,7 +3,7 @@ import { codesSetIn } from '../errors/codes-set-in';
 import { isErrorFile } from '../errors/is-error-file';
 import { namesRefusals } from '../errors/names-refusals';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { perFile } from '../support/per-file';
 
@@ -13,7 +13,7 @@ const FACTORIES_FIX = `Give each refusal of a context its own code, or call the 
 
 const NAMED_FIX = `Give each refusal class of the context its own value in <context>.codes.ts, or throw the refusal that already has this code from one of its factories: ${WHY}`;
 
-export const errorsCodeUnique: Rule = {
+export const errorsCodeUnique: ProjectRule = {
   id: 'errors/code-unique',
   description:
     'Under "stack.refusals": "factories" or "named", a code is given to one refusal of a context: no two factories, no two error classes and no two entries of <context>.codes.ts, of the domain/errors/ of a context, set the same code.',
@@ -32,7 +32,7 @@ export const AppointmentCodes = {
 } as const;`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!buildsThroughFactories(project)) {
       return [];
     }

@@ -3,7 +3,7 @@ import { type PermissionSet, permissionSets } from '../authz/permission-sets';
 import { scopedPermission } from '../authz/scoped-permission';
 import { type SignedInGrantSources, signedInGrantSources } from '../authz/signed-in-grant-sources';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import type { Scan } from '../scan/scan';
 import { reporter } from '../support/reporter';
@@ -26,7 +26,7 @@ const ACCESS = /(?:^|\.)access$/i;
  * the grants file of the platform and the grants given to every `new SignedInGrantsAuthorizer`.
  * What it cannot read is said, never taken as safe: grants built by a call, a permission handed in.
  */
-export const authzScopeNarrows: Rule = {
+export const authzScopeNarrows: ProjectRule = {
   id: 'authz/scope-narrows',
   description:
     'A search narrows by the scope of a permission the model decides, never by one every signed-in person holds: that scope is always all.',
@@ -45,7 +45,7 @@ const scope = await this.access.scope(query.actor, docsPermissions['document.sea
 // { kind: 'ids', ids: [...] }: the documents the actor reaches, an empty page for one who reaches none`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const sources = signedInGrantSources(project);
 
     if (sources.lists.length === 0 && sources.unread.length === 0) {

@@ -5,7 +5,7 @@ import { scopedPermission } from '../authz/scoped-permission';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
 import type { Report } from '../model/report';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { Violation } from '../model/violation';
 import type { SourceFile } from '../model/source-file';
 import { reporter } from '../support/reporter';
@@ -30,7 +30,7 @@ const TYPE = /\btype\s*:\s*(['"`])([\w-]+)\1/;
  * read is said, never taken as safe: a schema built by a call or spread, a key computed in another
  * way, a resource that is not an object literal with a literal `type`.
  */
-export const authzResourceModelled: Rule = {
+export const authzResourceModelled: ProjectRule = {
   id: 'authz/resource-modelled',
   description:
     'Under relationships, a requirement names the element its permission is derived on in the relationship schema, never the context.',
@@ -53,7 +53,7 @@ export class ChangeServiceCommand extends AuthorizedCommand<void> {
 }`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const schemaFile = schemaOf(project);
 
     return schemaFile === undefined ? [] : judged(project, schemaFile, reporter(project, this.id));

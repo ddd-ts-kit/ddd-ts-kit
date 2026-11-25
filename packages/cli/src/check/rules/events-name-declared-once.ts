@@ -1,10 +1,9 @@
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import type { StringRecord } from '../scan/string-record';
 import type { ClassShape } from '../structure/class-shape';
 import { inContext } from '../support/in-context';
-import { perFile } from '../support/per-file';
 
 /** `static readonly eventName = '...'`, typed or not, or `extends NamedDomainEvent('...')`. */
 const STATIC_NAME =
@@ -13,7 +12,7 @@ const STATIC_NAME =
 /** `name = '...'`, `name: '...'`, `name: string = '...'`: the name written a second time. */
 const NAME_LITERAL = /(?<![\w$.])name\s*\??\s*(?:[:=]|:[^=;\n'"]+=)\s*$/;
 
-export const eventsNameDeclaredOnce: Rule = {
+export const eventsNameDeclaredOnce: FileRule = {
   id: 'events/name-declared-once',
   description:
     'Every domain event class declares its name once, `static readonly eventName`, and its `readonly name` reads it.',
@@ -27,22 +26,20 @@ export const eventsNameDeclaredOnce: Rule = {
 }`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (!inContext(file.location) || file.isTest) {
-        return [];
-      }
+  judge(file) {
+    if (!inContext(file.location) || file.isTest) {
+      return [];
+    }
 
-      const { layer, inside, context } = file.location;
+    const { layer, inside, context } = file.location;
 
-      if (layer !== 'domain' || inside[0] !== 'events') {
-        return [];
-      }
+    if (layer !== 'domain' || inside[0] !== 'events') {
+      return [];
+    }
 
-      return file.structure.classes
-        .filter((declared) => declared.depth === 0 && !declared.isAbstract)
-        .flatMap((declared) => judge(file, declared, context));
-    });
+    return file.structure.classes
+      .filter((declared) => declared.depth === 0 && !declared.isAbstract)
+      .flatMap((declared) => judge(file, declared, context));
   },
 };
 

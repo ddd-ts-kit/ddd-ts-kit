@@ -4,7 +4,7 @@ import { isInProject } from '../authz/is-in-project';
 import { ownAuthorizer } from '../authz/own-authorizer';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { perFile } from '../support/per-file';
 import { sourceDeclaring } from '../support/source-declaring';
@@ -28,7 +28,7 @@ const OWN_NAME = /^([A-Z][\w$]*)\.name$/;
  * permission of the system role or of an attribute rule, not a relationship per actor: not judged.
  * Nor is a project with an authorizer of its own, which may let a system actor operate its context.
  */
-export const authzSystemActorGranted: Rule = {
+export const authzSystemActorGranted: ProjectRule = {
   id: 'authz/system-actor-granted',
   description:
     'Under relationships, every system actor a context acts as is named by a relationship of the platform when it sends a protected command or query.',
@@ -45,7 +45,7 @@ const systemRelationships: readonly RelationTuple[] = [
 ];`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (project.config.stack.authz !== 'rebac' || ownAuthorizer(project)) {
       return [];
     }

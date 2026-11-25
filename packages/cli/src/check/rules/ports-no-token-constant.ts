@@ -2,9 +2,8 @@ import path from 'node:path';
 import { bindingCalls } from '../declarations/binding-calls';
 import { dependencyLists } from '../declarations/dependency-lists';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
-import { perFile } from '../support/per-file';
 import { escapeRegExp } from '../text/escape-reg-exp';
 
 const UPPER_SNAKE = /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/;
@@ -15,7 +14,7 @@ const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 const PORT_FIX =
   'Declare the port as an abstract class (domain/repositories/*.repository.ts or application/ports/*.port.ts) and name that class: the class is the contract and the injection token at once, and the compiler checks the list against the constructor.';
 
-export const portsNoTokenConstant: Rule = {
+export const portsNoTokenConstant: FileRule = {
   id: 'ports/no-token-constant',
   description:
     'No injection token beside the port: no token(), no Symbol or string token, no UPPER_SNAKE_CASE name in a dependency list, no *.ports.ts nor tokens.ts file.',
@@ -36,10 +35,10 @@ constructor(private readonly invoices: InvoiceRepository, private readonly clock
 builder.bind(PaymentGateway).toClass(StripePaymentGateway, [PaymentSettings]);`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) =>
-      file.isTest ? [] : [...tokenFile(file), ...tokenCalls(file), ...literalTokens(file), ...constantsInLists(file)],
-    );
+  judge(file) {
+    return file.isTest
+      ? []
+      : [...tokenFile(file), ...tokenCalls(file), ...literalTokens(file), ...constantsInLists(file)];
   },
 };
 

@@ -4,17 +4,16 @@ import { roleOf } from '../canonical/role-of';
 import type { ContextLocation } from '../model/context-location';
 import type { Flaw } from '../model/flaw';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { isDeclaredStyle } from '../support/is-declared-style';
 import { KEBAB_SEGMENT } from '../support/kebab-segment';
 import { pathInContext } from '../support/path-in-context';
-import { perFile } from '../support/per-file';
 import { roleDirectory } from '../support/role-directory';
 import { WITHOUT_MODULE } from '../../model-modules';
 
-export const namingSuffix: Rule = {
+export const namingSuffix: FileRule = {
   id: 'naming/suffix',
   description: "A file in a role directory carries the role's suffix, in kebab-case.",
   severity: 'error',
@@ -28,23 +27,21 @@ presentation/http/invoices.routes.ts
 presentation/http/invoices/issue-invoice/issue-invoice.controller.ts`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (!inContext(file.location) || file.location.layer === 'module') {
-        return [];
-      }
+  judge(file, project) {
+    if (!inContext(file.location) || file.location.layer === 'module') {
+      return [];
+    }
 
-      const name = path.posix.basename(file.path);
+    const name = path.posix.basename(file.path);
 
-      if (namedByTheKit(project, file, file.location.context)) {
-        return [];
-      }
+    if (namedByTheKit(project, file, file.location.context)) {
+      return [];
+    }
 
-      // A file of the context at its root (its code list) is named as it would be in its role folder.
-      const flaw = notKebab(name) ?? withoutSuffix(file.location.inside.at(-1) ?? name, file.location);
+    // A file of the context at its root (its code list) is named as it would be in its role folder.
+    const flaw = notKebab(name) ?? withoutSuffix(file.location.inside.at(-1) ?? name, file.location);
 
-      return flaw === undefined ? [] : [{ line: 1, ...flaw }];
-    });
+    return flaw === undefined ? [] : [{ line: 1, ...flaw }];
   },
 };
 

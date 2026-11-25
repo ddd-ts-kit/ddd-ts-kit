@@ -1,5 +1,5 @@
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import { type JobClass, jobClasses } from '../scheduling/job-classes';
 import { escapeRegExp } from '../text/escape-reg-exp';
 import { isDeclaredStyle } from '../support/is-declared-style';
@@ -14,7 +14,7 @@ import { reporter } from '../support/reporter';
  * by its decorator, which `declarations/role-declared` requires. A class the project registers
  * by a loop, a list or any form the checker does not read is reported too: write the plain forms.
  */
-export const schedulingJobRegistered: Rule = {
+export const schedulingJobRegistered: ProjectRule = {
   id: 'scheduling/job-registered',
   description:
     'Every job (application/scheduling/*.job.ts) and background job (application/background/*.background-job.ts) is registered by a module file, in the explicit style.',
@@ -42,7 +42,7 @@ function registerJobs(platform: Platform): void {
 }`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     // In the declared style a class without its decorator is reported by declarations/role-declared.
     if (isDeclaredStyle(project)) {
       return [];

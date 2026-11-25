@@ -1,5 +1,5 @@
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { JUDGED_ONLY_WHEN_ON } from '../privacy/judged-only-when-on';
 import { privacyJudged } from '../privacy/privacy-judged';
@@ -17,7 +17,7 @@ const ERASES = /\bextends\s+PersonalDataErasure\b|\bdataSubjectErasedV1\b|['"]pr
  * in the files of the application layer of the consumer that name the definition of the event
  * (an integration handler, a projection, a process manager). A consumer that keeps nothing of the person records it. Silent with `stack.privacy` off.
  */
-export const privacyErasureReachesCopies: Rule = {
+export const privacyErasureReachesCopies: ProjectRule = {
   id: 'privacy/erasure-reaches-copies',
   description:
     'A context that consumes an integration event carrying personal data declares a PersonalDataErasure or handles privacy.data-subject.erased.',
@@ -32,7 +32,7 @@ on(customerRegisteredV1, (event) => contacts.upsert(event.payload.customerId, ev
 // as a service of its own: npx ddd-ts-kit generate erasure-handler notification`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     if (!privacyJudged(project)) {
       return [];
     }

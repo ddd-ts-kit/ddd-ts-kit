@@ -2,7 +2,7 @@ import { declaredEventHandlers } from '../declarations/declared-event-handlers';
 import { consumerRegistrations } from '../events/consumer-registrations';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { inLayer } from '../support/in-layer';
@@ -24,7 +24,7 @@ interface ConsumerName {
   readonly line: number;
 }
 
-export const eventsConsumerIdempotent: Rule = {
+export const eventsConsumerIdempotent: FileRule = {
   id: 'events/consumer-idempotent',
   description:
     'Every integration event handler is registered or declared with a stable consumer name, unique in the project, and a processed-event store.',
@@ -46,10 +46,8 @@ export class ProductListedHandler {
 }`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) =>
-      file.isTest ? [] : [...flawedRegistrations(file), ...unnamedHandlers(file)],
-    );
+  judge(file) {
+    return file.isTest ? [] : [...flawedRegistrations(file), ...unnamedHandlers(file)];
   },
   acrossProject(project) {
     // Remembers, across the files of the project, where each consumer name was first seen.

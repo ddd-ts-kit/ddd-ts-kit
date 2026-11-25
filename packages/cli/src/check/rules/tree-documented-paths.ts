@@ -5,7 +5,7 @@ import { firstFlaw } from '../canonical/first-flaw';
 import { flawInContexts } from '../canonical/flaw-in-contexts';
 import { isContextRelative } from '../canonical/is-context-relative';
 import type { Flaw } from '../model/flaw';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import type { Violation } from '../model/violation';
 import { markdownUnder } from '../project/markdown-under';
 import { reporter } from '../support/reporter';
@@ -15,7 +15,7 @@ const ARCHITECTURE_DOCS = 'docs/architecture';
 /** A path written as code in Markdown, a `:line` after it left out. */
 const CITED = /`([^`\s]+?)(?::\d+)?`/g;
 
-export const treeDocumentedPaths: Rule = {
+export const treeDocumentedPaths: ProjectRule = {
   id: 'tree/documented-paths',
   description:
     'A path of a bounded context cited as code in docs/architecture (a plan, a design note, a review), in full or relative to its context, is a place the canonical tree allows: a document that names a directory the tree refuses describes a design the code no longer has.',
@@ -26,7 +26,7 @@ export const treeDocumentedPaths: Rule = {
     good: `docs/architecture/design-review.md: "add the port \`src/contexts/billing/application/ports/credit-limit-reader.port.ts\`"`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const report = reporter(project, this.id);
 
     return markdownUnder(project.root, ARCHITECTURE_DOCS).flatMap((document) =>

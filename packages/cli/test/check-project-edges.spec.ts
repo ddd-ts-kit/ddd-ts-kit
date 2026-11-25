@@ -14,7 +14,6 @@ import { delegatedDoc } from '../src/check/explain/delegated-doc';
 import { documentedRule } from '../src/check/explain/documented-rule';
 import { explanationsOf } from '../src/check/explain/explanations-of';
 import { DecisionRecords } from '../src/check/governance/decision-records';
-import { Glossaries } from '../src/check/language/glossaries';
 import { readDrizzleMigrations } from '../src/check/migrations/read-drizzle-migrations';
 import type { Project } from '../src/check/model/project';
 import { strykerSettings } from '../src/check/mutation/stryker-settings';
@@ -65,13 +64,6 @@ describe('the readers of the checker, on a project whose files are not where the
 
   it('knows no decision record where docs/adr/ does not exist', () => {
     expect(new DecisionRecords(NOWHERE).has(1)).toBe(false);
-  });
-
-  it('reports an empty glossary once', () => {
-    const glossaries = new Glossaries(NOWHERE, 'src/contexts');
-
-    expect(glossaries.reportsEmptyOnce('src/contexts/billing/CONTEXT.md')).toBe(true);
-    expect(glossaries.reportsEmptyOnce('src/contexts/billing/CONTEXT.md')).toBe(false);
   });
 
   it('reads no drizzle migrations from a journal that is not JSON', () => {

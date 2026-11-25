@@ -1,18 +1,17 @@
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { BOUNDARY_NAMES } from '../standard/boundary-names';
 import { parallelNames } from '../standard/parallel-names';
 import { STANDARD_INTERFACES_FIX } from '../standard/standard-interfaces-fix';
 import { standardNamesIn } from '../standard/standard-names-in';
-import { perFile } from '../support/per-file';
 import { identifier } from '../text/identifier';
 
 /** A class or an interface with its heritage, or a type alias: `import { type X }` and `import type X from` declare nothing. */
 const DECLARATION =
   /(?<![\w$.])(?:(class|interface)\s+([A-Za-z_$][\w$]*)([^{;]*)\{|(?<!import\s+)type\s+([A-Za-z_$][\w$]*)\s*(?:<[^=;{}]*>)?\s*=)/g;
 
-export const standardNoParallelInterface: Rule = {
+export const standardNoParallelInterface: FileRule = {
   id: 'standard/no-parallel-interface',
   description:
     'No home-made copy of a standard interface of the kernel (ILogger, UserContext, PaginatedResult, CronJob, ErrorTracker): use the kernel one and extend it by declaration merging.',
@@ -34,10 +33,8 @@ declare module '@ddd-ts-kit/kernel' {
 export class PinoLogger implements Logger {}`,
   },
   scope: 'file',
-  run(project) {
-    const names = parallelNames(project.config.standardInterfaces);
-
-    return perFile(project, this.id, (file) => (file.isTest ? [] : parallelDeclarations(file, names)));
+  judge(file, project) {
+    return file.isTest ? [] : parallelDeclarations(file, parallelNames(project.config.standardInterfaces));
   },
 };
 

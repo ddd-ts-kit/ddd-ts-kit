@@ -3,12 +3,12 @@ import path from 'node:path';
 import { CLASSIFICATIONS } from '../../config';
 import { CONTEXT_DOC_HEADINGS } from '../canonical/context-doc-headings';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { ProjectRule } from '../model/rule';
 import { reporter } from '../support/reporter';
 import { toViolations } from '../support/to-violations';
 import { ownEntry } from '../../config/values/own-entry';
 
-export const treeContextDoc: Rule = {
+export const treeContextDoc: ProjectRule = {
   id: 'tree/context-doc',
   description:
     'Every context has a CONTEXT.md with the required sections and the classification declared in the config.',
@@ -19,7 +19,7 @@ export const treeContextDoc: Rule = {
     good: `## Purpose, ## Classification, ## Ubiquitous language, ## Aggregates, ## Published events, ## Relationships`,
   },
   scope: 'project',
-  run(project) {
+  judge(project) {
     const report = reporter(project, this.id);
 
     return project.contextsOnDisk.flatMap((context) => {

@@ -1,7 +1,6 @@
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
-import { perFile } from '../support/per-file';
 
 /** The folders of a context that hold specs, and nothing else. */
 const SPEC_FOLDERS = new Set(['unit', 'integration']);
@@ -9,7 +8,7 @@ const SPEC_FOLDERS = new Set(['unit', 'integration']);
 /** A spec, as the test runners of the kit find one; a declaration file holds no code. */
 const NOT_A_HELPER = /\.(?:spec|test|d)\.ts$/;
 
-export const testHelperPlaced: Rule = {
+export const testHelperPlaced: FileRule = {
   id: 'test/helper-placed',
   description:
     "A file of a context's test/unit/ or test/integration/ is a spec: an arrangement several specs share is a world of test/worlds/, test data a builder of test/builders/, an in-memory port a fake of test/fakes/.",
@@ -21,24 +20,22 @@ export const testHelperPlaced: Rule = {
 const { application, appointmentRepository } = await aSchedulingWorld({ now: NOW });`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      const helper = helperOf(file);
+  judge(file) {
+    const helper = helperOf(file);
 
-      if (helper === undefined) {
-        return [];
-      }
+    if (helper === undefined) {
+      return [];
+    }
 
-      const { context, place } = helper;
+    const { context, place } = helper;
 
-      return [
-        {
-          line: 1,
-          message: `"${place}" is a helper among the specs of the context ${context}.`,
-          fix: `Move it to test/worlds/ (an arrangement several specs share: \`npx ddd-ts-kit generate test-world ${context}\` writes one), test/builders/ (test data) or test/fakes/ (an in-memory port).`,
-        },
-      ];
-    });
+    return [
+      {
+        line: 1,
+        message: `"${place}" is a helper among the specs of the context ${context}.`,
+        fix: `Move it to test/worlds/ (an arrangement several specs share: \`npx ddd-ts-kit generate test-world ${context}\` writes one), test/builders/ (test data) or test/fakes/ (an in-memory port).`,
+      },
+    ];
   },
 };
 

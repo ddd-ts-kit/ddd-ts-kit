@@ -3,18 +3,17 @@ import { roleOf } from '../canonical/role-of';
 import { classesOf } from '../declarations/classes-of';
 import type { Finding } from '../model/finding';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
 import { isDeclaredStyle } from '../support/is-declared-style';
 import { pathInContext } from '../support/path-in-context';
-import { perFile } from '../support/per-file';
 import { roleDirectory } from '../support/role-directory';
 import { WITHOUT_MODULE } from '../../model-modules';
 
 const EXPORTED_CLASS = /(?<![\w$.])export\s+(?:default\s+)?(?:abstract\s+)?class\s+([\w$]+)/g;
 
-export const namingOneConceptPerFile: Rule = {
+export const namingOneConceptPerFile: FileRule = {
   id: 'naming/one-concept-per-file',
   description:
     'One exported aggregate, entity, value object, event, handler or job per file, and one declared class per role file.',
@@ -35,16 +34,14 @@ export class Invoice {}
 export class InvoiceLine {}`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      if (!inContext(file.location) || file.isTest) {
-        return [];
-      }
+  judge(file, project) {
+    if (!inContext(file.location) || file.isTest) {
+      return [];
+    }
 
-      const exported = severalExportedClasses(file);
+    const exported = severalExportedClasses(file);
 
-      return exported.length > 0 ? exported : severalDeclaredClasses(file, project);
-    });
+    return exported.length > 0 ? exported : severalDeclaredClasses(file, project);
   },
 };
 

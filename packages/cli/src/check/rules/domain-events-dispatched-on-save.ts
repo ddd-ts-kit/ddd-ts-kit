@@ -1,7 +1,6 @@
 import { dependencyLists } from '../declarations/dependency-lists';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
-import { perFile } from '../support/per-file';
 
 const DISPATCHER = 'DomainEventDispatcher';
 const PULL = /\.\s*pullEvents\s*\(/g;
@@ -17,7 +16,7 @@ interface Judged {
   readonly refusesDispatcher: boolean;
 }
 
-export const domainEventsDispatchedOnSave: Rule = {
+export const domainEventsDispatchedOnSave: FileRule = {
   id: 'domain-events/dispatched-on-save',
   description:
     'Domain events leave with the save: no `pullEvents()` in application/ or infrastructure/, no DomainEventDispatcher in a command, a query or a repository adapter.',
@@ -37,22 +36,20 @@ await this.invoices.save(invoice);
 await this.invoices.remove(invoice);`,
   },
   scope: 'file',
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      const judged = judgedAs(file);
+  judge(file) {
+    const judged = judgedAs(file);
 
-      if (judged === undefined) {
-        return [];
-      }
+    if (judged === undefined) {
+      return [];
+    }
 
-      const lines = [...pulled(file), ...(judged.refusesDispatcher ? dispatcherIn(file) : [])];
+    const lines = [...pulled(file), ...(judged.refusesDispatcher ? dispatcherIn(file) : [])];
 
-      return lines.map(({ line, what }) => ({
-        line,
-        message: `${what} in ${judged.place}: the events an aggregate recorded are dispatched when its repository saves it.`,
-        fix: FIX,
-      }));
-    });
+    return lines.map(({ line, what }) => ({
+      line,
+      message: `${what} in ${judged.place}: the events an aggregate recorded are dispatched when its repository saves it.`,
+      fix: FIX,
+    }));
   },
 };
 

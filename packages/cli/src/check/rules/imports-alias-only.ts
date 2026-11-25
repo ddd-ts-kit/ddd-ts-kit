@@ -5,10 +5,9 @@ import { CONFIG_FILE } from '../../config';
 import type { Finding } from '../model/finding';
 import type { Flaw } from '../model/flaw';
 import type { Project } from '../model/project';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { besideTheSources } from '../project/beside-the-sources';
-import { perFile } from '../support/per-file';
 import { reporter } from '../support/reporter';
 import { toViolations } from '../support/to-violations';
 
@@ -30,7 +29,7 @@ const EXTENSION = /\.(?:[cm]?js|[cm]?ts)$/;
 /** The source the compiler emits a JavaScript file from, by their extensions. */
 const SOURCE_OF: Readonly<Record<string, string>> = { '.js': '.ts', '.mjs': '.mts', '.cjs': '.cts' };
 
-export const importsAliasOnly: Rule = {
+export const importsAliasOnly: FileRule = {
   id: 'imports/alias-only',
   description:
     'A file of the project is imported by its alias (`@/...`), never by a relative path, the same directory included; an alias path holds no `.` or `..` segment. Holds under the source root, `test/` and `scripts/`; the files directly under `test/support/`, which a test runner loads before any alias exists, import one another by `./<name>`, ending with `.ts` under `js`.',
@@ -49,10 +48,8 @@ import { startApplication } from '$test/e2e/support/start-application';
 import { openRun } from './test-database-run'; // './test-database-run.ts' under "importExtension": "js"`,
   },
   scope: 'file',
-  run(project) {
-    const written = writtenBy(project);
-
-    return perFile(project, this.id, (file) => findingsIn(written, file));
+  judge(file, project) {
+    return findingsIn(writtenBy(project), file);
   },
   acrossProject(project) {
     const written = writtenBy(project);

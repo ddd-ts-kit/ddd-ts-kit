@@ -1,16 +1,15 @@
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import type { ClassShape } from '../structure/class-shape';
 import type { MethodShape } from '../structure/method-shape';
 import type { TopLevelFunction } from '../structure/top-level-function';
-import { perFile } from '../support/per-file';
 import { escapeRegExp } from '../text/escape-reg-exp';
 
 /** Not part of a longer name, and not a property access; a spread (`...helper()`) is a plain use. */
 const NOT_A_MEMBER = '(?<![\\w$])(?<!(?:^|[^.])\\.)';
 
-export const cleanStepdown: Rule = {
+export const cleanStepdown: FileRule = {
   id: 'clean/stepdown',
   description:
     'A file reads top to bottom: public members before private ones, a function above the functions it calls.',
@@ -24,16 +23,14 @@ function parseLine(line: string) {}`,
   },
   scope: 'file',
   standalone: true,
-  run(project) {
-    return perFile(project, this.id, (file) => {
-      const { classes, functions } = file.structure;
-      const helpers = functions.filter((helper) => !helper.exported);
+  judge(file) {
+    const { classes, functions } = file.structure;
+    const helpers = functions.filter((helper) => !helper.exported);
 
-      return [
-        ...classes.flatMap((shape) => misplacedMembers(file, shape)),
-        ...helpers.flatMap((helper) => helperAboveCaller(file, helper)),
-      ];
-    });
+    return [
+      ...classes.flatMap((shape) => misplacedMembers(file, shape)),
+      ...helpers.flatMap((helper) => helperAboveCaller(file, helper)),
+    ];
   },
 };
 

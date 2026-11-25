@@ -1,20 +1,19 @@
-import { Glossaries } from '../language/glossaries';
+import type { Glossaries } from '../language/glossaries';
+import { glossariesOf } from '../language/glossaries-of';
 import type { Glossary } from '../language/parse-glossary';
 import { REFUSAL_QUALIFIERS } from '../language/refusal-qualifiers';
 import { unknownWords } from '../language/unknown-words';
 import { buildsThroughFactories } from '../errors/builds-through-factories';
 import { refusalClasses } from '../errors/refusal-classes';
 import type { Finding } from '../model/finding';
-import type { Rule } from '../model/rule';
+import type { FileRule } from '../model/rule';
 import type { SourceFile } from '../model/source-file';
 import { inContext } from '../support/in-context';
-import { reporter } from '../support/reporter';
-import { toViolations } from '../support/to-violations';
 
 const CLASS = /(?<![\w$.])class\s+([A-Za-z_$][\w$]*)/g;
 const DOMAIN_ROLES = new Set(['aggregates', 'entities', 'value-objects', 'services', 'events']);
 
-export const languageGlossaryTerm: Rule = {
+export const languageGlossaryTerm: FileRule = {
   id: 'language/glossary-term',
   description:
     'Every aggregate, entity, value object, domain service, domain event, command and query is named with terms of the Ubiquitous language table of its context\'s CONTEXT.md, and under "stack.refusals": "factories" or "named" every class of domain/errors/ too; a value object (*.vo.ts) of the shared kernel, and its refusals (*.error.ts) likewise, with the terms of <sharedKernelDir>/CONTEXT.md. A refusal class (under "named", one that extends DomainRefusal) may also use the qualifiers invalid, unknown, already, too, no, missing and required; <context>.codes.ts holds no class and is not judged.',
@@ -27,38 +26,21 @@ export class BillDispatcher {}`,
 export class IssueInvoiceCommand {}`,
   },
   scope: 'file',
-  run(project) {
-    const report = reporter(project, this.id);
-    const glossaries = new Glossaries(project.root, project.config.contextsDir);
+  judge(file, project) {
+    const glossaries = glossariesOf(project);
     const roles = buildsThroughFactories(project) ? new Set([...DOMAIN_ROLES, 'errors']) : DOMAIN_ROLES;
-    const { sharedKernelDir } = project.config;
+    const owner = conceptsOwner(file, { roles, glossaries, sharedKernelDir: project.config.sharedKernelDir });
+    const classes = owner === undefined ? [] : [...file.scan.code.matchAll(CLASS)];
 
-    return project.files.flatMap((file) => {
-      const owner = conceptsOwner(file, { roles, glossaries, sharedKernelDir });
-      const classes = owner === undefined ? [] : [...file.scan.code.matchAll(CLASS)];
+    if (owner === undefined || classes.length === 0) {
+      return [];
+    }
 
-      if (owner === undefined || classes.length === 0) {
-        return [];
-      }
+    const glossary = glossaries.at(owner.doc);
 
-      const glossary = glossaries.at(owner.doc);
-
-      if (glossary.terms.length > 0) {
-        return toViolations(report, file.path, undefinedNames(file, classes, { glossary, owner }));
-      }
-
-      if (!glossaries.reportsEmptyOnce(owner.doc)) {
-        return [];
-      }
-
-      return [
-        report(
-          { file: owner.doc, line: glossary.line ?? 1 },
-          `${owner.subject} has domain classes but its glossary is empty.`,
-          definitionFix(owner.doc),
-        ),
-      ];
-    });
+    return glossary.terms.length > 0
+      ? undefinedNames(file, classes, { glossary, owner })
+      : [emptyGlossary(owner, glossary)];
   },
 };
 
@@ -83,8 +65,14 @@ interface Language {
   readonly owner: Owner;
 }
 
-function definitionFix(doc: string): string {
-  return `Define the ubiquitous language first: list in the "## Ubiquitous language" table of ${doc} every term the domain experts use, with its meaning, then name the code after it.`;
+/** Reported on the glossary, not on the class: every source of the owner leads to it, and it is one finding. */
+function emptyGlossary(owner: Owner, glossary: Glossary): Finding {
+  return {
+    file: owner.doc,
+    line: glossary.line ?? 1,
+    message: `${owner.subject} has domain classes but its glossary is empty.`,
+    fix: `Define the ubiquitous language first: list in the "## Ubiquitous language" table of ${owner.doc} every term the domain experts use, with its meaning, then name the code after it.`,
+  };
 }
 
 function undefinedNames(
