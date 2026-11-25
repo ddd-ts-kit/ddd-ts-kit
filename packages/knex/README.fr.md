@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:a7b66cc2e72f7147 -->
+<!-- translation-of: README.md sha256:6d6cf717d44e9824 -->
 
 # @ddd-ts-kit/knex
 
@@ -660,7 +660,9 @@ nomme aucun *tenant* lève `NoCurrentTenantError` avant tout SQL. Les trois gard
 `and` avec le reste de l'instruction : SQL lie `and` avant `or`, donc `.orWhere*` et `.or` au sommet
 de leur *builder* lèvent `UngroupedOrError` et les alternatives vont dans un groupe,
 `.where((either) => either.where(a).orWhere(b))` ; le texte d'un `whereRaw`, ou un `knex.raw` donné
-à un *where*, reste entre parenthèses comme un seul terme, avec ses paramètres ; `clearWhere()` et
+à n'importe quel *where* (`where`, `whereIn`, `whereBetween`, `whereNull`, `whereLike`...) comme
+sa condition, sa colonne, une valeur ou une borne, reste entre parenthèses comme un seul terme,
+avec ses paramètres ; `clearWhere()` et
 `clear('where')` lèvent `ClearedTenantConditionError`. Un `orHaving` s'applique après le *where* et
 reste libre. Un modèle de lecture de données
 d'un *tenant* passe `tenant: scope` à `KnexReadModelTable` et à `KnexReadModelStore` : chaque
