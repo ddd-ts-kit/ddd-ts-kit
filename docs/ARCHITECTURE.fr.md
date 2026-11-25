@@ -1,5 +1,5 @@
 [English](ARCHITECTURE.md) · **Français**
-<!-- translation-of: ARCHITECTURE.md sha256:39af8013156875c3 -->
+<!-- translation-of: ARCHITECTURE.md sha256:f67bd69cbc245d5b -->
 
 # Référence de l'architecture
 
@@ -743,12 +743,15 @@ s'exécute qu'après lui, un événement d'intégration n'est publié qu'après 
   `SaveAfterCommitError` : l'unité de travail est terminée, rien ne distribuerait ses événements
   ni ne l'annulerait. Il envoie une commande par le `CommandBus`, qui ouvre une unité de travail
   à elle.
-- **Une portée par unité de travail.** Chaque `UnitOfWork.run` est construit sur
-  `withinUnitOfWork` du noyau, si bien qu'un `run` appelé directement (un consommateur, un
+- **Une portée par unité de travail.** Chaque `UnitOfWork` est construit sur
+  `unitOfWorkOver` du noyau, si bien qu'un `run` appelé directement (un consommateur, un
   script) a le même déroulement qu'une commande. Un `run` imbriqué, ou une commande envoyée
   depuis une unité de travail, rejoint celle qui est en cours : une seule distribution, à la fin
-  de la plus externe. Deux commandes concurrentes ne partagent jamais une portée. Le `UnitOfWork`
-  propre à un projet construit `run` sur `withinUnitOfWork` et passe `unitOfWorkContract`.
+  de la plus externe. Deux commandes concurrentes ne partagent jamais une portée, ni deux bases
+  de données : une unité de travail exécutée dans celle d'une autre base de données distribue
+  ses événements avant sa propre validation. Le `UnitOfWork` propre à un projet est construit
+  sur `unitOfWorkOver` et passe `unitOfWorkContract` ; le bus de commandes refuse celui qui
+  n'ouvre aucune portée.
 - **Hors de toute unité de travail** (un test du domaine, un *repository* utilisé seul, un
   script), le save distribue avant de se résoudre, les gestionnaires `before-commit` puis les
   `after-commit`, et rien n'est atomique.

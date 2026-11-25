@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:a8439bb987578051 -->
+<!-- translation-of: README.md sha256:e8218cd5c94040e8 -->
 
 # @ddd-ts-kit/di
 
@@ -1579,10 +1579,10 @@ export class InvoiceIssuedEventHandler implements DomainEventHandler<InvoiceIssu
 }
 ```
 
-Une `UnitOfWork` donnée par `kernelModule({ unitOfWork })` reçoit ce calendrier pour les
-commandes, quoi qu'elle soit : le bus de commandes par défaut place `withinUnitOfWork` du kernel
-autour d'elle. Bâtie elle-même sur `withinUnitOfWork`, comme le sont les *packages* d'ORM, elle
-donne le même calendrier à un `run` appelé directement, celui d'un consommateur compris.
+Une `UnitOfWork` donnée par `kernelModule({ unitOfWork })` est bâtie sur `unitOfWorkOver` du
+kernel, comme le sont les *packages* d'ORM : elle donne ce calendrier aux commandes et à un
+`run` appelé directement, celui d'un consommateur compris. Le bus de commandes par défaut refuse
+celle qui n'ouvre aucune portée pour les événements du domaine (`UnscopedUnitOfWorkError`).
 
 Dans une application de test, l'adaptateur d'un module et le *fake* donné pour un port de
 *repository* annoncent tous deux à `app.domainEvents`, que `kernelModule()` soit listé ou non.

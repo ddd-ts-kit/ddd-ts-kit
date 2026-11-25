@@ -57,15 +57,15 @@ export class TypeOrmJobStore implements JobStore {
       enqueuedAt: job.enqueuedAt,
     });
 
-    if (inserted || job.idempotencyKey === undefined) {
+    if (inserted) {
       return { id: job.id, duplicate: false };
     }
 
-    const kept = await manager.findOneBy(this.jobs, {
-      name: job.name,
-      tenantId,
-      idempotencyKey: job.idempotencyKey,
-    });
+    // Skipped for the key, or for the id alone: a job already kept either way.
+    const kept =
+      job.idempotencyKey === undefined
+        ? undefined
+        : await manager.findOneBy(this.jobs, { name: job.name, tenantId, idempotencyKey: job.idempotencyKey });
 
     return { id: kept?.id ?? job.id, duplicate: true };
   }

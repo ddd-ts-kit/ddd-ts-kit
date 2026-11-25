@@ -1,5 +1,5 @@
 import { scan } from '../../check/scan/scan';
-import { classBody, type ClassBody } from './class-body';
+import { classBody, type ClassBody } from '../../source-text';
 import { staticMethods } from './static-methods';
 
 export interface FactoryAddition {
@@ -16,7 +16,7 @@ export interface FactoryAddition {
  */
 export function addFactory(source: string, addition: FactoryAddition): string | undefined {
   const scanned = scan(source);
-  const body = classBody(scanned, addition.className);
+  const body = classBody(scanned.code, addition.className);
 
   if (body === undefined) {
     return undefined;

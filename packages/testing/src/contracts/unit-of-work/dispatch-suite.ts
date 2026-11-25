@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { Command, InMemoryCommandBus, unitOfWorkMiddleware } from '@ddd-ts-kit/kernel';
+import { Command, InMemoryCommandBus, InMemoryUnitOfWork, unitOfWorkMiddleware } from '@ddd-ts-kit/kernel';
 import { ContractSuite } from '../contract-suite';
 import { Parcel } from './parcel';
 import { ShippingBench } from './shipping-bench';
@@ -21,6 +21,7 @@ export class DispatchSuite extends ContractSuite<UnitOfWorkUnderContract> {
     this.dispatchesAtTheEnd();
     this.queuesWhatHandlersRecord();
     this.joinsANestedRun();
+    this.opensItsOwnInsideAnotherDatabase();
     this.keepsParallelUnitsApart();
     this.servesTheCommandBus();
     this.dispatchesAtOnceOutside();
@@ -115,6 +116,26 @@ export class DispatchSuite extends ContractSuite<UnitOfWorkUnderContract> {
           'committed p1',
           'committed p2',
         ]);
+      },
+    );
+  }
+
+  private opensItsOwnInsideAnotherDatabase(): void {
+    this.it(
+      'opens a unit of work of its own inside the one of another database: both phases around its own commit',
+      async () => {
+        const bench = new ShippingBench(this.subject);
+        const billing = new InMemoryUnitOfWork();
+
+        bench.note('before-commit', 'handling');
+        bench.note('after-commit', 'committed');
+
+        await billing.run(async () => {
+          await bench.run(() => bench.register('p1'));
+          bench.journal.push('back in billing');
+        });
+
+        this.expect(bench.journal).toEqual(['saved p1', 'handling p1', 'committed p1', 'back in billing']);
       },
     );
   }

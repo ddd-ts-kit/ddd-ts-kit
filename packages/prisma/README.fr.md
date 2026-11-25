@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:1b8cce0f119675d8 -->
+<!-- translation-of: README.md sha256:3a52f38769f3fec8 -->
 
 # @ddd-ts-kit/prisma
 
@@ -261,14 +261,18 @@ défaut : pas plus, puisqu'un appelant abandonne vers 30 secondes, et qu'une con
 une réponse que personne ne lit ne déleste rien. Knex, Drizzle et TypeORM ne bornent aucune
 transaction dans le temps : ils n'ont pas besoin d'un tel réglage.
 
-`run` est construit sur `withinUnitOfWork` du noyau. Les événements du domaine des agrégats
+`run` est construit sur `unitOfWorkOver` du noyau. Les événements du domaine des agrégats
 enregistrés à l'intérieur attendent que `work` ait rendu la main, puis sont distribués dans la
 transaction, avant la validation : leurs gestionnaires voient chaque enregistrement, et ce
 qu'ils écrivent est validé ou annulé avec lui. Si `work`, un gestionnaire ou la validation
 échoue, rien ne reste : aucune ligne, aucun enregistrement d'outbox, aucun gestionnaire exécuté
 après la validation. Les gestionnaires déclarés `after-commit` s'exécutent une fois la
 transaction validée. Un `run` imbriqué rejoint l'unité de travail en cours : une seule
-distribution, à la fin du plus externe. Un `run` appelé directement (un consommateur, un
+distribution, à la fin du plus externe. Appelé dans l'unité de travail d'une autre base de données, `run` ouvre la sienne : ses
+événements sont distribués avant sa propre validation. L'unité de travail est validée ou annulée
+en entier : dès qu'un `run` imbriqué a échoué elle n'est plus validée, et quand le travail a
+intercepté cet échec et continué, le `run` le plus externe est rejeté avec une
+`UnitOfWorkAbortedError` dont il est la `cause`. Un `run` appelé directement (un consommateur, un
 script) a le même déroulement qu'une commande.
 `unitOfWorkContract` de `@ddd-ts-kit/testing/contracts` le prouve, avec une contrainte différée
 pour la validation qui échoue ; sur un vrai PostgreSQL (`DDD_TS_KIT_TEST_DATABASE_URL`), il

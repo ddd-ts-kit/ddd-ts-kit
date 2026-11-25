@@ -5,6 +5,7 @@ import {
   HandlerNotFoundError,
   InMemoryCommandBus,
   InMemoryQueryBus,
+  InMemoryUnitOfWork,
   Query,
   unitOfWorkMiddleware,
   type CommandHandler,
@@ -111,12 +112,13 @@ describe('InMemoryCommandBus', () => {
 
   it('opens a unit of work for commands only', async () => {
     let opened = 0;
+    const unitOfWork = new InMemoryUnitOfWork();
 
     const middleware = unitOfWorkMiddleware({
       run: (work) => {
         opened += 1;
 
-        return work();
+        return unitOfWork.run(work);
       },
     });
 
