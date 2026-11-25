@@ -145,7 +145,10 @@ export class OutboxRelay {
     return { published: tick.published.length, failed: tick.failed };
   }
 
-  /** Runs a tick, waits `intervalMs` or a wake-up, runs the next: ticks never overlap. */
+  /**
+   * Runs a tick, waits `intervalMs` or a wake-up, runs the next: ticks never overlap. Started
+   * again while the last tick of a `stop()` is still in progress, it runs its first tick after it.
+   */
   start(options: { readonly intervalMs: number }): void {
     if (this.started) {
       return;
@@ -158,7 +161,7 @@ export class OutboxRelay {
       this.wake();
     });
 
-    this.loop();
+    this.wake();
   }
 
   /** Stops scheduling and resolves once the tick in progress, if any, has finished. */
