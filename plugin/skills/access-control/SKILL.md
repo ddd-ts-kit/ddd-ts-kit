@@ -156,9 +156,8 @@ stop at the first answer that changes the model (the guide
    the vocabulary in `SessionScopes`.
 5. Do **several customers** share the deployment? Add a tenancy strategy (skill
    `ddd-ts-kit:persistence`), roles per tenant, `TenantMember` on the routes of tenant data.
-   `init` then wraps the authorizer in `TenantBoundAuthorizer`, whatever the model: a requirement
-   that names a tenant (`context: (command) => ({ tenantId })`) is refused to who does not belong
-   to it. Keep it outermost.
+   `init` then wraps the authorizer in `TenantBoundAuthorizer`, outermost: a requirement that
+   names a tenant is refused to who is outside it.
 
 | Model | Fits when | Costs |
 |---|---|---|
