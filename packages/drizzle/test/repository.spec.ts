@@ -41,7 +41,7 @@ let next = 0;
 repositoryContract<Invoice>(
   { describe, it, expect, beforeEach, afterEach },
   {
-    name: 'A Drizzle repository built on executor() and optimisticUpdate',
+    name: 'A Drizzle repository built on executor() and saveTenantAggregate',
     createRepository: async () => {
       await database.truncate();
 

@@ -1,19 +1,9 @@
-import {
-  loadedAt,
-  stampCreation,
-  stampUpdate,
-  tenantScopeOf,
-  type Clock,
-  type ExecutionScope,
-} from '@ddd-ts-kit/kernel';
-import { optimisticUpdate, ownTenantWhere, rowsCreated, tenantWhere } from '../../../../../src';
-import type { Prisma } from '../../../../generated/client/client';
+import { loadedAt, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { saveTenantAggregate, tenantWhere } from '../../../../../src';
 import type { Database } from '../../../platform/database/database';
-import { Invoice, type InvoiceState } from '../../domain/invoice';
+import { Invoice } from '../../domain/invoice';
 import type { InvoiceRepository } from '../../domain/repositories/invoice.repository';
 import { statusOf } from './status-of';
-
-type VersionedInvoice = Omit<InvoiceState, 'details'> & { details?: Prisma.InputJsonValue; version: number };
 
 /**
  * The repository a consuming project would write: no transaction in sight, every statement
@@ -40,34 +30,11 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
   }
 
   async save(invoice: Invoice): Promise<void> {
-    await optimisticUpdate(invoice, async ({ expected, next }) => {
-      const { details, ...columns } = invoice.state;
-
-      const state = {
-        ...columns,
-        ...(details === undefined ? {} : { details: details as Prisma.InputJsonValue }),
-        version: next,
-      };
-
-      return expected === 0 ? this.insert(state) : (await this.update(state, expected)).count;
-    });
-  }
-
-  /** `skipDuplicates` skips a row that takes any unique value: `rowsCreated` tells a taken key from another value. */
-  private async insert(state: VersionedInvoice): Promise<number> {
-    const row = { ...state, ...tenantScopeOf(this.scope), ...stampCreation(this.scope, this.clock) };
-    const created = await this.database.client().invoice.createMany({ data: [row], skipDuplicates: true });
-
-    return rowsCreated(created, {
-      id: state.id,
-      holders: () => this.database.client().invoice.count({ where: { id: state.id, ...tenantWhere(this.scope) } }),
-    });
-  }
-
-  private update(state: VersionedInvoice, expected: number): Promise<Prisma.BatchPayload> {
-    return this.database.client().invoice.updateMany({
-      where: { id: state.id, version: expected, ...ownTenantWhere(this.scope) },
-      data: { ...state, ...stampUpdate(this.scope, this.clock) },
+    await saveTenantAggregate(this.database.client().invoice, {
+      aggregate: invoice,
+      row: invoice.state,
+      scope: this.scope,
+      clock: this.clock,
     });
   }
 }

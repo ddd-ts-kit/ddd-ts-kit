@@ -8,6 +8,7 @@ import {
   TypeOrmContext,
   createTypeOrmUnitOfWork,
   optimisticUpdate,
+  saveAggregate,
   schemaNameOf,
 } from '../src';
 import { createDatabase, type TestDatabase } from './support/database';
@@ -39,7 +40,7 @@ let next = 0;
 repositoryContract<Invoice>(
   { describe, it, expect, beforeEach, afterEach },
   {
-    name: 'A TypeORM repository built on manager() and optimisticUpdate',
+    name: 'A TypeORM repository built on manager() and saveTenantAggregate',
     createRepository: async () => {
       await database.truncate();
 
@@ -58,6 +59,33 @@ describe('a repository declared with @Repository', () => {
     const declare = Repository(InvoiceRepository, [TypeOrmContext, ExecutionScope, Clock]);
 
     expect(() => declare(TypeOrmInvoiceRepository)).not.toThrow();
+  });
+});
+
+describe('saveAggregate, on an entity no tenant column confines', () => {
+  const clock = new FixedClock(new Date('2026-03-01T10:00:00.000Z'));
+
+  const saved = (invoice: Invoice): Promise<void> =>
+    saveAggregate(createTypeOrmUnitOfWork(database.dataSource), invoices, {
+      aggregate: invoice,
+      row: { ...invoice.state, tenantId: 'acme' },
+      scope: scopeOf(ada),
+      clock,
+    });
+
+  it('inserts the row at version 1 with its creation stamp, then updates it while it holds the version it read', async () => {
+    await database.truncate();
+
+    const invoice = Invoice.draft('inv-plain', 100);
+
+    await saved(invoice);
+    invoice.addCharge(50);
+    await saved(invoice);
+
+    const row = await database.dataSource.manager.findOneBy(invoices, { id: 'inv-plain' });
+
+    expect(row).toMatchObject({ amount: 150, version: 2, createdBy: 'ada', updatedBy: 'ada' });
+    await expect(saved(loadedAt(Invoice.draft('inv-plain', 1), 1))).rejects.toBeInstanceOf(ConcurrencyError);
   });
 });
 

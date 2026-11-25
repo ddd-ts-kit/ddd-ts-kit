@@ -1,29 +1,13 @@
-import {
-  loadedAt,
-  stampCreation,
-  stampUpdate,
-  tenantScopeOf,
-  type Clock,
-  type ExecutionScope,
-} from '@ddd-ts-kit/kernel';
-import {
-  insertIgnoringConflict,
-  optimisticUpdate,
-  ownTenantWhere,
-  tenantWhere,
-  type TypeOrmContext,
-} from '../../../../../src';
-import { Invoice, type InvoiceState } from '../../domain/invoice';
+import { loadedAt, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { saveTenantAggregate, tenantWhere, type TypeOrmContext } from '../../../../../src';
+import { Invoice } from '../../domain/invoice';
 import type { InvoiceRepository } from '../../domain/repositories/invoice.repository';
 import { invoices } from './invoices';
 
-type VersionedInvoice = InvoiceState & { version: number };
-
 /**
  * The repository a consuming project would write: no transaction in sight, every statement
- * confined to the tenant of the work in progress through the helpers (`tenantWhere` to read,
- * `ownTenantWhere` to update, `tenantScopeOf` on the inserted row), audit columns stamped from
- * its actor.
+ * confined to the tenant of the work in progress (`tenantWhere` to read, `saveTenantAggregate` to
+ * write), audit columns stamped from its actor.
  */
 export class TypeOrmInvoiceRepository implements InvoiceRepository {
   constructor(
@@ -43,23 +27,11 @@ export class TypeOrmInvoiceRepository implements InvoiceRepository {
   }
 
   async save(invoice: Invoice): Promise<void> {
-    await optimisticUpdate(invoice, async ({ expected, next }) => {
-      const state = { ...invoice.state, version: next };
-
-      return expected === 0 ? this.insert(state) : this.update(state, expected);
+    await saveTenantAggregate(this.context, invoices, {
+      aggregate: invoice,
+      row: invoice.state,
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: VersionedInvoice): Promise<number> {
-    const row = { ...state, ...tenantScopeOf(this.scope), ...stampCreation(this.scope, this.clock) };
-
-    return (await insertIgnoringConflict(this.context.manager(), invoices, row)) ? 1 : 0;
-  }
-
-  private async update(state: VersionedInvoice, expected: number): Promise<number> {
-    const guarded = { id: state.id, version: expected, ...ownTenantWhere(this.scope) };
-    const row = { ...state, ...stampUpdate(this.scope, this.clock) };
-
-    return (await this.context.manager().update(invoices, guarded, row)).affected ?? 0;
   }
 }

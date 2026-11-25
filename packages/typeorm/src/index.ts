@@ -33,6 +33,8 @@ export * from './columns/tenant-column';
 export * from './tenancy/tenant-where';
 export * from './tenancy/own-tenant-where';
 export * from './sql/insert-ignoring-conflict';
+export * from './aggregates/save-aggregate';
+export * from './aggregates/save-tenant-aggregate';
 export * from './locks/advisory-lock';
 export * from './locks/try-advisory-lock';
 export * from './read-model/read-model-stamps';
