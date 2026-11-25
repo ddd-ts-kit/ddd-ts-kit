@@ -158,6 +158,8 @@ describe('a policy as generated', () => {
     expect(spec).toContain("it('refuses everybody until its rule is written', () => {");
     expect(spec).toContain("it.todo('allows the actor the rule is written for');");
     expect(spec).not.toContain('toBe(true)');
+    // The permission and the name are said once, where the policy is declared: its spec holds the rule alone.
+    expect(spec).not.toContain('bears on the permission');
   });
 });
 
