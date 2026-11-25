@@ -206,6 +206,36 @@ describe('expectProblem with facts', () => {
   });
 });
 
+describe('expectProblem, when the answer is another one', () => {
+  const invalid = {
+    status: 422,
+    headers: { 'content-type': 'application/problem+json; charset=utf-8' },
+    body: {
+      status: 422,
+      code: 'VALIDATION_FAILED',
+      detail: 'startsAt must be in the future',
+      errors: [{ path: 'startsAt' }],
+    },
+  };
+
+  it('shows the body, where the API says why, under what was expected and received', () => {
+    expect(failureOf(() => expectProblem(invalid, { status: 409, code: 'SLOT_TAKEN' }))).toBe(
+      [
+        'The answer is not the expected problem.',
+        "Expected: { contentType: 'application/problem+json', problem: { code: 'SLOT_TAKEN', status: 409 }, status: 409 }",
+        "Received: { contentType: 'application/problem+json', problem: { code: 'VALIDATION_FAILED', status: 422 }, status: 422 }",
+        "Body: { code: 'VALIDATION_FAILED', detail: 'startsAt must be in the future', errors: [ { path: 'startsAt' } ], status: 422 }",
+      ].join('\n'),
+    );
+  });
+
+  it('fails as an assertion does, with what was expected and received for the runner to compare', () => {
+    expect(() => expectProblem(invalid, { status: 409 })).toThrow(
+      expect.objectContaining({ name: 'AssertionError', operator: 'expectProblem' }),
+    );
+  });
+});
+
 describe('the codes a caller names', () => {
   type OrderCode = 'ORDER_ALREADY_PAID' | 'EMPTY_ORDER';
 

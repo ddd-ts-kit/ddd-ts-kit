@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:b85ae5663b1b1f13 -->
+<!-- translation-of: README.md sha256:7c2836bd4ae71a3a -->
 
 # @ddd-ts-kit/testing
 
@@ -696,7 +696,7 @@ afterAll(() => server.close());
 | `client.get / post / put / patch / delete` | du JSON en entrée, `{ status, headers, body }` en sortie ; `body` est analysé quand le type de contenu est JSON, du texte sinon ; un 4xx ou un 5xx est une réponse, pas une exception |
 | `client.post(path, body, { headers })`, `client.withHeaders(headers)` | des en-têtes pour un appel, ou un client pour un autre appelant |
 | `expectStatus(response, 201)` | rend la réponse, ou échoue en montrant le corps, où l'API dit pourquoi |
-| `expectProblem(response, { status, code, facts })` | vérifie une réponse RFC 9457 `application/problem+json` et rend le document ; `code` et `facts` sont optionnels, et `facts` nomme les faits que le document doit exposer, tels que JSON les écrit (une date est son texte ISO) |
+| `expectProblem(response, { status, code, facts })` | vérifie une réponse RFC 9457 `application/problem+json` et rend le document ; `code` et `facts` sont optionnels, et `facts` nomme les faits que le document doit exposer, tels que JSON les écrit (une date est son texte ISO). Quand elle échoue, elle montre ce qui était attendu, ce qui a été reçu et le corps, où l'API dit pourquoi |
 | `settled(sources, { timeoutMs = 2000, intervalMs = 10 })` | se résout dès que chaque source ne compte plus de travail en attente ; quand le temps est écoulé, échoue en nommant chaque source qui attend encore, combien elle en tient et combien en a échoué |
 | `eventually(assertion, { timeoutMs = 2000, intervalMs = 20 })` | réessaie jusqu'à ce que l'assertion passe ; quand le temps est écoulé, échoue en citant la dernière erreur |
 | `pending(body)` | tient un scénario d'acceptation écrit avant son code : passe tant qu'une assertion de `body` échoue, échoue dès que `body` passe (retirer l'enveloppe) ou s'arrête sur autre chose qu'une assertion (le scénario est cassé) ; `it('#US5.02 AC1 ...', pending(async () => { ... }))`. Une assertion se reconnaît à sa forme, jamais par `instanceof Error` : une `AssertionError` de `node:assert`, que Jest charge dans un autre royaume (*realm*) que la spec, ou un *matcher* de Vitest ou de Jest qui échoue, y compris comme cause de l'échec d'`eventually`. Une attente qu'`until` ou `settled` abandonne échoue comme une assertion : un scénario qui attend une projection ou l'outbox est donc tenu comme un autre |
