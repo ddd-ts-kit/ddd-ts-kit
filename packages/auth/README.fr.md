@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:0ae3807a8591ff8f -->
+<!-- translation-of: README.md sha256:3aba6554137da10b -->
 
 # @ddd-ts-kit/auth
 
@@ -696,12 +696,12 @@ contrat.
 | Classe | `RoleBasedAuthorizer` | `PolicyBasedAuthorizer` | `RelationBasedAuthorizer` (`/rebac`) |
 | La question à laquelle il répond | l'un des rôles de l'acteur accorde-t-il cette action ? | les attributs de l'acteur, de la ressource et du moment satisfont-ils une règle ? | existe-t-il un chemin de relations stockées entre cet élément et l'acteur ? |
 | Le choisir quand | les droits suivent les fonctions et portent sur des actions, les mêmes pour chaque élément | les droits dépendent de propriétés : service, montant, statut, heure de la journée, avec des refus explicites | les droits sont par élément et partagés : propriété, équipes, dossiers, « quiconque peut modifier le parent » |
-| Granularité | l'action, plus un contrôle du *tenant* | l'élément, à travers les attributs que vous fournissez | l'élément, par construction |
+| Granularité | l'action | l'élément, à travers les attributs que vous fournissez | l'élément, par construction |
 | Données à maintenir | une table de rôles dans le code, les rôles dans le jeton | un port `ResourceAttributes` (projection ou cache) | des tuples de relation, écrits quand les agrégats sont créés ou partagés |
 | Coût d'un contrôle | constant, aucune E/S | une lecture d'attributs | plusieurs lectures de tuples, bornées par une limite de profondeur |
-| Lister (`listAccessible`) | `all`, `none`, ou un `filter` sur le *tenant* : constant | non disponible : un prédicat n'est pas une requête | `ids`, par expansion inverse : croît avec ce que l'acteur peut atteindre |
-| Raisons de refus typiques | `NO_MATCHING_ROLE`, `TENANT_MISMATCH` | `NO_MATCHING_POLICY`, `EXPLICIT_DENY` | `NO_RELATION`, `RESOURCE_REQUIRED`, `UNMAPPED_PERMISSION`, `DEPTH_EXCEEDED` |
-| Le pourquoi, en mots (`explain`) | les rôles de l'acteur et ce que chacun accorde, puis où la demande peut agir | ce que l'on sait de l'élément, puis chaque politique qui porte sur la permission et si elle a tenu | chaque question posée aux tuples, chaque voie visitée |
+| Lister (`listAccessible`) | `all` ou `none` : constant | non disponible : un prédicat n'est pas une requête | `ids`, par expansion inverse : croît avec ce que l'acteur peut atteindre |
+| Raisons de refus typiques | `NO_MATCHING_ROLE` | `NO_MATCHING_POLICY`, `EXPLICIT_DENY` | `NO_RELATION`, `RESOURCE_REQUIRED`, `UNMAPPED_PERMISSION`, `DEPTH_EXCEEDED` |
+| Le pourquoi, en mots (`explain`) | les rôles de l'acteur et ce que chacun accorde | ce que l'on sait de l'élément, puis chaque politique qui porte sur la permission et si elle a tenu | chaque question posée aux tuples, chaque voie visitée |
 
 **Ce qui change quand vous passez de l'un à l'autre.** L'adaptateur donné à
 `authorizationModule`, et les données dont il a besoin. De RBAC à ReBAC : ajoutez `resource:`
@@ -716,7 +716,9 @@ pour les quelques règles par élément » ne demande aucun magasin de tuples, e
 faut commencer.
 
 Chaque autorisateur refuse l'acteur anonyme (`ANONYMOUS`), et un acteur de type `system` n'a
-aucun droit à moins que le modèle ne lui en donne un.
+aucun droit à moins que le modèle ne lui en donne un. Aucun modèle ne connaît de *tenant* :
+`TenantBoundAuthorizer` tient celui que le projet a choisi, quel qu'il soit, aux *tenants* de
+l'acteur (`TENANT_MISMATCH`), voir [Tenants](#tenants).
 
 **Pourquoi ce refus.** Chaque autorisateur du kit répond à `explain` par la même décision que
 `check` et une trace en mots, une ligne par question qu'il a posée en chemin ; `traceText` met
@@ -753,13 +755,15 @@ new SignedInGrantsAuthorizer({
 ```
 
 Seul un acteur de type `user` détient ces attributions : un système, un service et l'acteur
-anonyme vont au modèle. Ce qu'elles couvrent liste `all` ; une autre liste relève du modèle, et
-un modèle qui ne sait pas lister la fait échouer avec `ListingNotSupportedError`. Le *preset*
+anonyme vont au modèle. Ce qu'elles couvrent liste `all` (un seul *tenant* de ce tout sous
+`TenantBoundAuthorizer`) ; une autre liste relève du modèle, et un modèle qui ne sait pas lister
+la fait échouer avec `ListingNotSupportedError`. Le *preset*
 d'identité de la CLI écrit cette enveloppe dans `createAuthorizer` et son attribution dans
 `signed-in-grants.ts`.
 
 Une permission de ces attributions liste `all` quel que soit le modèle, avant que le modèle soit
-interrogé : toute personne connectée lit tous les éléments. Ce n'est donc jamais le moyen de
+interrogé : toute personne connectée lit tous les éléments, ceux de son *tenant* quand
+l'autorisateur est tenu aux *tenants*. Ce n'est donc jamais le moyen de
 faire passer le bus à une recherche que le modèle refuse : attribuez-y la permission de lancer la
 recherche (`document.search`), et restreignez la recherche par la portée d'une autre permission
 (`document.view`), dont le modèle décide.
@@ -768,7 +772,7 @@ recherche (`document.search`), et restreignez la recherche par la portée d'une 
 
 <!-- checked sample -->
 ```ts
-import { RoleBasedAuthorizer, tenantOfContext, type PermissionSet } from '@ddd-ts-kit/auth';
+import { RoleBasedAuthorizer, type PermissionSet } from '@ddd-ts-kit/auth';
 
 declare const billingPermissions: PermissionSet<'billing', 'invoice.read' | 'invoice.void'>;
 
@@ -780,8 +784,6 @@ export const authorizer = new RoleBasedAuthorizer({
     automation: [billingPermissions['invoice.read']],
   },
   inherits: { controller: ['clerk'] },          // un controller a tout ce qu'a un clerk
-  tenantOf: tenantOfContext,                    // active le contrôle du tenant
-  crossTenantRoles: ['admin'],                  // peut agir dans tous les tenants
   systemRole: 'automation',                     // le rôle de systemActor(...), aucun par défaut
 });
 ```
@@ -795,27 +797,12 @@ détiendrait ce que détient le système. Le rôle système peut hériter d'autr
 
 Un droit accordé est une permission, son identifiant, `<context>:*` ou `*`. Un droit qui ne
 pourrait jamais correspondre, un rôle hérité inconnu et un cycle dans la hiérarchie sont refusés
-à la construction, de même qu'un rôle multi-*tenant* ou un rôle système qu'aucun rôle ne déclare,
-et `crossTenantRoles` sans `tenantOf` : chacun ne ferait rien, sans le dire.
+à la construction, de même qu'un rôle système qu'aucun rôle ne déclare : il ne ferait rien, sans
+le dire.
 
-Avec `tenantOf`, le *tenant* que vise une requête est lu dans le `context` de l'exigence :
-`requires(X, permission, { context: (command) => ({ tenantId: command.tenantId }) })`. Elle est
-refusée quand l'acteur n'y appartient pas (son `tenantId`, ou ses `tenants` pour un acteur de
-plusieurs), quand ce n'est pas un identifiant de *tenant*, et quand c'est un autre *tenant* que
-celui où s'exécute le travail. La garde du bus et `Access` donnent à l'autorisateur ce *tenant* du
-travail (`workTenantId`), lu dans la portée d'exécution, ce que `authorizationModule` câble de
-lui-même. Un acteur système appartient au *tenant* où s'exécute son travail (une tâche par
-*tenant*, l'événement d'un *tenant*) et à aucun en dehors. Une requête qui ne vise aucun *tenant*
-passe : les dépôts la limitent au *tenant* du travail (voir
-[Multitenancy](../../docs/concepts/multitenancy.fr.md)).
-
-Une liste est filtrée sur le *tenant* du travail quand l'acteur y appartient, sinon sur le seul
-*tenant* d'un acteur qui n'en a qu'un ; un acteur de plusieurs *tenants* hors du travail d'un
-*tenant* ne liste rien.
-
-`explain` dit quel rôle accorde, et à travers quel rôle inclus, puis où la demande peut agir.
-Pourquoi un commis qui porte aussi un rôle que personne n'a déclaré ne peut pas annuler une
-facture, et pourquoi un contrôleur peut en lire une dans le *tenant* acme :
+`explain` dit quel rôle accorde, et à travers quel rôle inclus. Pourquoi un commis qui porte
+aussi un rôle que personne n'a déclaré ne peut pas annuler une facture, et pourquoi un contrôleur
+peut en lire une :
 
 ```text
   billing:invoice.void asked of the roles clerk, intern
@@ -826,7 +813,6 @@ x   intern is not a declared role
 ```text
   billing:invoice.read asked of the roles controller
     controller grants billing:*, which covers billing:invoice.read
-  the actor belongs to acme, the tenant the request targets
 ```
 
 ### Politiques sur des attributs
@@ -1116,6 +1102,65 @@ retentée, à travers l'outbox. `test/relationship-sync.spec.ts` est la version 
 l'écriture depuis le gestionnaire, avec le cas de l'annulation ; tenez votre magasin SQL à
 `relationTupleStoreContract`.
 
+## Tenants
+
+Qui peut faire quoi relève du modèle ; dans quel *tenant*, c'est la même règle pour tous les
+modèles, écrite une fois : `TenantBoundAuthorizer` tient un autorisateur aux *tenants* de
+l'acteur. Il entoure tout, un `SignedInGrantsAuthorizer` compris, pour que rien ne réponde avant
+que le *tenant* soit interrogé.
+
+<!-- checked sample -->
+```ts
+import { TenantBoundAuthorizer, type Authorizer } from '@ddd-ts-kit/auth';
+
+// Rôles, politiques sur des attributs, relations, un service qui décide, avec ou sans attributions de connexion :
+declare const model: Authorizer;
+
+export const authorizer = new TenantBoundAuthorizer({
+  model,                          // décide d'abord : son refus reste tel quel
+  crossTenantRoles: ['operator'], // peut agir dans tous les tenants
+});
+```
+
+Le *tenant* que vise une requête est lu dans le `context` de l'exigence :
+`requires(X, permission, { context: (command) => ({ tenantId: command.tenantId }) })`
+(`tenantOfContext`, la valeur par défaut de `tenantOf`). Ce que le modèle autorise est refusé
+avec `TENANT_MISMATCH` quand l'acteur n'appartient pas à ce *tenant* (son `tenantId`, ou ses
+`tenants` pour un acteur de plusieurs), quand ce qui le nomme n'est pas un identifiant de
+*tenant* (un autre type qu'un texte compris), et quand c'est un autre *tenant* que celui où
+s'exécute le travail. La garde du bus et `Access` donnent à l'autorisateur ce *tenant* du travail
+(`workTenantId`), lu dans la portée d'exécution, ce que `authorizationModule` câble de lui-même.
+Un acteur système appartient au *tenant* où s'exécute son travail (une tâche par *tenant*,
+l'événement d'un *tenant*) et à aucun en dehors. Une requête qui ne vise aucun *tenant* passe :
+les dépôts la limitent au *tenant* du travail (voir
+[Multitenancy](../../docs/concepts/multitenancy.fr.md)).
+
+Un rôle de `crossTenantRoles` est lu parmi les rôles de l'acteur tels que son justificatif les
+énonce. Un acteur système n'en porte aucun, le `systemRole` des rôles n'en fait pas partie : le
+système agit dans le *tenant* de son travail.
+
+Ce que le modèle liste est tenu à un seul *tenant*, celui du travail quand l'acteur y appartient,
+sinon le seul *tenant* d'un acteur qui n'en a qu'un : `all` devient `filter { tenantId }`, un
+filtre du modèle gagne `tenantId`, les identifiants restent tels que le modèle les a listés. Un
+acteur de plusieurs *tenants* hors du travail d'un *tenant*, et un acteur d'aucun, ne listent
+rien. C'est `rowsConfinedBy: 'read-port'`, la valeur par défaut : le port de lecture fait du
+filtre sa clause `WHERE`. Là où les magasins confinent chaque instruction au *tenant* du travail
+(les aides de *tenant* des paquets d'ORM, `init --tenancy shared-table`),
+`rowsConfinedBy: 'stores'` laisse la portée du modèle telle quelle, et la vide pour un acteur qui
+n'appartient pas au *tenant* du travail ; c'est celle qu'écrit `init`, autour de
+`createAuthorizer()`, dans un projet à *tenants*.
+
+`explain` donne les lignes du modèle, puis où la demande peut agir :
+
+```text
+  billing:invoice.read asked of the roles controller
+    controller grants billing:*, which covers billing:invoice.read
+  the actor belongs to acme, the tenant the request targets
+```
+
+`authorizerContract` le prouve de tout autorisateur : tenu aux *tenants*, ce qu'il autorise est
+refusé dans le *tenant* de quelqu'un d'autre, et il ne liste jamais tout.
+
 ## L'acteur courant
 
 **Les cas d'usage le reçoivent explicitement.** C'est une donnée de la commande ou de la requête
@@ -1224,9 +1269,9 @@ function whereOf(scope: AccessScope): SQL | undefined {
 
 | `AccessScope` | Donné par | Le port de lecture |
 |---|---|---|
-| `{ kind: 'all' }` | RBAC quand le rôle accorde la permission ; `SignedInGrantsAuthorizer` pour ce que couvrent ses attributions, quel que soit le modèle | n'ajoute rien |
+| `{ kind: 'all' }` | RBAC quand le rôle accorde la permission ; `SignedInGrantsAuthorizer` pour ce que couvrent ses attributions, quel que soit le modèle ; jamais sous `TenantBoundAuthorizer`, sauf quand les magasins confinent les lignes | n'ajoute rien |
 | `{ kind: 'none' }` | n'importe quel modèle, et toujours pour l'acteur anonyme | renvoie une page vide sans interroger la base |
-| `{ kind: 'filter', filter }` | RBAC avec le contrôle du *tenant* : `{ tenantId }` | ajoute une égalité par entrée, sur les colonnes qu'il choisit de faire correspondre |
+| `{ kind: 'filter', filter }` | `TenantBoundAuthorizer`, autour d'un modèle qui liste `all` : `{ tenantId }` | ajoute une égalité par entrée, sur les colonnes qu'il choisit de faire correspondre |
 | `{ kind: 'ids', ids }` | ReBAC | ajoute `id IN (...)`, ou une jointure sur une table temporaire quand la liste est longue |
 
 `Access.scope` lève `ListingNotSupportedError` quand l'autorisateur n'a pas de

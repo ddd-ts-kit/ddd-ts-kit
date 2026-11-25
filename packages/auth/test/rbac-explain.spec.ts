@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { anonymousActor, systemActor, type Actor } from '@ddd-ts-kit/kernel';
-import { RoleBasedAuthorizer, tenantOfContext, traceText, type CheckRequest } from '../src';
+import { RoleBasedAuthorizer, TenantBoundAuthorizer, traceText, type CheckRequest } from '../src';
 import { ada, billingPermissions, bob } from './support/billing';
 
 const read = billingPermissions['invoice.read'];
@@ -67,12 +67,13 @@ describe('RoleBasedAuthorizer.explain', () => {
   });
 });
 
-describe('RoleBasedAuthorizer.explain, with the tenant check', () => {
-  const tenanted = new RoleBasedAuthorizer({
-    roles: { clerk: [read], operator: ['*'], automation: [read] },
-    tenantOf: tenantOfContext,
+describe('RoleBasedAuthorizer.explain, bound to the tenants of the actor', () => {
+  const tenanted = new TenantBoundAuthorizer({
+    model: new RoleBasedAuthorizer({
+      roles: { clerk: [read], operator: ['*'], automation: [read] },
+      systemRole: 'automation',
+    }),
     crossTenantRoles: ['operator'],
-    systemRole: 'automation',
   });
 
   const operator: Actor = { id: 'ops', type: 'user', roles: ['operator'], attributes: {} };

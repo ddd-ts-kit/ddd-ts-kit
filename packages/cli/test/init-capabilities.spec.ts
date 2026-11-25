@@ -109,6 +109,27 @@ describe('integration events', () => {
 });
 
 describe('authentication and authorization', () => {
+  it.each(['rbac', 'abac', 'rebac', 'custom'])(
+    'in a project with tenants, holds the model %s to the tenants of the actor, the same way',
+    (authz) => {
+      const bound = "new TenantBoundAuthorizer({ model: createAuthorizer(), rowsConfinedBy: 'stores' })";
+      const container = initProject('--authz', authz, '--orm', 'knex', '--tenancy', 'shared-table');
+      const byHand = initProject('--authz', authz, '--orm', 'knex', '--tenancy', 'shared-table', '--di', 'manual');
+
+      expect(platform(container, 'auth/authorization/authorization.ts')).toContain(`return ${bound};`);
+      expect(platform(container, 'auth/authorization/authorization.ts')).toContain('authorizer: tenantBound(),');
+      expect(platform(byHand, 'composition/create-platform.ts')).toContain(`const authorizer = ${bound};`);
+
+      expect(platform(byHand, 'composition/create-platform.ts')).toContain(
+        'new UseCaseProtection(authorizer, onDecision, scope);',
+      );
+
+      expect(platform(initProject('--authz', authz), 'auth/authorization/authorization.ts')).not.toContain(
+        'TenantBound',
+      );
+    },
+  );
+
   it.each([
     ['rbac', 'roles/roles.ts', 'new RoleBasedAuthorizer({ roles, systemRole: Role.System })'],
     ['abac', 'attributes/attribute-policies.ts', 'policies: attributePolicies'],

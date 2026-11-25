@@ -1,5 +1,5 @@
 [English](authorization-in-practice.md) · **Français**
-<!-- translation-of: authorization-in-practice.md sha256:b5d6f1204a330384 -->
+<!-- translation-of: authorization-in-practice.md sha256:252f51cd2121c6ec -->
 
 # L'autorisation en pratique
 
@@ -121,10 +121,10 @@ du kit y répondent ; un modèle qui ne sait pas dire plus que sa raison le lais
 | | `RoleBasedAuthorizer` | `PolicyBasedAuthorizer` | `RelationBasedAuthorizer` |
 |---|---|---|---|
 | Sous-chemin | `@ddd-ts-kit/auth` | `@ddd-ts-kit/auth` | `@ddd-ts-kit/auth/rebac` |
-| Utilise `resource` | seulement pour la vérification du *tenant* | pour charger les attributs de l'élément | comme objet de la relation |
-| Codes de refus | `NO_MATCHING_ROLE`, `TENANT_MISMATCH` | `EXPLICIT_DENY`, `NO_MATCHING_POLICY` | `NO_RELATION`, `DEPTH_EXCEEDED`, `UNMAPPED_PERMISSION` |
+| Utilise `resource` | pas du tout | pour charger les attributs de l'élément | comme objet de la relation |
+| Codes de refus | `NO_MATCHING_ROLE` | `EXPLICIT_DENY`, `NO_MATCHING_POLICY` | `NO_RELATION`, `DEPTH_EXCEEDED`, `UNMAPPED_PERMISSION` |
 | `listAccessible` | oui, en temps constant | non | oui, par expansion inverse |
-| `explain` | les rôles de l'acteur et ce que chacun accorde, puis le contrôle du *tenant* | chaque politique qui porte sur la permission, tenue ou non | chaque question posée aux tuples |
+| `explain` | les rôles de l'acteur et ce que chacun accorde | chaque politique qui porte sur la permission, tenue ou non | chaque question posée aux tuples |
 
 ### Rôles
 
@@ -133,21 +133,13 @@ du kit y répondent ; un modèle qui ne sait pas dire plus que sa raison le lais
 permet à un rôle d'en inclure d'autres (`{ admin: ['receptionist'] }`). Les attributions
 effectives de chaque rôle sont calculées une fois, dans le constructeur, et un rôle inconnu ou un
 cycle dans la hiérarchie lève `AuthorizationSetupError` au démarrage plutôt qu'à la première
-requête, comme un rôle multi-*tenant* ou un rôle système qu'aucun rôle ne déclare et
-`crossTenantRoles` sans `tenantOf`.
+requête, comme un rôle système qu'aucun rôle ne déclare.
 
 Une vérification refuse l'acteur anonyme, puis cherche un rôle de l'acteur qui couvre la
-permission, puis, quand `tenantOf` est configuré, refuse une demande qui vise un *tenant* auquel
-l'acteur n'appartient pas (son `tenantId` ou ses `tenants`), qui n'est pas un identifiant de
-*tenant*, ou qui est un autre *tenant* que celui où s'exécute le travail (`workTenantId`, donné
-par la garde et `Access` depuis la portée d'exécution), sauf si l'un de ses rôles figure dans
-`crossTenantRoles`. Les acteurs de type `system` ne portent aucun rôle ; `systemRole` leur en
-donne un, et ils appartiennent au *tenant* où s'exécute leur travail. La liste vaut `none` sans le
-droit, `all` quand les *tenants* ne sont pas gérés ou que l'acteur les traverse,
-`filter: { tenantId }` sur le *tenant* du travail ou le seul *tenant* de l'acteur sinon, et
-`none` pour un acteur de plusieurs *tenants* hors du travail d'un *tenant*.
+permission. Les acteurs de type `system` ne portent aucun rôle ; `systemRole` leur en donne un. La
+liste vaut `all` avec le droit, `none` sans.
 `explain` dit la même chose en mots : les rôles de l'acteur, ce que chacun accorde et à travers
-quel rôle inclus, puis où la demande peut agir.
+quel rôle inclus.
 
 Dans un projet généré, les rôles vivent dans `platform/auth/roles/roles.ts`, et le
 super-administrateur détient `*`. Une nouvelle permission n'est donc atteinte que par les
@@ -192,6 +184,22 @@ même schéma sur OpenFGA.
 Changer de modèle remplace l'autorisateur donné à `authorizationModule` et les données dont il a
 besoin. Les permissions, les commandes, les gestionnaires, les politiques et les routes ne
 changent pas.
+
+### Le *tenant*, pour tous les modèles
+
+Aucun modèle ne connaît de *tenant*. `TenantBoundAuthorizer` entoure celui que le projet a
+choisi, et ce qui se tient devant lui (`SignedInGrantsAuthorizer`) : ce que le modèle autorise,
+il le refuse avec `TENANT_MISMATCH` quand la demande vise un *tenant* auquel l'acteur
+n'appartient pas (son `tenantId` ou ses `tenants`), quelque chose qui n'est pas un identifiant de
+*tenant*, ou un autre *tenant* que celui où s'exécute le travail (`workTenantId`, donné par la
+garde et `Access` depuis la portée d'exécution), sauf si l'un des rôles de l'acteur figure dans
+`crossTenantRoles`. Un acteur système appartient au *tenant* où s'exécute son travail. Ce que le
+modèle liste est tenu à un seul *tenant* : `all` devient `filter: { tenantId }` sur le *tenant*
+du travail ou le seul *tenant* de l'acteur, et `none` pour un acteur de plusieurs *tenants* hors
+du travail d'un *tenant* ou d'aucun ; là où les magasins confinent chaque instruction au *tenant*
+du travail (`rowsConfinedBy: 'stores'`, ce qu'écrit `init` dans un projet à *tenants*), la portée
+du modèle reste telle quelle. `explain` ajoute sa ligne après celles du modèle. La suite de
+contrat des autorisateurs prouve la règle de chacun d'eux.
 
 ## Ce qu'ajoute `Access` : des politiques sur l'élément chargé
 
