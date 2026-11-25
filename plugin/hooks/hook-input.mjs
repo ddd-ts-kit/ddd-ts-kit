@@ -2,6 +2,7 @@
 // of a tool call file by file, the decision in the shape each host reads. Every mode reads it.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { call } from './call.mjs';
 import { parseJson } from './disk.mjs';
 
 // The tools of VS Code that write a file named by `filePath`, by the names its chat gives its hooks.
@@ -169,6 +170,29 @@ function writtenText(tool) {
 function replacedText(tool) {
   const edits = Array.isArray(tool.edits) ? tool.edits.map((edit) => edit.old_string ?? edit.oldString ?? '') : [];
   return [tool.old_string ?? '', tool.old_str ?? '', tool.oldString ?? '', ...edits].join('\n');
+}
+
+// Each host reads the decision in its own shape. Codex cannot put a question to the user: what
+// Claude Code asks is said to the user there, and left to the checks of the pipeline.
+export function decide(input, permissionDecision, reason) {
+  const permissionDecisionReason = `ddd-ts-kit: ${reason}`;
+  const host = hostOf(input);
+  if (host === 'copilot') {
+    return emit({ permissionDecision, permissionDecisionReason });
+  }
+  if (host === 'codex' && permissionDecision === 'ask') {
+    return emit({ systemMessage: permissionDecisionReason });
+  }
+  const additionalContext = call.notice;
+  call.notice = undefined;
+  emit({
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision,
+      permissionDecisionReason,
+      ...(additionalContext ? { additionalContext } : {}),
+    },
+  });
 }
 
 export function emit(output) {

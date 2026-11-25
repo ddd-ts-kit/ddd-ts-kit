@@ -25,7 +25,6 @@ import { call } from './call.mjs';
 import {
   filesIn,
   isDirectory,
-  isOwnFolder,
   isRecord,
   parseJson,
   readBounded,
@@ -34,8 +33,52 @@ import {
   realOf,
   realPlace,
 } from './disk.mjs';
-import { editsOf, emit, hostOf, patchWrites, readInput, sessionOf, toolInput, writesOf } from './hook-input.mjs';
-import { linkedFolder, removeKitFile, writeKitFile } from './kit-files.mjs';
+import { git, gitFields, gitRun, NOT_READ, unreadRepositoryNotice } from './git.mjs';
+import {
+  alreadyRemembered,
+  forget,
+  GUARD_HELD,
+  GUARD_STATE,
+  markerOf,
+  pruneGuardState,
+  reminderMarker,
+  sharedStateFile,
+  stateFile,
+  writeState,
+} from './guard-state.mjs';
+import {
+  decide,
+  editsOf,
+  emit,
+  hostOf,
+  patchWrites,
+  readInput,
+  sessionOf,
+  toolInput,
+  writesOf,
+} from './hook-input.mjs';
+import { removeKitFile, writeKitFile } from './kit-files.mjs';
+import {
+  ANSWER_BYTES,
+  CLEAN_INSTALL,
+  CONFIG,
+  CONFIG_BYTES,
+  describe,
+  describePlace,
+  E2E_SPEC,
+  errorsOf,
+  findProject,
+  FORMATTED_FILE,
+  GUARD_MODES,
+  insideContexts,
+  installedBin,
+  outsideItsModule,
+  projectPath,
+  runCli,
+  SPEC_FILE,
+  TEST_DIRECTORY,
+  TIME_SCALE,
+} from './project.mjs';
 import {
   commonDirOf,
   gitDirOf,
@@ -57,11 +100,6 @@ import {
   STORY_ID,
 } from './said-as-data.mjs';
 
-const CONFIG = 'ddd-ts-kit.config.json';
-// The settings of Claude Code that turn its sandbox on, in a project.
-const CLAUDE_SETTINGS = '.claude/settings.json';
-// The most of the config the guard reads: a larger one is not read, and the guard judges nothing there.
-const CONFIG_BYTES = 256 * 1024;
 // The version of the packages the skills of this plugin describe. `release-version.mjs` keeps it
 // the version of the kit: setting a new version of the packages rewrites it.
 const KIT_VERSION = '0.114.1';
@@ -90,8 +128,7 @@ const WORKER_REPORT = '.ddd-ts-kit/report.md';
 const WORKER_AGENT = 'context-builder';
 // The builder of the plugin, as its hooks of SubagentStart and SubagentStop match it: the one counted.
 const BUILDER_AGENT = `ddd-ts-kit:${WORKER_AGENT}`;
-// What the config may say of the guard; anything else is read as enforce.
-const GUARD_MODES = ['off', 'advise', 'enforce'];
+
 // The host caps SessionStart context at 10 000 characters; a session should start far below it.
 const SESSION_CONTEXT_LIMIT = 3000;
 
@@ -99,24 +136,16 @@ const SESSION_CONTEXT_LIMIT = 3000;
 const COMPARED_SIDES = 16;
 const FOLDER_FILES = 5000;
 
-const COMMIT_DEFAULTS = { maxFiles: 20, maxLines: 600 };
 const COUNTED_FILE_BYTES = 1_000_000;
-// The files Biome formats: with `formatOnWrite` in the config, the project's own Biome lays one out as it is written.
-const FORMATTED_FILE = /\.(?:[cm]?[jt]sx?|jsonc?)$/;
+
 const FORMAT_TIMEOUT = 5000;
-// The tests of the guard shrink its time limits with DDD_TS_KIT_GUARD_TIME_SCALE (a fiftieth) to reach
-// them with a CLI that sleeps; a user has no reason to set it.
-const TIME_SCALE = timeScale(process.env.DDD_TS_KIT_GUARD_TIME_SCALE);
+
 // What a session start gives the CLI in all, of the 15 s of its hook: past it, the calls left are skipped.
 const BRIEFING_BUDGET = 10_000;
 // Said at session start under the regulated profile, in place of what the CLI would have answered.
 const REGULATED_NOTICE =
   'Regulated profile: the guard runs no program of this project, neither its CLI nor its Biome, at any hook: the pipeline and the commit gate hold those checks, and `npx ddd-ts-kit check` runs them here.';
-// Said under the regulated profile of a project git is not run in.
-const UNREAD_REPOSITORY =
-  'This project lies outside the git repository of the session root: under the regulated profile the guard runs no git there, so it reads neither its uncommitted changes nor its branch.';
-// What git answers where the guard does not run it: as a run that failed, with no output.
-const NOT_READ = { status: null, stdout: '', stderr: '' };
+
 const BRIEFING_CUT =
   'Briefing cut short: the CLI did not answer in time; `npx ddd-ts-kit status` and `npx ddd-ts-kit list` say the rest.';
 // The written files one call of post-write checks, of the 15 s of its hook: a patch of Codex can hold many.
@@ -202,14 +231,9 @@ const NEUTRAL_PROGRAMS = new Set(['cd', 'pushd', 'popd', 'pwd', 'true', 'test', 
 const AWK_PROGRAMS = new Set(['awk', 'gawk', 'mawk', 'nawk']);
 // What a command may also do with the locked regression spec of a fix: run it, however the runner is launched.
 const RUNNING_PROGRAMS = new Set(['npm', 'yarn', 'bun', 'bunx', 'node', 'vitest', 'jest']);
-// A test or a spec, inside a context: the proof of a fix is written there before its code.
-const TEST_DIRECTORY = /(^|\/)test\//;
-const SPEC_FILE = /\.spec\.ts$/;
 
 // A journey crosses use cases, and often contexts: no single route generates it, so it is written by hand.
 const JOURNEY = /^test\/e2e\/journey-[^/]+\.e2e\.spec\.ts$/;
-// An end-to-end spec at the top of test/e2e/: the one of a use case, a part of it, or a journey.
-const E2E_SPEC = /^test\/e2e\/([^/]+)\.e2e\.spec\.ts$/;
 
 // Changing these is a decision about the rules themselves: the project owner confirms it.
 const GOVERNED_FILES = [
@@ -312,19 +336,10 @@ const UNCOMPARED_COMMITS =
   'The guard could not compare what your last command committed with the state it noted before it: git did not answer for the commits between them (one of them is gone from the repository, or git took too long). Nothing is taken as unchanged, and every call is held until git answers: report to the conductor.';
 const UNCOMPARED_NOTE =
   'ddd-ts-kit: `git status` did not answer in full, so what your last command changed outside your scope was not compared. Name it in your report, for the conductor.';
-// Where the guard keeps the state of a worker between two of its calls: the kit's ignored folder.
-const GUARD_STATE = '.ddd-ts-kit/guard';
-// The markers of what was said or refused once, in the guard's folder of the project, kept a week.
-const GUARD_MARKERS = `${GUARD_STATE}/markers`;
-const MARKER_TTL = 7 * 24 * 3600 * 1000;
-// The state of the runs of a builder, by session and agent: kept a week too.
-const BUILDER_STATE = /^(?:turns|before-run|outside|scope)-[0-9a-f]{16}\.json$/;
-// The content a worker's command found already changed outside its scope, kept so it can be put back.
-const GUARD_HELD = `${GUARD_STATE}/held`;
+
 const FREE_OUTPUT = 'Output to /dev/null or to the system temp directory stays free.';
 const EDIT_WITH_TOOLS = `Inside your scope, the editor tools and the shell may both write; outside it, nothing may. ${FREE_OUTPUT}`;
-// The clean install of each package manager: what installs the lockfile as it is.
-const CLEAN_INSTALL = { npm: 'npm ci', pnpm: 'pnpm install --frozen-lockfile' };
+
 // The subcommands of a package manager that install the lockfile as it is, its aliases included.
 const CLEAN_INSTALLS = ['ci', 'clean-install', 'cin', 'ic', 'install-clean', 'isntall-clean'];
 
@@ -527,13 +542,10 @@ const GUARD_RUNS = [
   ['ddd-ts-kit', 'ddd-ts-kit'],
   ['@biomejs/biome', 'biome'],
 ];
-// The most the guard reads of the answer of a process it starts: past it the process is stopped.
-const ANSWER_BYTES = 64 * 1024 * 1024;
+
 // How a run stopped before its answer ended fails: past ANSWER_BYTES, or past its time limit.
 const CUT_SHORT = new Set(['ENOBUFS', 'ETIMEDOUT']);
-// The commands of git the guard runs that read the files of a checkout, and so would run git in each
-// of its submodules.
-const WORKTREE_READS = ['status', 'diff'];
+
 // The fields before the path in an entry of `git status --porcelain=v2`, by its kind.
 const STATUS_FIELDS = { 1: 8, 2: 9, u: 10, '?': 1 };
 const OUTPUT_REDIRECTS = new Set(['>', '>>', '>|', '&>', '&>>', '<>', '>&']);
@@ -713,12 +725,6 @@ const MODES = {
   'subagent-stop': subagentStop,
 };
 
-// The projects this run of the guard has described: a hook finds the same one several times.
-const projects = new Map();
-// The profile of each folder read.
-const profiles = new Map();
-// The common git directory of the repository of each session root found.
-const repositories = new Map();
 // The scope of a worker in each worktree, read once per call of the guard (`workerScope`).
 const scopes = new Map();
 // The scope files of the story worktrees this run has read, by project root.
@@ -1543,147 +1549,6 @@ function blockStop(errors) {
   });
 }
 
-// Up to a folder another user may write: a config there, the shared temp dir above all, is no project.
-function findProject(from) {
-  let directory = resolve(from);
-  for (;;) {
-    if (!isOwnFolder(directory)) {
-      return undefined;
-    }
-    if (existsSync(join(directory, CONFIG))) {
-      return describeProject(directory);
-    }
-    const parent = dirname(directory);
-    if (parent === directory) {
-      return undefined;
-    }
-    directory = parent;
-  }
-}
-
-function describeProject(root) {
-  if (!projects.has(root)) {
-    projects.set(root, readProject(root));
-  }
-  return projects.get(root);
-}
-
-// What the guard reads of a project, its config read once: a field of the wrong type is its default.
-function readProject(root) {
-  const { config, tooLarge } = readConfig(join(root, CONFIG));
-  const text = (key, otherwise) =>
-    Object.hasOwn(config, key) && typeof config[key] === 'string' && config[key] !== '' ? config[key] : otherwise;
-  const installed = installedCli(root);
-  const regulated = isRegulated(root);
-  return {
-    root,
-    // Under the regulated profile no program of the project runs: of its CLI, the version its manifest states.
-    cli: regulated ? undefined : installed,
-    cliVersion: installed?.version,
-    regulated,
-    sourceRoot: text('sourceRoot', 'src'),
-    contextsDir: text('contextsDir', 'src/contexts'),
-    sharedKernelDir: text('sharedKernelDir', `${text('sourceRoot', 'src')}/shared-kernel`),
-    // The modules of the model each context declares: one folder of the context holding its layers.
-    modules: modulesByContext(config.contexts),
-    platformDir: text('platformDir', 'src/platform'),
-    commit: commitLimits(config.commit),
-    packageManager: config.stack?.packageManager === 'pnpm' ? 'pnpm' : 'npm',
-    // enforce: block; advise: ask the user; off: silent; any other value, enforce, said at session start.
-    // A config too large to read leaves the guard off there, said at session start too.
-    ...(tooLarge === undefined
-      ? guardMode(process.env.DDD_TS_KIT_GUARD ?? config.guard ?? 'enforce')
-      : { mode: 'off', tooLarge }),
-    // required (what init writes in a new project): the code of a context is refused in the main checkout
-    // of the trunk; advised (the key absent, a project started before): only said.
-    worktrees: config.worktrees === 'required' ? 'required' : 'advised',
-    // The project's Biome runs on each written file before the check; absent, off.
-    formatOnWrite: config.formatOnWrite === true && !regulated,
-    // On trial: the dependency rules judge the text about to be written, before the write; absent, after it.
-    dependenciesBeforeWrite: config.dependenciesBeforeWrite === true,
-  };
-}
-
-// Hooks run outside the sandbox and a sandboxed command may write the project, node_modules and the config
-// included, so the regulated profile is read where such a command cannot lift it: at the root and in every
-// folder above it, so that a config planted lower says nothing, and in the settings that turn the sandbox on,
-// which the sandbox of Claude Code denies to its commands in their working directory and above. A folder
-// another user writes says nothing either way.
-function isRegulated(root) {
-  if (!profiles.has(root)) {
-    profiles.set(root, foldersUp(root).filter(isOwnFolder).some(statesRegulatedProfile));
-  }
-  return profiles.get(root);
-}
-
-function foldersUp(directory) {
-  const above = dirname(directory);
-  return above === directory ? [directory] : [directory, ...foldersUp(above)];
-}
-
-// The config of the folder names the profile, or its settings hold what the profile writes for this: the
-// sandbox on, with no command let out of it. A sandbox a command can leave is no boundary to keep.
-function statesRegulatedProfile(folder) {
-  const sandbox = readJson(join(folder, CLAUDE_SETTINGS))?.sandbox;
-  return (
-    readConfig(join(folder, CONFIG)).config.agents?.profile === 'regulated' ||
-    (sandbox?.enabled === true && sandbox.allowUnsandboxedCommands === false)
-  );
-}
-
-// The config as an object of JSON, never read above CONFIG_BYTES; one that cannot be read or parsed
-// is the defaults.
-function readConfig(path) {
-  const { content, tooLarge } = readBounded(path, CONFIG_BYTES);
-  if (tooLarge !== undefined) {
-    return { config: {}, tooLarge };
-  }
-  const config = parseJson(content ?? '');
-  return { config: isRecord(config) ? config : {} };
-}
-
-function guardMode(asked) {
-  return GUARD_MODES.includes(asked) ? { mode: asked } : { mode: 'enforce', unknownMode: asked };
-}
-
-// The CLI the project installed, where Node would find it: in the project, or hoisted to a parent
-// by the workspaces of npm or pnpm (a project of a monorepo, the example of this repository), never
-// above the top of its repository, where a folder another user writes (the temp dir) could hold one.
-function installedCli(root) {
-  const top = repositoryTop(root) ?? root;
-  let directory = root;
-  for (;;) {
-    const cli = installedBin(join(directory, 'node_modules', 'ddd-ts-kit'), 'ddd-ts-kit', 'ddd-ts-kit');
-    if (cli || directory === top) {
-      return cli;
-    }
-    directory = dirname(directory);
-  }
-}
-
-// The bin `command` of the package `name` installed in `home`, and its version: the file its manifest
-// names, inside the package once links are followed. The guard runs it with Node, never through
-// node_modules/.bin, whose entry may be any file a repository commits (and is a shell shim on pnpm).
-function installedBin(home, name, command) {
-  const manifest = readJson(join(home, 'package.json'));
-  if (manifest?.name !== name) {
-    return undefined;
-  }
-  try {
-    const bin = realpathSync(resolve(home, manifest.bin[command]));
-    return bin.startsWith(`${realpathSync(home)}${sep}`) ? { bin, version: manifest.version } : undefined;
-  } catch {
-    // No bin of that name, or a file that is not there.
-    return undefined;
-  }
-}
-
-function commitLimits(configured) {
-  const limit = (key) =>
-    Number.isInteger(configured?.[key]) && configured[key] > 0 ? configured[key] : COMMIT_DEFAULTS[key];
-  return { maxFiles: limit('maxFiles'), maxLines: limit('maxLines') };
-}
-
 function projectBriefing(project, input) {
   const lines = [
     'ddd-ts-kit project (DDD, Clean Architecture). The rules are checked: `npx ddd-ts-kit explain <rule-id>`.',
@@ -1962,36 +1827,6 @@ function isBarrel(project, path) {
     below.length <= 2 &&
     below.at(-1) === `${folder}.declarations.ts`
   );
-}
-
-/**
- * The path of a file inside its context, its module of the model left out, as the CLI reads it:
- * a module holds its layers and its tests (<module>/application/..., <module>/test/...), and what the
- * modules of a context share sits in one folder (shared/infrastructure/..., shared/presentation/...,
- * shared/test/...), read as the same path without it.
- */
-function outsideItsModule(project, context, parts) {
-  const modules = project.modules[context] ?? [];
-  const [first, second, ...rest] = parts;
-  if (modules.includes(first) && ['domain', 'application', 'infrastructure', 'presentation', 'test'].includes(second)) {
-    return [second, ...rest];
-  }
-  const shared =
-    modules.length > 0 && first === 'shared' && ['infrastructure', 'presentation', 'test'].includes(second);
-  return shared ? [second, ...rest] : parts;
-}
-
-// By context name, in a map without prototype: a context named `constructor` or `__proto__` is a name.
-function modulesByContext(contexts) {
-  const modules = Object.create(null);
-  for (const [name, context] of Object.entries(isRecord(contexts) ? contexts : {})) {
-    modules[name] = isRecord(context?.modules) ? Object.keys(context.modules) : [];
-  }
-  return modules;
-}
-
-function insideContexts(project, path) {
-  return path.startsWith(`${project.contextsDir}/`) ? path.slice(project.contextsDir.length + 1).split('/') : undefined;
 }
 
 function isTestWriter(input) {
@@ -4989,130 +4824,13 @@ function contentHash(file, keep) {
   return hash;
 }
 
-// The state of a worker kept between two calls of the guard, in the kit's ignored folder of its
-// worktree rather than a shared temporary directory.
-function stateFile(kind, project, input) {
-  const key = createHash('sha256')
-    .update(`${input.session_id ?? ''}\0${input.agent_id ?? ''}`)
-    .digest('hex')
-    .slice(0, 16);
-  return join(project.root, GUARD_STATE, `${kind}-${key}.json`);
-}
-
-// The state of a worker that its working directory must not move, its pin and the count of its run:
-// under the common git directory of the repository, which every worktree of it shares and no
-// project holds, so that a call finds it from whichever checkout it starts in. Outside a repository
-// there is one checkout, and the guard's folder of the project holds it.
-function sharedStateFile(kind, home, input) {
-  const shared = sharedStateFolder(home.root);
-  return shared ? join(shared, basename(stateFile(kind, home, input))) : stateFile(kind, home, input);
-}
-
-function sharedStateFolder(root) {
-  const common = commonDirOf(root);
-  return common && isDirectory(join(common, 'objects')) ? join(common, 'ddd-ts-kit', 'guard') : undefined;
-}
-
-function writeState(file, state) {
-  writeKitFile(file, JSON.stringify(state));
-}
-
-function describePlace(project, place) {
-  if (place === undefined) {
-    return 'files only the shell knows';
-  }
-  const path = projectPath(project, place);
-  if (path === '{}' || path.endsWith('/{}')) {
-    return path === '{}' ? 'files anywhere in the project' : `files under ${path.slice(0, -3)}`;
-  }
-
-  return path === '' ? 'the whole project' : path.startsWith('..') ? place : path;
-}
-
-function projectPath(project, file) {
-  return relative(project.root, resolve(file)).split(sep).join('/');
-}
-
-// Each host reads the decision in its own shape. Codex cannot put a question to the user: what
-// Claude Code asks is said to the user there, and left to the checks of the pipeline.
-function decide(input, permissionDecision, reason) {
-  const permissionDecisionReason = `ddd-ts-kit: ${reason}`;
-  const host = hostOf(input);
-  if (host === 'copilot') {
-    return emit({ permissionDecision, permissionDecisionReason });
-  }
-  if (host === 'codex' && permissionDecision === 'ask') {
-    return emit({ systemMessage: permissionDecisionReason });
-  }
-  const additionalContext = call.notice;
-  call.notice = undefined;
-  emit({
-    hookSpecificOutput: {
-      hookEventName: 'PreToolUse',
-      permissionDecision,
-      permissionDecisionReason,
-      ...(additionalContext ? { additionalContext } : {}),
-    },
-  });
-}
-
 function isChecked(file) {
   return /\.(ts|mts|cts)$/.test(file) || file.endsWith('CONTEXT.md');
-}
-
-// A run of the CLI, stopped at its time limit, and within what is left of a session start: past
-// that, it is not started.
-function runCli(project, args, timeout) {
-  const left = call.briefingEnds === undefined ? Number.POSITIVE_INFINITY : call.briefingEnds - Date.now();
-  const limit = Math.min(Math.round(timeout * TIME_SCALE), left);
-  if (limit <= 0) {
-    call.briefingCut = true;
-    return undefined;
-  }
-  const run = spawnSync(process.execPath, [project.cli.bin, ...args], {
-    cwd: project.root,
-    encoding: 'utf8',
-    timeout: limit,
-    maxBuffer: ANSWER_BYTES,
-  });
-  if (run.error?.code === 'ETIMEDOUT') {
-    call.timedOut.set(args[0], Math.round(limit / 1000));
-    call.briefingCut = call.briefingEnds !== undefined;
-  }
-  if (run.error?.code === 'ENOBUFS') {
-    call.oversized.add(args[0]);
-  }
-  // A report is an object of JSON: no output (a run that could not start, whose null parses as null),
-  // `null` or a bare value is none.
-  try {
-    const report = JSON.parse(run.stdout);
-    return isRecord(report) ? report : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function timeScale(asked) {
-  const scale = Number(asked);
-  return scale > 0 && scale <= 1 ? scale : 1;
-}
-
-function errorsOf(report) {
-  return (report?.violations ?? []).filter((violation) => violation.severity === 'error');
 }
 
 function hasPendingChanges(project) {
   const status = gitRun(project, ['status', '--porcelain']);
   return status.status !== 0 || status.stdout.trim().length > 0;
-}
-
-function describe(violations) {
-  return violations
-    .map(
-      (violation) =>
-        `[${violation.ruleId}] ${violation.file}:${violation.line ?? 1} ${violation.message}\n  do instead: ${violation.fix ?? `see \`npx ddd-ts-kit explain ${violation.ruleId}\``}`,
-    )
-    .join('\n');
 }
 
 // Said once per session while the tree stays above the limits; a session start says it again.
@@ -5145,77 +4863,6 @@ function uncommittedChanges(project) {
     .map((path) => ({ path, lines: lineCount(join(project.root, path)) }));
 
   return [...tracked, ...fresh];
-}
-
-// The output of git split into its fields, none when git fails.
-function gitFields(checkout, args, separator) {
-  return (git(checkout, args) ?? '').split(separator);
-}
-
-function git(project, args) {
-  const run = gitRun(project, args);
-  return run.status === 0 ? run.stdout : undefined;
-}
-
-// Under the regulated profile, of the session root or of the place, git runs in the repository of the
-// session root alone, never in a submodule of it: the sandbox of Claude Code denies its commands the
-// config and the hooks of that repository only, and a filter or a diff driver of any other config,
-// which a command can write, would run here outside the sandbox. Git has no switch that turns every
-// driver off (docs/adr/0006-the-regulated-guard-runs-git-in-its-root-only.md).
-function gitRun(project, args) {
-  if (!gitReads(project.root)) {
-    return NOT_READ;
-  }
-  const [subcommand, ...rest] = args;
-  const own = regulatedSession(project.root) && WORKTREE_READS.includes(subcommand);
-  return spawnGit(project.root, own ? [subcommand, '--ignore-submodules=all', ...rest] : args);
-}
-
-function gitReads(directory) {
-  return !regulatedSession(directory) || inSessionRepository(directory);
-}
-
-function regulatedSession(directory) {
-  return isRegulated(sessionRoot()) || isRegulated(directory);
-}
-
-// The folder the session started in: Claude Code names it to its hooks, and its sandbox protects the
-// git config there; another host sends its working directory.
-function sessionRoot() {
-  const cwd = typeof call.input.cwd === 'string' ? call.input.cwd : process.cwd();
-  return resolve(process.env.CLAUDE_PROJECT_DIR || cwd);
-}
-
-// Whether `directory` is a checkout of the repository of the session root, its linked worktrees
-// included, as their git files say: a nested repository, a submodule or a worktree of another
-// repository has a common git directory of its own.
-function inSessionRepository(directory) {
-  const root = sessionRoot();
-  if (!repositories.has(root)) {
-    const top = spawnGit(root, ['rev-parse', '--show-toplevel']);
-    repositories.set(root, top.status === 0 ? commonDirOf(top.stdout.trim()) : undefined);
-  }
-  const own = repositories.get(root);
-  return own !== undefined && commonDirOf(directory) === own;
-}
-
-function unreadRepositoryNotice(project) {
-  return gitReads(project.root) ? [] : [UNREAD_REPOSITORY];
-}
-
-function spawnGit(directory, args) {
-  // A core.fsmonitor planted in the config never runs on the guard's own git, nor does a hook planted
-  // in the repository (the guard commits nothing), and its status writes no index.
-  return spawnSync(
-    'git',
-    ['-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null', '--no-optional-locks', ...args],
-    {
-      cwd: directory,
-      encoding: 'utf8',
-      timeout: 5000,
-      maxBuffer: ANSWER_BYTES,
-    },
-  );
 }
 
 function numstatChange(entry) {
@@ -5268,60 +4915,4 @@ function sliceOf(project, path) {
   const named = /\/([^/.]+)\.(?:route|handler\.spec|route\.spec)\.ts$/.exec(path)?.[1];
 
   return named ? `${context}: ${named}` : `${context}: ${kind === undefined ? 'context files' : layer}`;
-}
-
-function reminderMarker(project, input) {
-  const key = createHash('sha256')
-    .update(`${project.root}\n${sessionOf(input)}`)
-    .digest('hex')
-    .slice(0, 24);
-  return markerOf(project, 'commit-reminder', key);
-}
-
-function markerOf(project, kind, key) {
-  return join(project.root, GUARD_MARKERS, `${kind}-${key}`);
-}
-
-// Leaves the marker and says whether it was there, in one exclusive creation that never follows nor
-// rewrites a file put under its name, in a folder that is no link. Only the marker found there counts
-// as remembered: one that cannot be left (a folder that is a link, a checkout that cannot be written)
-// leaves what it guards said, or refused, again.
-function alreadyRemembered(marker) {
-  if (linkedFolder(marker)) {
-    return false;
-  }
-  try {
-    mkdirSync(dirname(marker), { recursive: true });
-  } catch {
-    return false;
-  }
-  try {
-    writeFileSync(marker, '', { flag: 'wx', mode: 0o600 });
-    return false;
-  } catch (error) {
-    return error?.code === 'EEXIST';
-  }
-}
-
-function forget(marker) {
-  removeKitFile(marker);
-  return undefined;
-}
-
-// The markers and the runs of builders a week old, left by sessions and agents that ended, in the
-// guard's folder of the project and in the one its repository shares, never through a folder that is a link.
-function pruneGuardState(root) {
-  const state = join(root, GUARD_STATE);
-  const markers = join(root, GUARD_MARKERS);
-  const files = [
-    ...[state, sharedStateFolder(root)]
-      .filter(Boolean)
-      .flatMap((folder) => filesIn(folder).filter((file) => BUILDER_STATE.test(relative(folder, file)))),
-    ...filesIn(markers),
-    ...filesIn(join(root, GUARD_HELD)),
-  ];
-  const before = Date.now() - MARKER_TTL;
-  for (const file of files.filter((path) => statSync(path, { throwIfNoEntry: false })?.mtimeMs < before)) {
-    removeKitFile(file);
-  }
 }
