@@ -8,6 +8,7 @@ import {
   KnexContext,
   createKnexUnitOfWork,
   optimisticUpdate,
+  saveAggregate,
   schemaNameOf,
 } from '../src';
 import { createDatabase, type TestDatabase } from './support/database';
@@ -40,7 +41,7 @@ let next = 0;
 repositoryContract<Invoice>(
   { describe, it, expect, beforeEach, afterEach },
   {
-    name: 'A knex repository built on executor() and optimisticUpdate',
+    name: 'A knex repository built on executor() and saveTenantAggregate',
     createRepository: async () => {
       await database.truncate();
 
@@ -59,6 +60,34 @@ describe('a repository declared with @Repository', () => {
     const declare = Repository(InvoiceRepository, [KnexContext, ExecutionScope, Clock]);
 
     expect(() => declare(KnexInvoiceRepository)).not.toThrow();
+  });
+});
+
+describe('saveAggregate, on a table no tenant column confines', () => {
+  const clock = new FixedClock(new Date('2026-03-01T10:00:00.000Z'));
+  const INVOICES = { schema: BILLING, table: 'invoices' };
+
+  const saved = (invoice: Invoice): Promise<void> =>
+    saveAggregate(createKnexUnitOfWork(database.knex), INVOICES, {
+      aggregate: invoice,
+      row: { id: invoice.id, amount: invoice.state.amount, status: invoice.state.status, tenant_id: 'acme' },
+      scope: scopeOf(ada),
+      clock,
+    });
+
+  it('inserts the row at version 1 with its creation stamp, then updates it while it holds the version it read', async () => {
+    await database.truncate();
+
+    const invoice = Invoice.draft('inv-plain', 100);
+
+    await saved(invoice);
+    invoice.addCharge(50);
+    await saved(invoice);
+
+    const row: unknown = await database.knex('invoices').withSchema(BILLING).where({ id: 'inv-plain' }).first();
+
+    expect(row).toMatchObject({ amount: 150, version: 2, created_by: 'ada', updated_by: 'ada' });
+    await expect(saved(loadedAt(Invoice.draft('inv-plain', 1), 1))).rejects.toBeInstanceOf(ConcurrencyError);
   });
 });
 

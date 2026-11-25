@@ -16,6 +16,9 @@ const BY_KEY = /\.(findUnique|findUniqueOrThrow|upsert)\s*\(/;
 const WRITE = /\.(update|updateMany|delete|deleteMany)\s*\(/;
 const INSERT = /\.(create|createMany|createManyAndReturn)\s*\(/;
 const READ = /\.(findFirst|findFirstOrThrow|findMany|count|aggregate|groupBy)\s*\(/;
+/** The model handed to the save of the ORM package, which confines its statements itself, or is reported for naming no tenant. */
+const HANDED_TO_SAVE = /(?<![\w$])save(?:Tenant)?Aggregate\s*\(\s*[\w$.]*$/;
+
 const RAW = /\.\$(?:queryRaw|queryRawUnsafe|executeRaw|executeRawUnsafe)\b/;
 
 /** What a Prisma adapter of tenant data reaches without the helpers, judged statement by statement on the client. */
@@ -23,7 +26,7 @@ export function prismaUnscoped(file: SourceFile): readonly { offset: number; mes
   const { code } = file.scan;
 
   return accessorUses(code, 'client').flatMap((use) => {
-    const message = use.handedOver ? undefined : unscopedStatement(code, use);
+    const message = use.handedOver || HANDED_TO_SAVE.test(use.before) ? undefined : unscopedStatement(code, use);
 
     return message === undefined ? [] : [{ offset: use.offset, message }];
   });

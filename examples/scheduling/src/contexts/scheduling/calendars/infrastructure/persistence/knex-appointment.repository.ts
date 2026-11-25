@@ -1,29 +1,18 @@
-import { type Clock, type ExecutionScope, stampCreation, stampUpdate, tenantScopeOf } from '@ddd-ts-kit/kernel';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
-import {
-  KnexContext,
-  auditRow,
-  insertIgnoringConflict,
-  optimisticUpdate,
-  ownTenantTable,
-  tenantRow,
-  tenantTable,
-} from '@ddd-ts-kit/knex';
+import { KnexContext, saveTenantAggregate, tenantTable } from '@ddd-ts-kit/knex';
 import type { Appointment } from '@/contexts/scheduling/calendars/domain/aggregates/appointment.aggregate';
+import { SlotTaken } from '@/contexts/scheduling/calendars/domain/errors/slot-taken.error';
 import { AppointmentRepository } from '@/contexts/scheduling/calendars/domain/repositories/appointment.repository';
 import { SCHEDULING_SCHEMA } from '@/contexts/scheduling/shared/infrastructure/persistence/scheduling.schema';
 import { AppointmentMapper } from '@/contexts/scheduling/calendars/infrastructure/persistence/appointment.mapper';
-import { SlotTaken } from '@/contexts/scheduling/calendars/domain/errors/slot-taken.error';
 import {
   APPOINTMENT_SLOT_HELD_ONCE,
-  type AppointmentColumns,
   type AppointmentRow,
 } from '@/contexts/scheduling/calendars/infrastructure/persistence/appointment-row.schema';
 import { AppointmentStatus } from '@/contexts/scheduling/calendars/domain/vocabularies/appointment-status.vocabulary';
 
-type VersionedAppointment = AppointmentColumns & { readonly version: number };
-
-/** Tenant data: every statement reaches it through `tenantTable` or `ownTenantTable`, confined to the tenant of the work. */
+/** Tenant data: every statement reaches it through `tenantTable` or `saveTenantAggregate`, confined to the tenant of the work. */
 const TABLE = { schema: SCHEDULING_SCHEMA, table: 'appointments' };
 
 const ACTIVE = [AppointmentStatus.Requested, AppointmentStatus.Booked];
@@ -79,10 +68,11 @@ export class KnexAppointmentRepository implements AppointmentRepository {
   /** The storage decides between two bookings of one slot: the one it refuses is told so in the words of the domain, not as a fault. */
   async save(saved: Appointment): Promise<void> {
     try {
-      await optimisticUpdate(saved, async ({ expected, next }) => {
-        const state = { ...AppointmentMapper.toRow(saved), version: next };
-
-        return expected === 0 ? this.insert(state) : this.update(state, expected);
+      await saveTenantAggregate(this.database, TABLE, {
+        aggregate: saved,
+        row: AppointmentMapper.toRow(saved),
+        scope: this.scope,
+        clock: this.clock,
       });
     } catch (error) {
       if (isSlotHeldTwice(error) || (saved.isActive && isDeadlock(error))) {
@@ -91,28 +81,6 @@ export class KnexAppointmentRepository implements AppointmentRepository {
 
       throw error;
     }
-  }
-
-  private async insert(state: VersionedAppointment): Promise<number> {
-    const row = {
-      ...state,
-      ...tenantRow(tenantScopeOf(this.scope)),
-      ...auditRow(stampCreation(this.scope, this.clock)),
-    };
-
-    return (await insertIgnoringConflict(
-      this.database.executor(),
-      ownTenantTable<AppointmentRow>(this.database, this.scope, TABLE),
-      { row, conflict: 'id' },
-    ))
-      ? 1
-      : 0;
-  }
-
-  private async update(state: VersionedAppointment, expected: number): Promise<number> {
-    return ownTenantTable<AppointmentRow>(this.database, this.scope, TABLE)
-      .where({ id: state.id, version: expected })
-      .update({ ...state, ...auditRow(stampUpdate(this.scope, this.clock)) });
   }
 }
 

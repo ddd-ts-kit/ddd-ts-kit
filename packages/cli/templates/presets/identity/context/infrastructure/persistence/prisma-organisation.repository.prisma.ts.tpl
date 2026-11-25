@@ -1,5 +1,5 @@
-import { optimisticUpdate, rowsCreated } from '@ddd-ts-kit/prisma';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { saveAggregate } from '@ddd-ts-kit/prisma';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
@@ -11,9 +11,7 @@ import { OrganisationRepository } from '{{alias.context}}/domain/repositories/or
 import type { OrganisationRepository } from '{{alias.context}}/domain/repositories/organisation.repository{{alias.ext}}';
 {{/unless}}
 import type { Database } from '{{alias.platform}}/database/database{{alias.ext}}';
-import { OrganisationMapper, type OrganisationColumns } from '{{alias.context}}/infrastructure/persistence/organisation.mapper{{alias.ext}}';
-
-type VersionedOrganisation = OrganisationColumns & { readonly version: number };
+import { OrganisationMapper } from '{{alias.context}}/infrastructure/persistence/organisation.mapper{{alias.ext}}';
 
 {{#if style.declared}}
 @Repository(OrganisationRepository)
@@ -32,27 +30,11 @@ export class PrismaOrganisationRepository implements OrganisationRepository {
   }
 
   async save(saved: Organisation): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...OrganisationMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : (await this.update(state, expected)).count;
-    });
-  }
-
-  private async insert(state: VersionedOrganisation): Promise<number> {
-    const row = { ...state, ...stampCreation(this.scope, this.clock) };
-    const created = await organisationsOf(this.database).createMany({ data: [row], skipDuplicates: true });
-
-    return rowsCreated(created, {
-      id: state.id,
-      holders: () => organisationsOf(this.database).count({ where: { id: state.id } }),
-    });
-  }
-
-  private update(state: VersionedOrganisation, expected: number): Promise<{ count: number }> {
-    return organisationsOf(this.database).updateMany({
-      where: { id: state.id, version: expected },
-      data: { ...state, ...stampUpdate(this.scope, this.clock) },
+    await saveAggregate(organisationsOf(this.database), {
+      aggregate: saved,
+      row: OrganisationMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
   }
 }

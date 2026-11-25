@@ -1,6 +1,6 @@
-import { and, eq } from 'drizzle-orm';
-import { insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/drizzle/postgres';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { eq } from 'drizzle-orm';
+import { saveAggregate } from '@ddd-ts-kit/drizzle/postgres';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
@@ -13,9 +13,7 @@ import type { AccountRepository } from '{{alias.context}}/domain/repositories/ac
 {{/unless}}
 import type { Database } from '{{alias.platform}}/database/database{{alias.ext}}';
 import { accounts } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
-import { AccountMapper, type AccountColumns } from '{{alias.context}}/infrastructure/persistence/account.mapper{{alias.ext}}';
-
-type VersionedAccount = AccountColumns & { readonly version: number };
+import { AccountMapper } from '{{alias.context}}/infrastructure/persistence/account.mapper{{alias.ext}}';
 
 {{#if style.declared}}
 @Repository(AccountRepository)
@@ -34,28 +32,12 @@ export class DrizzleAccountRepository implements AccountRepository {
   }
 
   async save(saved: Account): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...AccountMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : (await this.update(state, expected)).length;
+    await saveAggregate(this.database, accounts, {
+      aggregate: saved,
+      row: AccountMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: VersionedAccount): Promise<number> {
-    const row = { ...state, ...stampCreation(this.scope, this.clock) };
-    const insertion = () => executorOf(this.database).insert(accounts).values(row);
-
-    return (await insertIgnoringConflict(insertion, accounts)) ? 1 : 0;
-  }
-
-  private update(state: VersionedAccount, expected: number) {
-    const sameVersion = and(eq(accounts.id, state.id), eq(accounts.version, expected));
-
-    return executorOf(this.database)
-      .update(accounts)
-      .set({ ...state, ...stampUpdate(this.scope, this.clock) })
-      .where(sameVersion)
-      .returning({ id: accounts.id });
   }
 }
 

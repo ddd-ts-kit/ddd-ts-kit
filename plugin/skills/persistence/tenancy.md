@@ -12,7 +12,8 @@ tenant is, the four strategies and the propagation of the tenant are in
   `tenantCondition` and `ownTenantCondition` (Drizzle), `tenantWhere` and `ownTenantWhere` spread
   into the where (Prisma, TypeORM; `findFirst`, never `findUnique` or `save`: the key holds no
   tenant).
-- `tenantScopeOf` in every inserted row.
+- `tenantScopeOf` in every inserted row; an aggregate is saved with `saveTenantAggregate`, never
+  `saveAggregate`.
 - Never a table straight from the executor, the client or the manager; a read model store is
   built with its `tenant` option (`tenancy/scoped-statement`).
 - The condition is a conjunct of the statement: SQL binds `and` before `or`, so an alternative

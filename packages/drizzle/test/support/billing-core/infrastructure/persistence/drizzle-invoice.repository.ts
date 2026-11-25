@@ -1,21 +1,11 @@
 import { and, eq } from 'drizzle-orm';
-import {
-  loadedAt,
-  stampCreation,
-  stampUpdate,
-  tenantScopeOf,
-  type Clock,
-  type ExecutionScope,
-} from '@ddd-ts-kit/kernel';
-import { insertIgnoringConflict, optimisticUpdate } from '../../../../../src/postgres';
+import { loadedAt, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { saveTenantAggregate } from '../../../../../src/postgres';
 import type { Database } from '../../../platform/database/database';
-import { Invoice, type InvoiceState } from '../../domain/invoice';
+import { Invoice } from '../../domain/invoice';
 import type { InvoiceRepository } from '../../domain/repositories/invoice.repository';
 import { invoices } from './invoices';
 import { ownTenant } from './own-tenant';
-
-/** What the aggregate says of itself, plus the version to store: the rest of the row is the adapter's. */
-type VersionedInvoice = InvoiceState & { readonly version: number };
 
 /**
  * The repository a consuming project would write: no transaction in sight, every statement
@@ -43,28 +33,11 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
   }
 
   async save(invoice: Invoice): Promise<void> {
-    await optimisticUpdate(invoice, async ({ expected, next }) => {
-      const state = { ...invoice.state, version: next };
-
-      return expected === 0 ? this.insert(state) : (await this.update(state, expected)).length;
+    await saveTenantAggregate(this.database, invoices, {
+      aggregate: invoice,
+      row: invoice.state,
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: VersionedInvoice): Promise<number> {
-    const row = { ...state, ...tenantScopeOf(this.scope), ...stampCreation(this.scope, this.clock) };
-
-    // The key alone: a row that takes a value another row holds under another unique constraint is refused.
-    const insertion = () => this.database.executor().insert(invoices).values(row);
-
-    return (await insertIgnoringConflict(insertion, invoices)) ? 1 : 0;
-  }
-
-  private update(state: VersionedInvoice, expected: number) {
-    return this.database
-      .executor()
-      .update(invoices)
-      .set({ ...state, ...stampUpdate(this.scope, this.clock) })
-      .where(and(eq(invoices.id, state.id), eq(invoices.version, expected), ownTenant(this.scope)))
-      .returning({ id: invoices.id });
   }
 }

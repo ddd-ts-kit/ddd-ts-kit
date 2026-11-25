@@ -1,9 +1,9 @@
 import type { Knex } from 'knex';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
-import { type KnexContext, auditRow, insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/knex';
+import { type KnexContext, saveAggregate } from '@ddd-ts-kit/knex';
 import type { Invitation } from '{{alias.context}}/domain/aggregates/invitation.aggregate{{alias.ext}}';
 {{#if style.declared}}
 import { InvitationRepository } from '{{alias.context}}/domain/repositories/invitation.repository{{alias.ext}}';
@@ -13,9 +13,9 @@ import type { InvitationRepository } from '{{alias.context}}/domain/repositories
 {{/unless}}
 import { {{context.constant}}_SCHEMA } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
 import { InvitationMapper } from '{{alias.context}}/infrastructure/persistence/invitation.mapper{{alias.ext}}';
-import type { InvitationColumns, InvitationRow } from '{{alias.context}}/infrastructure/persistence/invitation-row.schema{{alias.ext}}';
+import type { InvitationRow } from '{{alias.context}}/infrastructure/persistence/invitation-row.schema{{alias.ext}}';
 
-type VersionedInvitation = InvitationColumns & { readonly version: number };
+const TABLE = { schema: {{context.constant}}_SCHEMA, table: 'invitations' };
 
 {{#if style.declared}}
 @Repository(InvitationRepository)
@@ -40,28 +40,12 @@ export class KnexInvitationRepository implements InvitationRepository {
   }
 
   async save(saved: Invitation): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...InvitationMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : this.update(state, expected);
+    await saveAggregate(this.database, TABLE, {
+      aggregate: saved,
+      row: InvitationMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: VersionedInvitation): Promise<number> {
-    const row = { ...state, ...auditRow(stampCreation(this.scope, this.clock)) };
-
-    const inserted = await insertIgnoringConflict(this.database.executor(), tableOf(this.database), {
-      row,
-      conflict: 'id',
-    });
-
-    return inserted ? 1 : 0;
-  }
-
-  private async update(state: VersionedInvitation, expected: number): Promise<number> {
-    return tableOf(this.database)
-      .where({ id: state.id, version: expected })
-      .update({ ...state, ...auditRow(stampUpdate(this.scope, this.clock)) });
   }
 }
 

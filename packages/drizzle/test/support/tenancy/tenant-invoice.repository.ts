@@ -1,19 +1,10 @@
 import { and, eq } from 'drizzle-orm';
-import {
-  FixedClock,
-  loadedAt,
-  stampCreation,
-  stampUpdate,
-  tenantScopeOf,
-  type ExecutionScope,
-} from '@ddd-ts-kit/kernel';
-import { insertIgnoringConflict, optimisticUpdate, ownTenantCondition, tenantCondition } from '../../../src/postgres';
+import { FixedClock, loadedAt, tenantScopeOf, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { saveAggregate, saveTenantAggregate, tenantCondition } from '../../../src/postgres';
 import type { Database } from '../platform/database/database';
-import { Invoice, type InvoiceState } from '../billing-core/domain/invoice';
+import { Invoice } from '../billing-core/domain/invoice';
 import type { InvoiceRepository } from '../billing-core/domain/repositories/invoice.repository';
 import { invoices } from '../billing-core/infrastructure/persistence/invoices';
-
-type VersionedInvoice = InvoiceState & { readonly version: number };
 
 const clock = new FixedClock(new Date('2026-03-01T10:00:00.000Z'));
 
@@ -44,32 +35,11 @@ export class TenantInvoiceRepository implements InvoiceRepository {
   }
 
   async save(invoice: Invoice): Promise<void> {
-    await optimisticUpdate(invoice, async ({ expected, next }) => {
-      const state = { ...invoice.state, version: next };
+    const save = { aggregate: invoice, row: invoice.state, scope: this.scope, clock };
 
-      return expected === 0 ? this.insert(state) : (await this.update(state, expected)).length;
-    });
-  }
-
-  private async insert(state: VersionedInvoice): Promise<number> {
-    const row = { ...state, ...tenantScopeOf(this.scope), ...stampCreation(this.scope, clock) };
-    const insertion = () => this.database.executor().insert(invoices).values(row);
-
-    return (await insertIgnoringConflict(insertion, invoices)) ? 1 : 0;
-  }
-
-  private update(state: VersionedInvoice, expected: number) {
-    return this.database
-      .executor()
-      .update(invoices)
-      .set({ ...state, ...stampUpdate(this.scope, clock) })
-      .where(
-        and(
-          eq(invoices.id, state.id),
-          eq(invoices.version, expected),
-          this.unfiltered ? undefined : ownTenantCondition(invoices.tenantId, this.scope),
-        ),
-      )
-      .returning({ id: invoices.id });
+    // Unfiltered, the database confines the statements (row-level security): the row alone names its tenant.
+    await (this.unfiltered
+      ? saveAggregate(this.database, invoices, { ...save, row: { ...invoice.state, ...tenantScopeOf(this.scope) } })
+      : saveTenantAggregate(this.database, invoices, save));
   }
 }

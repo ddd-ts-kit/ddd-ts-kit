@@ -1,5 +1,5 @@
 [English](persistence.md) · **Français**
-<!-- translation-of: persistence.md sha256:0b62ec02c4fb79e2 -->
+<!-- translation-of: persistence.md sha256:04435eb45e3bdb39 -->
 
 # Persistance : Drizzle, Knex, Prisma, TypeORM, et quelle base de données
 
@@ -266,6 +266,12 @@ Les mêmes pièces, sous le nom que leur donne chaque *package* :
 | Registre des événements traités | `KnexProcessedEventStore` | `DrizzleProcessedEventStore` | `PrismaProcessedEventStore` | `TypeOrmProcessedEventStore` |
 
 ### La concurrence optimiste, et un seul contrat pour le fake et l'adaptateur
+
+Le *repository* ci-dessus écrit sa sauvegarde en entier, instruction par instruction. Un
+*repository* généré tient un seul appel à la place : `saveAggregate(database, table, { aggregate,
+row: Mapper.toRow(aggregate), scope, clock })` de son *package* d'ORM, et `saveTenantAggregate` sur
+une table que tous les *tenants* partagent. Les deux sont l'insertion ou la mise à jour gardée
+montrée ici, avec les tampons d'audit.
 
 Deux commandes peuvent charger la même facture à la même version. La première sauvegarde
 correspond à la version et la fait avancer ; la seconde ne correspond à aucune ligne, et

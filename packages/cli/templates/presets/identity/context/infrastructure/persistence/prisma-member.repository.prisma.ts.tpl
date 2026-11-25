@@ -1,5 +1,5 @@
-import { optimisticUpdate, rowsCreated } from '@ddd-ts-kit/prisma';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import { saveAggregate } from '@ddd-ts-kit/prisma';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
@@ -12,9 +12,7 @@ import type { MemberRepository } from '{{alias.context}}/domain/repositories/mem
 {{/unless}}
 import { MemberRole } from '{{alias.context}}/domain/vocabularies/member-role.vocabulary{{alias.ext}}';
 import type { Database } from '{{alias.platform}}/database/database{{alias.ext}}';
-import { MemberMapper, type MemberColumns } from '{{alias.context}}/infrastructure/persistence/member.mapper{{alias.ext}}';
-
-type VersionedMember = MemberColumns & { readonly version: number };
+import { MemberMapper } from '{{alias.context}}/infrastructure/persistence/member.mapper{{alias.ext}}';
 
 {{#if style.declared}}
 @Repository(MemberRepository)
@@ -49,27 +47,11 @@ export class PrismaMemberRepository implements MemberRepository {
   }
 
   async save(saved: Member): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...MemberMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : (await this.update(state, expected)).count;
-    });
-  }
-
-  private async insert(state: VersionedMember): Promise<number> {
-    const row = { ...state, ...stampCreation(this.scope, this.clock) };
-    const created = await membersOf(this.database).createMany({ data: [row], skipDuplicates: true });
-
-    return rowsCreated(created, {
-      id: state.id,
-      holders: () => membersOf(this.database).count({ where: { id: state.id } }),
-    });
-  }
-
-  private update(state: VersionedMember, expected: number): Promise<{ count: number }> {
-    return membersOf(this.database).updateMany({
-      where: { id: state.id, version: expected },
-      data: { ...state, ...stampUpdate(this.scope, this.clock) },
+    await saveAggregate(membersOf(this.database), {
+      aggregate: saved,
+      row: MemberMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
   }
 }

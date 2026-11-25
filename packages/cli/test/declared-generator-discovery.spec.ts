@@ -54,9 +54,7 @@ describe('discovery in place of the barrel', () => {
       '@Repository(InvoiceRepository)\nexport class KnexInvoiceRepository implements InvoiceRepository {\n  constructor(\n    private readonly database: KnexContext,',
     );
 
-    expect(repository).toContain(
-      "import { type KnexContext, auditRow, insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/knex';",
-    );
+    expect(repository).toContain("import { type KnexContext, saveAggregate, tableIn } from '@ddd-ts-kit/knex';");
 
     const dependencies = read(discovered, `${BILLING}/billing.dependencies.ts`);
 

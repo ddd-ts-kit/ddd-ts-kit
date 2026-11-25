@@ -1,9 +1,9 @@
 import type { Knex } from 'knex';
-import { stampCreation, stampUpdate, type Clock, type ExecutionScope } from '@ddd-ts-kit/kernel';
+import type { Clock, ExecutionScope } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
-import { type KnexContext, auditRow, insertIgnoringConflict, optimisticUpdate } from '@ddd-ts-kit/knex';
+import { type KnexContext, saveAggregate } from '@ddd-ts-kit/knex';
 import type { Member } from '{{alias.context}}/domain/aggregates/member.aggregate{{alias.ext}}';
 {{#if style.declared}}
 import { MemberRepository } from '{{alias.context}}/domain/repositories/member.repository{{alias.ext}}';
@@ -14,9 +14,9 @@ import type { MemberRepository } from '{{alias.context}}/domain/repositories/mem
 import { MemberRole } from '{{alias.context}}/domain/vocabularies/member-role.vocabulary{{alias.ext}}';
 import { {{context.constant}}_SCHEMA } from '{{alias.context}}/infrastructure/persistence/{{context.kebab}}.schema{{alias.ext}}';
 import { MemberMapper } from '{{alias.context}}/infrastructure/persistence/member.mapper{{alias.ext}}';
-import type { MemberColumns, MemberRow } from '{{alias.context}}/infrastructure/persistence/member-row.schema{{alias.ext}}';
+import type { MemberRow } from '{{alias.context}}/infrastructure/persistence/member-row.schema{{alias.ext}}';
 
-type VersionedMember = MemberColumns & { readonly version: number };
+const TABLE = { schema: {{context.constant}}_SCHEMA, table: 'members' };
 
 {{#if style.declared}}
 @Repository(MemberRepository)
@@ -55,28 +55,12 @@ export class KnexMemberRepository implements MemberRepository {
   }
 
   async save(saved: Member): Promise<void> {
-    await optimisticUpdate(saved, async ({ expected, next }) => {
-      const state = { ...MemberMapper.toRow(saved), version: next };
-
-      return expected === 0 ? this.insert(state) : this.update(state, expected);
+    await saveAggregate(this.database, TABLE, {
+      aggregate: saved,
+      row: MemberMapper.toRow(saved),
+      scope: this.scope,
+      clock: this.clock,
     });
-  }
-
-  private async insert(state: VersionedMember): Promise<number> {
-    const row = { ...state, ...auditRow(stampCreation(this.scope, this.clock)) };
-
-    const inserted = await insertIgnoringConflict(this.database.executor(), tableOf(this.database), {
-      row,
-      conflict: 'id',
-    });
-
-    return inserted ? 1 : 0;
-  }
-
-  private async update(state: VersionedMember, expected: number): Promise<number> {
-    return tableOf(this.database)
-      .where({ id: state.id, version: expected })
-      .update({ ...state, ...auditRow(stampUpdate(this.scope, this.clock)) });
   }
 }
 

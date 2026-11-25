@@ -226,6 +226,24 @@ In the explicit style, without the decorator, the same binding is one line of
 `<context>.module.ts`:
 `builder.bind(InvoiceRepository).toClass(TypeOrmInvoiceRepository, [TypeOrmContext])`.
 
+The save above is written out to show each statement. `saveAggregate` does the same in one
+call: it takes an entity that keeps the key under `id` and the version under `version`, and one
+save, the aggregate, the columns its mapper gave, the scope and the clock that stamp the audit
+columns. `saveTenantAggregate` is the same for an entity every tenant shares: it writes the row in
+the tenant of the work in progress and confines its update to that tenant. A generated repository
+saves this way and holds nothing else of the plumbing.
+
+```ts
+async save(invoice: Invoice): Promise<void> {
+  await saveAggregate(this.context, invoices, {
+    aggregate: invoice,
+    row: InvoiceMapper.toRow(invoice),
+    scope: this.scope,
+    clock: this.clock,
+  });
+}
+```
+
 `optimisticUpdate` gives the version to expect and the version to write, raises a
 `ConcurrencyError` (a `DomainError` with code `CONCURRENCY_CONFLICT`) when the guarded
 statement wrote no row, and moves `invoice.version` on otherwise. `insertIgnoringConflict`
