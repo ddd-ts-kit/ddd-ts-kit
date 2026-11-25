@@ -105,6 +105,24 @@ describe('the readers of the checker, on a project whose files are not where the
     expect(loadLooseProject(root, ['src']).files.map(({ path: file }) => file)).toEqual(['src/nested/a.ts']);
   });
 
+  it('keeps on an import what the scanner read of it: its kind and whether it is of types only', () => {
+    const service = 'src/contexts/billing/domain/services/dunning.service.ts';
+
+    const source = [
+      "import type { Invoice } from '@/contexts/billing/domain/aggregates/invoice.aggregate';",
+      "export { Money } from '@/shared-kernel/money.vo';",
+      "const late = await import('@/contexts/billing/domain/services/late.service');",
+    ].join('\n');
+
+    const [file] = loadProject(projectWith({ [service]: source })).files;
+
+    expect(file?.imports).toMatchObject([
+      { kind: 'import', typeOnly: true, line: 1, names: ['Invoice'] },
+      { kind: 'export', typeOnly: false, line: 2 },
+      { kind: 'dynamic', typeOnly: false, line: 3 },
+    ]);
+  });
+
   it('reports no suppression without a reason when the rule is off', () => {
     const bare = { 'src/platform/clock.ts': '// ddd-ts-kit-disable-next-line\nexport const clock = 1;\n' };
     const form = { rules: ['config/suppression-needs-reason'] };
