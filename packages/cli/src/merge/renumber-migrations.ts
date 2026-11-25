@@ -4,17 +4,15 @@ import { isWorkingMigration } from '../check/migrations/is-working-migration';
 import { runGit } from '../commit/run-git';
 import { mentionedTables } from './mentioned-tables';
 import { nextMigrationNumber } from './next-migration-number';
+import type { MigrationTool } from '../orm/migrations/migration-tool';
+import { numberedName } from '../orm/migrations/numbered-name';
+import type { OrderedMigration } from '../orm/migrations/ordered-migration';
 import { appliedUnderOldName } from './order/applied-under-old-name';
-import { comesAfter } from './order/comes-after';
-import type { NamedOrm, OrderedMigration } from './order/ordered-migration';
-import { migrationsOfCommit } from './order/migrations-of-commit';
-import { migrationsOfTree } from './order/migrations-of-tree';
-import { restampClass } from './restamp-class';
 
-/** The migrations of a knex, Prisma or TypeORM project to land on the trunk. */
+/** The migrations of a project to land on the trunk, by the tool that orders them: knex, Prisma or TypeORM. */
 export interface Renumbering {
   readonly root: string;
-  readonly orm: NamedOrm;
+  readonly tool: MigrationTool;
   /**
    * The base of the merge and the commit of the trunk. With the trunk as the base (a branch that
    * already holds it), what the trunk gained is what comes after the first migration to land, and
@@ -53,7 +51,6 @@ interface Walk {
   readonly isMoving: (migration: OrderedMigration, previous: Passed) => boolean;
 }
 
-const NUMBERED = /^(\d+)([\s\S]*)$/;
 const EPOCH = new Date(0);
 
 /**
@@ -66,10 +63,10 @@ const EPOCH = new Date(0);
  * the migration is to generate again on the trunk.
  */
 export function renumberMigrations(renumbering: Renumbering): MigrationsLanded {
-  const { root, orm, trunk } = renumbering;
-  const onTrunk = migrationsOfCommit(root, orm, trunk);
+  const { root, tool, trunk } = renumbering;
+  const onTrunk = tool.inCommit(root, trunk);
   const held = new Set(onTrunk.map(({ file }) => file));
-  const branch = migrationsOfTree(root, orm).filter(({ file }) => !held.has(file));
+  const branch = tool.inTree(root).filter(({ file }) => !held.has(file));
   const moves = movesOf(renumbering, { branch, onTrunk });
 
   if (typeof moves === 'string') {
@@ -85,19 +82,19 @@ export function renumberMigrations(renumbering: Renumbering): MigrationsLanded {
     return { lines: [], ...(overlap === undefined ? {} : { stop: overlap }) };
   }
 
-  return { lines: [...moves.map((move) => moved(renumbering, move)), appliedUnderOldName(orm)] };
+  return { lines: [...moves.map((move) => moved(renumbering, move)), appliedUnderOldName(tool.underOldName)] };
 }
 
 /** What the trunk gained since the base; without a merge, what comes after the first migration to land. */
 function gainedBy(
-  { root, orm, base, trunk }: Renumbering,
+  { root, tool, base, trunk }: Renumbering,
   { onTrunk, first }: { onTrunk: readonly OrderedMigration[]; first: OrderedMigration | undefined },
 ): OrderedMigration[] {
   if (base === trunk) {
-    return onTrunk.filter(({ key }) => first !== undefined && comesAfter(orm, key, first.key));
+    return onTrunk.filter(({ key }) => first !== undefined && tool.comesAfter(key, first.key));
   }
 
-  const before = new Set(migrationsOfCommit(root, orm, base).map(({ file }) => file));
+  const before = new Set(tool.inCommit(root, base).map(({ file }) => file));
 
   return onTrunk.filter(({ file }) => !before.has(file));
 }
@@ -113,15 +110,15 @@ function movesOf(
   renumbering: Renumbering,
   { branch, onTrunk }: { branch: readonly OrderedMigration[]; onTrunk: readonly OrderedMigration[] },
 ): Move[] | string {
-  const { orm, base, trunk, now } = renumbering;
-  const start = startOf(orm, onTrunk.at(-1));
+  const { tool, base, trunk, now } = renumbering;
+  const start = startOf(tool, onTrunk.at(-1));
 
   if (base !== trunk) {
     return numbered(renumbering, branch, { start, now, isMoving: () => true });
   }
 
   const isMoving = (migration: OrderedMigration, previous: Passed): boolean =>
-    isWorkingMigration(migration.name) || !comesAfter(orm, migration.key, previous.key);
+    isWorkingMigration(migration.name) || !tool.comesAfter(migration.key, previous.key);
 
   const counted = numbered(renumbering, branch, { start, now: EPOCH, isMoving });
 
@@ -137,17 +134,15 @@ function movesOf(
 }
 
 /** What the first migration of the branch has to follow: the last of the trunk; zeros, in the format of the tool, without one. */
-function startOf(orm: NamedOrm, last: OrderedMigration | undefined): Passed {
-  const zeros = '0'.repeat(orm === 'typeorm' ? 13 : 14);
-
+function startOf(tool: MigrationTool, last: OrderedMigration | undefined): Passed {
   return last === undefined
-    ? { key: '', name: '', number: zeros }
-    : { key: last.key, name: last.name, number: numberOf(orm, last) || zeros };
+    ? { key: '', name: '', number: tool.lowestNumber }
+    : { key: last.key, name: last.name, number: tool.numberOf(last) || tool.lowestNumber };
 }
 
 /** Walks the migrations in their order: one that moves takes the next free number after the one before it. */
 function numbered(
-  { root, orm }: Renumbering,
+  { root, tool }: Renumbering,
   branch: readonly OrderedMigration[],
   { start, now, isMoving }: Walk,
 ): Move[] | string {
@@ -157,14 +152,14 @@ function numbered(
 
   for (const migration of branch) {
     if (!isMoving(migration, previous)) {
-      previous = { key: migration.key, name: migration.name, number: numberOf(orm, migration) || previous.number };
+      previous = { key: migration.key, name: migration.name, number: tool.numberOf(migration) || previous.number };
 
       continue;
     }
 
-    const move = freeMove({ root, orm, taken }, migration, nextMigrationNumber(previous.number, now));
+    const move = freeMove({ root, tool, taken }, migration, nextMigrationNumber(previous.number, now));
 
-    if (!comesAfter(orm, move.target.key, previous.key)) {
+    if (!tool.comesAfter(move.target.key, previous.key)) {
       return `${migration.name} cannot be given a number that sorts after "${previous.name}", which carries none a migration can follow: rename or move "${previous.name}" by hand (knex loads every script of its folder as a migration), then run the same command again.`;
     }
 
@@ -178,35 +173,16 @@ function numbered(
 
 /** The move of a migration to `number`, or to the next number no file of the folder and no move of this run carries. */
 function freeMove(
-  { root, orm, taken }: { root: string; orm: NamedOrm; taken: ReadonlySet<string> },
+  { root, tool, taken }: { root: string; tool: MigrationTool; taken: ReadonlySet<string> },
   migration: OrderedMigration,
   number: string,
 ): Move {
-  const target = targetOf(orm, migration, number);
+  const target = tool.numbered(migration, number);
   const occupied = target.file !== migration.file && fs.existsSync(path.join(root, placeOf(target.file)));
 
   return occupied || taken.has(target.key)
-    ? freeMove({ root, orm, taken }, migration, nextMigrationNumber(number, EPOCH))
+    ? freeMove({ root, tool, taken }, migration, nextMigrationNumber(number, EPOCH))
     : { migration, number, target };
-}
-
-/** What a migration is once it carries `number`: its name, its file, and what its tool orders it by. */
-function targetOf(orm: NamedOrm, migration: OrderedMigration, number: string): OrderedMigration {
-  const [, , rest] = NUMBERED.exec(migration.name) ?? [];
-  const unnumbered = orm === 'typeorm' ? migration.name : `${number}_${migration.name}`;
-  const name = rest === undefined ? unnumbered : `${number}${rest.replace(/^([_.-])working[_-]/, '$1')}`;
-  const place = placeOf(migration.file);
-
-  const renamed = path.posix.join(
-    path.posix.dirname(place),
-    `${name}${place === migration.file ? path.posix.extname(place) : ''}`,
-  );
-
-  return {
-    name,
-    file: place === migration.file ? renamed : `${renamed}/migration.sql`,
-    key: orm === 'typeorm' ? number : name,
-  };
 }
 
 /** What is renamed on disk: the file of a migration, or its folder under Prisma. */
@@ -214,12 +190,7 @@ function placeOf(file: string): string {
   return path.posix.basename(file) === 'migration.sql' ? path.posix.dirname(file) : file;
 }
 
-/** The number a migration carries: the stamp of its class under TypeORM, the digits its name starts with elsewhere. */
-function numberOf(orm: NamedOrm, { key, name }: Pick<OrderedMigration, 'key' | 'name'>): string {
-  return orm === 'typeorm' ? key : (NUMBERED.exec(name)?.[1] ?? '');
-}
-
-function moved({ root, orm, dryRun }: Renumbering, { migration, number, target }: Move): string {
+function moved({ root, tool, dryRun }: Renumbering, { migration, number, target }: Move): string {
   if (dryRun === true) {
     return `${migration.name} would be renamed with a number after the last migration of the trunk`;
   }
@@ -228,9 +199,7 @@ function moved({ root, orm, dryRun }: Renumbering, { migration, number, target }
     fs.renameSync(path.join(root, placeOf(migration.file)), path.join(root, placeOf(target.file)));
   }
 
-  if (orm === 'typeorm') {
-    restampClass(path.join(root, target.file), number);
-  }
+  tool.stamp?.(path.join(root, target.file), number);
 
   return target.name === migration.name
     ? `${migration.name} given the stamp ${number} in its class, after the last migration of the trunk`
@@ -238,7 +207,7 @@ function moved({ root, orm, dryRun }: Renumbering, { migration, number, target }
 }
 
 function overlapOf(
-  { root, orm, trunk }: Renumbering,
+  { root, tool, trunk }: Renumbering,
   { moves, gained }: { moves: readonly Move[]; gained: readonly OrderedMigration[] },
 ): string | undefined {
   // `./`: from the project root, which is not the top of the repository when the project sits in a folder of it.
@@ -252,7 +221,7 @@ function overlapOf(
     );
 
     if (shared.length > 0) {
-      return `${migration.name} changes ${shared.join(', ')}, which a migration the trunk gained since the base changes too (${gained.map((other) => other.name).join(', ')}): their order is a decision. ${generateAgain(orm, migration)}`;
+      return `${migration.name} changes ${shared.join(', ')}, which a migration the trunk gained since the base changes too (${gained.map((other) => other.name).join(', ')}): their order is a decision. ${generateAgain(tool, migration)}`;
     }
   }
 
@@ -263,12 +232,11 @@ function overlapOf(
  * How the migration is generated again after the trunk's: its name is taken until the old one is
  * deleted, which `db:generate` refuses, so the deletion comes first.
  */
-function generateAgain(orm: NamedOrm, migration: OrderedMigration): string {
-  const rest = NUMBERED.exec(migration.name)?.[2] ?? migration.name;
+function generateAgain(tool: MigrationTool, migration: OrderedMigration): string {
+  const rest = numberedName(migration.name)?.rest ?? migration.name;
   const what = rest.replace(/^[_.-](?:working[_-])?/, '');
   const place = placeOf(migration.file);
   const old = place === migration.file ? place : `the folder ${place}/`;
-  const named = orm === 'typeorm' ? `migrations/${what}` : what;
 
-  return `Generate it again on the trunk: delete ${old} (\`git show HEAD:./${migration.file}\` keeps what was written by hand), then \`npm run db:generate ${named}\`, which refuses the name while the old migration is there.`;
+  return `Generate it again on the trunk: delete ${old} (\`git show HEAD:./${migration.file}\` keeps what was written by hand), then \`npm run db:generate ${tool.generatedAs(what)}\`, which refuses the name while the old migration is there.`;
 }

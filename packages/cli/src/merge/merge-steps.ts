@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { acceptInMergeMessage } from './accept-in-merge-message';
 import { landDrizzle } from './land-drizzle';
+import { ORM_MEMBERS } from '../orm/orm-members';
 import type { MergeContext } from './merge-context';
 import type { MergeReport } from './merge-report';
 import type { MergeState, MergeStep } from './merge-state';
@@ -60,13 +61,14 @@ export const MERGE_STEPS: Readonly<
   migrations(context, state, now) {
     const { report } = state;
     const orm = context.config?.stack.orm;
+    const tool = orm === undefined ? undefined : ORM_MEMBERS[orm].migrationTool;
     const sides = { base: report.base.commit, trunk: report.trunk.commit };
 
     const landed =
       orm === 'drizzle'
         ? landDrizzle(context.root, { ...sides, ours: state.ours, toLand: state.toLand })
-        : (orm === 'knex' || orm === 'prisma' || orm === 'typeorm') && state.toLand
-          ? renumberMigrations({ root: context.root, orm, ...sides, now })
+        : tool !== undefined && state.toLand
+          ? renumberMigrations({ root: context.root, tool, ...sides, now })
           : { lines: [] };
 
     const next = { ...report, migrations: [...report.migrations, ...landed.lines] };

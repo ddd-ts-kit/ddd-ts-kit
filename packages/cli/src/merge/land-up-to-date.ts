@@ -2,15 +2,13 @@ import { isWorkingMigration } from '../check/migrations/is-working-migration';
 import type { Migration } from '../check/migrations/migration-folder';
 import { readMigrationFolder } from '../check/migrations/read-migration-folder';
 import type { OrmStack } from '../config';
+import { ORM_MEMBERS } from '../orm/orm-members';
 import { replayedOn } from './land-drizzle';
 import type { MergeContext } from './merge-context';
 import type { MergeReport } from './merge-report';
 import { migrationsAt } from './migrations-at';
 import { NEXT_STEPS } from './next-steps';
-import { appliedUnderOldName } from './order/applied-under-old-name';
-import { migrationsOfCommit } from './order/migrations-of-commit';
-import { migrationsOfTree } from './order/migrations-of-tree';
-import type { NamedOrm } from './order/ordered-migration';
+import { appliedUnderOldName, REPLAYED_UNDER_OLD_NAME } from './order/applied-under-old-name';
 import { migrationOrder } from './order/migration-order';
 import { type MigrationsLanded, renumberMigrations } from './renumber-migrations';
 
@@ -48,8 +46,10 @@ export function landUpToDate(
 
   const landing = { root: context.root, orm, trunk: trunk.commit, now, dryRun };
 
+  const { migrationTool: tool } = ORM_MEMBERS[orm];
+
   const landed =
-    orm === 'drizzle' ? replayed(landing, trunk.name) : renumberMigrations({ ...landing, orm, base: trunk.commit });
+    tool === undefined ? replayed(landing, trunk.name) : renumberMigrations({ ...landing, tool, base: trunk.commit });
 
   const migrations = [...report.migrations, ...landed.lines];
 
@@ -66,7 +66,7 @@ function hasMigrationsToLand(root: string, orm: MigratedOrm, trunk: { name: stri
 
 /** The working migrations of the branch and those that do not follow the trunk's, by name. */
 function toReplay(root: string, orm: MigratedOrm, trunk: { name: string; commit: string }): string[] {
-  const added = orm === 'drizzle' ? addedUnderDrizzle(root, trunk.commit) : addedBy(root, orm, trunk.commit);
+  const added = addedBy(root, orm, trunk.commit);
 
   return [
     ...new Set([
@@ -76,13 +76,16 @@ function toReplay(root: string, orm: MigratedOrm, trunk: { name: string; commit:
   ];
 }
 
-function addedBy(root: string, orm: NamedOrm, trunk: string): Migration[] {
-  const held = new Set(migrationsOfCommit(root, orm, trunk).map(({ file }) => file));
+/** What the branch added to the trunk: by the files its tool orders, by the names of the folder under drizzle-kit. */
+function addedBy(root: string, orm: MigratedOrm, trunk: string): Migration[] {
+  const { migrationTool: tool } = ORM_MEMBERS[orm];
 
-  return migrationsOfTree(root, orm).filter(({ file }) => !held.has(file));
-}
+  if (tool !== undefined) {
+    const landed = new Set(tool.inCommit(root, trunk).map(({ file }) => file));
 
-function addedUnderDrizzle(root: string, trunk: string): Migration[] {
+    return tool.inTree(root).filter(({ file }) => !landed.has(file));
+  }
+
   const folder = readMigrationFolder(root, 'drizzle');
   const where = { folder: folder?.folder ?? 'migrations', directories: false };
   const held = new Set(migrationsAt(root, trunk, where).map(({ name }) => name));
@@ -108,7 +111,7 @@ function replayed({ root, trunk, dryRun }: Landing, trunkName: string): Migratio
   const landed = replayedOn(root, { trunk, toLand: true, putBack: true });
   const moved = landed.stop === undefined && landed.lines.some((line) => /^(?:Generated|Renamed) /.test(line));
 
-  return moved ? { lines: [...landed.lines, appliedUnderOldName('drizzle')] } : landed;
+  return moved ? { lines: [...landed.lines, appliedUnderOldName(REPLAYED_UNDER_OLD_NAME)] } : landed;
 }
 
 /** The ORM whose migrations the kit generates and orders. */

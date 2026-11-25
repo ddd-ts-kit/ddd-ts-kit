@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { runGit } from '../../commit/run-git';
 import { CONFIG_FILE, readConfig } from '../../config';
+import { ORM_MEMBERS } from '../../orm/orm-members';
 import { drizzleOrder } from './drizzle-order';
 import type { MigrationOrderFinding } from './migration-order-finding';
 import { namedOrder } from './named-order';
@@ -20,5 +21,7 @@ export function migrationOrder(root: string, trunk: { name: string; commit: stri
     return drizzleOrder(root, { ...trunk, merged });
   }
 
-  return orm === 'knex' || orm === 'prisma' || orm === 'typeorm' ? namedOrder(root, orm, { ...trunk, merged }) : [];
+  const tool = orm === undefined ? undefined : ORM_MEMBERS[orm].migrationTool;
+
+  return tool === undefined ? [] : namedOrder(root, tool, { ...trunk, merged });
 }

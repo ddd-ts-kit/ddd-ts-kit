@@ -4,7 +4,7 @@ import { journalEntries } from '../../check/migrations/journal-entries';
 import { readDrizzleMigrations } from '../../check/migrations/read-drizzle-migrations';
 import { runGit } from '../../commit/run-git';
 import { migrationsAt } from '../migrations-at';
-import { appliedUnderOldName } from './applied-under-old-name';
+import { appliedUnderOldName, REPLAYED_UNDER_OLD_NAME } from './applied-under-old-name';
 import type { MigrationOrderFinding } from './migration-order-finding';
 import type { TrunkToFollow } from './trunk-to-follow';
 
@@ -82,8 +82,8 @@ function fixOf(folder: string, trunk: TrunkToFollow): string {
     'A branch with more than one migration that changes the schema is refused, with the steps to generate them again one at a time.';
 
   if (!trunk.merged) {
-    return `Run \`npx ddd-ts-kit merge-trunk\`: it brings ${trunk.name} in, takes its journal and its snapshots, and generates the migrations of the branch again after them, under their names. ${limit} ${appliedUnderOldName('drizzle')}`;
+    return `Run \`npx ddd-ts-kit merge-trunk\`: it brings ${trunk.name} in, takes its journal and its snapshots, and generates the migrations of the branch again after them, under their names. ${limit} ${appliedUnderOldName(REPLAYED_UNDER_OLD_NAME)}`;
   }
 
-  return `Take the journal and the snapshots of the trunk, \`git checkout ${trunk.name} -- ${folder}/meta\`, then run \`npx ddd-ts-kit drizzle-generate --replay --base ${trunk.name}\`: it finds the migrations of the branch by their files and generates them again after the trunk's, under their names. ${limit} ${appliedUnderOldName('drizzle')}`;
+  return `Take the journal and the snapshots of the trunk, \`git checkout ${trunk.name} -- ${folder}/meta\`, then run \`npx ddd-ts-kit drizzle-generate --replay --base ${trunk.name}\`: it finds the migrations of the branch by their files and generates them again after the trunk's, under their names. ${limit} ${appliedUnderOldName(REPLAYED_UNDER_OLD_NAME)}`;
 }
