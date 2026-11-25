@@ -1,6 +1,7 @@
 import { CONCURRENCY_CONFLICT, type EventSourcingStores } from '@ddd-ts-kit/kernel';
 import { ContractSuite } from '../contract-suite';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
+import { codeOf } from '../../scenarios/code-of';
 
 type Companions = Pick<EventSourcingStores, 'snapshots' | 'checkpoints' | 'subjectKeys'>;
 
@@ -69,8 +70,4 @@ export class CompanionStoresSuite extends ContractSuite<Companions> {
       this.expect((await subjectKeys.keyFor('patient-1')).id === first.id).toBe(false);
     });
   }
-}
-
-function codeOf(failure: unknown): unknown {
-  return typeof failure === 'object' && failure !== null && 'code' in failure ? failure.code : undefined;
 }

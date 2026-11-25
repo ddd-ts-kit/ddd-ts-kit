@@ -1,7 +1,7 @@
 import type { FixedExecutionScope } from '@ddd-ts-kit/kernel';
 import { executionContext, systemActor, type EventStore, type ExecutionContext } from '@ddd-ts-kit/kernel';
 import { ContractSuite } from '../contract-suite';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
 import { Consignment } from './consignment';
 import { Consignments } from './consignments';
 import { eventOf } from './event-of';

@@ -14,6 +14,7 @@ import {
   type ExecutionContext,
   type IntegrationEvent,
 } from '@ddd-ts-kit/kernel';
+import { testEpoch } from './test-epoch';
 
 export interface TestBusesOptions {
   /** The instant the clock is frozen at. Default 2026-01-01T00:00:00.000Z. */
@@ -77,7 +78,7 @@ export function createTestBuses(options: TestBusesOptions = {}): TestBuses {
     domainEvents,
     dispatching: (repository) => dispatchingOnSave(repository, () => domainEvents),
     unitOfWork,
-    clock: new FixedClock(options.now ?? new Date('2026-01-01T00:00:00.000Z')),
+    clock: new FixedClock(options.now ?? testEpoch()),
     ids: new SequentialIdGenerator(options.idPrefix),
     executionScope: new FixedExecutionScope(context, actorContext),
     actorContext,
