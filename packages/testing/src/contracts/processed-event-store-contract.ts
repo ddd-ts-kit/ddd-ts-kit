@@ -26,9 +26,20 @@ class ProcessedEventStoreSuite extends ContractSuite<ProcessedEventStore> {
 
   private marksOnce(): void {
     this.it('says yes the first time an event is seen by a consumer, no afterwards', async () => {
-      this.expect(await this.subject.markProcessed('billing', 'evt-1')).toBe(true);
-      this.expect(await this.subject.markProcessed('billing', 'evt-1')).toBe(false);
-      this.expect(await this.subject.markProcessed('billing', 'evt-1')).toBe(false);
+      this.holds(
+        await this.subject.markProcessed('billing', 'evt-1'),
+        'the first delivery of an event to a consumer was answered as already processed',
+      );
+
+      this.holds(
+        !(await this.subject.markProcessed('billing', 'evt-1')),
+        'a later delivery of an event its consumer already processed was answered as the first',
+      );
+
+      this.holds(
+        !(await this.subject.markProcessed('billing', 'evt-1')),
+        'a later delivery of an event its consumer already processed was answered as the first',
+      );
     });
 
     this.it('says yes to exactly one of several concurrent deliveries', async () => {
@@ -44,19 +55,28 @@ class ProcessedEventStoreSuite extends ContractSuite<ProcessedEventStore> {
     this.it('keeps consumers apart', async () => {
       await this.subject.markProcessed('billing', 'evt-1');
 
-      this.expect(await this.subject.markProcessed('shipping', 'evt-1')).toBe(true);
+      this.holds(
+        await this.subject.markProcessed('shipping', 'evt-1'),
+        'the first delivery to a consumer was answered as already processed because another consumer processed the event',
+      );
     });
 
     this.it('keeps events apart', async () => {
       await this.subject.markProcessed('billing', 'evt-1');
 
-      this.expect(await this.subject.markProcessed('billing', 'evt-2')).toBe(true);
+      this.holds(
+        await this.subject.markProcessed('billing', 'evt-2'),
+        'the first delivery of an event was answered as already processed because its consumer processed another event',
+      );
     });
 
     this.it('does not confuse a separator inside a consumer name or an event id', async () => {
       await this.subject.markProcessed('billing:evt', '1');
 
-      this.expect(await this.subject.markProcessed('billing', 'evt:1')).toBe(true);
+      this.holds(
+        await this.subject.markProcessed('billing', 'evt:1'),
+        'the consumer billing and the event evt:1 were taken for the consumer billing:evt and the event 1',
+      );
     });
   }
 }

@@ -920,6 +920,10 @@ runner is the `ContractRunner` type.
 
 A package that holds a port of its own publishes its contract on the same base, `ContractSuite`:
 a subject created anew before each test, and `it`, `expect`, `afterEach` bound to the runner.
+`holds(condition, otherwise)` asserts what is no value to compare, and fails with the sentence
+that says what the adapter did: the author of an adapter reads `the key is still refused after
+its holder released it`, never `expected false to be true`. The suites of the package are written
+so.
 
 <!-- checked sample -->
 ```ts
@@ -938,6 +942,12 @@ class GeocoderSuite extends ContractSuite<Geocoder> {
   protected tests(): void {
     this.it('answers undefined for an address it does not know', async () => {
       this.expect(await this.subject.locate('nowhere')).toBe(undefined);
+    });
+
+    this.it('locates London north of the equator', async () => {
+      const found = await this.subject.locate('10 Downing Street, London');
+
+      this.holds((found?.latitude ?? 0) > 0, `London was located at the latitude ${String(found?.latitude)}`);
     });
   }
 }

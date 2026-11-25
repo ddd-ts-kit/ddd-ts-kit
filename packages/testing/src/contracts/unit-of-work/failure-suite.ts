@@ -33,8 +33,16 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
 
         await this.subject.insert('p1');
 
-        this.expect((await failureOf(() => bench.run(() => bench.parcels.save(inside)))) === undefined).toBe(false);
-        this.expect((await failureOf(() => bench.parcels.save(outside))) === undefined).toBe(false);
+        this.holds(
+          (await failureOf(() => bench.run(() => bench.parcels.save(inside)))) !== undefined,
+          'a save the database refuses was accepted inside a unit of work',
+        );
+
+        this.holds(
+          (await failureOf(() => bench.parcels.save(outside))) !== undefined,
+          'a save the database refuses was accepted outside a unit of work',
+        );
+
         this.expect(bench.journal).toEqual([]);
         this.expect([inside.pullEvents().length, outside.pullEvents().length]).toEqual([1, 1]);
         this.expect(await bench.pending()).toBe(0);
@@ -48,7 +56,8 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
 
         const failure = await failureOf(() => bench.run(() => bench.register('p1', 'p2', 'p1')));
 
-        this.expect(failure === undefined).toBe(false);
+        this.holds(failure !== undefined, 'the unit of work resolved although the database refused a later save');
+
         await this.expectNothingLeft(bench, ['saved p1', 'saved p2']);
       },
     );
@@ -81,7 +90,11 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
         }),
       );
 
-      this.expect(failure instanceof CarrierDown).toBe(true);
+      this.holds(
+        failure instanceof CarrierDown,
+        `the unit of work did not reject with the failure of its work: got ${String(failure)}`,
+      );
+
       await this.expectNothingLeft(bench, ['saved p1']);
     });
 
@@ -119,7 +132,11 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
 
         const failure = await failureOf(() => bench.run(() => bench.register('p1', 'p2')));
 
-        this.expect(failure instanceof CarrierDown).toBe(true);
+        this.holds(
+          failure instanceof CarrierDown,
+          `the unit of work did not reject with the failure of its before-commit handler: got ${String(failure)}`,
+        );
+
         await this.expectNothingLeft(bench, ['saved p1', 'saved p2', 'published p1', 'published p2']);
       },
     );
@@ -138,7 +155,8 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
           }),
         );
 
-        this.expect(failure === undefined).toBe(false);
+        this.holds(failure !== undefined, 'the unit of work resolved although its commit failed');
+
         await this.expectNothingLeft(bench, ['saved p1', 'published p1']);
       },
     );

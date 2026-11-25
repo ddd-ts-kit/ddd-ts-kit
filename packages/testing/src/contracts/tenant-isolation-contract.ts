@@ -198,8 +198,15 @@ class TenantIsolationSuite<A extends AggregateRoot<Id>, Id extends string | numb
       const write = await failureOf(() => scope.run(job, () => this.subject.save(options.createAggregate())));
 
       // Refused by the adapter, or, under row-level security alone, shown nothing by the database.
-      this.expect(read instanceof NoCurrentTenantError || read === undefined).toBe(true);
-      this.expect(write instanceof NoCurrentTenantError).toBe(true);
+      this.holds(
+        read instanceof NoCurrentTenantError || read === undefined,
+        `a read of work that names no tenant was neither refused with NoCurrentTenantError nor shown nothing: got ${String(read)}`,
+      );
+
+      this.holds(
+        write instanceof NoCurrentTenantError,
+        `a write of work that names no tenant was not refused with NoCurrentTenantError: got ${String(write)}`,
+      );
     });
   }
 

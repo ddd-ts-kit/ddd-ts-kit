@@ -63,10 +63,20 @@ export class CompanionStoresSuite extends ContractSuite<Companions> {
       this.expect(await subjectKeys.keyFor('patient-1')).toEqual(first);
       this.expect(await subjectKeys.find(first.id)).toEqual(first);
       this.expect(Buffer.from(first.material, 'base64').length).toBe(32);
-      this.expect(await subjectKeys.erase('patient-1')).toBe(true);
+
+      this.holds(await subjectKeys.erase('patient-1'), 'the erasure of a subject that holds a key answered false');
+
       this.expect(await subjectKeys.find(first.id)).toBe(undefined);
-      this.expect(await subjectKeys.erase('patient-1')).toBe(false);
-      this.expect((await subjectKeys.keyFor('patient-1')).id === first.id).toBe(false);
+
+      this.holds(
+        !(await subjectKeys.erase('patient-1')),
+        'the erasure of a subject whose key is already erased answered true',
+      );
+
+      this.holds(
+        (await subjectKeys.keyFor('patient-1')).id !== first.id,
+        'a subject that was erased was given its old key again',
+      );
     });
   }
 }

@@ -35,6 +35,7 @@ class CachePurgerSuite extends ContractSuite<CachePurgerUnderContract> {
   protected tests(): void {
     this.purgesWhatATagNames();
     this.keepsWhatItDoesNotName();
+    this.keepsTenantsApart();
     this.isIdempotent();
   }
 
@@ -45,8 +46,8 @@ class CachePurgerSuite extends ContractSuite<CachePurgerUnderContract> {
 
       await this.subject.purger.purge([MONDAY]);
 
-      this.expect(await this.subject.holds('/calendars/c-1')).toBe(false);
-      this.expect(await this.subject.holds('/calendars/c-2')).toBe(true);
+      this.holds(!(await this.subject.holds('/calendars/c-1')), 'the answer filed under the purged tag is still held');
+      this.holds(await this.subject.holds('/calendars/c-2'), 'an answer filed under another tag was purged');
     });
 
     this.it('purges the answers filed under any of several tags, a kind reaching each of its elements', async () => {
@@ -56,9 +57,12 @@ class CachePurgerSuite extends ContractSuite<CachePurgerUnderContract> {
 
       await this.subject.purger.purge([EVERY_CALENDAR]);
 
-      this.expect(await this.subject.holds('/calendars/c-1')).toBe(false);
-      this.expect(await this.subject.holds('/calendars/c-2')).toBe(false);
-      this.expect(await this.subject.holds('/calendars')).toBe(false);
+      for (const answer of ['/calendars/c-1', '/calendars/c-2', '/calendars']) {
+        this.holds(
+          !(await this.subject.holds(answer)),
+          `the answer ${answer}, filed under the purged kind, is still held`,
+        );
+      }
     });
   }
 
@@ -71,10 +75,19 @@ class CachePurgerSuite extends ContractSuite<CachePurgerUnderContract> {
 
       await this.subject.purger.purge([written]);
 
-      this.expect(await this.subject.holds('/calendars/written')).toBe(false);
-      this.expect(await this.subject.holds('/calendars/matched')).toBe(true);
-    });
+      this.holds(
+        !(await this.subject.holds('/calendars/written')),
+        'the answer filed under a tag written with the characters of a pattern is still held',
+      );
 
+      this.holds(
+        await this.subject.holds('/calendars/matched'),
+        'an answer was purged because the purged tag, read as a pattern, matches its tag',
+      );
+    });
+  }
+
+  private keepsTenantsApart(): void {
     this.it('keeps the answers of another tenant', async () => {
       const [ofAcme = MONDAY, ofGlobex = MONDAY] = [
         ...tenantCacheTags([MONDAY], 'acme'),
@@ -86,8 +99,15 @@ class CachePurgerSuite extends ContractSuite<CachePurgerUnderContract> {
 
       await this.subject.purger.purge([ofAcme]);
 
-      this.expect(await this.subject.holds('/acme/calendars/c-1')).toBe(false);
-      this.expect(await this.subject.holds('/globex/calendars/c-1')).toBe(true);
+      this.holds(
+        !(await this.subject.holds('/acme/calendars/c-1')),
+        'the answer of the tenant whose tag was purged is still held',
+      );
+
+      this.holds(
+        await this.subject.holds('/globex/calendars/c-1'),
+        'the answer of another tenant was purged by the same tag',
+      );
     });
   }
 
@@ -100,7 +120,10 @@ class CachePurgerSuite extends ContractSuite<CachePurgerUnderContract> {
       await this.subject.purger.purge([MONDAY]);
       await this.subject.purger.purge([MONDAY]);
 
-      this.expect(await this.subject.holds('/calendars/c-2')).toBe(true);
+      this.holds(
+        await this.subject.holds('/calendars/c-2'),
+        'an answer was purged by a tag it is not filed under, by an empty list or by a second purge',
+      );
     });
   }
 }

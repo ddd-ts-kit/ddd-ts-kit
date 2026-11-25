@@ -103,8 +103,8 @@ class EventBusSuite extends ContractSuite<EventBusUnderContract> {
       await this.publish([busEvent('evt-2')]);
 
       this.expect(kept.ids()).toEqual(['evt-1', 'evt-2']);
-      this.expect(removed.includes('evt-2')).toBe(false);
-      this.expect(before > 0).toBe(true);
+      this.holds(!removed.includes('evt-2'), 'a handler received an event published after it was unsubscribed');
+      this.holds(before > 0, 'the handler received nothing while it was subscribed');
     });
   }
 
@@ -163,7 +163,11 @@ class EventBusSuite extends ContractSuite<EventBusUnderContract> {
       const failure = await this.publish([busEvent('evt-1')]);
 
       // Either the publication is rejected (in-process) or the event comes back (broker).
-      this.expect(failure !== undefined || attempts > 1).toBe(true);
+      this.holds(
+        failure !== undefined || attempts > 1,
+        'the failure of a handler was neither surfaced by the publication nor followed by a redelivery',
+      );
+
       this.expect(healthy.ids()).toEqual(['evt-1']);
     });
   }

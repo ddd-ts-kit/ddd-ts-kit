@@ -45,7 +45,7 @@ class AdvisoryLockSuite extends ContractSuite<AdvisoryLockUnderContract> {
   }
 
   protected tests(): void {
-    this.holds();
+    this.holdsUntilTheUnitOfWorkEnds();
     this.keepsKeysApart();
     this.refuses();
     this.keepsTenantsApart();
@@ -58,7 +58,7 @@ class AdvisoryLockSuite extends ContractSuite<AdvisoryLockUnderContract> {
     }
   }
 
-  private holds(): void {
+  private holdsUntilTheUnitOfWorkEnds(): void {
     this.it('holds the lock until the unit of work ends, and no longer', async () => {
       const during = await this.subject.run(async () => {
         await this.subject.lock(KEY);
@@ -79,8 +79,12 @@ class AdvisoryLockSuite extends ContractSuite<AdvisoryLockUnderContract> {
         }),
       );
 
-      this.expect(failure instanceof Error).toBe(true);
-      this.expect(await this.subject.run(() => this.subject.tryLock(KEY))).toBe(true);
+      this.holds(failure instanceof Error, 'the unit of work resolved although its work failed');
+
+      this.holds(
+        await this.subject.run(() => this.subject.tryLock(KEY)),
+        'the lock of a unit of work that failed is still held',
+      );
     });
   }
 
@@ -113,8 +117,15 @@ class AdvisoryLockSuite extends ContractSuite<AdvisoryLockUnderContract> {
       const waiting = await failureOf(() => this.subject.lock(KEY));
       const trying = await failureOf(() => this.subject.tryLock(KEY));
 
-      this.expect(waiting instanceof AdvisoryLockOutsideUnitOfWorkError).toBe(true);
-      this.expect(trying instanceof AdvisoryLockOutsideUnitOfWorkError).toBe(true);
+      this.holds(
+        waiting instanceof AdvisoryLockOutsideUnitOfWorkError,
+        `a lock taken outside a unit of work was not refused with AdvisoryLockOutsideUnitOfWorkError: got ${String(waiting)}`,
+      );
+
+      this.holds(
+        trying instanceof AdvisoryLockOutsideUnitOfWorkError,
+        `a lock tried outside a unit of work was not refused with AdvisoryLockOutsideUnitOfWorkError: got ${String(trying)}`,
+      );
     });
   }
 
@@ -135,7 +146,10 @@ class AdvisoryLockSuite extends ContractSuite<AdvisoryLockUnderContract> {
     this.it('refuses a key of tenant data to work that names no tenant', async () => {
       const failure = await failureOf(() => this.subject.run(() => this.subject.lock(KEY, tenant(undefined))));
 
-      this.expect(failure instanceof NoCurrentTenantError).toBe(true);
+      this.holds(
+        failure instanceof NoCurrentTenantError,
+        `a key of tenant data was not refused with NoCurrentTenantError to work that names no tenant: got ${String(failure)}`,
+      );
     });
   }
 
@@ -190,7 +204,11 @@ class AdvisoryLockSuite extends ContractSuite<AdvisoryLockUnderContract> {
       await holder;
 
       this.expect(tried).toEqual({ sameKey: false, otherTenant: true, otherKey: true });
-      this.expect(await this.subject.run(() => this.subject.tryLock(KEY, tenant('acme')))).toBe(true);
+
+      this.holds(
+        await this.subject.run(() => this.subject.tryLock(KEY, tenant('acme'))),
+        'the key is still held after the unit of work that held it has ended',
+      );
     });
   }
 }
