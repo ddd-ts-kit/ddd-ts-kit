@@ -18,6 +18,7 @@ import {
   project,
   put,
   reason,
+  rule,
   run,
   worker,
   write,
@@ -25,9 +26,10 @@ import {
 
 test('a new file of a generated role is refused with the generator command', () => {
   const root = project();
-  const { output } = run('pre-write', write(join(root, 'src/contexts/ordering/domain/aggregates/order.aggregate.ts')));
-  assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(output.hookSpecificOutput.permissionDecisionReason, /generate aggregate/);
+  const refused = run('pre-write', write(join(root, 'src/contexts/ordering/domain/aggregates/order.aggregate.ts')));
+  assert.equal(decision(refused), 'deny');
+  assert.equal(rule(refused), 'hand-written-role');
+  assert.match(reason(refused), /^ddd-ts-kit \[hand-written-role\]: .*generate aggregate/);
 });
 
 test('a new value object or refusal of the shared kernel is refused with its generator, its spec is not', () => {
@@ -83,9 +85,10 @@ test('a generated contract is never edited by hand, in YAML, in JSON, split into
     'docs/integration/event-catalog.md',
     'src/platform/http/openapi-documents.ts',
   ]) {
-    const { output } = run('pre-write', write(join(root, file)));
-    assert.equal(output.hookSpecificOutput.permissionDecision, 'deny', file);
-    assert.match(output.hookSpecificOutput.permissionDecisionReason, /docs:generate/);
+    const refused = run('pre-write', write(join(root, file)));
+    assert.equal(decision(refused), 'deny', file);
+    assert.equal(rule(refused), 'generated-file', file);
+    assert.match(reason(refused), /docs:generate/);
   }
 });
 
@@ -93,7 +96,8 @@ test('the test writer agent cannot touch production code', () => {
   const root = project();
   const agent = { agent_type: 'ddd-ts-kit:domain-test-writer' };
   const production = run('pre-write', write(join(root, 'src/contexts/ordering/ordering.module.ts'), agent));
-  assert.equal(production.output.hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(decision(production), 'deny');
+  assert.equal(rule(production), 'test-writer-scope');
   const spec = run('pre-write', write(join(root, 'src/contexts/ordering/test/unit/order.spec.ts'), agent));
   assert.equal(spec.output, undefined);
 });
@@ -171,11 +175,14 @@ test('skipping a test and relaxing the rules both need the owner', () => {
       content: "it.skip('pays', () => {});",
     },
   });
-  assert.equal(skipped.output.hookSpecificOutput.permissionDecision, 'ask');
+  assert.equal(decision(skipped), 'ask');
+  assert.equal(rule(skipped), 'escape');
   const config = run('pre-write', write(join(root, 'ddd-ts-kit.config.json')));
-  assert.equal(config.output.hookSpecificOutput.permissionDecision, 'ask');
+  assert.equal(decision(config), 'ask');
+  assert.equal(rule(config), 'governed-file');
   const pipeline = run('pre-write', write(join(root, '.github/workflows/ci.yml')));
-  assert.equal(pipeline.output.hookSpecificOutput.permissionDecision, 'ask');
+  assert.equal(decision(pipeline), 'ask');
+  assert.equal(rule(pipeline), 'governed-file');
 });
 
 test('the files the pipeline and the gates run from need the owner as the workflows do', () => {
@@ -192,7 +199,8 @@ test('the files the pipeline and the gates run from need the owner as the workfl
     'REVIEW.md',
   ]) {
     const edit = run('pre-write', write(join(root, file)));
-    assert.equal(edit.output?.hookSpecificOutput.permissionDecision, 'ask', file);
+    assert.equal(decision(edit), 'ask', file);
+    assert.equal(rule(edit), 'governed-file', file);
   }
 });
 
@@ -420,16 +428,21 @@ test('the declarations of a module of the model are generated too, and a module 
 test('the baseline of the errors is never written by an agent, on any host; prune lowers it freely', () => {
   const root = project();
   const file = join(root, 'ddd-ts-kit-baseline.json');
-  assert.equal(decision(run('pre-write', write(file))), 'deny');
-  assert.match(reason(run('pre-write', write(file))), /written by the project owner, in a terminal/);
+  const written = run('pre-write', write(file));
+  assert.equal(decision(written), 'deny');
+  assert.equal(rule(written), 'baseline-file');
+  assert.match(reason(written), /written by the project owner, in a terminal/);
   const patched = run('pre-write', patch(root, '*** Add File: ddd-ts-kit-baseline.json', '+{}'));
-  assert.equal(patched.output.hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(decision(patched), 'deny');
+  assert.equal(rule(patched), 'baseline-file');
   for (const command of [
     'npx ddd-ts-kit check --baseline write',
     'pnpm exec ddd-ts-kit check --baseline=write',
     'npx ddd-ts-kit@latest check --baseline write && git add ddd-ts-kit-baseline.json',
   ]) {
-    assert.equal(decision(run('pre-bash', bash(root, command))), 'deny', command);
+    const refused = run('pre-bash', bash(root, command));
+    assert.equal(decision(refused), 'deny', command);
+    assert.equal(rule(refused), 'baseline-write', command);
   }
   assert.equal(run('pre-bash', bash(root, 'npx ddd-ts-kit check --baseline prune')).output, undefined);
   assert.equal(run('pre-bash', bash(root, 'npx ddd-ts-kit check')).output, undefined);
@@ -446,6 +459,7 @@ test('on trial, an import a dependency rule refuses is refused before the write,
   });
   const adding = run('pre-write', edit('export class', "import express from 'express';\nexport class"));
   assert.equal(decision(adding), 'deny');
+  assert.equal(rule(adding), 'dependency');
   assert.match(reason(adding), /layer\/domain-purity/);
   assert.match(reason(adding), /dependenciesBeforeWrite, on trial/);
   assert.doesNotMatch(reason(adding), /zod/);

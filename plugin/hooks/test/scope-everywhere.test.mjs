@@ -23,6 +23,7 @@ import {
   project,
   put,
   reason,
+  rule,
   run,
   worker,
   write,
@@ -125,6 +126,7 @@ test('a builder writes outside every project only in the temp directory', () => 
   const away = join(directory('away'), 'notes.md');
   const refused = run('pre-write', write(away, agent));
   assert.equal(decision(refused), 'deny');
+  assert.equal(rule(refused), 'stray-file');
   assert.match(reason(refused), new RegExp(`outside every project.*${worktree}`));
   const first = builder('elsewhere-first', conductor);
   assert.equal(decision(run('pre-write', write(away, first))), 'deny');
@@ -880,6 +882,7 @@ test('a command the reader breaks on is refused to a worker, and left to the che
   const agent = worker(root);
   const refused = run('pre-bash', bash(root, TOO_LONG, agent));
   assert.equal(decision(refused), 'deny');
+  assert.equal(rule(refused), 'unreadable-command');
   assert.match(reason(refused), /could not read this command/);
   assert.equal(run('pre-bash', bash(root, TOO_LONG)).output, undefined);
   const { conductor } = conductorWithWorker();

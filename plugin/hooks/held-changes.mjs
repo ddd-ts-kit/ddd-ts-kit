@@ -1,6 +1,11 @@
 // What a worker's command changed outside its scope: the state noted before code the guard cannot
-// read, compared at the next call, held until it is put back. Read by pre-write, pre-bash and
-// subagent-stop.
+// read, compared at the next call, held until it is put back. Three steps, the only ones that touch
+// the two state files of a worker (`before-run`, the note; `outside`, what is held): `note` before a
+// command, `settle` at the next call, which answers `{ state, notices, reason? }`, and `release`
+// when a new run of a builder starts. The state is `clear` when nothing is held, `held` when a file
+// waits to be put back or a change refuses the call once, `uncompared` while git cannot compare the
+// note; `reason` refuses the call, and the entry says the `notices`. Read by pre-write, pre-bash,
+// subagent-start and subagent-stop.
 import { createHash } from 'node:crypto';
 import { existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -98,9 +103,9 @@ export function branchOutsideReason(project, input) {
 // The code a worker's command runs (inline code, a script, a shell fed on its input, a test or a
 // package script) cannot be read in advance: unless every command of the line is a pure reader, the
 // state outside the scope is noted before it, and compared at the next call of the guard by that
-// worker (`settleNote`). The kit's own merge of the trunk, which brings the trunk's files in, is not
+// worker (`settle`). The kit's own merge of the trunk, which brings the trunk's files in, is not
 // noted; nor are the packages around an install, which rewrites them.
-export function noteBeforeCode(project, input, commands) {
+export function note({ project, input, commands }) {
   const { base } = workerScope(project, input);
   if (commands.every((command) => isPureReader(command) || startsTrunkMerge(command, base))) {
     return;
@@ -250,28 +255,44 @@ function statusEntry(field, next) {
 }
 
 // What changed outside the scope stops the worker until it is put back; the commands that put back
-// exactly those files (and a commit that records it) stay allowed. A refusal said once comes first.
-export function pendingChangeReason(project, input, commands) {
-  const told = settleNote(project, input, commands.every(isPureReader));
-  return told ? { reason: told } : heldChangeReason(project, input, commands);
+// exactly those files (and a commit that records it) stay allowed (`held`, with no reason). A refusal
+// said once comes first. At the `last` call of a worker, its stop, no note stays for a next one.
+export function settle({ project, input, commands = [], last = false }) {
+  const notices = [];
+  const told = settleNote(project, input, { reading: !last && commands.every(isPureReader), notices });
+  if (told) {
+    return { state: told === UNCOMPARED_COMMITS ? 'uncompared' : 'held', notices, reason: told };
+  }
+  const held = heldOutside(project, input, commands);
+  if (held === undefined) {
+    return { state: 'clear', notices };
+  }
+  return held.undoing ? { state: 'held', notices } : { state: 'held', notices, reason: held.reason };
+}
+
+// A new run of a builder drops the note its last run left before inline code: what changed outside
+// its scope since then is the conductor's as much as its own. What that code changed and was not put
+// back stays held.
+export function release({ project, input }) {
+  removeKitFile(stateFile('before-run', project, input));
 }
 
 // The note before the last command, compared now: what changed outside the scope in the worktree is
-// held until it is put back (`heldChangeReason`); what changed in the packages the guard runs is
+// held until it is put back (`heldOutside`); what changed in the packages the guard runs is
 // refused once; a file left changed in the session's checkout is said once and refuses nothing: it
 // is written already, the worker puts nothing back there, and the conductor, who edits its plan
 // while workers run, alone knows whether it changed it.
 // A process the last command left in the background goes on changing files: when nothing changed and
 // the call only reads (`reading`), the note of the worktree stays for the next call, until a change, a
 // stop or a new note ends it.
-export function settleNote(project, input, reading) {
+function settleNote(project, input, { reading, notices }) {
   const noted = stateFile('before-run', project, input);
   const before = readJson(noted);
   if (!isRecord(before?.worktree)) {
     return undefined;
   }
   const session = notedSession(before.session);
-  const settled = holdChanges(project, input, before);
+  const settled = holdChanges(project, input, { before, notices });
   if (settled === UNCOMPARED_COMMITS) {
     // The note stays: it is compared again once git answers.
     return UNCOMPARED_COMMITS;
@@ -279,7 +300,7 @@ export function settleNote(project, input, reading) {
   const { said, ground } = session ? sessionChanges(session, before.session) : {};
   const told = ground ?? packagesChangeReason(before.packages, project, session);
   if (said) {
-    call.notice = [call.notice, said].filter(Boolean).join('\n');
+    notices.push(said);
   }
   if (reading && !settled && !told && !said) {
     writeState(noted, { worktree: before.worktree, script: before.script, trunks: before.trunks });
@@ -291,12 +312,12 @@ export function settleNote(project, input, reading) {
 
 // Whether the note is settled: something changed outside the scope since it, or it cannot be compared.
 // A status that did not answer in full, on either side, compares nothing, and that is said once.
-function holdChanges(project, input, { worktree: before, script, trunks: noted }) {
+function holdChanges(project, input, { before: { worktree: before, script, trunks: noted }, notices }) {
   const trunks = notedTrunks(project, input, noted);
   const outside = worktreeOutside(project, input);
   const now = snapshot(project, outside);
   if (before.unread || now.unread) {
-    call.notice = [call.notice, UNCOMPARED_NOTE].filter(Boolean).join('\n');
+    notices.push(UNCOMPARED_NOTE);
     return true;
   }
   const all = differences(project, outside, { before, now, trunks });
@@ -307,10 +328,10 @@ function holdChanges(project, input, { worktree: before, script, trunks: noted }
   const uncopied = all.filter((path) => !rewritten.includes(path) && hasNoCopy(project, before.changes[path]));
   const changed = all.filter((path) => !rewritten.includes(path) && !uncopied.includes(path));
   if (rewritten.length > 0) {
-    call.notice = [call.notice, rewrittenNotice(script, rewritten)].filter(Boolean).join('\n');
+    notices.push(rewrittenNotice(script, rewritten));
   }
   if (uncopied.length > 0) {
-    call.notice = [call.notice, uncopiedNotice(uncopied)].filter(Boolean).join('\n');
+    notices.push(uncopiedNotice(uncopied));
   }
   if (changed.length > 0) {
     const file = stateFile('outside', project, input);
@@ -512,7 +533,9 @@ function packagesChangeReason(before, project, session) {
     : `The packages the guard runs changed while your last command ran: ${changed.join(', ')}. A worker never changes node_modules: report it to the conductor, who installs them again. ${REPORT_TO_CONDUCTOR}`;
 }
 
-export function heldChangeReason(project, input, commands) {
+// The files held outside the scope that are not back yet: none, a command that only puts them back
+// (`undoing`), or the reason that names the way back.
+function heldOutside(project, input, commands) {
   const recorded = stateFile('outside', project, input);
   const held = readJson(recorded);
   if (!isRecord(held)) {

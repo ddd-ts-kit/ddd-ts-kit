@@ -156,6 +156,12 @@ export function reason(result) {
   return result.output.hookSpecificOutput.permissionDecisionReason;
 }
 
+// The id of the rule that took the decision, which opens its message: `ddd-ts-kit [<id>]: ...`.
+export function rule(result) {
+  const said = result.output?.hookSpecificOutput?.permissionDecisionReason ?? result.output?.permissionDecisionReason;
+  return /^ddd-ts-kit \[([a-z-]+)\]: /.exec(said ?? '')?.[1];
+}
+
 export function worker(root, context = 'ordering') {
   put(root, '.ddd-ts-kit/worker.json', JSON.stringify({ context }));
   return { agent_type: 'ddd-ts-kit:context-builder' };

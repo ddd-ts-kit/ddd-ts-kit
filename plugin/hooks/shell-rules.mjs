@@ -15,10 +15,21 @@ import {
   workerGitReason,
   workerPlaceReason,
 } from './git-rules.mjs';
-import { noteBeforeCode, pendingChangeReason } from './held-changes.mjs';
 import { isReadOnlyAgent, isSubAgent, isTestWriter, isWorkerAgent } from './hook-input.mjs';
 import { CONFIG, describePlace, findProject, projectPath } from './project.mjs';
+import {
+  baselineFileRule,
+  generatedFileRule,
+  handWrittenRoleRule,
+  scopeFileRule,
+  scopeLinkRule,
+  storyCodeRule,
+  testWriterScopeRule,
+  workerScopeRule,
+  worktreeCodeRule,
+} from './place-rules.mjs';
 import { hasWorkerWorktree } from './repository.mjs';
+import { firstRefusal } from './rule-table.mjs';
 import {
   DEPENDENCY_CHANGES,
   gitInvocation,
@@ -45,17 +56,8 @@ import {
   generates,
   generatorPlaceReason,
   lockedRegressionReason,
-  storyCodeReason,
-  worktreeCodeReason,
 } from './story-rules.mjs';
-import { linkReason, REPORT_TO_CONDUCTOR, workerScope, workerScopeReason } from './worker-scope.mjs';
-import {
-  baselineFileReason,
-  generatedFileReason,
-  handWrittenRoleReason,
-  scopeFileReason,
-  testWriterScopeReason,
-} from './write-rules.mjs';
+import { REPORT_TO_CONDUCTOR, workerScope } from './worker-scope.mjs';
 
 // The files of a folder read before a command.
 const FOLDER_FILES = 5000;
@@ -89,21 +91,105 @@ const CP_TREE = /^(?:-[a-zA-Z]*[arR][a-zA-Z]*|--(?:recursive|archive))$/;
 // The variables that move where the shell finds a path, a directory or a program, or git its repository.
 const PLACE_VARIABLES = /^(?:TMPDIR|XDG_RUNTIME_DIR|CDPATH|HOME|GIT_DIR|GIT_WORK_TREE|PATH)=/;
 
+// What no agent runs, then what waits for a place, a landing, a lock or a generator first; each rule
+// reads `{ project, input, command, commands }`.
+const PREPARING_RULES = [
+  { id: 'baseline-write', reason: ({ project, commands }) => baselineWriteReason(project, commands) },
+  { id: 'hooks-skipped', reason: ({ commands }) => hooksSkippedReason(commands) },
+  { id: 'git-config', reason: ({ input, commands }) => gitConfigReason(input, commands) },
+  { id: 'other-branch', reason: ({ input, commands }) => otherBranchReason(input, commands) },
+  { id: 'worker-place', reason: ({ input, commands }) => workerPlaceReason(input, commands) },
+  { id: 'landing', reason: ({ input, commands }) => landingReason(input, commands) },
+  { id: 'worker-git', reason: ({ project, input, commands }) => workerGitReason(project, input, commands) },
+  { id: 'one-side-merge', reason: ({ project, input, commands }) => oneSideMergeReason(project, input, commands) },
+  { id: 'acceptance-locking', reason: ({ input, commands }) => acceptanceLockingReason(input, commands) },
+  {
+    id: 'acceptance-files',
+    reason: ({ project, input, command, commands }) =>
+      acceptanceFilesShellReason(project, input, { command, commands }),
+  },
+  { id: 'generator-place', reason: ({ project, commands }) => generatorPlaceReason(project, commands) },
+];
+
+// What holds a worker whatever its scope: a read under another HOME, PATH or GIT_DIR is no longer
+// the read the guard judged.
+const placeVariableRule = { id: 'place-variable', reason: ({ commands }) => placeVariableReason(commands) };
+
+// What the command of a worker would do, once its scope and what it holds outside it let it run;
+// each rule reads `{ project, input, context, command, commands, undoing }`. A command that puts back
+// held files (`undoing`) changes them outside the scope: only that check is lifted.
+const WORKER_COMMAND_RULES = [
+  {
+    id: 'shared-generator',
+    reason: ({ project, context, commands }) => sharedGeneratorReason(project, context, commands),
+  },
+  { id: 'dependency-change', reason: ({ commands }) => dependencyChangeReason(commands) },
+  { id: 'working-migration', reason: ({ command }) => workingMigrationReason(command) },
+  { id: 'formatter', reason: ({ project, commands }) => formatterReason(project, commands) },
+  { id: 'unknown-program', reason: ({ commands }) => unknownProgramReason(commands) },
+  placeVariableRule,
+  { id: 'elsewhere', reason: ({ project, commands }) => elsewhereReason(project, commands) },
+  {
+    id: 'file-change',
+    applies: ({ undoing }) => !undoing,
+    reason: ({ project, input, commands }) => fileChangeReason(project, input, commands),
+  },
+  { id: 'unread', reason: ({ commands }) => unreadReason(commands) },
+];
+
+// The test writer is held to the paths of a test, and to nothing else of what a session writes.
+const notTestWriting = ({ input }) => !isTestWriter(input);
+
+// What a place written by the shell of a session that is not a context worker meets, in the project
+// that holds it (`{ project, file, input, by, typed, below }`): what only moves, deletes or restores a
+// file (`by`) leaves a generated file to be rebuilt, and what types in a file (`typed`) is held as the
+// editor tools are.
+const SESSION_PLACE_RULES = [
+  scopeFileRule,
+  {
+    id: 'locked-regression',
+    reason: ({ project, file, input }) => lockedRegressionReason(project, projectPath(project, file), input),
+  },
+  testWriterScopeRule,
+  { ...storyCodeRule, applies: notTestWriting },
+  { ...generatedFileRule, applies: (place) => notTestWriting(place) && !PUTS_BACK.has(place.by) },
+  { ...baselineFileRule, applies: notTestWriting },
+  { ...worktreeCodeRule, applies: (place) => notTestWriting(place) && place.typed },
+  { ...handWrittenRoleRule, applies: (place) => notTestWriting(place) && place.typed },
+];
+
+// A builder out of every scoped checkout reads only: a write lands where the guard cannot judge it.
+const BUILDER_STRAY_RULES = [
+  placeVariableRule,
+  {
+    id: 'stray-command',
+    applies: ({ commands }) => builderWrites(commands),
+    reason: () =>
+      'A worker runs every command as `cd <worktree> && ...` so that the guard reads it against the scope of that worktree; this command writes without moving into a worktree of your project. Run it as `cd <worktree> && ...`.',
+  },
+];
+
+// The scope of a worker on a place it writes, by its path and by where it lands through a link.
+const WORKER_PLACE_RULES = [workerScopeRule, scopeLinkRule];
+
+// What a file the shell of a worker types in, in its own worktree, meets.
+const SHELL_WRITE_RULES = [generatedFileRule, ...WORKER_PLACE_RULES, handWrittenRoleRule];
+
 // What the shell writes of a session that is not a context worker meet, in the project each place
 // belongs to: the story build gate and the generated or baseline files for everyone, the test-writer
 // held to the paths of a test. What a redirection, `sed -i` or `tee` types in a file is held as the
 // editor tools are; what a command only moves, deletes or restores is not.
-export function sessionShellReason(input, commands) {
+export function sessionShellRefusal(input, commands) {
   const reading = readOnlyReason(input, commands);
   if (reading) {
-    return reading;
+    return { id: 'read-only', reason: reading };
   }
   for (const command of commands) {
     const typed = writtenTargets(command).map((target) => ({ ...target, typed: true }));
     for (const target of [...typed, ...changedPaths(command)]) {
-      const refusal = sessionPlaceReason(input, target);
+      const refusal = sessionPlaceRefusal(input, target);
       if (refusal) {
-        return `${target.by}: ${refusal}`;
+        return { id: refusal.id, reason: `${target.by}: ${refusal.reason}` };
       }
     }
   }
@@ -131,44 +217,28 @@ function readOnlyReason(input, commands) {
   return undefined;
 }
 
-function sessionPlaceReason(input, { place, by, typed, below }) {
-  const testWriter = isTestWriter(input);
+function sessionPlaceRefusal(input, { place, by, typed, below }) {
   if (place === undefined) {
-    return testWriter
-      ? `The test writer changes tests only, and writes with the shell only to a file it names: this command writes files only the shell knows. Name each file, after a certain \`cd <folder> && ...\`. ${FREE_OUTPUT}`
+    return isTestWriter(input)
+      ? {
+          id: testWriterScopeRule.id,
+          reason: `The test writer changes tests only, and writes with the shell only to a file it names: this command writes files only the shell knows. Name each file, after a certain \`cd <folder> && ...\`. ${FREE_OUTPUT}`,
+        }
       : undefined;
   }
   const owner = findProject(place);
   if (!owner || owner.mode === 'off') {
     return undefined;
   }
-  return (
-    scopeFileReason(owner, { place, below }, input) ??
-    lockedRegressionReason(owner, projectPath(owner, place), input) ??
-    (testWriter
-      ? testWriterScopeReason(owner, place, input)
-      : (storyCodeReason(owner, place) ??
-        (PUTS_BACK.has(by) ? undefined : generatedFileReason(owner, place)) ??
-        baselineFileReason(owner, place) ??
-        (typed ? (worktreeCodeReason(owner, place) ?? handWrittenRoleReason(owner, place)) : undefined)))
-  );
+  return firstRefusal(SESSION_PLACE_RULES, { project: owner, file: place, input, by, typed, below });
 }
 
 // A context-builder keeps the working directory of its session, so the scope of a worker is found
 // only when the command moves into its worktree (`cd <worktree> && ...` or `--cwd`). When the
 // session has worker worktrees and a builder's command touches no scoped project, a write by that
 // command lands where the guard cannot judge it: it is refused, with the one shape it reads.
-export function builderStrayReason(project, input, commands) {
-  if (!isHeldToAWorktree(project, input)) {
-    return undefined;
-  }
-  // What holds a worker whatever its scope holds it here too: a read under another HOME, PATH or
-  // GIT_DIR is no longer the read the guard judged.
-  const moved = placeVariableReason(commands);
-  if (moved || !builderWrites(commands)) {
-    return moved;
-  }
-  return 'A worker runs every command as `cd <worktree> && ...` so that the guard reads it against the scope of that worktree; this command writes without moving into a worktree of your project. Run it as `cd <worktree> && ...`.';
+export function builderStrayRefusal(project, input, commands) {
+  return isHeldToAWorktree(project, input) ? firstRefusal(BUILDER_STRAY_RULES, { commands }) : undefined;
 }
 
 // An agent that holds the worker's name, with a scope of its own or in a repository of worker
@@ -192,50 +262,13 @@ function builderWrites(commands) {
   );
 }
 
-// What no agent runs, then what waits for a place, a landing, a lock or a generator first.
-export async function preparingReason(project, input, { command, commands }) {
-  return (
-    baselineWriteReason(project, commands) ??
-    hooksSkippedReason(commands) ??
-    gitConfigReason(input, commands) ??
-    otherBranchReason(input, commands) ??
-    workerPlaceReason(input, commands) ??
-    landingReason(input, commands) ??
-    workerGitReason(project, input, commands) ??
-    oneSideMergeReason(project, input, commands) ??
-    acceptanceLockingReason(input, commands) ??
-    acceptanceFilesShellReason(project, input, { command, commands }) ??
-    generatorPlaceReason(project, commands)
-  );
+export function preparingRefusal(project, input, { command, commands }) {
+  return firstRefusal(PREPARING_RULES, { project, input, command, commands });
 }
 
-// What a worker may not run: anything once its scope file changed, a file it must put back first,
-// then what the command itself would do; a command allowed to run code the guard cannot read has
-// the state outside the scope noted before it.
-export function workerCommandReason(project, input, { context, command, commands }) {
-  const { changed } = workerScope(project, input);
-  if (changed) {
-    return changed;
-  }
-  const pending = pendingChangeReason(project, input, commands);
-  if (pending?.reason) {
-    return pending.reason;
-  }
-  // A command that puts back held files changes them outside the scope: only that check is lifted.
-  const refusal =
-    sharedGeneratorReason(project, context, commands) ??
-    dependencyChangeReason(commands) ??
-    workingMigrationReason(command) ??
-    formatterReason(project, commands) ??
-    unknownProgramReason(commands) ??
-    placeVariableReason(commands) ??
-    elsewhereReason(project, commands) ??
-    (pending ? undefined : fileChangeReason(project, input, commands)) ??
-    unreadReason(commands);
-  if (!refusal && !pending) {
-    noteBeforeCode(project, input, commands);
-  }
-  return refusal;
+// What the command of a worker would do: `undoing` when it puts back the files it holds outside its scope.
+export function workerCommandRefusal(project, input, { context, command, commands, undoing }) {
+  return firstRefusal(WORKER_COMMAND_RULES, { project, input, context, command, commands, undoing });
 }
 
 // A command that a `cd` further down the line, or an option of a package runner (`pnpm -C <dir> exec`,
@@ -477,7 +510,7 @@ function formatRunsBiome(project) {
 // A worker never writes outside its scope, whatever the tool. A file the shell writes by name (a
 // redirection, `sed -i`, `perl -i`, `tee`) is held to the checks of a write with the editor tools;
 // copies, moves, deletions and restores outside the scope are refused; inline code, whose writes
-// cannot be read in advance, is checked after it ran (`pendingChangeReason`).
+// cannot be read in advance, is checked after it ran (`settle` of held-changes.mjs).
 function fileChangeReason(project, input, commands) {
   for (const command of commands) {
     for (const target of writtenTargets(command)) {
@@ -574,11 +607,7 @@ function shellWriteReason(project, input, { place, by }) {
   if (owner.root !== project.root) {
     return `A worker never changes a file outside its scope: ${by} writes ${place}, in another checkout. ${EDIT_WITH_TOOLS}`;
   }
-  const refusal =
-    generatedFileReason(project, place) ??
-    workerScopeReason(project, place, input) ??
-    linkReason(project, place, input) ??
-    handWrittenRoleReason(project, place);
+  const refusal = firstRefusal(SHELL_WRITE_RULES, { project, file: place, input })?.reason;
 
   return refusal ? `${by}: ${refusal} ${FREE_OUTPUT}` : undefined;
 }
@@ -594,8 +623,5 @@ function outsideScope(project, input, place) {
     return !isFreePlace(place);
   }
 
-  return (
-    owner.root !== project.root ||
-    (workerScopeReason(project, place, input) ?? linkReason(project, place, input)) !== undefined
-  );
+  return owner.root !== project.root || firstRefusal(WORKER_PLACE_RULES, { project, file: place, input }) !== undefined;
 }

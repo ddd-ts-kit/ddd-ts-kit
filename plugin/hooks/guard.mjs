@@ -11,8 +11,8 @@ import { planPointer, projectBriefing } from './briefing.mjs';
 import { call } from './call.mjs';
 import { isRecord, readJson } from './disk.mjs';
 import { git, unreadRepositoryNotice } from './git.mjs';
-import { pruneGuardState, saidOnce, sharedStateFile, stateFile } from './guard-state.mjs';
-import { branchOutsideReason, heldChangeReason, pendingChangeReason, settleNote } from './held-changes.mjs';
+import { pruneGuardState, saidOnce, sharedStateFile } from './guard-state.mjs';
+import { branchOutsideReason, note, release, settle } from './held-changes.mjs';
 import {
   decide,
   emit,
@@ -24,7 +24,17 @@ import {
   toolInput,
   writesOf,
 } from './hook-input.mjs';
-import { removeKitFile } from './kit-files.mjs';
+import {
+  baselineFileRule,
+  generatedFileRule,
+  handWrittenRoleRule,
+  scopeFileRule,
+  scopeLinkRule,
+  storyCodeRule,
+  testWriterScopeRule,
+  workerScopeRule,
+  worktreeCodeRule,
+} from './place-rules.mjs';
 import {
   ANSWER_BYTES,
   decisionOf,
@@ -40,6 +50,7 @@ import {
 } from './project.mjs';
 import { commitReminder, designReminder, hasPendingChanges } from './reminders.mjs';
 import { hasWorkerWorktree, STORY_SCOPE, WORKER_SCOPE } from './repository.mjs';
+import { firstRefusal } from './rule-table.mjs';
 import {
   AWK_PROGRAMS,
   CODE_RUNNERS,
@@ -49,11 +60,11 @@ import {
   RUNNING_PROGRAMS,
 } from './shell-reads.mjs';
 import {
-  builderStrayReason,
+  builderStrayRefusal,
   isHeldToAWorktree,
-  preparingReason,
-  sessionShellReason,
-  workerCommandReason,
+  preparingRefusal,
+  sessionShellRefusal,
+  workerCommandRefusal,
 } from './shell-rules.mjs';
 import {
   ACCESS_COMMANDS,
@@ -69,14 +80,11 @@ import {
   acceptanceReason,
   crossingNotice,
   isUnwrapping,
-  storyCodeReason,
   unfinishedStoryReason,
-  worktreeCodeReason,
   writtenProjectPaths,
 } from './story-rules.mjs';
 import {
   commandDirectory,
-  linkReason,
   readPin,
   releasePin,
   REPORT_TO_CONDUCTOR,
@@ -84,19 +92,8 @@ import {
   withPinnedMode,
   workerContext,
   workerScope,
-  workerScopeReason,
 } from './worker-scope.mjs';
-import {
-  baselineFileReason,
-  dependencyReason,
-  escapeReason,
-  generatedFileReason,
-  governedFileReason,
-  handWrittenRoleReason,
-  scopeFileReason,
-  scriptsChangeReason,
-  testWriterScopeReason,
-} from './write-rules.mjs';
+import { dependencyReason, escapeReason, governedFileReason, scriptsChangeReason } from './write-rules.mjs';
 
 const FORMAT_TIMEOUT = 5000;
 
@@ -113,6 +110,51 @@ const CLI_WRITE_FILES = 2;
 const SCRIPT_FILE = /\.(?:[cm]?[jt]sx?|vue|svelte|astro)$/;
 
 const UNREADABLE_COMMAND = `The guard could not read this command, and a worker runs none it cannot read: write it as shorter, separate commands. ${REPORT_TO_CONDUCTOR}`;
+
+// What a sub-agent unwrapping a scenario writes is judged by the rules before: a worker's scope does not hold it.
+const notUnwrapping = ({ project, file, input }) => !isUnwrapping(project, file, input);
+
+// The rules on a file written that start no process, in the order they are asked.
+const WRITE_RULES = [
+  baselineFileRule,
+  scopeFileRule,
+  {
+    id: 'acceptance',
+    reason: ({ project, input, file, written, replaced }) =>
+      acceptanceReason(project, input, { file, written, replaced }),
+  },
+  generatedFileRule,
+  { ...workerScopeRule, applies: notUnwrapping },
+  { ...scopeLinkRule, applies: notUnwrapping },
+  { id: 'stray-write', reason: ({ project, input }) => strayWriteReason(project, input) },
+  testWriterScopeRule,
+  worktreeCodeRule,
+  handWrittenRoleRule,
+];
+
+// A file a patch removes is judged as `rm` judges it: the baseline and the scope of a worker hold it.
+const REMOVAL_RULES = [baselineFileRule, workerScopeRule];
+
+// The rules the CLI decides, on a file it may judge before the write.
+const CLI_RULES = [
+  storyCodeRule,
+  {
+    id: 'dependency',
+    reason: ({ project, file, written, replaced, input }) =>
+      dependencyReason(project, { file, written, replaced }, input),
+  },
+];
+
+// The questions a write puts, when no rule refuses it.
+const DEVIATION_RULES = [
+  { id: 'governed-file', reason: ({ project, file }) => governedFileReason(project, file) },
+  { id: 'scripts-change', reason: ({ project, file, input }) => scriptsChangeReason(project, file, input) },
+  {
+    id: 'escape',
+    applies: ({ file }) => SCRIPT_FILE.test(file),
+    reason: ({ written, replaced }) => escapeReason(written, replaced),
+  },
+];
 
 const MODES = {
   session,
@@ -176,7 +218,7 @@ async function preWrite(input) {
     noteCrossings(input);
   }
   if (verdict) {
-    decide(input, verdict.decision, verdict.reason);
+    decide(input, verdict);
   }
 }
 
@@ -195,6 +237,7 @@ function strayFileVerdict(input) {
   const where = pinned ? `your worktree ${pinned.worktree}` : 'the worktree of your briefing';
   return {
     decision: decisionOf(home),
+    id: 'stray-file',
     reason: `${stray.file} is outside every project: a worker writes in ${where}, and in the temp directory. ${REPORT_TO_CONDUCTOR}`,
   };
 }
@@ -209,8 +252,13 @@ function noteCrossings(input) {
         : undefined;
     return said ? [said] : [];
   });
-  if (crossings.length > 0) {
-    call.notice = [call.notice, ...crossings].filter(Boolean).join('\n');
+  tell(crossings);
+}
+
+// What a call says besides its decision, said with it or alone.
+function tell(notices) {
+  if (notices.length > 0) {
+    call.notice = [call.notice, ...notices].filter(Boolean).join('\n');
   }
 }
 
@@ -221,8 +269,16 @@ function pendingOfWriter(input) {
   if (!project || project.mode === 'off' || !workerContext(project, input)) {
     return undefined;
   }
-  const pending = pendingChangeReason(project, input, []);
-  return pending?.reason ? { decision: decisionOf(project), reason: pending.reason } : undefined;
+  const { reason } = settleHeld({ project, input });
+  return reason ? { decision: decisionOf(project), id: 'held-changes', reason } : undefined;
+}
+
+// What a worker holds outside its scope, settled at this call (held-changes.mjs): what it says of
+// them goes with the decision of the call.
+function settleHeld(worker) {
+  const held = settle(worker);
+  tell(held.notices);
+  return held;
 }
 
 // The writes of a call in a project the guard judges, each with its project.
@@ -248,11 +304,11 @@ function writesVerdict(writes, input, pending) {
 function refusalOf(writes, input, check) {
   let asked;
   for (const written of writes) {
-    const reason = check(written, input);
-    if (reason && written.project.mode !== 'advise') {
-      return { decision: 'deny', reason };
+    const refusal = check(written, input);
+    if (refusal && written.project.mode !== 'advise') {
+      return { decision: 'deny', ...refusal };
     }
-    asked ??= reason ? { decision: 'ask', reason } : undefined;
+    asked ??= refusal ? { decision: 'ask', ...refusal } : undefined;
   }
   return asked;
 }
@@ -271,39 +327,17 @@ function cliVerdict(writes, input) {
   return verdict;
 }
 
-// A file a patch removes is judged as `rm` judges it: the baseline and the scope of a worker hold it.
-function quickRefusal({ project, file, written, replaced, deleted }, input) {
-  if (deleted) {
-    return baselineFileReason(project, file) ?? workerScopeReason(project, file, input);
-  }
-  return (
-    baselineFileReason(project, file) ??
-    scopeFileReason(project, { place: file }, input) ??
-    acceptanceReason(project, input, { file, written, replaced }) ??
-    generatedFileReason(project, file) ??
-    (isUnwrapping(project, file, input)
-      ? undefined
-      : (workerScopeReason(project, file, input) ?? linkReason(project, file, input))) ??
-    strayWriteReason(project, input) ??
-    testWriterScopeReason(project, file, input) ??
-    worktreeCodeReason(project, file) ??
-    handWrittenRoleReason(project, file)
-  );
+function quickRefusal(written, input) {
+  return firstRefusal(written.deleted ? REMOVAL_RULES : WRITE_RULES, { ...written, input });
 }
 
-function cliRefusal({ project, file, written, replaced }, input) {
-  return storyCodeReason(project, file) ?? dependencyReason(project, { file, written, replaced }, input);
+function cliRefusal(written, input) {
+  return firstRefusal(CLI_RULES, { ...written, input });
 }
 
-function deviationOf({ project, file, written, replaced, deleted }, input) {
-  if (deleted) {
-    return undefined;
-  }
-  const deviation =
-    governedFileReason(project, file) ??
-    scriptsChangeReason(project, file, input) ??
-    (SCRIPT_FILE.test(file) ? escapeReason(written, replaced) : undefined);
-  return deviation ? { decision: 'ask', reason: deviation } : undefined;
+function deviationOf(written, input) {
+  const deviation = written.deleted ? undefined : firstRefusal(DEVIATION_RULES, { ...written, input });
+  return deviation ? { decision: 'ask', ...deviation } : undefined;
 }
 
 // A refusal of the patch Codex applies through its shell wins; else the command line is read, and a
@@ -317,7 +351,7 @@ async function preBash(input) {
   const patched = await codexPatchVerdict(input, command, cwd);
   const verdict = patched?.decision === 'deny' ? patched : ((await shellVerdict(input, command, cwd)) ?? patched);
   if (verdict) {
-    decide(input, verdict.decision, verdict.reason);
+    decide(input, verdict);
   }
 }
 
@@ -336,17 +370,43 @@ async function shellVerdict(input, command, cwd) {
   const decision = decisionOf(project);
   const commands = readCommands(project, command, cwd);
   if (!commands) {
-    return isHeldToAWorktree(project, input) ? { decision, reason: UNREADABLE_COMMAND } : undefined;
+    return isHeldToAWorktree(project, input)
+      ? { decision, id: 'unreadable-command', reason: UNREADABLE_COMMAND }
+      : undefined;
   }
-  const preparing = await preparingReason(project, input, { command, commands });
+  const preparing = preparingRefusal(project, input, { command, commands });
   if (preparing) {
-    return { decision, reason: preparing };
+    return { decision, ...preparing };
   }
   const context = workerContext(project, input);
   const refusal = context
-    ? workerCommandReason(project, input, { context, command, commands })
-    : (builderStrayReason(project, input, commands) ?? sessionShellReason(input, commands));
-  return refusal ? { decision, reason: refusal } : undefined;
+    ? workerRefusal(project, input, { context, command, commands })
+    : (builderStrayRefusal(project, input, commands) ?? sessionShellRefusal(input, commands));
+  return refusal ? { decision, ...refusal } : undefined;
+}
+
+// What a worker may not run: anything once its scope file changed, a file it must put back first,
+// then what the command itself would do; a command allowed to run code the guard cannot read has the
+// state outside the scope noted before it, unless it puts back what is held.
+function workerRefusal(project, input, { context, command, commands }) {
+  const { changed } = workerScope(project, input);
+  if (changed) {
+    return { id: 'scope-changed', reason: changed };
+  }
+  const held = settleHeld({ project, input, commands });
+  if (held.reason) {
+    return { id: 'held-changes', reason: held.reason };
+  }
+  const refusal = workerCommandRefusal(project, input, {
+    context,
+    command,
+    commands,
+    undoing: held.state === 'held',
+  });
+  if (!refusal && held.state === 'clear') {
+    note({ project, input, commands });
+  }
+  return refusal;
 }
 
 // The reader of the shell, told once the programs the guard judges by a table of its own: a first
@@ -421,6 +481,7 @@ async function codexPatchVerdict(input, command, cwd) {
       ? undefined
       : {
           decision: decisionOf(project),
+          id: 'patch-in-the-command',
           reason:
             "apply_patch is judged when the command holds the patch: give it as a here-document (`apply_patch <<'EOF'` ... `EOF`), not from a file or a pipe.",
         };
@@ -513,9 +574,7 @@ function builderPlaces(input, project) {
   };
 }
 
-// A new run of a builder: the note its last run left before inline code is dropped, since what
-// changed outside its scope since then is the conductor's as much as its own; what that code changed
-// and was not put back stays recorded.
+// A new run of a builder releases the note its last run left before inline code (held-changes.mjs).
 async function subagentStart(input) {
   const places = isBuilder(input) ? builderPlaces(input, undefined) : undefined;
   if (!places) {
@@ -523,7 +582,7 @@ async function subagentStart(input) {
   }
   const worker = readJson(places.state)?.worker;
   if (typeof worker === 'string') {
-    removeKitFile(stateFile('before-run', { root: worker }, input));
+    release({ project: { root: worker }, input });
     pruneGuardState(worker);
   }
   (await import('./builder-runs.mjs')).startRun(input, places);
@@ -559,7 +618,7 @@ function changedAtStop(places, input) {
     return undefined;
   }
   const { changed } = workerScope(project, input);
-  const told = settleNote(project, input, false) ?? heldChangeReason(project, input, [])?.reason;
+  const told = settleHeld({ project, input, last: true }).reason;
   const said = [call.notice, changed, told, branchOutsideReason(project, input)].filter(Boolean).join('\n');
   call.notice = undefined;
   return said || undefined;
