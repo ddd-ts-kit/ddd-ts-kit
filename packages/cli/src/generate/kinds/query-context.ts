@@ -1,6 +1,7 @@
 import type { Name } from '../../naming';
 import type { RenderContext } from '../../templating';
 import { accessVars } from '../access-vars';
+import { isDeclared } from '../is-declared';
 import { named } from '../named';
 import type { Scope } from '../scope';
 import { searchedElements } from '../searched-elements';
@@ -12,7 +13,7 @@ import { worldArrangement } from './world/world-arrangement';
 
 /**
  * What the templates of a query read. `asksPolicy`: a policy refines its permission, so the
- * handler receives `Access` and asks it, about the query until the element is read. `search`:
+ * handler receives `Access` and asks it about what was read, never about the query. `search`:
  * one page of a search, whose reader answers lines.
  */
 export function queryContext(
@@ -22,7 +23,7 @@ export function queryContext(
 ): UseCaseContext {
   const reference = `${scope.context.camel}Permissions['${scope.flags.permission ?? ''}']`;
   const required = accessVars(scope, { name, kind: 'Query' });
-  const access = { ...required, policy: asksPolicy, reference };
+  const access = { ...required, policy: asksPolicy, policyApplies: asksPolicy && isDeclared(scope.config), reference };
   const spec = specVars(scope, access);
 
   // The reader answers what the spec gives it: the world cannot build its fake.

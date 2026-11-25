@@ -20,10 +20,15 @@ describe('generate event-handler and the phase of the reaction', () => {
     );
 
     expect(spec).toContain("it.todo('carries out the policy that follows the fact');");
-    expect(spec).toContain('TODO(domain): replace this test by the entries below once the policy is written');
+    expect(spec).toContain('TODO(domain): a generated handler refuses until its policy is written');
     // One running test says what the fresh handler does, so that a generated project covers it as generated.
-    expect(spec).toContain("it('handles the fact and sends no command until the policy is written', async () => {");
-    expect(spec).toContain('await new InvoiceIssuedEventHandler(commands).handle(fact);');
+    expect(spec).toContain("it('refuses the fact until the policy that follows it is written', async () => {");
+    expect(spec).toContain('await expect(handler.handle(fact)).rejects.toMatchObject({ code: NOT_IMPLEMENTED });');
+
+    expect(read(root, `${HANDLERS}/invoice-issued.event-handler.ts`)).toContain(
+      `    throw undecided('what follows "invoice issued"');`,
+    );
+
     expect(spec).not.toContain('unitOfWorkStage');
   });
 
@@ -37,10 +42,10 @@ describe('generate event-handler and the phase of the reaction', () => {
     expect(spec).toContain("it.todo('carries out the effect that follows the commit of the fact');");
     expect(spec).toContain('the handler given the fake of its port and the fact');
     expect(spec).not.toContain('RecordingCommandBus()');
-    expect(spec).toContain("it('handles the fact and has no effect until the effect is written', async () => {");
+    expect(spec).toContain("it('refuses the fact until the effect that follows its commit is written', async () => {");
 
     expect(spec).toContain(
-      'await expect(new InvoiceMarkedAsPaidEventHandler().handle(fact)).resolves.toBeUndefined();',
+      'await expect(new InvoiceMarkedAsPaidEventHandler().handle(fact)).rejects.toMatchObject({ code: NOT_IMPLEMENTED });',
     );
 
     expect(spec).not.toContain('afterCommitFailures');

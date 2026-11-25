@@ -23,7 +23,7 @@ describe.each(['tsyringe', 'inversify', 'awilix'])('a gateway in the explicit st
     expect(made.code, made.stderr).toBe(0);
 
     expect(`${made.stdout}${made.stderr}`).toContain(
-      'InvoiceStatusContract is bound to an empty value in shipping.module.ts: bind the implementation',
+      'InvoiceStatusContract refuses every call until it is bound, in shipping.module.ts: bind the implementation',
     );
   });
 });

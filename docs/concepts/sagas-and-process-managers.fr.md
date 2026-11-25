@@ -1,5 +1,5 @@
 [English](sagas-and-process-managers.md) · **Français**
-<!-- translation-of: sagas-and-process-managers.md sha256:ee53642dbd845965 -->
+<!-- translation-of: sagas-and-process-managers.md sha256:06a26214234cae97 -->
 
 # Sagas et gestionnaires de processus
 
@@ -266,14 +266,14 @@ declare class ConfirmationDeadlineProcess {
 /** L'étape de l'échéance d'un rendez-vous réservé, dans l'unité de travail qui l'a réservé. */
 @DomainEventHandler(AppointmentBooked)
 export class ConfirmationDeadlineOnBookedEventHandler implements DomainEventHandler<AppointmentBooked> {
-  private readonly process = new ConfirmationDeadlineProcess();
+  private readonly confirmationDeadline = new ConfirmationDeadlineProcess();
 
   constructor(private readonly processes: ProcessRunner) {}
 
   async handle(event: AppointmentBooked): Promise<void> {
     // La clé de corrélation : une instance du processus par rendez-vous.
     await this.processes.run(ConfirmationDeadlineProcess, event.aggregateId, (current) =>
-      this.process.requested(event, current),
+      this.confirmationDeadline.requested(event, current),
     );
   }
 }
@@ -288,14 +288,14 @@ export class ConfirmationDeadlineTimeoutBackgroundJob implements BackgroundJob<P
 
   static readonly payload = processTimeoutDuePayload;
 
-  private readonly process = new ConfirmationDeadlineProcess();
+  private readonly confirmationDeadline = new ConfirmationDeadlineProcess();
 
   constructor(private readonly processes: ProcessRunner) {}
 
   async run(due: ProcessTimeoutDue, execution: BackgroundJobExecution): Promise<void> {
     // Le runner n'exécute l'étape que tant que ce job précis est celui qui est armé.
     await this.processes.timeout(ConfirmationDeadlineProcess, { ...due, jobId: execution.jobId }, (current) =>
-      this.process.timedOut(due.timeout, current),
+      this.confirmationDeadline.timedOut(due.timeout, current),
     );
   }
 }

@@ -22,7 +22,9 @@ allowed-tools:
 
 A test reads as a business rule: what was true, what was asked, what happened. Examples use
 Vitest, the default; with Jest the same rules hold. Every generated spec holds one passing
-test and `it.todo` entries naming the behaviours to prove: replace each, never delete one.
+test and `it.todo` entries naming the behaviours to prove: replace each, never delete one. The
+passing test of what is left to decide says that it refuses (`NOT_IMPLEMENTED`, or everybody for
+a policy): the first real test replaces it.
 
 ## Levels
 

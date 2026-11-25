@@ -13,6 +13,8 @@ import { vars } from '../vars';
 import { actingRole } from './e2e/acting-role';
 import { jobSpec, type Support } from './e2e/job-spec';
 import { reactionOf } from './e2e/reaction-of';
+import { heldScenarios } from './e2e/held-scenarios';
+import { stillRefusing } from './e2e/still-refusing';
 import { tracedCommand } from './traced-command';
 import { isControlPlane } from '../../config/is-control-plane';
 import { declaredModules } from '../../model-modules';
@@ -44,14 +46,18 @@ function startedSpec(scope: Scope, name: Name, routeFile: string): readonly Supp
     const { file, content, needs } = jobSpec(scope, name, reaction);
 
     scope.ws.create(file, content);
+    noteRefusing(scope, stillRefusing(scope, name), 'the end-to-end spec fails until it is written.');
 
     return needs;
   }
 
-  scope.ws.create(
-    `test/e2e/${name.kebab}.e2e.spec.ts`,
-    renderTemplate('e2e/e2e-reaction.spec.ts.tpl', vars(scope, { name: named(name), ...reaction })),
-  );
+  const { handler, upstream, e2e } = reaction;
+  const refusing = stillRefusing(scope, name, handler);
+  const read = { name: named(name), upstream, e2e: { ...e2e, held: refusing.length > 0 } };
+  const spec = renderTemplate('e2e/e2e-reaction.spec.ts.tpl', vars(scope, read));
+
+  scope.ws.create(`test/e2e/${name.kebab}.e2e.spec.ts`, refusing.length > 0 ? heldScenarios(spec, /^'runs "/) : spec);
+  noteRefusing(scope, refusing, HELD);
 
   return ['publish'];
 }
@@ -64,16 +70,34 @@ function routeSpec(scope: Scope, name: Name, endpoint: Endpoint): readonly Suppo
   const { written: role, roleImport } = actingRole(scope);
   const namesRole = endpoint.protected === true && roleImport !== '';
   const actor = { role, roleImport, namesRole, tenant: tenantOf(scope) };
+  const refusing = stillRefusing(scope, name);
 
-  scope.ws.create(
-    `test/e2e/${name.kebab}.e2e.spec.ts`,
-    renderTemplate(
-      'e2e/e2e.spec.ts.tpl',
-      vars(scope, { name: named(name), e2e: { ...endpoint, ...traced, tree, ...actor } }),
-    ),
+  const held = refusing.length > 0;
+
+  const spec = renderTemplate(
+    'e2e/e2e.spec.ts.tpl',
+    vars(scope, { name: named(name), e2e: { ...endpoint, ...traced, tree, ...actor, held } }),
   );
 
+  // The 401 and the 403 are answered before the use case: only the scenarios that reach it wait.
+  scope.ws.create(
+    `test/e2e/${name.kebab}.e2e.spec.ts`,
+    held ? heldScenarios(spec, /^'(?:is one trace|answers \d+ to [A-Z]+ )/) : spec,
+  );
+
+  noteRefusing(scope, refusing, HELD);
+
   return [];
+}
+
+const HELD =
+  '`pending(...)` holds the scenarios of the end-to-end spec that wait for it, and fails them once it is written: remove it then.';
+
+/** What the spec drives and is still as its generator left it: the output says so, and what the spec does about it. */
+function noteRefusing(scope: Scope, refusing: readonly string[], consequence: string): void {
+  for (const file of refusing) {
+    scope.ws.note(`${file} still refuses (its TODO(domain)): ${consequence}`);
+  }
 }
 
 /** True when a flag says what starts the use case: its route is then left aside. `--event` and `--job` name two different specs. */
