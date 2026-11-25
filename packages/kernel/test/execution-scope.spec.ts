@@ -12,6 +12,7 @@ import {
   isPastDeadline,
   logFieldsOf,
   stampCreation,
+  restamped,
   stampUpdate,
   tenantScopeOf,
   withActor,
@@ -222,7 +223,7 @@ describe('audit stamps and tenant scoping', () => {
     const created = stampCreation(new FixedExecutionScope(request), clock);
     const later = new FixedClock(new Date('2026-03-02T08:00:00.000Z'));
 
-    expect(stampUpdate(created, new FixedExecutionScope(job), later)).toEqual({
+    expect(restamped(created, new FixedExecutionScope(job), later)).toEqual({
       ...created,
       updatedAt: new Date('2026-03-02T08:00:00.000Z'),
       updatedBy: 'bob',

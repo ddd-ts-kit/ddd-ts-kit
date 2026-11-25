@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:4f1b1934805ae08e -->
+<!-- translation-of: README.md sha256:93b7b654f025d9ea -->
 
 # @ddd-ts-kit/kernel
 
@@ -48,7 +48,7 @@ avec une bibliothèque.
 | *Event sourcing* | `EventSourcedAggregate`, `EventStore`, `defineStoredEvent`, `EventSerializer`, `EventSourcedRepository`, `SnapshotPolicy`, `personalData`, `PersonalDataCipher`, `CatchUpSubscription`, `EventStoreProjectionRebuild`, `InMemoryEventStore`, `PostgresEventStore` (voir « Event sourcing ») |
 | Données personnelles | `personalFields`, `PersonalDataErasure`, `PersonalDataExport`, `eraseDataSubject`, `exportDataSubject`, `PersonalDataExportDocument`, `inEachTenant`, `recordsInEachTenant`, `isDataSubjectId`, `PersonalDataRecord`, `InMemoryPersonalData` (voir « Données personnelles ») |
 | Côté lecture | `Criteria`, `defineCriteria`, `validateCriteria`, `scoped`, `planCriteria`, `evaluateCriteria`, `pageOfPlan`, `hydrate`, `ReadModelStore`, `stampOf`, `TableReadModelStore`, `ProjectionRebuild`, `InMemoryReadModelStore` (voir « Critères », « Hydratation » et « Projections ») |
-| Aides à la persistance | `optimisticUpdate`, `expectVersion` (la version qu'un appelant a lue, `If-Match` en HTTP, est toujours la version courante, sinon `PreconditionFailedError` : 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
+| Aides à la persistance | `optimisticUpdate`, `expectVersion` (la version qu'un appelant a lue, `If-Match` en HTTP, est toujours la version courante, sinon `PreconditionFailedError` : 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `restamped`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
 | Remontée des erreurs | `ErrorReporter`, `ErrorReport`, `errorReportOf`, `reportOnce`, `isUnexpectedError`, `errorReportingMiddleware`, `DeadLetterReports`, `reportProcessFailures`, `NoopErrorReporter` |
 | Doubles | `FixedClock`, `SequentialIdGenerator`, `InMemoryUnitOfWork`, `FixedActorContext`, `FixedExecutionScope`, `InMemoryLogger`, `InMemoryMetrics`, `InMemoryErrorReporter`, `InMemoryCache`, `InMemoryCacheInvalidation`, `InMemoryCachePurger`, `InMemoryLock`, `InMemoryRateLimiter` |
 | Tests (`@ddd-ts-kit/kernel/testing`) | `RecordingCommandBus`, `RecordingQueryBus` : des bus qui gardent chaque message qu'on leur confie, dans l'ordre (`executed`), et répondent ce que la *spec* leur a dit (`answering(type, answer)`), rien sinon (voir « La *spec* d'une réaction ») |
@@ -1737,7 +1737,7 @@ const row = { ...toRow(order), ...tenantScopeOf(scope), ...stampCreation(scope, 
 await update({ ...toRow(order), ...stampUpdate(scope, clock) }, { id: order.id, ...tenantScopeOf(scope) });
 ```
 
-`stampUpdate(stamp, scope, clock)` est la forme pour un adaptateur qui détient le tampon stocké
+`restamped(stamp, scope, clock)` sert à un adaptateur qui détient le tampon stocké
 (un store de documents qui réécrit l'enregistrement entier) : il le renvoie entier, création
 intacte. `tenantScopeOf` lève `NoCurrentTenantError` pour un travail qui ne nomme aucun *tenant*,
 si bien qu'une instruction ne peut jamais s'exécuter sans restriction par oubli. Chaque *package*

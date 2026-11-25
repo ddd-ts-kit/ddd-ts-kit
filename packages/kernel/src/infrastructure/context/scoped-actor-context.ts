@@ -1,10 +1,10 @@
 import type { Actor } from '../../application/actor/actor';
-import { NoCurrentActorError } from '../../application/actor/no-current-actor-error';
 import { executionContext } from '../../application/execution/execution-context';
 import { withActor } from '../../application/execution/with-actor';
 import type { ActorContext } from '../../application/ports/actor-context';
 import type { ExecutionScope } from '../../application/ports/execution-scope';
 import type { IdGenerator } from '../../application/ports/id-generator';
+import { requiredActor } from './required-actor';
 
 /**
  * The `ActorContext` of an application that has an execution scope: one source of truth, so
@@ -23,13 +23,7 @@ export class ScopedActorContext implements ActorContext {
   }
 
   require(): Actor {
-    const actor = this.current();
-
-    if (actor === undefined) {
-      throw new NoCurrentActorError();
-    }
-
-    return actor;
+    return requiredActor(this.current());
   }
 
   run<T>(actor: Actor, work: () => T): T {

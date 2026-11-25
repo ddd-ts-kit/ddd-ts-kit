@@ -45,7 +45,7 @@ starts, so a business rule never changes with a library.
 | Event sourcing | `EventSourcedAggregate`, `EventStore`, `defineStoredEvent`, `EventSerializer`, `EventSourcedRepository`, `SnapshotPolicy`, `personalData`, `PersonalDataCipher`, `CatchUpSubscription`, `EventStoreProjectionRebuild`, `InMemoryEventStore`, `PostgresEventStore` (see "Event sourcing") |
 | Personal data | `personalFields`, `PersonalDataErasure`, `PersonalDataExport`, `eraseDataSubject`, `exportDataSubject`, `PersonalDataExportDocument`, `inEachTenant`, `recordsInEachTenant`, `isDataSubjectId`, `PersonalDataRecord`, `InMemoryPersonalData` (see "Personal data") |
 | Read side | `Criteria`, `defineCriteria`, `validateCriteria`, `scoped`, `planCriteria`, `evaluateCriteria`, `pageOfPlan`, `hydrate`, `ReadModelStore`, `stampOf`, `TableReadModelStore`, `ProjectionRebuild`, `InMemoryReadModelStore` (see "Criteria", "Hydration" and "Projections") |
-| Persistence helpers | `optimisticUpdate`, `expectVersion` (the version a caller read, `If-Match` over HTTP, still the current one, else `PreconditionFailedError`: 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
+| Persistence helpers | `optimisticUpdate`, `expectVersion` (the version a caller read, `If-Match` over HTTP, still the current one, else `PreconditionFailedError`: 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `restamped`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
 | Error reporting | `ErrorReporter`, `ErrorReport`, `errorReportOf`, `reportOnce`, `isUnexpectedError`, `errorReportingMiddleware`, `DeadLetterReports`, `reportProcessFailures`, `NoopErrorReporter` |
 | Doubles | `FixedClock`, `SequentialIdGenerator`, `InMemoryUnitOfWork`, `FixedActorContext`, `FixedExecutionScope`, `InMemoryLogger`, `InMemoryMetrics`, `InMemoryErrorReporter`, `InMemoryCache`, `InMemoryCacheInvalidation`, `InMemoryCachePurger`, `InMemoryLock`, `InMemoryRateLimiter` |
 | Testing (`@ddd-ts-kit/kernel/testing`) | `RecordingCommandBus`, `RecordingQueryBus`: buses that keep every message they are handed, in order (`executed`), and answer what the spec told them (`answering(type, answer)`), nothing otherwise (see "The spec of a reaction") |
@@ -1664,7 +1664,7 @@ const row = { ...toRow(order), ...tenantScopeOf(scope), ...stampCreation(scope, 
 await update({ ...toRow(order), ...stampUpdate(scope, clock) }, { id: order.id, ...tenantScopeOf(scope) });
 ```
 
-`stampUpdate(stamp, scope, clock)` is the form for an adapter that holds the stored stamp (a
+`restamped(stamp, scope, clock)` is for an adapter that holds the stored stamp (a
 document store rewriting the whole record): it answers it whole, creation untouched.
 `tenantScopeOf` raises `NoCurrentTenantError` for work that names no tenant, so a statement can
 never run unscoped by omission. Every adapter package names the columns the same way:
