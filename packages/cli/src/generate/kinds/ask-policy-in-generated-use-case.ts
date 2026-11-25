@@ -10,6 +10,9 @@ import { commandOutputs } from './command-outputs';
 import { queryContext } from './query-context';
 import { queryOutputs } from './query-outputs';
 
+/** The line a handler that refuses until it is written holds where it will ask the policy. */
+const PENDING = 'TODO(domain): a policy refines';
+
 /** Both handlers of an aggregate import its repository; only the one that gives birth to it takes the generator of identifiers. */
 const AGGREGATE_IMPORT = /\/domain\/repositories\/([a-z0-9-]+)\.repository/;
 const BIRTH = /\bIdGenerator\b/;
@@ -32,6 +35,8 @@ interface Rewrite {
 /**
  * Writes again, asking the policy of its permission, a command or a plain query whose files are
  * still as the generator wrote them (layout aside): its handler, its spec and its registration.
+ * The birth of an aggregate asks about the aggregate it builds and a query about what it read; a
+ * handler that refuses until it is written holds a marker where it will ask, once the element is loaded.
  * False when one of them was changed since, or for a search: the code is then the team's, and
  * only a marker is left.
  */
@@ -63,13 +68,28 @@ export function askPolicyInGeneratedUseCase(scope: Scope, useCase: string, kind:
     scope.ws.update(file, becomes);
   }
 
-  scope.ws.step({
-    file: `${scope.dir}/${generated.folder}/${useCase}.handler.ts`,
-    anchor: 'TODO(domain): a policy refines',
-    text: `ask the policy about the element the ${kind} acts on once it is loaded, in place of \`${kind}\`.`,
-  });
+  pointAtTheQuestion(scope, `${scope.dir}/${generated.folder}/${useCase}.handler.ts`, kind);
 
   return true;
+}
+
+/** The next step of the team: where a handler that refuses will ask, or the line where a handler that runs already asks. */
+function pointAtTheQuestion(scope: Scope, handler: string, kind: string): void {
+  if (scope.ws.read(handler)?.includes(PENDING) === true) {
+    scope.ws.step({
+      file: handler,
+      anchor: PENDING,
+      text: `ask the policy about the element the ${kind} acts on once it is loaded.`,
+    });
+
+    return;
+  }
+
+  scope.ws.step({
+    file: handler,
+    anchor: 'this.access.authorize(',
+    text: `the policy is asked about what the ${kind} ${kind === 'command' ? 'creates' : 'reads'}: write its cases in the spec of the handler.`,
+  });
 }
 
 function generatedUseCase(scope: Scope, name: Name, kind: string): Generated | undefined {

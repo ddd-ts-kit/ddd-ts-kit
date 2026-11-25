@@ -1,7 +1,6 @@
-import type { Clock } from '@ddd-ts-kit/kernel';
+import { safely, type Clock } from '@ddd-ts-kit/kernel';
 import { CircuitOpenError } from '../errors/circuit-open-error';
 import { isBusinessRefusal } from '../errors/is-business-refusal';
-import { safely } from '../observability/safely';
 import type { CircuitBreakerOptions } from './circuit-breaker-options';
 import type { Admitted, CircuitPhase } from './circuit-phase';
 import type { CircuitStateChange } from './circuit-state-change';

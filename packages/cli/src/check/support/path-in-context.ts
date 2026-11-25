@@ -1,4 +1,4 @@
-import type { Project } from '../model/project';
+import type { ProjectFacts } from '../model/project';
 import type { SourceFile } from '../model/source-file';
 import { earlierPlaceOf } from '../../context-files';
 import { moduleSplit, SHARED_FOLDER } from '../../model-modules';
@@ -9,7 +9,7 @@ import { inContext } from './in-context';
  * the model, or `shared/`, left out, and the code list or the permission set at the root of the context read where
  * its role folder is. Undefined outside a context.
  */
-export function pathInContext(project: Project, file: SourceFile): string | undefined {
+export function pathInContext(project: ProjectFacts, file: SourceFile): string | undefined {
   if (!inContext(file.location)) {
     return undefined;
   }

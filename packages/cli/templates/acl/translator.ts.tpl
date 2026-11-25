@@ -1,3 +1,5 @@
+import { undecided } from '@ddd-ts-kit/kernel';
+
 export interface {{name.pascal}}Record {
   // TODO(domain): declare the fields received from {{name.title}}, exactly as they arrive (its names, its formats).
 }
@@ -8,7 +10,7 @@ export interface Translated{{name.pascal}}Record {
 
 export class {{name.pascal}}Translator {
   translate(record: {{name.pascal}}Record): Translated{{name.pascal}}Record {
-    // TODO(domain): map each field to the model of {{context.kebab}}, convert units and codes, and throw when {{name.title}} sends something this model cannot express.
-    return {};
+    // TODO(domain): map each field to the model of {{context.kebab}}, convert units and codes, and throw when {{name.title}} sends something this model cannot express. Until then every record is refused.
+    throw undecided('how a record of {{name.title}} reads in {{context.kebab}}');
   }
 }

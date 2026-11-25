@@ -40,9 +40,7 @@ describe('generate takes --name for a handler its event would name otherwise', (
     // The command it executes is the decision of the team: pending until then, never green by construction.
     expect(spec).toContain("it.todo('executes the command that follows the upstream fact');");
 
-    expect(spec).toContain(
-      "it('receives the event and sends no command until what shipping does is written', async () => {",
-    );
+    expect(spec).toContain("it('refuses the event until what shipping does with it is written', async () => {");
   });
 
   it('keeps the name read from the event without --name', () => {
@@ -75,7 +73,7 @@ describe('generate takes --name for a handler its event would name otherwise', (
     expect(handler).toContain('InvoiceIssued');
 
     expect(read(root, `${BILLING}/test/unit/remind-customer.event-handler.spec.ts`)).toContain(
-      'new RemindCustomerEventHandler(commands)',
+      'new RemindCustomerEventHandler(new RecordingCommandBus())',
     );
 
     expect(exists(root, `${BILLING}/application/event-handlers/invoice-issued.event-handler.ts`)).toBe(true);

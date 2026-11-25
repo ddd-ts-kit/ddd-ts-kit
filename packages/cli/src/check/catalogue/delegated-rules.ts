@@ -7,6 +7,8 @@ import { FORMATTER_RULE } from './formatter-rule';
 export interface DelegatedRule {
   readonly id: string;
   readonly description: string;
+  /** The severity `ddd-ts-kit rules` lists when the config says nothing. */
+  readonly severity: 'error' | 'warn';
   /** The tool that decides, as `ddd-ts-kit rules --json` names it. */
   readonly checkedBy: string;
   /** Appended to the description in the listing. */

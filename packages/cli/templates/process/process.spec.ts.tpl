@@ -3,13 +3,13 @@ import { givenProcess } from '@ddd-ts-kit/testing';
 import { {{name.pascal}}Process } from '{{alias.context}}/application/processes/{{name.kebab}}.process{{alias.ext}}';
 
 const deadline = new Date('2026-03-01T12:00:00.000Z');
-const process = new {{name.pascal}}Process();
+const {{name.camel}} = new {{name.pascal}}Process();
 const waiting = { id: '{{name.kebab}}-1', deadline: deadline.toISOString() };
 
 describe('{{name.title}}', () => {
   it('starts and waits until its deadline', () => {
     givenProcess<typeof waiting>(undefined)
-      .when((current) => process.started('{{name.kebab}}-1', deadline, current))
+      .when((current) => {{name.camel}}.started('{{name.kebab}}-1', deadline, current))
       .thenState(waiting)
       .thenTimeouts([{ name: 'deadline', at: deadline }])
       .thenCommands([]);
@@ -17,13 +17,13 @@ describe('{{name.title}}', () => {
 
   it('does not start twice', () => {
     givenProcess(waiting)
-      .when((current) => process.started('{{name.kebab}}-1', deadline, current))
+      .when((current) => {{name.camel}}.started('{{name.kebab}}-1', deadline, current))
       .thenIgnored();
   });
 
   it('ends in time and disarms its deadline', () => {
     givenProcess(waiting)
-      .when((current) => process.completed(current))
+      .when((current) => {{name.camel}}.completed(current))
       .thenCancelled(['deadline'])
       .thenEnded();
   });
@@ -43,5 +43,5 @@ describe('{{name.title}}', () => {
 
 function timedOut(timeout: string) {
   return (current: typeof waiting | undefined) =>
-    current === undefined ? undefined : process.timedOut(timeout, current);
+    current === undefined ? undefined : {{name.camel}}.timedOut(timeout, current);
 }

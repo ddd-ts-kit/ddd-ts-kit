@@ -1,3 +1,4 @@
+import { safely } from '@ddd-ts-kit/kernel';
 import { hostname } from 'node:os';
 import { randomBytes } from 'node:crypto';
 import { DEFAULT_PREFIX } from './default-prefix';
@@ -21,8 +22,9 @@ export function settingsOf(options: RedisStreamsEventBusOptions): Settings {
     reconnect: reconnectOf(options.reconnect),
     retention: options.retention,
     deduplication: options.deduplication,
-    onFailure: guarded(options.onFailure),
-    onDelivery: guarded(options.onDelivery),
+    // A hook that throws must not leave an entry unsettled or stop a reader.
+    onFailure: (failure) => safely(() => options.onFailure?.(failure)),
+    onDelivery: (delivery) => safely(() => options.onDelivery?.(delivery)),
   };
 }
 
@@ -39,16 +41,5 @@ function reconnectOf(reconnect: ReconnectOptions = {}): Required<ReconnectOption
     initialMs: reconnect.initialMs ?? 200,
     factor: reconnect.factor ?? 2,
     maxMs: reconnect.maxMs ?? 30_000,
-  };
-}
-
-// A hook that throws must not leave an entry unsettled or stop a reader.
-function guarded<T>(hook: ((value: T) => void) | undefined): (value: T) => void {
-  return (value) => {
-    try {
-      hook?.(value);
-    } catch {
-      return;
-    }
   };
 }

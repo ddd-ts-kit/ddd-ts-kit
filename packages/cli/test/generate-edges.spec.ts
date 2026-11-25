@@ -111,9 +111,13 @@ describe('generate, what it refuses before writing', () => {
 });
 
 describe('generate, what it says of a project whose files are not as init wrote them', () => {
-  it('names the context an anti-corruption layer translates when the relationship says otherwise', () => {
+  it('names the context an anti-corruption layer translates: to change when its relationship says otherwise, to declare when it has none', () => {
     expect(notes('acl', 'shipping', 'billing')).toContain(
-      '"billing" is a context of this project: declare it in contexts.shipping.upstreams with the relationship "anti-corruption-layer".',
+      '"billing" is already an upstream of shipping, under the relationship "customer-supplier": change it to "anti-corruption-layer" in contexts.shipping.upstreams if shipping now translates everything it reads of it.',
+    );
+
+    expect(notes('acl', 'billing', 'shipping')).toContain(
+      '"shipping" is a context of this project: declare it in contexts.billing.upstreams with the relationship "anti-corruption-layer".',
     );
   });
 

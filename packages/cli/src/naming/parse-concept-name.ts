@@ -1,5 +1,6 @@
 import { CliError } from '../cli-error';
 import type { Name } from './name';
+import { refuseUnwritable } from './refuse-unwritable';
 import { refuseWindowsReserved } from './refuse-windows-reserved';
 import { splitWords } from './split-words';
 import { toName } from './to-name';
@@ -12,8 +13,9 @@ export interface NameOptions {
 }
 
 /**
- * The name of a concept as the caller typed it: well formed and without the role suffix. Whether
- * its words are technical or terms of the glossary is judged against the context by the generator.
+ * The name of a concept as the caller typed it: well formed, without the role suffix, and one the
+ * generated code can bear (no reserved word, no global the templates use). Whether its words are
+ * technical or terms of the glossary is judged against the context by the generator.
  */
 export function parseConceptName(input: string, what: string, options: NameOptions = {}): Name {
   if (!/^[A-Za-z][A-Za-z0-9_\- ]*$/.test(input)) {
@@ -25,6 +27,7 @@ export function parseConceptName(input: string, what: string, options: NameOptio
 
   const name = toName(withoutRole(splitWords(input), options.strip ?? []).join(' '));
 
+  refuseUnwritable(name, what, input);
   refuseWindowsReserved(name, what, options.allowReserved);
 
   return name;

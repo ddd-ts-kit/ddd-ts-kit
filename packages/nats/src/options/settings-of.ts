@@ -1,3 +1,4 @@
+import { safely } from '@ddd-ts-kit/kernel';
 import type { NatsConnection, NodeConnectionOptions } from '@nats-io/transport-node';
 import { DEFAULT_STREAM, DEFAULT_SUBJECT_PREFIX, type NatsEventBusOptions } from './nats-event-bus-options';
 import type { ReconnectOptions } from './reconnect-options';
@@ -24,8 +25,9 @@ export function settingsOf(
     publishTimeoutMs: options.publishTimeoutMs ?? 5_000,
     retry: retryOf(options.retry),
     reconnect,
-    onFailure: guarded(options.onFailure),
-    onDelivery: guarded(options.onDelivery),
+    // A hook that throws must not leave a message unacknowledged or stop a reconnection.
+    onFailure: (failure) => safely(() => options.onFailure?.(failure)),
+    onDelivery: (delivery) => safely(() => options.onDelivery?.(delivery)),
   };
 }
 
@@ -58,16 +60,5 @@ function reconnectOf(reconnect: ReconnectOptions = {}): Required<ReconnectOption
     initialMs: reconnect.initialMs ?? 200,
     factor: reconnect.factor ?? 2,
     maxMs: reconnect.maxMs ?? 30_000,
-  };
-}
-
-// A hook that throws must not leave a message unacknowledged or stop a reconnection.
-function guarded<T>(hook: ((value: T) => void) | undefined): (value: T) => void {
-  return (value) => {
-    try {
-      hook?.(value);
-    } catch {
-      return;
-    }
   };
 }

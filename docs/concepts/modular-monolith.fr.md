@@ -1,5 +1,5 @@
 [English](modular-monolith.md) · **Français**
-<!-- translation-of: modular-monolith.md sha256:02f48b02969d5dfe -->
+<!-- translation-of: modular-monolith.md sha256:8d07c3d0cbfb0a74 -->
 
 # Monolithe modulaire
 
@@ -111,7 +111,7 @@ export abstract class WorkingHoursGateway {
 // le port et chaque gestionnaire qui l'utilise restent tels quels.
 @Gateway(WorkingHoursGateway)
 export class InProcessWorkingHoursGateway implements WorkingHoursGateway {
-  constructor(readonly upstream: WorkingHoursContract) {}
+  constructor(private readonly upstream: WorkingHoursContract) {}
 
   async worksDuring(practitionerId: string, startsAt: Date, endsAt: Date): Promise<boolean> {
     const intervals = await this.upstream.workingHours(practitionerId, startsAt.toISOString().slice(0, 10));

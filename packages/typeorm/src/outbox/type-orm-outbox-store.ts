@@ -1,4 +1,4 @@
-import { In, LessThan, LessThanOrEqual, Not, type EntityManager, type EntitySchema } from 'typeorm';
+import { In, LessThan, LessThanOrEqual, MoreThan, Not, type EntityManager, type EntitySchema } from 'typeorm';
 import type { IntegrationEvent } from '@ddd-ts-kit/kernel';
 import {
   erasedPayloadOf,
@@ -126,6 +126,17 @@ export class TypeOrmOutboxStore implements OutboxStore {
           ? { status: 'dead', lastErrorCode: error.code }
           : { nextAttemptAt, lastErrorCode: error.code },
       );
+  }
+
+  async postpone(id: string, until: Date): Promise<void> {
+    await this.context
+      .manager()
+      .createQueryBuilder()
+      .update(this.outbox)
+      // A database-side decrement: the claim to give back is the one the stored count holds.
+      .set({ attempts: () => 'attempts - 1', nextAttemptAt: until })
+      .where({ id, status: 'pending', attempts: MoreThan(0) })
+      .execute();
   }
 
   async retryDead(ids: readonly string[], now: Date): Promise<number> {

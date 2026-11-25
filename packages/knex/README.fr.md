@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:c6d56ebe67625a45 -->
+<!-- translation-of: README.md sha256:54da1e50610eefa7 -->
 
 # @ddd-ts-kit/knex
 
@@ -236,14 +236,18 @@ gestionnaire qui échoue ensuite est annulé avec l'écriture métier : c'est to
 de l'outbox. `createKnexUnitOfWork(db, { isolationLevel: 'repeatable read' })` transmet la
 configuration de transaction de knex.
 
-`run` repose sur `withinUnitOfWork` du noyau. Les événements du domaine des agrégats sauvegardés
+`run` repose sur `unitOfWorkOver` du noyau. Les événements du domaine des agrégats sauvegardés
 à l'intérieur attendent que `work` ait rendu la main, puis sont distribués dans la transaction,
 avant la validation (commit) : leurs gestionnaires voient chaque sauvegarde, et ce qu'ils
 écrivent est validé ou annulé avec elle. Si `work`, un gestionnaire ou la validation échoue, il
 ne reste rien : aucune ligne, aucun enregistrement d'outbox, aucun gestionnaire exécuté après la
 validation. Les gestionnaires déclarés `after-commit` s'exécutent une fois la transaction
 validée. Un `run` imbriqué rejoint l'unité de travail en cours : une seule distribution, à la fin
-du plus externe. Un `run` appelé directement (un consommateur, un script) a le même déroulement
+du plus externe. Appelé dans l'unité de travail d'une autre base de données, `run` ouvre la sienne : ses
+événements sont distribués avant sa propre validation. L'unité de travail est validée ou annulée
+en entier : dès qu'un `run` imbriqué a échoué elle n'est plus validée, et quand le travail a
+intercepté cet échec et continué, le `run` le plus externe est rejeté avec une
+`UnitOfWorkAbortedError` dont il est la `cause`. Un `run` appelé directement (un consommateur, un script) a le même déroulement
 qu'une commande. `unitOfWorkContract` de `@ddd-ts-kit/testing/contracts` le prouve, avec une
 contrainte différée pour la validation qui échoue ; sur un vrai PostgreSQL
 (`DDD_TS_KIT_TEST_DATABASE_URL`), il prouve aussi que les lignes d'un gestionnaire
@@ -656,7 +660,9 @@ nomme aucun *tenant* lève `NoCurrentTenantError` avant tout SQL. Les trois gard
 `and` avec le reste de l'instruction : SQL lie `and` avant `or`, donc `.orWhere*` et `.or` au sommet
 de leur *builder* lèvent `UngroupedOrError` et les alternatives vont dans un groupe,
 `.where((either) => either.where(a).orWhere(b))` ; le texte d'un `whereRaw`, ou un `knex.raw` donné
-à un *where*, reste entre parenthèses comme un seul terme, avec ses paramètres ; `clearWhere()` et
+à n'importe quel *where* (`where`, `whereIn`, `whereBetween`, `whereNull`, `whereLike`...) comme
+sa condition, sa colonne, une valeur ou une borne, reste entre parenthèses comme un seul terme,
+avec ses paramètres ; `clearWhere()` et
 `clear('where')` lèvent `ClearedTenantConditionError`. Un `orHaving` s'applique après le *where* et
 reste libre. Un modèle de lecture de données
 d'un *tenant* passe `tenant: scope` à `KnexReadModelTable` et à `KnexReadModelStore` : chaque
@@ -728,7 +734,8 @@ que le serveur n'a jamais à accepter plus de `maxTenants * pool.max` connexions
 l'application. Un travail tient l'instance de son *tenant* par un bail
 (`databases.lease(tenantId, (knex) => ...)`) : une instance n'est fermée que lorsqu'aucun travail
 ne la tient, la moins récemment utilisée d'abord, et un travail pour un autre *tenant* attend une
-place au lieu d'ouvrir au-delà de la borne. `createTenantRoutedUnitOfWork(databases, scope)` est
+place au lieu d'ouvrir au-delà de la borne. Une instance inactive qui ne peut pas être fermée
+cède sa place malgré tout, et `onCloseFailure(error, tenantId)` en est averti. `createTenantRoutedUnitOfWork(databases, scope)` est
 l'unité de travail et le `KnexContext` : chaque transaction tient un bail sur la base du *tenant*
 du travail jusqu'à sa fin ; chaque instruction s'exécute à l'intérieur
 (`StatementOutsideUnitOfWorkError` sinon, donc les requêtes passent elles aussi par l'unité de
@@ -764,7 +771,8 @@ async search(criteria: ScopedCriteria<AppointmentRow>): Promise<Page<Appointment
 Une page par curseur est lue avec une ligne de plus que demandé : c'est ainsi que `pageOfPlan`
 sait si une autre suit ; une page par offset tire son total d'une seconde instruction
 (`predicateToKnex(...).count()`). Un champ déclaré `nullable` est trié `nulls last` en ordre
-croissant et `nulls first` en ordre décroissant, sur tous les dialectes.
+croissant et `nulls first` en ordre décroissant. Les critères sont écrits pour PostgreSQL, comme
+les modèles de lecture : une recherche qui ignore la casse est un `ILIKE`.
 
 **Chaînes.** Une colonne de texte est triée et comparée par plage selon la collation de la
 colonne ; les critères trient les chaînes par point de code. Déclarez avec `COLLATE "C"` les
@@ -816,7 +824,13 @@ faite par `LIKE ... INCLUDING ALL`, les clés écrites entre-temps dans `<table>
 l'échange par renommage dans une seule transaction), et ses garanties et ses limites sont dans le
 README de `@ddd-ts-kit/kernel` (« Reconstruction »). Le store passe `criteriaContract` et
 `readModelStoreContract` de `@ddd-ts-kit/testing/contracts`, sur PGlite et sur PostgreSQL 18.
-Les critères et les modèles de lecture n'ont jamais été exécutés sur MySQL ni sur SQLite.
+Les modèles de lecture sont réservés à PostgreSQL : un `KnexReadModelStore` (un
+`KnexReadModelTable`) construit sur une instance knex d'une autre base de données est refusé
+nommément, `The read model of @ddd-ts-kit/knex runs on PostgreSQL, and this knex speaks sqlite`,
+à sa construction, ou à sa première instruction sous une base de données par *tenant*, où la
+base n'est connue que dans une unité de travail. Ses estampilles, la trace d'une ligne supprimée
+et la reconstruction reposent sur `timestamptz`, `boolean` et le catalogue de PostgreSQL ; sur
+SQLite ils répondaient faux avant d'échouer.
 
 ## Effacement des données personnelles
 
@@ -900,7 +914,9 @@ garderait ce qu'il ne doit pas. L'adaptateur implémente `PersonalDataRetention`
   validée avec les effets du gestionnaire, et disparaît avec eux s'il échoue.
 
 La vie d'un enregistrement dans la table `outbox`. Le relais de `@ddd-ts-kit/events` le conduit
-par `claimBatch`, `markPublished` et `markFailed` ; `retryDead`, `purgePublished` et `stats` sont
+par `claimBatch`, `markPublished`, `markFailed` et `postpone` (un enregistrement retenu pour
+l'ordre derrière un précédent de sa clé : il attend, sans avoir été tenté) ; `retryDead`,
+`purgePublished` et `stats` sont
 appelés par un opérateur ou par un job planifié, jamais par le relais :
 
 ![Un enregistrement est ajouté en attente par la validation de la commande ; le relais le réclame quand il est dû et le publie, puis le marque publié, et purgePublished le supprime plus tard ; une publication en échec le laisse en attente, retenté après un délai exponentiel ; après la dernière tentative il est mort, jusqu'à ce que retryDead le remette en attente ; stats compte les enregistrements en attente, en échec et morts](https://raw.githubusercontent.com/ddd-ts-kit/ddd-ts-kit/main/docs/assets/diagrams/transactional-outbox-record-lifecycle.fr.svg)

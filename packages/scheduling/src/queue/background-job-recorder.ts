@@ -1,4 +1,4 @@
-import type { LogFields, LogLevel, Logger, Metrics } from '@ddd-ts-kit/kernel';
+import { safely, type LogFields, type LogLevel, type Logger, type Metrics } from '@ddd-ts-kit/kernel';
 import { BACKGROUND_DURATION_HISTOGRAM, BACKGROUND_RUNS_COUNTER } from '../metric-names';
 import type { BackgroundJobObserver } from './background-job-observer';
 import type { BackgroundJobOutcome } from './background-job-outcome';
@@ -15,15 +15,15 @@ export class BackgroundJobRecorder {
   constructor(private readonly options: BackgroundJobRecorderOptions) {}
 
   record(run: BackgroundJobRun, error?: unknown): BackgroundJobRun {
-    quietly(() => {
+    safely(() => {
       this.measure(run);
     });
 
-    quietly(() => {
+    safely(() => {
       this.log(run, error);
     });
 
-    quietly(() => {
+    safely(() => {
       this.options.onRun?.(run, error);
     });
 
@@ -32,7 +32,7 @@ export class BackgroundJobRecorder {
 
   /** The worker itself stumbled, claiming or reporting: it goes on, and the lease brings the job back. */
   fault(queue: string, error: unknown): void {
-    quietly(() => {
+    safely(() => {
       this.options.logger.error('Background jobs could not be followed', {
         queue,
         errorType: typeOf(error),
@@ -83,15 +83,6 @@ function codeOf(error: unknown): { errorCode?: string } {
   const code: unknown = typeof error === 'object' && error !== null ? Reflect.get(error, 'code') : undefined;
 
   return typeof code === 'string' ? { errorCode: code } : {};
-}
-
-/** What records a run must not break it: a logger, a meter or an observer that throws is left alone. */
-function quietly(tell: () => void): void {
-  try {
-    tell();
-  } catch {
-    return;
-  }
 }
 
 const LEVELS: Readonly<Record<BackgroundJobOutcome, LogLevel>> = {

@@ -8,6 +8,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from '@jest/glo
 {{#unless upstream.known}}
 import type { IntegrationEvent } from '@ddd-ts-kit/kernel';
 {{/unless}}
+{{#if e2e.held}}
+import { pending } from '@ddd-ts-kit/testing/e2e';
+{{/if}}
 {{#if tests.vitest}}
 import { reportSeedOnFailure } from '@ddd-ts-kit/testing/faker';
 {{/if}}
@@ -36,6 +39,9 @@ describe('{{name.title}}, end to end', () => {
   reportSeedOnFailure({ beforeEach, onTestFailed });
 {{/if}}
 
+{{#if e2e.held}}
+  // TODO(domain): what receives {{upstream.eventName}} or what it starts still refuses: `pending(...)` holds the scenario that waits for it, and fails it once it is written. Remove it then.
+{{/if}}
   it('runs "{{name.words}}" when {{upstream.kebab}} publishes {{upstream.eventName}}', async () => {
     // TODO(domain): arrange what "{{name.words}}" needs through the public API only (routes), with the builders of test/builders and generated data; give the payload every field {{upstream.kebab}} declares, with the identifiers the arrangement created.
 {{#if upstream.known}}

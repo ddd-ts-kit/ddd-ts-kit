@@ -10,6 +10,6 @@ export function writeProfileHooks(ws: Workspace, config: Config): void {
   }
 
   for (const hook of PROFILE_HOOKS) {
-    ws.create(hook.file, readTemplate(hook.template));
+    ws.create(hook.file, ws.spoken(readTemplate(hook.template)));
   }
 }

@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:81d3f92f58479ee5 -->
+<!-- translation-of: README.md sha256:46d9d69c3de1c98f -->
 
 # @ddd-ts-kit/s3
 
@@ -112,7 +112,7 @@ export class ExportAppointments {
 | Méthode du port | Sur le bucket |
 |---|---|
 | `put(key, stream, { mediaType, maxBytes })` | un envoi *multipart* en parties de `partSize` (8 Mio par défaut, une seule en mémoire à la fois), ou un seul `PutObject` quand le contenu tient dans une partie ; le contenu est compté et haché au passage, et refusé avec `FILE_TOO_LARGE` au-delà de `maxBytes`, ce qui abandonne l'envoi et laisse l'objet précédent |
-| `get`, `stat` | `GetObject` en flux, `HeadObject` ; `undefined` quand l'objet n'existe pas, un rejet quand le service est injoignable |
+| `get`, `stat` | `GetObject` en flux, `HeadObject` ; `undefined` quand l'objet n'existe pas (`NoSuchKey`, le `NotFound` d'un head), un rejet quand le service est injoignable ou répond autre chose, un bucket qui n'existe pas compris (`NoSuchBucket`) |
 | `delete` | `DeleteObject`, idempotent |
 | `copy`, `move` | `CopyObject`, fait par le service (et `DeleteObject` pour un déplacement), jusqu'à 5 Gio par objet |
 | `list(prefix)` | `ListObjectsV2`, page après page |

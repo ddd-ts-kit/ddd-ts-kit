@@ -1,5 +1,5 @@
 [English](0005-a-refusal-is-an-error-at-once-before-1-0.md) · **Français**
-<!-- translation-of: 0005-a-refusal-is-an-error-at-once-before-1-0.md sha256:baac22de2af4f2c4 -->
+<!-- translation-of: 0005-a-refusal-is-an-error-at-once-before-1-0.md sha256:46d098c2991f406c -->
 
 # ADR-0005 : avant la 1.0, un refus est une erreur d'emblée, et une rupture arrive avec son chemin
 
@@ -8,7 +8,7 @@
 Avant la 1.0 :
 
 - Un changement qui casse arrive avec une ligne `To move:` dans son fichier de `changes/` et sans transition, alias ni cale pour l'ancienne forme. Le kit ne garde aucune seconde écriture en vie.
-- Une règle qui prévient un défaut est une erreur d'emblée. Une nouvelle règle prend `error` par défaut (rien dans `default-severities.ts` pour `ddd-ts-kit check`, `recommended: 'error'` pour la règle ESLint), et ce qu'une règle juge de plus aussi. Il n'y a pas d'avertissement d'abord ni de version où il deviendrait une erreur plus tard. Une règle est `warn` seulement quand ce qu'elle signale peut être juste et qu'un lecteur tranche (`privacy/*`, qui lit des noms, ou `tree/documented-paths`).
+- Une règle qui prévient un défaut est une erreur d'emblée. Une nouvelle règle prend `error` par défaut (`severity: 'error'` dans le fichier de la règle pour `ddd-ts-kit check`, `recommended: 'error'` pour la règle ESLint), et ce qu'une règle juge de plus aussi. Il n'y a pas d'avertissement d'abord ni de version où il deviendrait une erreur plus tard. Une règle est `warn` seulement quand ce qu'elle signale peut être juste et qu'un lecteur tranche (`privacy/*`, qui lit des noms, ou `tree/documented-paths`).
 - Une disposition ou une forme qu'une version antérieure écrivait est signalée de la même façon, comme une erreur, avec la commande qui la déplace (`ddd-ts-kit context-layout`, `ddd-ts-kit docs`). Le kit lit l'ancienne forme seulement pour que cette commande puisse la déplacer.
 
 Où c'est déjà écrit : la partie sur les règles est dans `CONTRIBUTING.md` (l'élément qui s'ouvre sur « Before 1.0, a rule that prevents a problem is an error at once »), et le format du fichier de `changes/` avec sa ligne `To move:` est dans `changes/README.md`. `docs/ARCHITECTURE.md` énonce les identifiants de règles et ne dit rien de cette politique. La partie sur les ruptures sans transition, alias ni cale n'est écrite nulle part ailleurs : cet enregistrement est l'endroit où elle l'est.
