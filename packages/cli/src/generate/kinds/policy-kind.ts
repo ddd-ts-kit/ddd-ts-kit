@@ -21,10 +21,14 @@ export const policyKind: Kind = {
   aliases: [],
   summary:
     'A rule about one element (only the author, not after closing), its spec and its registration with the policies Access asks.',
-  positionals: ['context', 'Name'],
+  scope: 'context',
+  positionals: ['Name'],
   options: { permission: { type: 'string', value: '<aggregate>.<action>' }, term: TERM },
   shownOptions: '--permission <aggregate>.<action> [--term "<Term>=<meaning>"]...',
-  writesShared: true,
+  shared: {
+    files: ['the access policies registry (<platformDir>/auth/authorization/access-policies.ts)'],
+    when: 'stack.style is explicit',
+  },
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

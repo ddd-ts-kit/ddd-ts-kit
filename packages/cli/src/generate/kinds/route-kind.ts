@@ -24,7 +24,8 @@ export const routeKind: Kind = {
   aliases: [],
   summary:
     'An HTTP route calling an existing use case through its bus, with its spec: under "stack.routes": "controllers", a controller class in its folder, behind the guards of its route group; under "functions", a defineRoute function and its registration; under "nest", a Nest controller whose method takes and answers what its signature names, listed in the generated <context>.controllers.ts. After `generate command <context> <UseCaseName>` or `generate query <context> <UseCaseName>`; with --group, after `generate route-group <context> <Name>`.',
-  positionals: ['context', 'UseCaseName'],
+  scope: 'context',
+  positionals: ['UseCaseName'],
   options: {
     method: { type: 'string', value: '<GET|POST|PUT|PATCH|DELETE>' },
     path: { type: 'string' },
@@ -37,7 +38,6 @@ export const routeKind: Kind = {
   },
   shownOptions:
     '--method <GET|POST|PUT|PATCH|DELETE> --path <path> [--command|--query] [--group <Name>] [--mapper] [--serializer] [--cache public|private|no-store]',
-  writesShared: false,
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

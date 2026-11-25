@@ -10,9 +10,9 @@ export const aclKind: Kind = {
   name: 'acl',
   aliases: [],
   summary: 'An anti-corruption translator for the model of another context or system, and its spec.',
-  positionals: ['context', 'upstreamOrSystemName'],
+  scope: 'context',
+  positionals: ['upstreamOrSystemName'],
   options: {},
-  writesShared: false,
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

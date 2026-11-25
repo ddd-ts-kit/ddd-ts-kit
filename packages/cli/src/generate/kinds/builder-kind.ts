@@ -22,9 +22,9 @@ export const builderKind: Kind = {
   aliases: [],
   summary:
     'The test data builder of an existing aggregate, in test/builders/; the instant of its birth is an ingredient named after the fact its create records (issuedAt), and the builder of an event-sourced aggregate replays its birth event. After `generate aggregate <context> <Aggregate>`.',
-  positionals: ['context', 'Aggregate'],
+  scope: 'context',
+  positionals: ['Aggregate'],
   options: {},
-  writesShared: false,
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

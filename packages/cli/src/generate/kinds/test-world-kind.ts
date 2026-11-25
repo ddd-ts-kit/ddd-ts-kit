@@ -13,10 +13,10 @@ export const testWorldKind: Kind = {
   aliases: [],
   summary:
     'The arrangement several specs of a context share, in test/worlds/: the test application, or the buses, with every fake of test/fakes/.',
-  positionals: ['context'],
+  scope: 'context',
+  positionals: [],
   optionalPositionals: ['Name'],
   options: {},
-  writesShared: false,
   writesInModules: false,
   run: (request) => {
     const scope = openScope(request);

@@ -19,7 +19,8 @@ export const routeGroupKind: Kind = {
   aliases: ['group'],
   summary:
     'A route group: an empty class carrying @RouteGroup with its path prefix, its tag and its guards (Authenticated unless --public or --role says otherwise); with --group <ParentName>, it refines that group and inherits from it, after `generate route-group <context> <Name>` of the parent.',
-  positionals: ['context', 'Name'],
+  scope: 'context',
+  positionals: ['Name'],
   options: {
     prefix: { type: 'string', value: '<path>' },
     group: { type: 'string', value: '<ParentName>' },
@@ -27,7 +28,11 @@ export const routeGroupKind: Kind = {
     role: { type: 'string' },
   },
   shownOptions: '[--prefix <path>] [--group <ParentName>] [--public | --role <role>]',
-  writesShared: true,
+  shared: {
+    files: ['the role vocabulary of the platform (<platformDir>/auth/authorization/role.ts)'],
+    when: '--role names a role the vocabulary does not hold yet',
+    worker: 'without --role, or with a role the vocabulary already holds',
+  },
   writesInModules: false,
   run: (request) => {
     const scope = openScope(request);

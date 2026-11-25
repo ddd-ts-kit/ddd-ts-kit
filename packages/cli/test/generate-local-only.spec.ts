@@ -1,6 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { KINDS } from '../src/generate/kinds';
-import { SHARED_WRITES } from '../src/generate/shared-writes';
 import { cli, exists, EXPLICIT_STACK, scaffoldEverything, tempDir, type StackFlags } from './helpers';
 import { report } from './reports';
 import { jsonAt } from './support/json-at';
@@ -114,14 +113,13 @@ describe('generate --help --json', () => {
     );
   });
 
-  it('declares shared exactly the kinds whose shared files are described', () => {
-    const shared = KINDS.filter((kind) => kind.writesShared).map((kind) => kind.name);
+  it('describes the shared files of exactly the kinds that write some', () => {
+    const shared = KINDS.filter((kind) => kind.shared !== undefined).map((kind) => kind.name);
 
     expect([...shared].sort()).toEqual([...SHARED_KINDS].sort());
-    expect(Object.keys(SHARED_WRITES).sort()).toEqual([...SHARED_KINDS].sort());
 
     expect(LOCAL_RUNS.map(([kind]) => kind)).toEqual(
-      expect.arrayContaining(KINDS.filter((kind) => !kind.writesShared).map((kind) => kind.name)),
+      expect.arrayContaining(KINDS.filter((kind) => kind.shared === undefined).map((kind) => kind.name)),
     );
   });
 });

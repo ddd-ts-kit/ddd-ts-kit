@@ -12,6 +12,7 @@ export const contextKind: Kind = {
   aliases: [],
   summary:
     'A bounded context: CONTEXT.md with its glossary, published language, config entry, and what assembles it (its declarations, or its module file); with --preset, written whole from a preset of the kit.',
+  scope: 'new-context',
   positionals: ['name'],
   options: {
     classification: { type: 'string', value: '<core|supporting|generic>' },
@@ -23,7 +24,18 @@ export const contextKind: Kind = {
   },
   shownOptions:
     '--classification <core|supporting|generic> [--reason "<why it is of that classification>"] [--purpose "<two sentences>"] [--term "<Term>=<meaning>[|<not to be confused with>]"]... [--upstream <ctx>[:relationship]]... [--preset identity]',
-  writesShared: true,
+  shared: {
+    files: [
+      'ddd-ts-kit.config.json',
+      'the composition root (<platformDir>/composition/compose-application.ts)',
+      'test/architecture/extractable.spec.ts',
+      'the permissions registry (<platformDir>/auth/authorization/permissions.ts)',
+      'the CONTEXT.md of each upstream',
+      'docs/context-map.md',
+      '.dependency-cruiser.cjs',
+      'knip.json (the first context)',
+    ],
+  },
   writesInModules: false,
   run: ({ ws, config, args, flags }) => {
     const name = args[0] ?? '';

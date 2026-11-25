@@ -11,9 +11,9 @@ export const portKind: Kind = {
   name: 'port',
   aliases: [],
   summary: 'A port of the application layer, an abstract class that is also its injection token, and its fake.',
-  positionals: ['context', 'Name'],
+  scope: 'context',
+  positionals: ['Name'],
   options: {},
-  writesShared: false,
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

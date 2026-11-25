@@ -1,6 +1,5 @@
 import { heldToGlossary } from './held-to-glossary';
 import type { Kind } from './kind';
-import { SHARED_WRITES } from './shared-writes';
 import { usageOf } from './usage-of';
 
 /** One kind as `generate --help --json` lists it, and `generate <kind> --help --json` answers it. */
@@ -23,15 +22,14 @@ export interface KindHelp {
 
 /** One kind, as `generate <kind> --help --json` answers it. */
 export function kindHelp(kind: Kind): KindHelp {
-  const { name, aliases, summary, writesShared, writesInModules } = kind;
-  const shared = writesShared ? SHARED_WRITES[name] : undefined;
+  const { name, aliases, summary, shared, writesInModules } = kind;
 
   return {
     name,
     aliases,
     usage: usageOf(kind),
     summary,
-    writesShared,
+    writesShared: shared !== undefined,
     shared: shared?.files ?? [],
     sharedWhen: shared?.when ?? null,
     writesInModules,

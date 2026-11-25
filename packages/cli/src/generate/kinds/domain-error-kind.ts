@@ -9,16 +9,21 @@ import { learnTerms } from '../learn-terms';
 import { named } from '../named';
 import { openScope } from '../open-scope';
 import { vars } from '../vars';
+import { IN_SHARED_KERNEL, SHARED_GLOSSARY } from '../shared-write';
 
 export const domainErrorKind: Kind = {
   name: 'domain-error',
   aliases: [],
   summary:
     'One class per error, built with `new`, and its spec: the form of a project whose "stack.refusals" is "classes", or says nothing. With shared-kernel, at the root of the shared kernel.',
-  positionals: ['context', 'Name'],
+  scope: 'context-or-shared-kernel',
+  positionals: ['Name'],
   options: { code: { type: 'string', value: 'CODE' }, term: TERM },
-  shown: { context: '<context|shared-kernel>' },
-  writesShared: true,
+  shared: {
+    files: ['<sharedKernelDir>/<name>.error.ts and its spec', SHARED_GLOSSARY],
+    when: `${IN_SHARED_KERNEL}: the refusal of a value of the shared kernel`,
+    worker: 'in its own context',
+  },
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request, { sharedKernel: true });

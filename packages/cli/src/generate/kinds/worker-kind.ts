@@ -19,9 +19,19 @@ export const workerKind: Kind = {
   aliases: [],
   summary:
     'The scheduled jobs in a process of their own: apps/worker/main.ts (the modules of main.ts, no HTTP server), a start script, a compose service, `worker` in the config, and the API started with its jobs off.',
+  scope: 'project',
   positionals: [],
   options: {},
-  writesShared: true,
+  shared: {
+    files: [
+      '<sourceRoot>/apps/worker/main.ts',
+      'package.json',
+      'ddd-ts-kit.config.json',
+      'docker-compose.yml',
+      '.env.example',
+      '<platformDir>/config/load-config.ts',
+    ],
+  },
   writesInModules: false,
   run: ({ ws, config }) => {
     if (ownEntry(config.contexts, NAME) !== undefined) {

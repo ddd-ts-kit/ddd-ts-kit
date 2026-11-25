@@ -17,6 +17,7 @@ import { named } from '../named';
 import { openScope } from '../open-scope';
 import type { Scope } from '../scope';
 import { vars } from '../vars';
+import { IN_SHARED_KERNEL, SHARED_GLOSSARY } from '../shared-write';
 
 interface Refusal {
   readonly concept: Name;
@@ -29,10 +30,18 @@ export const errorKind: Kind = {
   aliases: ['refusal'],
   summary:
     'A refusal: under "stack.refusals": "named", its class, its code in <context>.codes.ts and a static factory, each created when absent, and its spec case; under factories or classes, `<Concept> <refusal>` adds a static factory to the error class of a concept. With shared-kernel, the refusal of a value object of the shared kernel, at its root.',
-  positionals: ['context', 'Refusal', 'factory'],
+  scope: 'context-or-shared-kernel',
+  positionals: ['Refusal', 'factory'],
   options: { code: { type: 'string', value: 'CODE' }, term: TERM },
-  shown: { context: '<context|shared-kernel>' },
-  writesShared: true,
+  shared: {
+    files: [
+      '<sharedKernelDir>/<refusal>.error.ts and its spec',
+      '<sharedKernelDir>/shared-kernel.codes.ts (stack.refusals named)',
+      SHARED_GLOSSARY,
+    ],
+    when: `${IN_SHARED_KERNEL}: the refusal of a value of the shared kernel`,
+    worker: 'in its own context',
+  },
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request, { sharedKernel: true });

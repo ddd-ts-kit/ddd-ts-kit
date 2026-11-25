@@ -18,10 +18,14 @@ export const schemaKind: Kind = {
   aliases: [],
   summary:
     'One shape of the HTTP contract, declared once and shared: presentation/http/shared/<name>.schema.ts of a context, or presentation/<name>.schema.ts of the shared kernel when several contexts answer with it. Routes use it whole, nested or in part; the contract documents it once and refers to it.',
-  positionals: ['context', 'Name'],
+  scope: 'context-or-shared-kernel',
+  positionals: ['Name'],
   options: {},
-  shown: { context: '<context|shared-kernel>' },
-  writesShared: true,
+  shared: {
+    files: ['<sharedKernelDir>/presentation/<name>.schema.ts'],
+    when: 'the first argument is shared-kernel: a schema several contexts answer with',
+    worker: 'in its own context: generate schema <context> <Name>',
+  },
   writesInModules: false,
   run: (request) => {
     const scope = openScope(request, { sharedKernel: true });

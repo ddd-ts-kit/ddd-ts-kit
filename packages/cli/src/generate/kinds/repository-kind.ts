@@ -3,13 +3,15 @@ import { openScope } from '../open-scope';
 import { existingAggregate } from './existing-aggregate';
 import { generateRepository } from './generate-repository';
 import { declarePersonalData } from './personal-data/declare-personal-data';
+import { STORAGE, STORED } from '../shared-write';
 
 export const repositoryKind: Kind = {
   name: 'repository',
   aliases: [],
   summary:
     "A repository port (an abstract class of the domain), its in-memory fake, the adapter of the project's ORM with its mapper, the contract suite both pass, and its registration; on an event-sourced aggregate, the adapter over EventSourcedRepository with the codec of its stored events, no table; with --personal, the declaration of the personal columns of its table, and the erasure and the export of the context that read it, and with --retention how long the rows keep it before the nightly purge erases them. After `generate aggregate <context> <Aggregate>`.",
-  positionals: ['context', 'Aggregate'],
+  scope: 'context',
+  positionals: ['Aggregate'],
   options: {
     'tenant-scoped': { type: 'boolean' },
     personal: { type: 'string', value: '<column>,<column>...' },
@@ -19,7 +21,7 @@ export const repositoryKind: Kind = {
   },
   shownOptions:
     '[--tenant-scoped] [--personal <column>,<column>... [--subject <column>] [--erasure pseudonymise|row] [--retention <column>:<n><d|m|y>]]',
-  writesShared: true,
+  shared: { files: STORAGE, when: STORED },
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

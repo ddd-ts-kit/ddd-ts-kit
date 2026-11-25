@@ -19,19 +19,26 @@ import { fieldLines } from './read-model/field-lines';
 import { listReadModel } from './read-model/list-read-model';
 import { readModelFields } from './read-model/read-model-fields';
 import { readModelStore, type ReadModelStore } from './read-model/read-model-store';
+import { STORAGE } from '../shared-write';
+
+const STORED_READ_MODEL =
+  'with an ORM of the kit, always: the store joins the list of the read model tables the application checks when it starts; and when its table is the first of its context, with drizzle, knex or typeorm the tables file of the context joins the schema index, with prisma the database schema of the context joins the datasource (its model goes to prisma/schema/<context>.prisma, the file of the context); never without an ORM of the kit';
+
+const LISTED_READ_MODELS = 'the list of the read model tables (<platformDir>/database/read-model-tables.ts)';
 
 export const readModelKind: Kind = {
   name: 'read-model',
   aliases: [],
   summary:
     "The read model a projection keeps: its port (an abstract class of the application layer over ReadModelStore, with the type of its row and the criteria its readers may ask), its table in the schema of the context with the columns of each --field, the store adapter of the project's ORM (in memory without one) bound to the port, its fake, and the contract suite both pass. The projection that writes it comes from `generate projection <context> <Name> <eventType>`.",
-  positionals: ['context', 'Name'],
+  scope: 'context',
+  positionals: ['Name'],
   options: {
     field: { type: 'string', multiple: true, value: '<name>:<string|number|boolean|instant|decimal>[:nullable]' },
     'tenant-scoped': { type: 'boolean' },
     term: TERM,
   },
-  writesShared: true,
+  shared: { files: [LISTED_READ_MODELS, ...STORAGE], when: STORED_READ_MODEL },
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

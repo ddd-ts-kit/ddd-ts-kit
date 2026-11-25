@@ -15,13 +15,13 @@ export const stateMachineKind: Kind = {
   aliases: [],
   summary:
     'The lifecycle of an aggregate: its status as the closed vocabulary <Aggregate>Status (created, or extended with the --value it misses, the first one initial), the machine of domain/state-machines/ with the transitions asked, and its spec. CONTEXT.md draws it. After `generate aggregate <context> <Aggregate>`.',
-  positionals: ['context', 'Aggregate'],
+  scope: 'context',
+  positionals: ['Aggregate'],
   options: {
     value: { type: 'string', multiple: true, value: '<state>' },
     transition: { type: 'string', multiple: true, value: '"<intention>:<from>[,<from>]...[><to>]"' },
     term: TERM,
   },
-  writesShared: false,
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

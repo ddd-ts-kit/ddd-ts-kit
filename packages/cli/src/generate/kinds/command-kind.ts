@@ -17,13 +17,15 @@ import { existingAggregate } from './existing-aggregate';
 import { generateRepository } from './generate-repository';
 import { repositoryLine } from './repository-line';
 import { wireRepositoryOnFirstUse } from './wire-repository-on-first-use';
+import { GRANTED, GRANTS, STORAGE, STORED } from '../shared-write';
 
 export const commandKind: Kind = {
   name: 'command',
   aliases: [],
   summary:
     'A command, its handler with injected ports, its spec and its registration on the command bus; with --aggregate the handler changes an existing aggregate and refuses until the domain is decided, with --creates it gives birth to one. With --aggregate, after `generate aggregate <context> <Name>`.',
-  positionals: ['context', 'UseCaseName'],
+  scope: 'context',
+  positionals: ['UseCaseName'],
   options: {
     permission: { type: 'string', value: '<aggregate>.<action>' },
     grant: { type: 'string', value: '<role>' },
@@ -34,7 +36,11 @@ export const commandKind: Kind = {
   },
   shownOptions:
     '(--permission <aggregate>.<action> [--grant <role>] | --public) [--aggregate <Name> [--creates]] [--term "<Term>=<meaning>"]...',
-  writesShared: true,
+  shared: {
+    files: [...STORAGE, ...GRANTS],
+    when: `--aggregate names an aggregate without a repository, which is created with the command, and ${STORED}; or ${GRANTED}`,
+    worker: 'on an aggregate that has its repository, without --grant',
+  },
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

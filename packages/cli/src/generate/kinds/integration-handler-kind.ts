@@ -28,10 +28,10 @@ export const integrationHandlerKind: Kind = {
   aliases: ['consumer'],
   summary:
     'An idempotent handler of an integration event of a declared upstream, its spec and its subscription under a consumer name. After `generate integration-event <upstreamContext> <Aggregate> <Fact>` of its eventType.',
-  positionals: ['context', 'upstreamContext', 'eventType'],
+  scope: 'context',
+  positionals: ['upstreamContext', 'eventType'],
   options: { version: { type: 'string', value: '<n>' }, name: { type: 'string', value: '<Name>' }, term: TERM },
   shown: { eventType: '<eventType>[@v<n>]' },
-  writesShared: false,
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

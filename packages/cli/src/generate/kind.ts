@@ -2,6 +2,7 @@ import type { OptionSpecs } from '../commands/arguments';
 import type { Config } from '../config';
 import type { Workspace } from '../workspace';
 import type { PrerequisiteProbe } from './generator-probe';
+import type { SharedWrite } from './shared-write';
 import type { LanguageProbe } from './language-probe';
 
 export interface KindFlags {
@@ -107,11 +108,19 @@ export interface KindRequest {
   readonly asController?: boolean;
 }
 
+/**
+ * Where a kind writes, which its first argument says: a context of the project, or the shared
+ * kernel too (`shared-kernel`), the context it creates, or the project itself.
+ */
+export type KindScope = 'context' | 'context-or-shared-kernel' | 'new-context' | 'project';
+
 export interface Kind {
   readonly name: string;
   readonly aliases: readonly string[];
   readonly summary: string;
-  /** Positional arguments after the kind, by name; all are required. */
+  /** Where it writes: under `context` and `context-or-shared-kernel`, its first argument names the context. */
+  readonly scope: KindScope;
+  /** Positional arguments after the kind and the context it writes in, by name; all are required. */
   readonly positionals: readonly string[];
   /** Positional arguments that may follow the required ones, by name: `[Name]` of a world. */
   readonly optionalPositionals?: readonly string[];
@@ -128,8 +137,14 @@ export interface Kind {
    * written between brackets, in the order it declares them.
    */
   readonly shownOptions?: string;
-  /** True when the kind may write outside the context it is given (config, composition root, registries of the platform, documentation): `SHARED_WRITES` says what and when. */
-  readonly writesShared: boolean;
+  /**
+   * What it may write outside the context it is given (config, composition root, registries of
+   * the platform, documentation), and when; left out, it writes nothing shared. `--local-only`
+   * refuses those writes, the conductor of a parallel build makes them on the trunk.
+   */
+  readonly shared?: SharedWrite;
+  /** Said by `module`, which declares a module and writes no file of a layer: it runs in a context not laid out yet. */
+  readonly declaresModule?: true;
   /**
    * True when the kind writes a file that the modules of the model of a context divide: a file of
    * a layer or a spec that `isContextLevel` does not keep at the level of the context. Such a kind

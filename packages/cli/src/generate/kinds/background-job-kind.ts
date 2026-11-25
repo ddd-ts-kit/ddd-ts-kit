@@ -24,10 +24,10 @@ export const backgroundJobKind: Kind = {
   aliases: [],
   summary:
     'A job a use case enqueues, run later by a worker as the actor that enqueued it, with retries and a lease: the class named by its static jobName, its spec through a queue in memory and its registration. After `generate command <context> <UseCaseName>` of its --command.',
-  positionals: ['context', 'Name'],
+  scope: 'context',
+  positionals: ['Name'],
   options: { command: { type: 'string', value: '<UseCaseName>' }, term: TERM },
   shownOptions: '--command <UseCaseName> [--term "<Term>=<meaning>"]...',
-  writesShared: false,
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

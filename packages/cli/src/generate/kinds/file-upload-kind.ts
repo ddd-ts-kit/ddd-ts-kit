@@ -18,13 +18,15 @@ import { writeUploadController } from './file-upload/write-upload-controller';
 import { findUseCase } from './route/find-use-case';
 import { parseEndpoint } from './route/parse-endpoint';
 import { planController } from './route/plan-controller';
+import { GRANTED, GRANTS } from '../shared-write';
 
 export const fileUploadKind: Kind = {
   name: 'file-upload',
   aliases: [],
   summary:
     'An upload: a controller that declares the file it receives (`@Upload()` of a Nest controller; size and media types in the contract, checked as it streams; with `--text` a text file such as a CSV, `single-byte` when it may be in Windows-1252 as well as UTF-8), the command that carries it as a FileUpload (staged by the command bus before the transaction), the handler that records it and promotes it with the commit, and their specs. Needs "stack.storage".',
-  positionals: ['context', 'UseCaseName'],
+  scope: 'context',
+  positionals: ['UseCaseName'],
   options: {
     path: { type: 'string' },
     permission: { type: 'string', value: '<aggregate>.<action>' },
@@ -37,7 +39,7 @@ export const fileUploadKind: Kind = {
   },
   shownOptions:
     '--path <path> (--permission <aggregate>.<action> [--grant <role>] | --public) [--method <POST|PUT>] [--group <Name>] [--text <utf-8|single-byte>] [--term "<Term>=<meaning>"]...',
-  writesShared: true,
+  shared: { files: GRANTS, when: GRANTED, worker: 'without --grant' },
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

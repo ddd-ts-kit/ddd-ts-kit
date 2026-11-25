@@ -12,9 +12,9 @@ export const domainEventKind: Kind = {
   aliases: [],
   summary:
     'A domain event named <context>.<aggregate>.<fact>, and its spec; a fact that starts with the aggregate ("Order Confirmed" of Order) is refused, since the event is named after the aggregate already (--allow-name lets it through); for an event-sourced aggregate, its apply method and its stored form too.',
-  positionals: ['context', 'Aggregate', 'Fact'],
+  scope: 'context',
+  positionals: ['Aggregate', 'Fact'],
   options: { term: TERM },
-  writesShared: false,
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

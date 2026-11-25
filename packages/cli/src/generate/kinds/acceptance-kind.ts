@@ -18,11 +18,14 @@ export const acceptanceKind: Kind = {
   aliases: [],
   summary:
     'The acceptance spec of a story, in test/acceptance/, written before its code: an it.todo per acceptance criterion of docs/architecture/stories/<story>.md, or per slice row of the story in docs/architecture/slices.md when it states none.',
+  scope: 'project',
   positionals: ['story'],
   optionalPositionals: ['title'],
   options: {},
   shown: { title: '["<title>"]' },
-  writesShared: true,
+  shared: {
+    files: ['test/acceptance/<story>.acceptance.spec.ts, the acceptance of a story, written before its code'],
+  },
   writesInModules: false,
   run: ({ ws, config, args }) => {
     const story = storyNamed(args[0] ?? '');

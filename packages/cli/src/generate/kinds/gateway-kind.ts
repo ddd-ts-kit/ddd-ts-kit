@@ -21,9 +21,15 @@ export const gatewayKind: Kind = {
   aliases: [],
   summary:
     "A port of the caller for a synchronous need from an upstream, its in-process adapter over the upstream's published read contract, a fake and one contract suite.",
-  positionals: ['context', 'upstreamContext', 'Name'],
+  scope: 'context',
+  positionals: ['upstreamContext', 'Name'],
   options: {},
-  writesShared: true,
+  shared: {
+    files: [
+      'the read contract and the index of the published language of the upstream',
+      '<platformDir>/composition/platform.module.ts and platform-test.module.ts (declared style)',
+    ],
+  },
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

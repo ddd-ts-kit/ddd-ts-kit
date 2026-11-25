@@ -17,13 +17,13 @@ export const eventHandlerKind: Kind = {
   aliases: [],
   summary:
     'A reaction to a domain event of the same context, its spec and its subscription: before the commit of the unit of work by default, after it with --phase after-commit, for an effect no transaction covers.',
-  positionals: ['context', 'Aggregate', 'Fact'],
+  scope: 'context',
+  positionals: ['Aggregate', 'Fact'],
   options: {
     phase: { type: 'string', value: 'before-commit|after-commit' },
     name: { type: 'string', value: '<Name>' },
     term: TERM,
   },
-  writesShared: false,
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

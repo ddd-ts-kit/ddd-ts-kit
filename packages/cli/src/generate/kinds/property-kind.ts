@@ -17,9 +17,14 @@ export const propertyKind: Kind = {
   aliases: [],
   summary:
     'The laws of a value object checked on generated values (fast-check): a spec beside its own, with fast-check added to the development dependencies when it is missing. After `generate value-object <context> <ValueObject>`.',
-  positionals: ['context', 'ValueObject'],
+  scope: 'context',
+  positionals: ['ValueObject'],
   options: {},
-  writesShared: true,
+  shared: {
+    files: ['package.json (fast-check joins the development dependencies)'],
+    when: 'fast-check is not yet a dependency of the project',
+    worker: 'once fast-check is installed',
+  },
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

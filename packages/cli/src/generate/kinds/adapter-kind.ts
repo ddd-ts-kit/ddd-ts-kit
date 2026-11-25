@@ -24,9 +24,14 @@ export const adapterKind: Kind = {
   aliases: [],
   summary:
     'An infrastructure adapter of an existing port towards an outside system, its spec and its registration with a retry and timeout policy; with --decorators its outbound method carries the policy itself. With --kind simulated, an adapter that answers in the memory of the process, for an environment whose provider is simulated. After `generate port <context> <Port>`.',
-  positionals: ['context', 'Port'],
+  scope: 'context',
+  positionals: ['Port'],
   options: { kind: { type: 'string', value: 'external|gateway|simulated' }, decorators: { type: 'boolean' } },
-  writesShared: true,
+  shared: {
+    files: ['<platformDir>/resilience/own-policy.ts'],
+    when: 'the adapter is the first of a project wired on tsyringe to state its own policy (the helper joins the platform)',
+    worker: 'once the project has its first adapter',
+  },
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

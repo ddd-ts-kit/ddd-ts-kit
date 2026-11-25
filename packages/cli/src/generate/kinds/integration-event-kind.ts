@@ -22,9 +22,14 @@ export const integrationEventKind: Kind = {
   name: 'integration-event',
   aliases: [],
   summary: 'A versioned declaration in the published language, its publisher, its spec and its registration.',
-  positionals: ['context', 'Aggregate', 'Fact'],
+  scope: 'context',
+  positionals: ['Aggregate', 'Fact'],
   options: { version: { type: 'string', value: '<n>' }, term: TERM },
-  writesShared: true,
+  shared: {
+    files: ['the audited events registry (<platformDir>/audit/audited-events.ts)', 'docs/context-map.md'],
+    when: 'the audit trail is wired, or the event type is new',
+    conductorStep: true,
+  },
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request);

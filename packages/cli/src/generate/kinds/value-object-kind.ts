@@ -6,16 +6,21 @@ import { learnTerms } from '../learn-terms';
 import { named } from '../named';
 import { openScope } from '../open-scope';
 import { vars } from '../vars';
+import { IN_SHARED_KERNEL, SHARED_GLOSSARY } from '../shared-write';
 
 export const valueObjectKind: Kind = {
   name: 'value-object',
   aliases: ['vo'],
   summary:
     'An immutable value object validated in create, and its spec: in domain/value-objects/ of a context, or at the root of the shared kernel, beside its spec, when at least two contexts use it.',
-  positionals: ['context', 'Name'],
+  scope: 'context-or-shared-kernel',
+  positionals: ['Name'],
   options: { term: TERM },
-  shown: { context: '<context|shared-kernel>' },
-  writesShared: true,
+  shared: {
+    files: ['<sharedKernelDir>/<name>.vo.ts and its spec', SHARED_GLOSSARY],
+    when: `${IN_SHARED_KERNEL}: a value at least two contexts use`,
+    worker: 'in its own context',
+  },
   writesInModules: true,
   run: (request) => {
     const scope = openScope(request, { sharedKernel: true });

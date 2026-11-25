@@ -23,9 +23,19 @@ export const serviceKind: Kind = {
   aliases: [],
   summary:
     'The context run alone, with its scheduled jobs: its entry point under apps/, a start script, a compose service, `deployable` in the config, and its departure from the whole application (consumers, processes and jobs run once).',
-  positionals: ['context'],
+  scope: 'context',
+  positionals: [],
   options: {},
-  writesShared: true,
+  shared: {
+    files: [
+      '<sourceRoot>/apps/<context>/main.ts',
+      'package.json',
+      'knip.json',
+      'ddd-ts-kit.config.json',
+      'docker-compose.yml',
+      'docs/context-map.md',
+    ],
+  },
   writesInModules: false,
   run: (request) => {
     const scope = openScope(request);
