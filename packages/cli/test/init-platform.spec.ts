@@ -145,6 +145,14 @@ describe('the platform init writes', () => {
     expect(nestWithControllers).toContain('rawBody: true');
   });
 
+  it('reads any JSON value on Express and on Nest, an object or not, for the schema of the route to decide', () => {
+    const express = read(initProject(), 'src/platform/http/start-http-server.ts');
+    const nest = read(initProject('--http', 'nest'), 'src/platform/http/start-http-server.ts');
+
+    expect(express).toContain('strict: false,');
+    expect(nest).toContain("app.useBodyParser('json', { strict: false });");
+  });
+
   it('makes a Nest project validate with class-validator and write its routes as Nest controllers, unless told otherwise', () => {
     const nest = readJson(initProject('--http', 'nest'), 'ddd-ts-kit.config.json');
     const zod = readJson(initProject('--http', 'nest', '--validation', 'zod'), 'ddd-ts-kit.config.json');

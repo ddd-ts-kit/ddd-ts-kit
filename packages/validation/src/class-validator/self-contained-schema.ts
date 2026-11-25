@@ -1,20 +1,25 @@
 import { defaultMetadataStorage } from 'class-transformer/cjs/storage.js';
-import { validationMetadatasToSchemas } from 'class-validator-jsonschema';
+import { targetConstructorToSchema } from 'class-validator-jsonschema';
 import type { JsonSchema } from '../json-schema';
 import { DEFINITIONS_POINTER } from '../shared/definitions-pointer';
 import type { DtoClass } from './dto-class';
+import { reachedFrom } from './reached-from';
 
 type SchemasByName = Record<string, JsonSchema>;
+
+const DESCRIBING = { classTransformerMetadataStorage: defaultMetadataStorage, refPointerPrefix: DEFINITIONS_POINTER };
 
 /**
  * The JSON Schema of a class, carrying under `$defs` only the classes reachable from it. A class
  * that extends another one holds the properties of its ancestors too, as validation does: a class
  * that declares nothing itself (`class Body extends pickClass(...) {}`) is described by them.
- * Shared, the class itself is one of them and the schema is a reference to it.
+ * Shared, the class itself is one of them and the schema is a reference to it. Every class is
+ * described from its own constraints, as it is validated: another class of the same name, in
+ * another bounded context, never lends it a field.
  */
 export function selfContainedSchema(dto: DtoClass<object>, shared: boolean): JsonSchema {
-  const all = generatedSchemas();
-  const own = ownSchema(dto, all);
+  const own = describedAlone(dto);
+  const all = { ...describedByName(dto), [dto.name]: own };
   const defs: SchemasByName = shared ? { [dto.name]: own } : {};
 
   collectDefs(own, all, defs);
@@ -28,37 +33,38 @@ export function selfContainedSchema(dto: DtoClass<object>, shared: boolean): Jso
   };
 }
 
-function generatedSchemas(): SchemasByName {
-  const generated = validationMetadatasToSchemas({
-    classTransformerMetadataStorage: defaultMetadataStorage,
-    refPointerPrefix: DEFINITIONS_POINTER,
-  });
+/** The schema of the class and of every class it reaches, under the name a reference gives each. */
+function describedByName(dto: DtoClass<object>): SchemasByName {
+  const reached = reachedFrom(dto);
 
-  return Object.fromEntries(Object.entries(generated).map(([name, schema]) => [name, { ...schema }]));
+  return Object.fromEntries([...reached].map(([name, reachedClass]) => [name, describedAlone(reachedClass)]));
 }
 
-/** The schemas of the class and of its ancestors as one. */
-function ownSchema(dto: DtoClass<object>, all: SchemasByName): JsonSchema {
+/**
+ * The schema of one class, from the constraints of its lineage and of nothing else: the properties
+ * of each class of the lineage, the farthest ancestor first, and every required name.
+ */
+function describedAlone(described: DtoClass<object>): JsonSchema {
   return inherited(
-    lineageOf(dto)
-      .map((name) => all[name])
-      .filter((schema): schema is JsonSchema => schema !== undefined),
+    lineageOf(described)
+      .map((ancestor): JsonSchema => ({ ...targetConstructorToSchema(ancestor, DESCRIBING) }))
+      .filter((schema) => Object.keys(schema).length > 0),
   );
 }
 
-/** The names of the class and of its ancestors, the farthest first. */
-function lineageOf(dto: abstract new () => unknown): string[] {
-  const names: string[] = [];
+/** The class and its ancestors, the farthest first. */
+function lineageOf(described: DtoClass<object>): DtoClass<object>[] {
+  const lineage: DtoClass<object>[] = [];
 
-  for (
-    let current: unknown = dto;
-    typeof current === 'function' && current.name !== '';
-    current = Object.getPrototypeOf(current)
-  ) {
-    names.unshift(current.name);
+  for (let current: unknown = described; isNamedClass(current); current = Object.getPrototypeOf(current)) {
+    lineage.unshift(current);
   }
 
-  return names;
+  return lineage;
+}
+
+function isNamedClass(value: unknown): value is DtoClass<object> {
+  return typeof value === 'function' && value.name !== '';
 }
 
 /** The schemas of a lineage as one: the properties of each, the nearest class last, and every required name. */

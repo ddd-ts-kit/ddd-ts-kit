@@ -81,8 +81,7 @@ declare const options: ExecuteOptions; // resolvePrincipal, executionScope, erro
 
 export function onExpress(): void {
   const app = express();
-  app.use(express.json()); // the adapter does not parse bodies
-  mountExpress(app, routes, options);
+  mountExpress(app, routes, options); // reads the body of each route itself
   app.listen(3000);
 }
 
@@ -279,7 +278,7 @@ From [`packages/http/README.md`](../../packages/http/README.md) and
 ## Limits and when not to use it
 
 - A body the framework itself refuses (malformed JSON, payload too large) is refused before the
-  pipeline on Express (`express.json()`, 100 kB by default), Fastify (1 MiB) and NestJS. It is
+  pipeline on Express (1 MiB by default, `bodyLimit` of `mountExpress`), Fastify (1 MiB) and NestJS. It is
   answered as a problem, 400 `MALFORMED_BODY` or 413 `BODY_TOO_LARGE`, by `problemErrorHandler`
   of `@ddd-ts-kit/http/express` and `@ddd-ts-kit/http/fastify` and by `ProblemExceptionFilter` of
   `@ddd-ts-kit/http/nest`, which the
@@ -297,7 +296,11 @@ From [`packages/http/README.md`](../../packages/http/README.md) and
   (`multipart/form-data`, size and media types in the contract); a large download goes through a
   signed link of the storage. Server-sent events and WebSockets are written natively in the
   framework, outside the generated contract.
-- Express needs `express.json()` installed by you: the adapter does not parse bodies.
+- On Express the adapter reads the body of each route itself, any JSON value. An `express.json()`
+  of the application that runs first wins, with its limit of 100 kB, and refuses with 400 a JSON
+  value that is no object or array (`null`, a number, a text) unless given `strict: false`, as the
+  parser of NestJS over Express does (`app.useBodyParser('json', { strict: false })`); the
+  generated `start-http-server.ts` sets both.
 - Paths are literal segments and `:name` parameters only, the form Express and Fastify share:
   no regular expression routes, no wildcards.
 - Query values arrive as strings: coerce in the schema.

@@ -1,16 +1,14 @@
 import { codeOfStatus } from './code-of-status';
+import type { Problem } from './problem';
 import { statusTitle } from './status-title';
 
 /**
  * A request refused before the pipeline runs, by an adapter or by the framework under it: a body
- * that is not JSON, a body too large. Its status, its code and, when it says nothing of the
- * request, what is wrong.
+ * that is not JSON, a body too large, the refusal of a middleware. What its problem says, but
+ * the request it answers; its `type` is `about:blank` unless it names one.
  */
-export interface EdgeRefusal {
-  readonly status: number;
-  readonly title: string;
-  readonly code: string;
-  readonly detail?: string;
+export interface EdgeRefusal extends Omit<Problem, 'type' | 'requestId'> {
+  readonly type?: string;
 }
 
 const BAD_REQUEST = 400;
