@@ -15,18 +15,12 @@ import {
 import { contextArgument } from '../generate/context-argument';
 import { readName } from '../naming';
 import { exitCodeOf, tellUnwritable, Workspace } from '../workspace';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import type { Io } from './io';
 import { ownEntry } from '../config/values/own-entry';
 import { stdoutJson } from '../json/stdout-json';
 
 const MODULE_FIX = 'Name the module as the config of its context declares it, in kebab-case.';
-
-const FLAGS = {
-  'dry-run': { type: 'boolean', default: false },
-  [ALLOW_CYCLE]: { type: 'boolean', default: false },
-} as const;
 
 /**
  * Takes files of the model and of the use cases of a context into a module of its model, their
@@ -34,66 +28,73 @@ const FLAGS = {
  * nothing, unless `--allow-cycle` is passed: the cycle is said before the files move, not by the
  * checks after.
  */
-export const moveToModuleCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, FLAGS);
-  const [contextName = '', moduleName = '', ...paths] = args.positionals;
-  const ws = new Workspace(args.projectRoot, false);
-  const { config } = readConfig(args.projectRoot);
-  const context = contextArgument(config, contextName).kebab;
+export const moveToModuleCommand = defineCommand({
+  name: 'move-to-module',
+  options: {
+    'dry-run': { type: 'boolean' },
+    [ALLOW_CYCLE]: { type: 'boolean' },
+  },
+  takesTheLock: true,
+  run(args, io) {
+    const [contextName = '', moduleName = '', ...paths] = args.positionals;
+    const ws = new Workspace(args.projectRoot, false);
+    const { config } = readConfig(args.projectRoot);
+    const context = contextArgument(config, contextName).kebab;
 
-  if (moduleName === '') {
-    throw new CliError(
-      'move-to-module needs the module to move into.',
-      `Usage: ddd-ts-kit move-to-module ${context} <module> <path>...; a module is declared first with \`ddd-ts-kit generate module ${context} <module> --purpose "<which concepts it holds>"\`.`,
-    );
-  }
+    if (moduleName === '') {
+      throw new CliError(
+        'move-to-module needs the module to move into.',
+        `Usage: ddd-ts-kit move-to-module ${context} <module> <path>...; a module is declared first with \`ddd-ts-kit generate module ${context} <module> --purpose "<which concepts it holds>"\`.`,
+      );
+    }
 
-  const module = readName(moduleName, 'module', MODULE_FIX).kebab;
+    const module = readName(moduleName, 'module', MODULE_FIX).kebab;
 
-  assertDeclared(config, context, module);
+    assertDeclared(config, context, module);
 
-  if (paths.length === 0) {
-    throw new CliError(
-      'move-to-module needs the paths to move.',
-      `Usage: ddd-ts-kit move-to-module ${context} ${module} <path>..., each relative to the context: domain/aggregates/<name>.aggregate.ts, application/commands/<use-case>.`,
-    );
-  }
+    if (paths.length === 0) {
+      throw new CliError(
+        'move-to-module needs the paths to move.',
+        `Usage: ddd-ts-kit move-to-module ${context} ${module} <path>..., each relative to the context: domain/aggregates/<name>.aggregate.ts, application/commands/<use-case>.`,
+      );
+    }
 
-  const closedBy = watchCycles(ws, config, context);
-  const outcome = moveToModule(ws, config, { context, module, paths });
+    const closedBy = watchCycles(ws, config, context);
+    const outcome = moveToModule(ws, config, { context, module, paths });
 
-  // A moved use case leaves no empty folder behind, which would still read as a use case.
-  ws.pruneEmptiedFolders();
+    // A moved use case leaves no empty folder behind, which would still read as a use case.
+    ws.pruneEmptiedFolders();
 
-  // The generated declarations follow the files: those of each folder of the module are written, the emptied ones go.
-  refreshDocs(ws, 'move');
+    // The generated declarations follow the files: those of each folder of the module are written, the emptied ones go.
+    refreshDocs(ws, 'move');
 
-  const dryRun = args.flag('dry-run');
-  const { cycles, along } = closedBy(outcome.moved);
+    const dryRun = args.flag('dry-run');
+    const { cycles, along } = closedBy(outcome.moved);
 
-  if (cycles.length > 0 && !args.flag(ALLOW_CYCLE)) {
-    throw cycleRefusal({ context, cycles: beforeTheMove(cycles, outcome.moved), along });
-  }
+    if (cycles.length > 0 && !args.flag(ALLOW_CYCLE)) {
+      throw cycleRefusal({ context, cycles: beforeTheMove(cycles, outcome.moved), along });
+    }
 
-  const report = ws.commit(dryRun);
-  // A file the move rewrote and the refresh then deleted ends deleted; one it moved to is said moved.
-  const rewritten = outcome.rewritten.filter((file) => !report.deleted.includes(file));
-  const listed = new Set([...outcome.moved.map(({ to }) => to), ...rewritten]);
+    const report = ws.commit(dryRun);
+    // A file the move rewrote and the refresh then deleted ends deleted; one it moved to is said moved.
+    const rewritten = outcome.rewritten.filter((file) => !report.deleted.includes(file));
+    const listed = new Set([...outcome.moved.map(({ to }) => to), ...rewritten]);
 
-  print(io, args.json, {
-    dryRun,
-    moved: outcome.moved,
-    rewritten,
-    written: [...report.created, ...report.updated].filter((file) => !listed.has(file)),
-    deleted: report.deleted,
-    // Nothing is written by a dry run: its files are named where they still are.
-    cycles: dryRun ? beforeTheMove(cycles, outcome.moved) : cycles,
-  });
+    print(io, args.json, {
+      dryRun,
+      moved: outcome.moved,
+      rewritten,
+      written: [...report.created, ...report.updated].filter((file) => !listed.has(file)),
+      deleted: report.deleted,
+      // Nothing is written by a dry run: its files are named where they still are.
+      cycles: dryRun ? beforeTheMove(cycles, outcome.moved) : cycles,
+    });
 
-  tellUnwritable(io, report);
+    tellUnwritable(io, report);
 
-  return exitCodeOf(report);
-};
+    return exitCodeOf(report);
+  },
+});
 
 function assertDeclared(config: Config, context: string, module: string): void {
   if (ownEntry(config.contexts, context) === undefined) {

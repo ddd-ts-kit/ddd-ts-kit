@@ -3,52 +3,54 @@ import { readConfig } from '../config';
 import { DEPCRUISE_FILE } from '../depcruise/depcruise-file';
 import { renderCruiseFile } from '../depcruise/render-cruise-file';
 import { exitCodeOf, tellUnwritable, Workspace } from '../workspace';
-import { Arguments } from './arguments';
-import { type Command } from './command';
+import { defineCommand } from './command';
 import type { Io } from './io';
 import { stdoutJson } from '../json/stdout-json';
 
 /** Prints the dependency-cruiser configuration of the project, writes it, or checks that the file on disk is current. */
-export const depcruiseConfigCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
-    check: { type: 'boolean', default: false },
-    write: { type: 'boolean', default: false },
-  });
+export const depcruiseConfigCommand = defineCommand({
+  name: 'depcruise-config',
+  options: {
+    check: { type: 'boolean' },
+    write: { type: 'boolean' },
+  },
+  takesTheLock: { onlyWith: 'write' },
+  run(args, io) {
+    if (args.flag('check') && args.flag('write')) {
+      throw new CliError(
+        '--check and --write cannot be combined.',
+        'Use `depcruise-config --check` to verify the file, or `depcruise-config --write` to write it.',
+      );
+    }
 
-  if (args.flag('check') && args.flag('write')) {
-    throw new CliError(
-      '--check and --write cannot be combined.',
-      'Use `depcruise-config --check` to verify the file, or `depcruise-config --write` to write it.',
-    );
-  }
+    const ws = new Workspace(args.projectRoot, false);
+    const expected = renderCruiseFile(readConfig(args.projectRoot).config);
 
-  const ws = new Workspace(args.projectRoot, false);
-  const expected = renderCruiseFile(readConfig(args.projectRoot).config);
+    if (args.flag('write')) {
+      return writeCruiseFile(ws, expected, { io, json: args.json });
+    }
 
-  if (args.flag('write')) {
-    return writeCruiseFile(ws, expected, { io, json: args.json });
-  }
+    if (!args.flag('check')) {
+      io.out(printed(expected, args.json));
 
-  if (!args.flag('check')) {
-    io.out(printed(expected, args.json));
+      return 0;
+    }
 
-    return 0;
-  }
+    const current = ws.read(DEPCRUISE_FILE) === expected;
 
-  const current = ws.read(DEPCRUISE_FILE) === expected;
+    if (args.json) {
+      io.out(stdoutJson({ ok: current, file: DEPCRUISE_FILE }));
+    } else {
+      io.out(
+        current
+          ? `${DEPCRUISE_FILE} is up to date.`
+          : `stale  ${DEPCRUISE_FILE}\n\nRun \`ddd-ts-kit depcruise-config --write\` and commit the result.`,
+      );
+    }
 
-  if (args.json) {
-    io.out(stdoutJson({ ok: current, file: DEPCRUISE_FILE }));
-  } else {
-    io.out(
-      current
-        ? `${DEPCRUISE_FILE} is up to date.`
-        : `stale  ${DEPCRUISE_FILE}\n\nRun \`ddd-ts-kit depcruise-config --write\` and commit the result.`,
-    );
-  }
-
-  return current ? 0 : 1;
-};
+    return current ? 0 : 1;
+  },
+});
 
 /** The configuration as the file would hold it, or, under --json, with the name of the file. */
 function printed(expected: string, json: boolean): string {

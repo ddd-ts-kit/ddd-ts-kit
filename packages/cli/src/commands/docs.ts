@@ -13,44 +13,47 @@ import { unrecordedStoredEvents } from '../docs/unrecorded-stored-events';
 import { writeStoredEventsLock } from '../docs/write-stored-events-lock';
 import { stopIgnoringValidation } from '../generate/stop-ignoring-validation';
 import { Workspace } from '../workspace';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import type { Arguments } from './arguments';
+import { defineCommand } from './command';
 import type { Io } from './io';
 import { printReport } from './print-report';
 import { stdoutJson } from '../json/stdout-json';
 
-export const docsCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
-    check: { type: 'boolean', default: false },
-    'dry-run': { type: 'boolean', default: false },
-    'stored-events': { type: 'boolean', default: false },
-    behaviour: { type: 'boolean', default: false },
-  });
+export const docsCommand = defineCommand({
+  name: 'docs',
+  options: {
+    check: { type: 'boolean' },
+    'dry-run': { type: 'boolean' },
+    'stored-events': { type: 'boolean' },
+    behaviour: { type: 'boolean' },
+  },
+  takesTheLock: true,
+  run(args, io) {
+    const ws = new Workspace(args.projectRoot, false);
 
-  const ws = new Workspace(args.projectRoot, false);
+    const { config } = readConfig(args.projectRoot);
+    const check = args.flag('check');
 
-  const { config } = readConfig(args.projectRoot);
-  const check = args.flag('check');
+    if (args.flag('behaviour')) {
+      return behaviourOnly(io, args, { ws, config });
+    }
 
-  if (args.flag('behaviour')) {
-    return behaviourOnly(io, args, { ws, config });
-  }
+    // A context still declared as an earlier version wrote it is moved: a check reports the files the move would write.
+    writeDocs(ws, config);
 
-  // A context still declared as an earlier version wrote it is moved: a check reports the files the move would write.
-  writeDocs(ws, config);
+    if (args.flag('stored-events')) {
+      recordStoredEvents(ws, config);
+    }
 
-  if (args.flag('stored-events')) {
-    recordStoredEvents(ws, config);
-  }
+    if (!check) {
+      stopIgnoringValidation(ws, config);
 
-  if (!check) {
-    stopIgnoringValidation(ws, config);
+      return printReport(io, args, ws.commit(args.flag('dry-run')));
+    }
 
-    return printReport(io, args, ws.commit(args.flag('dry-run')));
-  }
-
-  return reportCheck(io, args, { ws, config });
-};
+    return reportCheck(io, args, { ws, config });
+  },
+});
 
 interface DocsRun {
   readonly ws: Workspace;

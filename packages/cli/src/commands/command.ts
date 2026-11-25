@@ -43,7 +43,7 @@ export function defineCommand<const O extends OptionSpecs>(spec: CommandSpec<O>)
 
     return takesTheLock === undefined
       ? run()
-      : holdingTheLock({ name, argv, args }, takesTheLock === true ? {} : takesTheLock, run);
+      : holdingTheLock({ name, args }, takesTheLock === true ? {} : takesTheLock, run);
   };
 
   return Object.assign(command, { spec });

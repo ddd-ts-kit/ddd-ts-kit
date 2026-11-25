@@ -39,18 +39,20 @@ const COMMON: ParseArgsConfig['options'] = {
  */
 export class Arguments<Text extends string = string, Flag extends string = string, Many extends string = string> {
   private constructor(
+    /** The words of the command line after the name of the command, as they were written. */
+    readonly asWritten: readonly string[],
     private readonly values: Readonly<Record<string, unknown>>,
     readonly positionals: readonly string[],
   ) {}
 
   /** The arguments a command accepts, read as it declares them: an option it does not declare is refused. */
   static declared<const O extends OptionSpecs>(args: readonly string[], options: O): ArgumentsOf<O> {
-    return new Arguments(...read(args, options));
+    return new Arguments(args, ...read(args, options));
   }
 
   /** The same for a command not declared yet, which names its options as it reads them. */
   static parse(args: readonly string[], options: OptionSpecs): Arguments {
-    return new Arguments(...read(args, options));
+    return new Arguments(args, ...read(args, options));
   }
 
   text(key: Text): string | undefined {

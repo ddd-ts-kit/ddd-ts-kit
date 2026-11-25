@@ -3,8 +3,7 @@ import { readConfig } from '../config';
 import { contextLayout, type ContextLayout } from '../context-layout';
 import { contextArgument } from '../generate/context-argument';
 import { exitCodeOf, tellUnwritable, Workspace } from '../workspace';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import type { Io } from './io';
 import { ownEntry } from '../config/values/own-entry';
 import { stdoutJson } from '../json/stdout-json';
@@ -13,40 +12,44 @@ const MANUAL =
   'Run the formatter, then the checks and the tests: an import the command could not read still names the old path.';
 
 /** Moves the files of the contexts that an earlier version wrote elsewhere to their place of today, their imports with them. */
-export const contextLayoutCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, { 'dry-run': { type: 'boolean', default: false } });
-  const ws = new Workspace(args.projectRoot, false);
-  const { config } = readConfig(args.projectRoot);
-  const asked = args.positionals.map((name) => contextArgument(config, name).kebab);
-  const unknown = asked.filter((context) => ownEntry(config.contexts, context) === undefined);
+export const contextLayoutCommand = defineCommand({
+  name: 'context-layout',
+  options: { 'dry-run': { type: 'boolean' } },
+  takesTheLock: true,
+  run(args, io) {
+    const ws = new Workspace(args.projectRoot, false);
+    const { config } = readConfig(args.projectRoot);
+    const asked = args.positionals.map((name) => contextArgument(config, name).kebab);
+    const unknown = asked.filter((context) => ownEntry(config.contexts, context) === undefined);
 
-  if (unknown.length > 0) {
-    throw new CliError(
-      `Unknown context "${unknown.join('", "')}".`,
-      `Use one of: ${Object.keys(config.contexts).join(', ')}.`,
-    );
-  }
+    if (unknown.length > 0) {
+      throw new CliError(
+        `Unknown context "${unknown.join('", "')}".`,
+        `Use one of: ${Object.keys(config.contexts).join(', ')}.`,
+      );
+    }
 
-  const layout = contextLayout(ws, config, asked);
+    const layout = contextLayout(ws, config, asked);
 
-  // A role folder the move emptied would still read as one.
-  ws.pruneEmptiedFolders();
+    // A role folder the move emptied would still read as one.
+    ws.pruneEmptiedFolders();
 
-  const dryRun = args.flag('dry-run');
-  const report = ws.commit(dryRun);
-  const listed = new Set([...layout.moved.flatMap(({ from, to }) => [from, to]), ...layout.rewritten]);
+    const dryRun = args.flag('dry-run');
+    const report = ws.commit(dryRun);
+    const listed = new Set([...layout.moved.flatMap(({ from, to }) => [from, to]), ...layout.rewritten]);
 
-  print(io, args.json, {
-    dryRun,
-    ...layout,
-    written: [...report.created, ...report.updated].filter((file) => !listed.has(file)),
-    manual: [...layout.manual, ...(layout.moved.length > 0 ? [MANUAL] : [])],
-  });
+    print(io, args.json, {
+      dryRun,
+      ...layout,
+      written: [...report.created, ...report.updated].filter((file) => !listed.has(file)),
+      manual: [...layout.manual, ...(layout.moved.length > 0 ? [MANUAL] : [])],
+    });
 
-  tellUnwritable(io, report);
+    tellUnwritable(io, report);
 
-  return exitCodeOf(report);
-};
+    return exitCodeOf(report);
+  },
+});
 
 interface Outcome extends ContextLayout {
   readonly dryRun: boolean;

@@ -2,8 +2,7 @@ import { readConfig } from '../config';
 import { type FolderMove, placements, platformFolders } from '../platform-folders';
 import { MigrationDraft } from '../refusals/migration-draft';
 import { Workspace } from '../workspace';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import type { Io } from './io';
 import { stdoutJson } from '../json/stdout-json';
 
@@ -12,31 +11,34 @@ const MANUAL = [
 ];
 
 /** Takes the files of the platform a project generated flat to the folder of the question each answers. */
-export const platformFoldersCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
-    'dry-run': { type: 'boolean', default: false },
+export const platformFoldersCommand = defineCommand({
+  name: 'platform-folders',
+  options: {
+    'dry-run': { type: 'boolean' },
     place: { type: 'string', multiple: true },
-  });
+  },
+  takesTheLock: true,
+  run(args, io) {
+    const ws = new Workspace(args.projectRoot, false);
+    const { config } = readConfig(args.projectRoot);
+    const draft = new MigrationDraft(ws);
+    const migration = platformFolders({ ws, config, placed: placements(args.many('place'), ws, config) }, draft);
 
-  const ws = new Workspace(args.projectRoot, false);
-  const { config } = readConfig(args.projectRoot);
-  const draft = new MigrationDraft(ws);
-  const migration = platformFolders({ ws, config, placed: placements(args.many('place'), ws, config) }, draft);
+    const outcome: Outcome = {
+      dryRun: args.flag('dry-run'),
+      ...migration,
+      manual: [...draft.manual, ...(migration.moved.length > 0 ? MANUAL : [])],
+    };
 
-  const outcome: Outcome = {
-    dryRun: args.flag('dry-run'),
-    ...migration,
-    manual: [...draft.manual, ...(migration.moved.length > 0 ? MANUAL : [])],
-  };
+    if (!outcome.dryRun) {
+      draft.commit();
+    }
 
-  if (!outcome.dryRun) {
-    draft.commit();
-  }
+    print(io, args.json, outcome);
 
-  print(io, args.json, outcome);
-
-  return 0;
-};
+    return 0;
+  },
+});
 
 interface Outcome {
   readonly dryRun: boolean;

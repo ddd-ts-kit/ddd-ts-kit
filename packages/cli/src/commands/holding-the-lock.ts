@@ -15,10 +15,9 @@ export interface Writing<Flag extends string = string> {
   readonly onlyWith?: Flag;
 }
 
-/** A command as it was asked: under its name, with its arguments as written and as read. */
+/** A command as it was asked: under its name, with its arguments. */
 interface Asked {
   readonly name: string;
-  readonly argv: readonly string[];
   readonly args: Arguments;
 }
 
@@ -29,10 +28,12 @@ interface Asked {
  * says it takes the lock where it declares itself (`takesTheLock`), never by taking it. No lock is
  * taken to say what would be written, nor where there is no project yet.
  */
-export function holdingTheLock({ name, argv, args }: Asked, writing: Writing, run: () => number): number {
+export function holdingTheLock({ name, args }: Asked, writing: Writing, run: () => number): number {
   const root = writesNow(args, writing.onlyWith) ? projectAt(args, writing.at ?? 'upward') : undefined;
 
-  return root === undefined ? run() : withGeneratorLock({ root, command: `ddd-ts-kit ${name} ${argv.join(' ')}` }, run);
+  return root === undefined
+    ? run()
+    : withGeneratorLock({ root, command: `ddd-ts-kit ${name} ${args.asWritten.join(' ')}` }, run);
 }
 
 function writesNow(args: Arguments, onlyWith: string | undefined): boolean {

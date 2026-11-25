@@ -15,8 +15,7 @@ import { readNamedPlan } from '../refusals/read-named-plan';
 import { readPlan } from '../refusals/read-plan';
 import { undefinedWords } from '../refusals/undefined-words';
 import { Workspace } from '../workspace';
-import { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import type { Io } from './io';
 import { stdoutJson } from '../json/stdout-json';
 
@@ -42,38 +41,41 @@ const MANUAL: Record<Target, readonly string[]> = {
  * on one error class per concept (`--to factories`): `--plan` writes the proposal to edit,
  * `--apply` follows it.
  */
-export const errorFactoriesCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
-    plan: { type: 'boolean', default: false },
-    apply: { type: 'boolean', default: false },
+export const errorFactoriesCommand = defineCommand({
+  name: 'error-factories',
+  options: {
+    plan: { type: 'boolean' },
+    apply: { type: 'boolean' },
     to: { type: 'string' },
-    'dry-run': { type: 'boolean', default: false },
-  });
+    'dry-run': { type: 'boolean' },
+  },
+  takesTheLock: true,
+  run(args, io) {
+    const ws = new Workspace(args.projectRoot, false);
+    const { config } = readConfig(args.projectRoot);
+    const draft = new MigrationDraft(ws);
+    const asked = askedTarget(args.text('to'));
 
-  const ws = new Workspace(args.projectRoot, false);
-  const { config } = readConfig(args.projectRoot);
-  const draft = new MigrationDraft(ws);
-  const asked = askedTarget(args.text('to'));
+    if (args.flag('plan') === args.flag('apply')) {
+      throw new CliError(
+        'error-factories needs --plan or --apply.',
+        `Run \`ddd-ts-kit error-factories --plan\`, check the names each entry of ${PLAN_FILE} proposes, then run \`ddd-ts-kit error-factories --apply\`.`,
+      );
+    }
 
-  if (args.flag('plan') === args.flag('apply')) {
-    throw new CliError(
-      'error-factories needs --plan or --apply.',
-      `Run \`ddd-ts-kit error-factories --plan\`, check the names each entry of ${PLAN_FILE} proposes, then run \`ddd-ts-kit error-factories --apply\`.`,
-    );
-  }
+    const target = args.flag('plan') ? (asked ?? 'named') : followed(planTarget(ws.read(PLAN_FILE)), asked);
 
-  const target = args.flag('plan') ? (asked ?? 'named') : followed(planTarget(ws.read(PLAN_FILE)), asked);
+    if (args.flag('plan')) {
+      draft.write(PLAN_FILE, formatJson(proposal({ ws, config }, target, draft)));
+    }
 
-  if (args.flag('plan')) {
-    draft.write(PLAN_FILE, formatJson(proposal({ ws, config }, target, draft)));
-  }
+    const moved = args.flag('apply') ? applied({ ws, config }, target, draft) : [];
 
-  const moved = args.flag('apply') ? applied({ ws, config }, target, draft) : [];
+    report(io, { json: args.json, dryRun: args.flag('dry-run') }, { draft, moved: { target, moves: moved } });
 
-  report(io, { json: args.json, dryRun: args.flag('dry-run') }, { draft, moved: { target, moves: moved } });
-
-  return 0;
-};
+    return 0;
+  },
+});
 
 interface Done {
   readonly draft: MigrationDraft;
