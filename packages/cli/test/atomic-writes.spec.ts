@@ -43,7 +43,7 @@ function contents(root: string, files = walk(root)): Record<string, string> {
 }
 
 describe('the writes of init and generate', () => {
-  it('stopped half way through a file leave complete files only and no temporary file, and the same init run again completes the project', () => {
+  it('stopped half way through a file leave nothing of the plan, no temporary file and no folder, and the same init run again writes the project', () => {
     const reference = shop();
 
     expect(cli(reference, 'init', ...NPM).code).toBe(0);
@@ -53,11 +53,7 @@ describe('the writes of init and generate', () => {
 
     expect(() => runInit(root, OPTIONS, stoppingAt(k))).toThrow('stopped half way through a file');
 
-    const present = walk(root);
-
-    expect(present.filter((file) => file.endsWith('.tmp'))).toEqual([]);
-    expect(present).toHaveLength(k - 1);
-    expect(contents(root, present)).toEqual(contents(reference, present));
+    expect(fs.readdirSync(root)).toEqual([]);
 
     expect(cli(root, 'init', ...NPM).code).toBe(0);
     expect(contents(root)).toEqual(contents(reference));

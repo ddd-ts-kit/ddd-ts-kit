@@ -34,7 +34,7 @@ import { BucketKeys } from './bucket-keys';
 import { isMissing } from './is-missing';
 import { listObjects } from './list-objects';
 import type { S3FileStorageOptions } from './s3-file-storage-options';
-import { settledFirst } from './settled-first';
+import { uploadSettled } from './upload-settled';
 
 const MEBIBYTE = 1_024 * 1_024;
 
@@ -82,7 +82,7 @@ export class S3FileStorage extends FileStorage {
       leavePartsOnError: false,
     });
 
-    await settledFirst(pipeline(content, inspection), upload.done());
+    await uploadSettled(pipeline(content, inspection), upload.done());
 
     return { key, size: inspection.size, mediaType, checksum: inspection.checksum };
   }

@@ -26,6 +26,7 @@ import {
   type Stack,
 } from '../config';
 import { diEntry } from '../generate/di-entry';
+import { packageManagerVars } from '../package-manager/package-manager-vars';
 import type { RenderContext } from '../templating';
 import { aliasVars } from './alias-vars';
 import { auditVars } from './audit-vars';
@@ -77,6 +78,7 @@ export function stackVars(config: Config): RenderContext {
     routes: routeVars(config),
     presentation: presentationVars(config),
     logger: one(logger, LOGGERS),
+    pm: packageManagerVars(config),
     tests: { ...one(tests, TEST_STACKS), module: tests === 'jest' ? '@jest/globals' : 'vitest' },
     config: platformPaths(config),
     alias: aliasVars(config),

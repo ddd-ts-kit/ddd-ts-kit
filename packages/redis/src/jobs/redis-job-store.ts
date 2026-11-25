@@ -72,6 +72,10 @@ export class RedisJobStore implements JobStore {
       return { id: kept, duplicate: true };
     }
 
+    if ((await this.client.hexists(this.key('records'), job.id)) === 1) {
+      return { id: job.id, duplicate: true };
+    }
+
     await whenCommitted(
       () => this.write(job, field),
       (error) => {

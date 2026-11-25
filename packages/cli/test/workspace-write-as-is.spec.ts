@@ -3,7 +3,7 @@ import { Workspace } from '../src/workspace';
 import { read, tempDir, write } from './helpers';
 
 describe('a workspace of a pnpm project', () => {
-  it('speaks pnpm in what a command writes, and keeps as it is what a move carries', () => {
+  it('writes a text as it is given, the dialect being spoken where the kit renders, and says a text for npm in pnpm when asked', () => {
     const root = tempDir('workspace-as-is');
     const text = 'Run `npm run test` and compare package-lock.json.\n';
 
@@ -15,8 +15,9 @@ describe('a workspace of a pnpm project', () => {
     ws.writeAsIs('docs/carried.md', text);
     ws.commit(false);
 
-    expect(read(root, 'docs/written.md')).not.toBe(text);
+    expect(read(root, 'docs/written.md')).toBe(text);
     expect(read(root, 'docs/carried.md')).toBe(text);
+    expect(ws.spoken(text)).toBe('Run `pnpm run test` and compare pnpm-lock.yaml.\n');
   });
 
   it('carries over what the same command planned for the file, as it is', () => {
