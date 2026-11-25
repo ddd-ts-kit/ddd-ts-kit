@@ -70,6 +70,9 @@ type Settings = Required<
  */
 const LONGEST_SLEEP_MS = 3_600_000;
 
+/** A start or a stop runs whole before the next begins, so that the scheduler is in one of these at a time. */
+type Phase = 'stopped' | 'started' | 'stopping';
+
 /**
  * The scheduler inside one process. Instants come from the `Clock`, sleeps go through the
  * timers, and nothing is remembered across a restart unless `checkpoints` is given. Several
@@ -88,9 +91,10 @@ export class InProcessJobScheduler implements JobScheduler {
 
   private readonly runner: JobRunner;
 
-  private started = false;
+  private phase: Phase = 'stopped';
 
-  private stopping = false;
+  /** The start or the stop in progress, which the next one waits for. */
+  private lifecycle: Promise<void> = Promise.resolve();
 
   constructor(options: InProcessJobSchedulerOptions) {
     const { clock, logger = new NoopLogger(), metrics = new NoopMetrics(), timers = systemJobTimers } = options;
@@ -139,39 +143,43 @@ export class InProcessJobScheduler implements JobScheduler {
 
     this.jobs.set(job.name, job);
 
-    if (this.started) {
+    if (this.phase === 'started') {
       void this.follow(job, this.begin(job));
     }
   }
 
-  async start(): Promise<void> {
-    if (this.started) {
-      return;
-    }
+  /** Starting twice does nothing; a start asked while the scheduler stops begins once the stop ended. */
+  start(): Promise<void> {
+    return this.inTurn(async () => {
+      if (this.phase === 'started') {
+        return;
+      }
 
-    this.started = true;
-    await Promise.all([...this.jobs.values()].map((job) => this.follow(job, this.begin(job))));
+      this.phase = 'started';
+      await Promise.all([...this.jobs.values()].map((job) => this.follow(job, this.begin(job))));
+    });
   }
 
-  async stop(): Promise<void> {
-    this.started = false;
-    this.stopping = true;
+  stop(): Promise<void> {
+    return this.inTurn(async () => {
+      this.phase = 'stopping';
 
-    for (const job of this.jobs.values()) {
-      job.cancelSleep?.();
-    }
-
-    await Promise.all(this.ticks);
-
-    const cancelAbort = this.settings.timers.schedule(this.settings.graceMs, () => {
       for (const job of this.jobs.values()) {
-        job.abort?.(new JobAbortedError(job.name));
+        job.cancelSleep?.();
       }
-    });
 
-    await Promise.all(this.runsInProgress);
-    cancelAbort();
-    this.stopping = false;
+      await Promise.all(this.ticks);
+
+      const cancelAbort = this.settings.timers.schedule(this.settings.graceMs, () => {
+        for (const job of this.jobs.values()) {
+          job.abort?.(new JobAbortedError(job.name));
+        }
+      });
+
+      await Promise.all(this.runsInProgress);
+      cancelAbort();
+      this.phase = 'stopped';
+    });
   }
 
   async runNow(name: string): Promise<JobRun> {
@@ -190,9 +198,18 @@ export class InProcessJobScheduler implements JobScheduler {
       schedule: job.scheduleText,
       enabled: job.policy.enabled,
       running: job.active !== undefined,
-      ...(this.started && job.cursor !== undefined ? { nextRunAt: nextOccurrence(job.schedule, job.cursor) } : {}),
+      ...(this.phase === 'started' && job.cursor !== undefined
+        ? { nextRunAt: nextOccurrence(job.schedule, job.cursor) }
+        : {}),
       ...(job.lastRun === undefined ? {} : { lastRun: job.lastRun }),
     }));
+  }
+
+  /** Runs `change` once the start or the stop in progress ended, whether it ended well or not. */
+  private inTurn(change: () => Promise<void>): Promise<void> {
+    this.lifecycle = this.lifecycle.then(change, change);
+
+    return this.lifecycle;
   }
 
   /** A tick never rejects: what goes wrong while following a job is logged, and the others go on. */
@@ -262,7 +279,7 @@ export class InProcessJobScheduler implements JobScheduler {
   }
 
   private sleep(job: RegisteredJob): void {
-    if (!this.started || job.cursor === undefined) {
+    if (this.phase !== 'started' || job.cursor === undefined) {
       return;
     }
 
@@ -313,7 +330,9 @@ export class InProcessJobScheduler implements JobScheduler {
   private afterPrevious(job: RegisteredJob, occurrence: Occurrence): JobRun | Promise<JobRun> {
     job.waiting = false;
 
-    return this.stopping ? this.recorder.notRun(job, occurrence, 'missed') : this.runner.run(job, occurrence);
+    return this.phase === 'stopping'
+      ? this.recorder.notRun(job, occurrence, 'missed')
+      : this.runner.run(job, occurrence);
   }
 }
 

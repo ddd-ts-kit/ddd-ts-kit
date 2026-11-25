@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:ca2cb37be3c390f4 -->
+<!-- translation-of: README.md sha256:4b8a83f423ba65bb -->
 
 # @ddd-ts-kit/scheduling
 
@@ -439,7 +439,9 @@ pour l'API.
 `application.stop()` l'arrête en premier. `stop()` ne démarre aucune nouvelle exécution, attend
 les exécutions en cours jusqu'à `graceMs` (30 s par défaut), puis annule leurs signaux avec une
 `JobAbortedError` et rend la main ; une exécution qui attendait dans une file est abandonnée et
-enregistrée `missed`. Réglez ce délai de grâce en dessous de celui d'arrêt de la plateforme.
+enregistrée `missed`. Réglez ce délai de grâce en dessous de celui d'arrêt de la plateforme. Un
+`start()` demandé avant qu'un `stop()` ait rendu la main commence une fois l'arrêt terminé, pour
+que chaque *job* garde un seul minuteur.
 
 ### Remplacer le planificateur
 
