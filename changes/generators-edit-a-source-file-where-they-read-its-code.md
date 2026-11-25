@@ -1,0 +1,3 @@
+**The generators edit a source file where they read its code, or refuse.** A generator that adds to a file a team has edited now finds the place in the code of the file, never in a comment or a string that looks like it, and stops with what to write by hand when it cannot tell the place.
+
+- `generate ... --grant <role>`: the grant is written in the list of the role named, or refused when that list cannot be read. A role whose grants are a named constant (`[Role.Admin]: EVERYTHING`) is refused with the grant to write by hand; a role keyed by its value (`admin: [...]`) is found; an object of roles written on one line is refused.
