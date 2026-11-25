@@ -1,4 +1,5 @@
 import type { MigrationHistory } from './migrations/migration-history';
+import type { TablesDeclaration } from './tables/tables-declaration';
 
 /**
  * What the CLI asks of one ORM of the family. A member answers each question itself; what it has
@@ -7,4 +8,6 @@ import type { MigrationHistory } from './migrations/migration-history';
 export interface OrmMember {
   /** The migrations the kit generates for it and keeps in the order of the trunk; absent where it generates none. */
   readonly migrations?: MigrationHistory;
+  /** Where the generators declare the tables of a context; absent where the kit writes no storage. */
+  readonly tables?: TablesDeclaration;
 }

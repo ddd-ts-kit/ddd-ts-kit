@@ -1,7 +1,7 @@
 import { CliError } from '../../../cli-error';
 import { prismaSchemaOf } from '../../../prisma-schema';
 import type { Scope } from '../../scope';
-import { TABLES_FILES } from '../tables-files';
+import { ORM_MEMBERS } from '../../../orm/orm-members';
 import type { SchemaTable } from './schema-table';
 import { schemaTablesOf } from './schema-tables-of';
 
@@ -43,7 +43,7 @@ export function tableOfSchema(scope: Scope, name: string): FoundTable {
 
 function schemaFileOf(scope: Scope): string {
   const context = scope.context.kebab;
-  const tablesFile = TABLES_FILES[scope.config.stack.orm];
+  const tablesFile = ORM_MEMBERS[scope.config.stack.orm].tables?.file;
 
   return tablesFile === undefined
     ? prismaSchemaOf(context)
