@@ -1,82 +1,17 @@
-import { COMMON_FLAGS } from '../generate/generate-options';
+import { COMMANDS } from '../commands';
 
 /** The line every help ends with: what each command accepts besides its own flags. */
 export const EVERY_COMMAND =
   'Every command accepts --json (machine-readable output, on one line) and --cwd <dir> (project root).';
 
-/** Every command of the CLI and its flags, as `--help` prints them and docs/guides/commands.md shows them. */
+/**
+ * Every command of the CLI and its flags, as `--help` prints them and docs/guides/commands.md shows
+ * them: the usage each command declares, in the order of `COMMANDS`.
+ */
 export const USAGE = `Usage
-  ddd-ts-kit init [--http express|fastify|hono|nest|none]
-                  [--validation zod|class-validator|typebox|standard-schema|none]
-                  [--di tsyringe|inversify|awilix|nest|manual] [--tests vitest|jest]
-                  [--orm drizzle|knex|prisma|typeorm|custom|none] [--database postgres|mysql|sqlite|none]
-                  [--events in-memory|outbox] [--docs-ui swagger|scalar|redoc|none]
-                  [--ci github|gitlab|both|none] [--ci-extras <extra>,...|none]
-                  [--authn jwt|keycloak|passport|none] [--authz rbac|abac|rebac|custom]
-                  [--broker none|rabbitmq|kafka|nats|redis|custom] [--cache none|redis] [--http-cache none|varnish]
-                  [--rpc none|orpc|trpc]
-                  [--storage local|s3|none] [--search none|opensearch]
-                  [--audit on|off] [--event-sourcing on|off] [--privacy on|off]
-                  [--errors none|sentry] [--logger stdout|pino|winston] [--style declared|explicit] [--assembly barrel|discovery]
-                  [--dependencies signature|listed] [--refusals named|factories|classes]
-                  [--routes controllers|functions|nest] [--representations negotiated|json] [--forms on|off]
-                  [--value-objects throwing|result] [--literals named|free] [--values classes|free] [--tenancy none|shared-table] [--queue database|redis|memory]
-                  [--schemas shared|per-route]
-                  [--package-manager npm|pnpm] [--allow-no-outbox "<reason>"] [--import-alias '$<name>/']
-                  [--import-extension none|js] [--sdk] [--agent-profile regulated|none]
-                  [--context <name>:<core|supporting|generic>]... [--preset identity]... [--dry-run] [--force]
-  ddd-ts-kit generate <kind> ... ${COMMON_FLAGS.map((flag) => `[--${flag}]`).join(' ')}     (alias: g)
-  ddd-ts-kit generate [<kind>] --help [--json]
-  ddd-ts-kit list [--context <name>]
-  ddd-ts-kit describe <context>
-  ddd-ts-kit status [--workers | --ready]
-  ddd-ts-kit doctor [--strict]
-  ddd-ts-kit todo [<context>] [--brief]
-  ddd-ts-kit plan-waves [<context>] [--ready]
-  ddd-ts-kit story-check <code> [--strict]
-  ddd-ts-kit acceptance [<story>] [--gate written|passing] [--lock]
-  ddd-ts-kit worker-scope <context> [--base <ref>] [--rows <id,...>] [--worktree <path>] [--branch <name>] [--no-install] [--dry-run]
-  ddd-ts-kit worker-scope <context> --resume [--worktree <path> | --branch <name>] [--fresh]
-  ddd-ts-kit worker-scope <context> --here [--rows <id,...>] [--base <ref>] [--dry-run]
-  ddd-ts-kit story-scope <story> [--from <file>] [--kind story|fix] [--base <ref>] [--worktree <path>] [--branch <name>] [--no-install] [--dry-run]
-  ddd-ts-kit story [<story>] [--gate build|close]
-  ddd-ts-kit stories
-  ddd-ts-kit digest --base <ref> [--json]
-  ddd-ts-kit measures [--since <date>] [--story <code>] [--by-author] [--format text|json]
-  ddd-ts-kit mutation [--report <file>] [--survivors] [--changed <ref>] [--json]
-  ddd-ts-kit worktree <name> [--base <ref>] [--branch <name>] [--no-install] [--dry-run]
-  ddd-ts-kit verify-slice <context> --since <git-ref>
-  ddd-ts-kit cited [<context>] [--rows <id,...>] [--base <ref>] [--removed-since <ref>]
-  ddd-ts-kit verify-merge [<commit>] [--since <git-ref>] [--theirs <git-ref>] [--base <commit>] [--warn]
-  ddd-ts-kit merge-trunk [--trunk <git-ref>] [--since <commit>] [--to-land] [--dry-run]
-  ddd-ts-kit merge-trunk --continue [--accept-lost] | --abort
-  ddd-ts-kit docs [--check] [--dry-run] [--stored-events] [--behaviour]
-  ddd-ts-kit sdk [--check] [--dry-run]
-  ddd-ts-kit depcruise-config [--check|--write]
-  ddd-ts-kit tsc <arguments of tsc>
-  ddd-ts-kit build-aliases [--project <tsconfig>]
-  ddd-ts-kit drizzle-generate --name <what-it-does> [--custom]
-  ddd-ts-kit drizzle-generate --replay [--base <git-ref>]
-  ddd-ts-kit knex-generate --name <what-it-does> [--custom]
-  ddd-ts-kit prisma-client [--schema <path>]
-  ddd-ts-kit prisma-generate --name <what-it-does>
-  ddd-ts-kit typeorm-generate <folder>/<what-it-does>
-  ddd-ts-kit error-factories --plan | --apply [--to named|factories] [--dry-run]
-  ddd-ts-kit controllers [<context>] [--dry-run]
-  ddd-ts-kit value-objects [--dry-run]
-  ddd-ts-kit platform-folders [--place <file>=<folder>]... [--dry-run]
-  ddd-ts-kit move-to-module <context> <module> <path>... [--dry-run] [--allow-cycle]
-  ddd-ts-kit context-layout [<context>...] [--dry-run]
-  ddd-ts-kit affected [--base <git-ref>] [--head <git-ref>] [--format text|json|github|env]
-  ddd-ts-kit affected --base <git-ref> --run <script>
-  ddd-ts-kit check [paths...] [--rule <id>]... [--format text|json|github|gitlab] [--changed-since <git-ref>] [--explain] [--self]
-  ddd-ts-kit check --baseline write|prune
-  ddd-ts-kit check --clean-only <dir>... [--rule <id>]... [--format text|json|github]
-  ddd-ts-kit check --commit-size [--staged] [--strict]
-  ddd-ts-kit check-file <path> [--content-from <file>] [--rule <id>]...
-  ddd-ts-kit lint [paths...] [--format <eslint formatter>] [--fix] [--no-cache] [--ignore-pattern <pattern>]...
-  ddd-ts-kit rules
-  ddd-ts-kit explain <rule-id>
+${COMMANDS.flatMap(({ spec }) => spec.usage)
+  .map((line) => `  ${line}`)
+  .join('\n')}
 
 ${EVERY_COMMAND}
 ddd-ts-kit <command> --help prints the usage and the notes of that command alone, generate <kind> --help one kind;

@@ -3,7 +3,7 @@ import { readSlices } from '../progress/read-slices';
 import { formatStoryPhases } from '../stories/format-story-phases';
 import { readStoryPhases } from '../stories/read-story-phases';
 import { readStoryPlace } from '../stories/read-story-place';
-import { STORY_GATES, type StoryGate } from '../stories/story-gate';
+import { STORY_GATES } from '../stories/story-gate';
 import { Workspace } from '../workspace';
 import { defineCommand } from './command';
 import { stdoutJson } from '../json/stdout-json';
@@ -16,11 +16,12 @@ import { stdoutJson } from '../json/stdout-json';
  */
 export const storyCommand = defineCommand({
   name: 'story',
-  options: { gate: { type: 'string' } },
+  positionals: '[<story>]',
+  options: { gate: { type: 'string', values: STORY_GATES } },
   run(args, io) {
     const root = args.projectRoot;
     const story = storyAsked(root, args.positionals[0]);
-    const gate = gateOf(args.text('gate'));
+    const gate = args.text('gate');
     const phases = readStoryPhases(new Workspace(root, false), story, readSlices(new Workspace(root, false)) ?? []);
     const met = phases.filter((phase) => gate === 'close' || phase.gate === 'build').every((phase) => phase.met);
 
@@ -46,18 +47,4 @@ function storyAsked(root: string, named: string | undefined): string {
   }
 
   return story;
-}
-
-function gateOf(text: string | undefined): StoryGate | undefined {
-  if (text === undefined) {
-    return undefined;
-  }
-
-  const gate = STORY_GATES.find((known) => known === text);
-
-  if (gate === undefined) {
-    throw new CliError(`Unknown gate "${text}".`, `Pass --gate ${STORY_GATES.join(' or --gate ')}.`);
-  }
-
-  return gate;
 }

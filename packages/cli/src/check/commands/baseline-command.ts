@@ -16,13 +16,10 @@ import { loadProject } from '../project/load-project';
  */
 export const baselineCommand = defineCommand({
   name: 'check',
-  options: { baseline: { type: 'string' } },
+  usage: ['ddd-ts-kit check --baseline write|prune'],
+  options: { baseline: { type: 'string', values: ['write', 'prune'] } },
   run(args, io) {
-    const mode = args.text('baseline');
-
-    if (mode !== 'write' && mode !== 'prune') {
-      throw new CliError(`Unknown --baseline "${mode ?? ''}".`, 'Use --baseline write or --baseline prune.');
-    }
+    const mode = args.text('baseline') ?? 'write';
 
     if (args.positionals.length > 0) {
       throw new CliError(`--baseline ${mode} judges every rule on every file.`, 'Run it without a path.');

@@ -12,7 +12,7 @@ import { stdoutJson } from '../json/stdout-json';
 
 export const listCommand = defineCommand({
   name: 'list',
-  options: { context: { type: 'string' } },
+  options: { context: { type: 'string', value: '<name>' } },
   run(args, io) {
     const map = mapProject(args.projectRoot, args.text('context'));
 

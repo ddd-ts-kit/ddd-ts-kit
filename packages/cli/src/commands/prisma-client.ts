@@ -10,7 +10,7 @@ import { defineCommand } from './command';
  */
 export const prismaClientCommand = defineCommand({
   name: 'prisma-client',
-  options: { schema: { type: 'string' } },
+  options: { schema: { type: 'string', value: '<path>' } },
   run(args, io) {
     const [extra] = args.positionals;
 

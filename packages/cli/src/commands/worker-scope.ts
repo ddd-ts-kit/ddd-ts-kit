@@ -14,6 +14,11 @@ import { stdoutJson } from '../json/stdout-json';
  */
 export const workerScopeCommand = defineCommand({
   name: 'worker-scope',
+  usage: [
+    'ddd-ts-kit worker-scope <context> [--base <ref>] [--rows <id,...>] [--worktree <path>] [--branch <name>] [--no-install] [--dry-run]',
+    'ddd-ts-kit worker-scope <context> --resume [--worktree <path> | --branch <name>] [--fresh]',
+    'ddd-ts-kit worker-scope <context> --here [--rows <id,...>] [--base <ref>] [--dry-run]',
+  ],
   options: {
     worktree: { type: 'string' },
     branch: { type: 'string' },

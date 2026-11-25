@@ -20,6 +20,7 @@ import { refuseSecondName } from './refuse-second-name';
  */
 export const prismaGenerateCommand = defineCommand({
   name: 'prisma-generate',
+  usage: ['ddd-ts-kit prisma-generate --name <what-it-does>'],
   options: { name: { type: 'string' } },
   endsAScript: true,
   run(args, io) {

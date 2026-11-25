@@ -14,8 +14,8 @@ const MANUAL = [
 export const platformFoldersCommand = defineCommand({
   name: 'platform-folders',
   options: {
+    place: { type: 'string', value: '<file>=<folder>', multiple: true },
     'dry-run': { type: 'boolean' },
-    place: { type: 'string', multiple: true },
   },
   takesTheLock: true,
   run(args, io) {

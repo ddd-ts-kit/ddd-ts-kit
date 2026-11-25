@@ -9,6 +9,7 @@ import { stdoutJson } from '../../json/stdout-json';
 
 export const explainCommand = defineCommand({
   name: 'explain',
+  positionals: '<rule-id>',
   options: {},
   run(args, io) {
     const [id] = args.positionals;

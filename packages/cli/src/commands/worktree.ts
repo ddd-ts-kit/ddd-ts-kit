@@ -10,11 +10,12 @@ import { stdoutJson } from '../json/stdout-json';
  */
 export const worktreeCommand = defineCommand({
   name: 'worktree',
+  positionals: '<name>',
   options: {
-    branch: { type: 'string' },
-    base: { type: 'string' },
-    'dry-run': { type: 'boolean' },
+    base: { type: 'string', value: '<ref>' },
+    branch: { type: 'string', value: '<name>' },
     'no-install': { type: 'boolean' },
+    'dry-run': { type: 'boolean' },
   },
   run(args, io) {
     const root = args.projectRoot;

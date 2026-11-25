@@ -82,7 +82,7 @@ describe('check --baseline', () => {
     expect(refused.code).toBe(2);
     expect(refused.stderr).toContain('--baseline write judges every rule on every file.');
     expect(refused.stderr).toContain('fix: Run it without a path.');
-    expect(cli(root, 'check', '--baseline', 'keep').stderr).toContain('Use --baseline write or --baseline prune.');
+    expect(cli(root, 'check', '--baseline', 'keep').stderr).toContain('fix: Use one of: write, prune.');
   });
 
   it.each(['--rule=layer/domain-purity', '--changed-since=main', '--explain', '--clean-only', '--self'])(

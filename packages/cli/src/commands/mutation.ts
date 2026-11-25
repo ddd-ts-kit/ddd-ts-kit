@@ -25,6 +25,7 @@ import { stdoutJson } from '../json/stdout-json';
  */
 export const mutationCommand = defineCommand({
   name: 'mutation',
+  usage: ['ddd-ts-kit mutation [--report <file>] [--survivors] [--changed <ref>] [--json]'],
   options: {
     report: { type: 'string' },
     survivors: { type: 'boolean' },

@@ -14,13 +14,13 @@ import { stdoutJson } from '../json/stdout-json';
 export const measuresCommand = defineCommand({
   name: 'measures',
   options: {
-    since: { type: 'string' },
-    story: { type: 'string' },
+    since: { type: 'string', value: '<date>' },
+    story: { type: 'string', value: '<code>' },
     'by-author': { type: 'boolean' },
-    format: { type: 'string' },
+    format: { type: 'string', values: ['text', 'json'] },
   },
   run(args, io) {
-    const format = args.format(['text', 'json'], 'text');
+    const format = args.format('text');
 
     const view = readMeasures(args.projectRoot, {
       ...sinceOf(args.text('since')),

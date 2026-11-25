@@ -16,6 +16,7 @@ import { stdoutJson } from '../json/stdout-json';
  */
 export const controllersCommand = defineCommand({
   name: 'controllers',
+  positionals: '[<context>]',
   options: { 'dry-run': { type: 'boolean' } },
   takesTheLock: true,
   run(args, io) {

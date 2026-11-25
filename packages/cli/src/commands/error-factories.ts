@@ -43,10 +43,11 @@ const MANUAL: Record<Target, readonly string[]> = {
  */
 export const errorFactoriesCommand = defineCommand({
   name: 'error-factories',
+  usage: ['ddd-ts-kit error-factories --plan | --apply [--to named|factories] [--dry-run]'],
   options: {
     plan: { type: 'boolean' },
     apply: { type: 'boolean' },
-    to: { type: 'string' },
+    to: { type: 'string', values: MIGRATION_TARGETS },
     'dry-run': { type: 'boolean' },
   },
   takesTheLock: true,
@@ -54,7 +55,7 @@ export const errorFactoriesCommand = defineCommand({
     const ws = new Workspace(args.projectRoot, false);
     const { config } = readConfig(args.projectRoot);
     const draft = new MigrationDraft(ws);
-    const asked = askedTarget(args.text('to'));
+    const asked = args.text('to');
 
     if (args.flag('plan') === args.flag('apply')) {
       throw new CliError(
@@ -102,19 +103,6 @@ function report(io: Io, output: { json: boolean; dryRun: boolean }, { draft, mov
 interface Tree {
   readonly ws: Workspace;
   readonly config: Config;
-}
-
-function askedTarget(text: string | undefined): Target | undefined {
-  const target = MIGRATION_TARGETS.find((candidate) => candidate === text);
-
-  if (text !== undefined && target === undefined) {
-    throw new CliError(
-      `"${text}" is not a form error-factories moves a project to.`,
-      `Use --to ${MIGRATION_TARGETS.join(' or --to ')}.`,
-    );
-  }
-
-  return target;
 }
 
 /** `--apply` follows the form the plan was written for; one asked otherwise is refused. */

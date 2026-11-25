@@ -10,6 +10,7 @@ import { stdoutJson } from '../json/stdout-json';
 /** Prints the dependency-cruiser configuration of the project, writes it, or checks that the file on disk is current. */
 export const depcruiseConfigCommand = defineCommand({
   name: 'depcruise-config',
+  usage: ['ddd-ts-kit depcruise-config [--check|--write]'],
   options: {
     check: { type: 'boolean' },
     write: { type: 'boolean' },

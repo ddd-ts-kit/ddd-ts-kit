@@ -1,0 +1,10 @@
+**A command of `ddd-ts-kit` declares itself once, and `check` reads the options of one of its modes at a time.** What was said of a command (its name, its options, its usage, the lock it takes) lived in several places joined by its name; it is one declaration in the file of the command, which the entry, `--help`, the usage a refused argument is answered with and `docs/guides/commands.md` read. `--help` and `--help --json` print what they printed. What changes for who runs the CLI:
+
+- `ddd-ts-kit check` is five commands under one name, each with its own options: the check of a project, `--baseline write|prune`, `--clean-only <dir>...`, `--commit-size` and `--self`. An option of another one is refused as an unknown option, with the usage of the mode asked: `check --baseline write --rule <id>` and `check --baseline prune --explain` no longer answer "--baseline write judges every rule on every file" (a path still does, with "Run it without a path."), `check --clean-only --changed-since <ref>` no longer answers "--clean-only compares with no ref.", and `check --self --rule <id>`, which read the rule and ignored it, is refused.
+- An option that takes one of a few values is held to them by the parser, in one sentence: `Unknown value "<value>" for --<option>.` with `Use one of: <values>.`. It replaces `Unknown gate "<value>".` (`acceptance --gate`, `story --gate`), `Unknown kind "<value>".` (`story-scope --kind`), `"<value>" is not a form error-factories moves a project to.` (`error-factories --to`) and `Unknown --baseline "<value>".` (`check --baseline`). Such a value is refused before the command reads the project.
+- An unknown command is answered with the commands in the order of `--help`.
+- A refusal read as JSON, and the package manager its fix is written for, follow `--json` and `--cwd` as the commands read them: `--cwd=<dir>` counts, a `--json` after `--` does not.
+
+To move: a script that matched one of the sentences above matches the new one; the exit code, 2, is the same.
+
+For who writes a command of the kit: `CONTRIBUTING.md` says what a command file holds (#918).

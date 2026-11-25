@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:3275c76e008c0735 -->
+<!-- translation-of: CONTRIBUTING.md sha256:89c6c1ed6a2c87d8 -->
 
 # Contribuer
 
@@ -138,6 +138,20 @@ bout prend 2,5 à 7 Go, et plusieurs à la fois (plusieurs sessions de code, un 
   `standalone: true` dit que la règle juge une source quel que soit le projet autour
   (`check --clean-only`). Une nouvelle règle est listée dans `catalogue/architecture-rules.ts` et
   vient avec une fixture qui passe, une fixture qui échoue et une phrase `fix`.
+- Une commande de la CLI est un fichier de `packages/cli/src/commands/` qui dit tout de la
+  commande en une déclaration, `defineCommand({ name, positionals, options, usage, takesTheLock,
+  run })`, le pendant d'un fichier de règle : son `name`, ses `positionals` tels que l'usage les
+  écrit, ses `options` (un interrupteur ou un texte ; un texte dit le mot qui tient lieu de sa
+  `value`, ou les `values` parmi lesquelles il se trouve, auxquelles le parseur le tient alors), et
+  `run(args, io)`, dont les `args` ne lisent que les options déclarées. Son usage est écrit depuis
+  les options ; `usage` n'est écrit à la main que lorsqu'elles ne peuvent pas le dire (des formes
+  qui s'excluent, une option obligatoire). Une commande qui lit les fichiers partagés d'un projet
+  et les réécrit dit `takesTheLock` et ne prend jamais le verrou elle-même. Une nouvelle commande
+  s'ajoute à la liste de `packages/cli/src/commands.ts`, là où la référence la liste : `--help`,
+  `<command> --help`, l'usage qui répond à un argument refusé et la référence de
+  `docs/guides/commands.md` (`node pipeline/monorepo/commands-guide.mjs`) se lisent dans les
+  déclarations. Ce qu'une ligne de l'usage ne peut pas dire va dans une note de
+  `packages/cli/src/help/`.
 - Avant 1.0, une règle qui prévient un problème est une erreur tout de suite : une nouvelle règle
   prend `error` par défaut (`severity: 'error'` dans le fichier de la règle pour `ddd-ts-kit check`,
   `recommended: 'error'` pour la règle ESLint), et ce qu'une règle juge de plus aussi. Il n'y a

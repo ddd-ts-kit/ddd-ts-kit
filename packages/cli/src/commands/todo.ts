@@ -20,6 +20,7 @@ const MARKS: Readonly<Record<Remaining['kind'], string>> = {
  */
 export const todoCommand = defineCommand({
   name: 'todo',
+  positionals: '[<context>]',
   options: { brief: { type: 'boolean' } },
   run(args, io) {
     const root = args.projectRoot;

@@ -205,7 +205,7 @@ describe('what acceptance always reports', () => {
       'US42 is neither a story of docs/architecture/slices.md, nor the name of a spec of test/acceptance/, nor a fix whose docs/architecture/stories/US42.md lists its specs under `## Regression`.',
     );
 
-    expect(cli(root, 'acceptance', 'US5', '--gate', 'green').stderr).toContain('Unknown gate "green".');
+    expect(cli(root, 'acceptance', 'US5', '--gate', 'green').stderr).toContain('Unknown value "green" for --gate.');
     expect(cli(root, 'acceptance', '--lock').stderr).toContain('--lock locks the acceptance of one story.');
   });
 });

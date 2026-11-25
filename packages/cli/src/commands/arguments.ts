@@ -1,12 +1,21 @@
 import path from 'node:path';
 import { parseArgs, type ParseArgsConfig } from 'node:util';
 import { CliError } from '../cli-error';
-import { isOneOf } from '../config/is-one-of';
 import { ArgumentsError } from './arguments-error';
 import { findRoot } from './find-root';
 
-/** One option of a command: a switch, or a text, which may be given several times. */
-type OptionSpec = { readonly type: 'boolean' } | { readonly type: 'string'; readonly multiple?: true };
+/**
+ * One option of a command: a switch, or a text. A text may be given several times; it says what
+ * it takes as the usage writes it (`<ref>`), or the values it is one of, which the parser holds it to.
+ */
+export type OptionSpec =
+  | { readonly type: 'boolean' }
+  | {
+      readonly type: 'string';
+      readonly multiple?: true;
+      readonly value?: string;
+      readonly values?: readonly string[];
+    };
 
 /** The options of one command, each under the name it has on the command line, without its dashes. */
 export type OptionSpecs = Readonly<Record<string, OptionSpec>>;
@@ -18,12 +27,31 @@ type OptionsNot<O extends OptionSpecs, Not> = { [K in keyof O & string]: O[K] ex
 /** The switches among the options `O`. */
 export type FlagOf<O extends OptionSpecs> = OptionsNot<O, { type: 'string' }>;
 
-/** The arguments of a command that declares the options `O`: each accessor takes the options of its shape alone. */
-export type ArgumentsOf<O extends OptionSpecs> = Arguments<
+/** What each option of `O` that names its values may hold. */
+type ChoicesOf<O extends OptionSpecs> = {
+  [K in keyof O & string as O[K] extends { values: readonly string[] } ? K : never]: O[K] extends {
+    values: readonly (infer Value extends string)[];
+  }
+    ? Value
+    : never;
+};
+
+/** What the parser held the arguments to: an option that names its values holds one of them. */
+interface HeldTo<Choices> {
+  text<K extends keyof Choices>(key: K): Choices[K] | undefined;
+  /** The output the caller asks for among those `--format` names, `--json` being `--format json`; `otherwise` when it asks for none. */
+  format(otherwise: Choices[keyof Choices & 'format']): Choices[keyof Choices & 'format'];
+}
+
+/** The arguments of a command that declares the options `O`, before its values are held to those it names. */
+type Read<O extends OptionSpecs> = Arguments<
   OptionsNot<O, { type: 'boolean' } | { multiple: true }>,
   FlagOf<O>,
   OptionsNot<O, { type: 'boolean' } | { type: 'string'; multiple?: never }>
 >;
+
+/** The arguments of a command that declares the options `O`: each accessor takes the options of its shape alone. */
+export type ArgumentsOf<O extends OptionSpecs> = HeldTo<ChoicesOf<O>> & Read<O>;
 
 const COMMON: ParseArgsConfig['options'] = {
   json: { type: 'boolean' },
@@ -43,16 +71,31 @@ export class Arguments<Text extends string = string, Flag extends string = strin
     readonly positionals: readonly string[],
   ) {}
 
-  /** The arguments a command accepts, read as it declares them: an option it does not declare is refused. */
+  /**
+   * The arguments a command accepts, read as it declares them: an option it does not declare is
+   * refused, and so is a value an option does not name.
+   */
   static declared<const O extends OptionSpecs>(args: readonly string[], options: O): ArgumentsOf<O> {
-    return new Arguments(args, ...read(args, options));
+    const declared: Read<O> = new Arguments(args, ...read(args, options, true));
+
+    Arguments.holdToItsValues(declared, options);
+
+    return declared;
+  }
+
+  /**
+   * What every command accepts (`--json`, `--cwd`), read from a command line that may hold anything
+   * else: what the entry knows of it before its command read it, and once a command refused it.
+   */
+  static ofEveryCommand(args: readonly string[]): Arguments<never, never, never> {
+    return new Arguments(args, ...read(args, {}, false));
   }
 
   /**
    * The arguments of a command that passes them on to the tool it runs: `--cwd` alone is the kit's,
    * every other word is a positional, a flag of the tool included.
    */
-  static passedOn(args: readonly string[]): Arguments {
+  static passedOn(args: readonly string[]): Arguments<never, never, never> {
     const at = args.findIndex((argument) => argument === '--cwd' || argument.startsWith('--cwd='));
 
     if (at === -1) {
@@ -105,27 +148,9 @@ export class Arguments<Text extends string = string, Flag extends string = strin
     return this.values['json'] === true;
   }
 
-  /**
-   * The output the caller asks for, among those the command prints: `--json` and `--format json`
-   * are one thing, and `--json` beside another format asks for two outputs.
-   */
-  format<Format extends string>(printed: readonly Format[], otherwise: Format): Format {
-    const named = this.common('format');
-
-    if (this.json && named !== undefined && named !== 'json') {
-      throw new CliError(
-        `--json and --format ${named} ask for two outputs.`,
-        'Give one of them: --json is --format json.',
-      );
-    }
-
-    const asked = this.json ? 'json' : (named ?? otherwise);
-
-    if (!isOneOf(printed, asked)) {
-      throw new CliError(`Unknown value "${asked}" for --format.`, `Use one of: ${printed.join(', ')}.`);
-    }
-
-    return asked;
+  /** The output the caller asks for: `--json` is `--format json`; `otherwise` when it asks for none. */
+  format(otherwise: string): string {
+    return this.json ? 'json' : (this.common('format') ?? otherwise);
   }
 
   get workingDirectory(): string {
@@ -137,16 +162,54 @@ export class Arguments<Text extends string = string, Flag extends string = strin
     return findRoot(this.workingDirectory);
   }
 
+  /**
+   * Holds each option that names its values to them, which is what lets the command read one of
+   * them without looking again; `--json` beside another format asks for two outputs.
+   */
+  private static holdToItsValues<O extends OptionSpecs>(read: Read<O>, options: O): asserts read is ArgumentsOf<O> {
+    const format = read.common('format');
+
+    if (read.json && format !== undefined && format !== 'json' && valuesOf(options['format']) !== undefined) {
+      throw new CliError(
+        `--json and --format ${format} ask for two outputs.`,
+        'Give one of them: --json is --format json.',
+      );
+    }
+
+    for (const [name, option] of Object.entries(options)) {
+      const values = valuesOf(option);
+      const other = values === undefined ? undefined : read.given(name).find((value) => !values.includes(value));
+
+      if (values !== undefined && other !== undefined) {
+        throw new CliError(`Unknown value "${other}" for --${name}.`, `Use one of: ${values.join(', ')}.`);
+      }
+    }
+  }
+
   /** A text every command reads the same way, whatever it declares: `--cwd`, and `--format` beside `--json`. */
   private common(key: 'cwd' | 'format'): string | undefined {
-    const value = this.values[key];
+    return this.given(key).at(0);
+  }
 
-    return typeof value === 'string' ? value : undefined;
+  /** Every value an option was given, whether it takes one or several. */
+  private given(name: string): string[] {
+    const value = this.values[name];
+
+    return (Array.isArray(value) ? value : [value]).filter((item) => typeof item === 'string');
   }
 }
 
-/** The values and the positionals of a command line, an option the command does not declare refused. */
-function read(args: readonly string[], options: OptionSpecs): [Readonly<Record<string, unknown>>, readonly string[]] {
+/** The values an option names, when it does. */
+function valuesOf(option: OptionSpec | undefined): readonly string[] | undefined {
+  return option?.type === 'string' ? option.values : undefined;
+}
+
+/** The values and the positionals of a command line; `strict` refuses an option that is not declared. */
+function read(
+  args: readonly string[],
+  options: OptionSpecs,
+  strict: boolean,
+): [Readonly<Record<string, unknown>>, readonly string[]] {
   const declared: ParseArgsConfig['options'] = Object.fromEntries(
     Object.entries(options).map(([name, option]) => [
       name,
@@ -159,7 +222,7 @@ function read(args: readonly string[], options: OptionSpecs): [Readonly<Record<s
       args: [...args],
       options: { ...COMMON, ...declared },
       allowPositionals: true,
-      strict: true,
+      strict,
     });
 
     return [values, positionals];

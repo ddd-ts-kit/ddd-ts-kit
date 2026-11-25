@@ -30,6 +30,7 @@ const MODULE_FIX = 'Name the module as the config of its context declares it, in
  */
 export const moveToModuleCommand = defineCommand({
   name: 'move-to-module',
+  positionals: '<context> <module> <path>...',
   options: {
     'dry-run': { type: 'boolean' },
     [ALLOW_CYCLE]: { type: 'boolean' },

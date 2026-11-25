@@ -22,9 +22,10 @@ import { knownRules } from './known-rules';
  */
 export const checkFileCommand = defineCommand({
   name: 'check-file',
+  positionals: '<path>',
   options: {
-    'content-from': { type: 'string' },
-    rule: { type: 'string', multiple: true },
+    'content-from': { type: 'string', value: '<file>' },
+    rule: { type: 'string', value: '<id>', multiple: true },
   },
   run(args, io) {
     const [target, ...extra] = args.positionals;

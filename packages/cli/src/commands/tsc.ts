@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { CliError } from '../cli-error';
-import { defineCommand } from './command';
+import { defineToolCommand } from './define-tool-command';
 
 /** The native compiler as the project installs it: its package exports no path to its executable, which is found from its manifest. */
 const NATIVE_COMPILER = '@typescript/native';
@@ -13,10 +13,9 @@ const NATIVE_COMPILER = '@typescript/native';
  * workspace), with the arguments as given. The `tsc` of `node_modules/.bin` may be the one of
  * `typescript`, which the linter keeps beside it.
  */
-export const tscCommand = defineCommand({
+export const tscCommand = defineToolCommand({
   name: 'tsc',
-  options: {},
-  passesArgumentsOn: true,
+  positionals: '<arguments of tsc>',
   run(args, io) {
     const root = args.workingDirectory;
     const compilerArguments = args.positionals;

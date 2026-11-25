@@ -92,7 +92,7 @@ describe('error-factories --plan, to the named form', () => {
     );
 
     expect(failure(cli(root, 'error-factories', '--plan', '--to', 'classes', '--json')).message).toContain(
-      '"classes" is not a form error-factories moves a project to',
+      'Unknown value "classes" for --to.',
     );
   });
 

@@ -20,6 +20,7 @@ import { stdoutJson } from '../json/stdout-json';
  */
 export const statusCommand = defineCommand({
   name: 'status',
+  usage: ['ddd-ts-kit status [--workers | --ready]'],
   options: {
     workers: { type: 'boolean' },
     ready: { type: 'boolean' },

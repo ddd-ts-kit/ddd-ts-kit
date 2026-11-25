@@ -55,6 +55,27 @@ const OTHER_TEXT_FLAGS = [
 
 export const initCommand = defineCommand({
   name: 'init',
+  usage: [
+    'ddd-ts-kit init [--http express|fastify|hono|nest|none]',
+    '                [--validation zod|class-validator|typebox|standard-schema|none]',
+    '                [--di tsyringe|inversify|awilix|nest|manual] [--tests vitest|jest]',
+    '                [--orm drizzle|knex|prisma|typeorm|custom|none] [--database postgres|mysql|sqlite|none]',
+    '                [--events in-memory|outbox] [--docs-ui swagger|scalar|redoc|none]',
+    '                [--ci github|gitlab|both|none] [--ci-extras <extra>,...|none]',
+    '                [--authn jwt|keycloak|passport|none] [--authz rbac|abac|rebac|custom]',
+    '                [--broker none|rabbitmq|kafka|nats|redis|custom] [--cache none|redis] [--http-cache none|varnish]',
+    '                [--rpc none|orpc|trpc]',
+    '                [--storage local|s3|none] [--search none|opensearch]',
+    '                [--audit on|off] [--event-sourcing on|off] [--privacy on|off]',
+    '                [--errors none|sentry] [--logger stdout|pino|winston] [--style declared|explicit] [--assembly barrel|discovery]',
+    '                [--dependencies signature|listed] [--refusals named|factories|classes]',
+    '                [--routes controllers|functions|nest] [--representations negotiated|json] [--forms on|off]',
+    '                [--value-objects throwing|result] [--literals named|free] [--values classes|free] [--tenancy none|shared-table] [--queue database|redis|memory]',
+    '                [--schemas shared|per-route]',
+    '                [--package-manager npm|pnpm] [--allow-no-outbox "<reason>"] [--import-alias \'$<name>/\']',
+    '                [--import-extension none|js] [--sdk] [--agent-profile regulated|none]',
+    '                [--context <name>:<core|supporting|generic>]... [--preset identity]... [--dry-run] [--force]',
+  ],
   options: {
     ...Object.fromEntries([...STACK_FLAGS, ...OTHER_TEXT_FLAGS].map((flag) => [flag, { type: 'string' as const }])),
     context: { type: 'string', multiple: true },

@@ -17,10 +17,11 @@ const WARN_ONLY_NOTE =
  */
 export const verifyMergeCommand = defineCommand({
   name: 'verify-merge',
+  positionals: '[<commit>]',
   options: {
-    since: { type: 'string' },
-    theirs: { type: 'string' },
-    base: { type: 'string' },
+    since: { type: 'string', value: '<git-ref>' },
+    theirs: { type: 'string', value: '<git-ref>' },
+    base: { type: 'string', value: '<commit>' },
     warn: { type: 'boolean' },
   },
   run(args, io) {

@@ -14,6 +14,7 @@ const MANUAL =
 /** Moves the files of the contexts that an earlier version wrote elsewhere to their place of today, their imports with them. */
 export const contextLayoutCommand = defineCommand({
   name: 'context-layout',
+  positionals: '[<context>...]',
   options: { 'dry-run': { type: 'boolean' } },
   takesTheLock: true,
   run(args, io) {

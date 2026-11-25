@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { COMMANDS } from '../src/run';
+import { COMMANDS } from '../src/commands';
 import { cli } from './helpers';
 import { initProject } from './support/init-project';
 
@@ -11,7 +11,7 @@ beforeAll(() => {
 
 /** `--help` says every command accepts --json: whatever it answers, a refusal included, is one line of JSON. */
 describe('--json on every command of the table', () => {
-  it.each(Object.keys(COMMANDS))(
+  it.each(COMMANDS.map(({ spec }) => spec.name))(
     '%s answers on one line of JSON',
     (name) => {
       const result = cli(root, name, '--json');

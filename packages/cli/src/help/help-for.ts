@@ -10,15 +10,14 @@ import { referenceText } from './reference-text';
 import { stdoutJson } from '../json/stdout-json';
 
 /**
- * What `--help` answers, the alias of the command already resolved: the command it follows alone, the kind alone after
+ * What `--help` answers, as text or as data under `--json`, the alias of the command already resolved: the command it follows alone, the kind alone after
  * `generate <kind>`, the kinds as data for `generate --help --json`, and the whole reference without
  * a command, after `help`, or for a command the usage does not name.
  */
-export function helpFor(argv: readonly string[]): string {
+export function helpFor(argv: readonly string[], json: boolean): string {
   const [command] = argv;
 
   const kind = kindAsked(argv);
-  const json = argv.includes('--json');
 
   if (kind !== undefined) {
     return json ? stdoutJson(kindHelp(kind)) : kindHelpText(kind);

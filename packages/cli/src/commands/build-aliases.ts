@@ -9,7 +9,7 @@ const BUILD_PROJECT = 'tsconfig.build.json';
 /** After the compiler: turns the alias specifiers of the compiled output into relative ones, which plain `node` resolves. */
 export const buildAliasesCommand = defineCommand({
   name: 'build-aliases',
-  options: { project: { type: 'string' } },
+  options: { project: { type: 'string', value: '<tsconfig>' } },
   run(args, io) {
     const root = args.projectRoot;
     const { config } = readConfig(root);

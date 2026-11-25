@@ -11,6 +11,7 @@ import { stdoutJson } from '../json/stdout-json';
 /** Closes a slice before its commit in one command: regenerate, check the changed files, test the context. */
 export const verifySliceCommand = defineCommand({
   name: 'verify-slice',
+  usage: ['ddd-ts-kit verify-slice <context> --since <git-ref>'],
   options: { since: { type: 'string' } },
   run(args, io) {
     const root = args.projectRoot;

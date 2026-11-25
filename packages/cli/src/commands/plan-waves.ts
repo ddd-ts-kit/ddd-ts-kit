@@ -25,6 +25,7 @@ import { stdoutJson } from '../json/stdout-json';
  */
 export const planWavesCommand = defineCommand({
   name: 'plan-waves',
+  positionals: '[<context>]',
   options: { ready: { type: 'boolean' } },
   run(args, io) {
     const root = args.projectRoot;

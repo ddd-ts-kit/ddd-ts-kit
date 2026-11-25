@@ -13,6 +13,7 @@ import { stdoutJson } from '../json/stdout-json';
  */
 export const storyCheckCommand = defineCommand({
   name: 'story-check',
+  positionals: '<code>',
   options: { strict: { type: 'boolean' } },
   run(args, io) {
     const [story] = args.positionals;

@@ -19,6 +19,10 @@ const STARTING = ['trunk', 'since', 'to-land', 'dry-run'];
  */
 export const mergeTrunkCommand = defineCommand({
   name: 'merge-trunk',
+  usage: [
+    'ddd-ts-kit merge-trunk [--trunk <git-ref>] [--since <commit>] [--to-land] [--dry-run]',
+    'ddd-ts-kit merge-trunk --continue [--accept-lost] | --abort',
+  ],
   options: {
     trunk: { type: 'string' },
     since: { type: 'string' },

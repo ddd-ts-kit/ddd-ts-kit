@@ -36,7 +36,7 @@ describe('the commands of ddd-ts-kit', () => {
 
       expect(unknown.code).toBe(2);
       expect(unknown.stderr).toContain(`error: Unknown command "${name}".`);
-      expect(unknown.stderr).toContain('fix: Use one of: affected, init, generate');
+      expect(unknown.stderr).toContain('fix: Use one of: init, generate, list');
     },
   );
 

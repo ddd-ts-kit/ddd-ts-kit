@@ -22,11 +22,12 @@ import type { Io } from './io';
  */
 export const lintCommand = defineCommand({
   name: 'lint',
+  positionals: '[paths...]',
   options: {
-    format: { type: 'string' },
+    format: { type: 'string', value: '<eslint formatter>' },
     fix: { type: 'boolean' },
     'no-cache': { type: 'boolean' },
-    'ignore-pattern': { type: 'string', multiple: true },
+    'ignore-pattern': { type: 'string', value: '<pattern>', multiple: true },
   },
   run(args, io) {
     const root = args.projectRoot;

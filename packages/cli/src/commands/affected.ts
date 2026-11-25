@@ -10,7 +10,7 @@ import { readConfig, type Config } from '../config';
 import type { Arguments } from './arguments';
 import { defineCommand } from './command';
 
-const FORMATS = ['text', 'json', 'github', 'env'];
+const FORMATS = ['text', 'json', 'github', 'env'] as const;
 
 /**
  * `affected`: what a pull request has to run, read from the context map and the paths that
@@ -24,14 +24,18 @@ const FORMATS = ['text', 'json', 'github', 'env'];
  */
 export const affectedCommand = defineCommand({
   name: 'affected',
+  usage: [
+    'ddd-ts-kit affected [--base <git-ref>] [--head <git-ref>] [--format text|json|github|env]',
+    'ddd-ts-kit affected --base <git-ref> --run <script>',
+  ],
   options: {
     base: { type: 'string' },
     head: { type: 'string' },
-    format: { type: 'string' },
+    format: { type: 'string', values: FORMATS },
     run: { type: 'string' },
   },
   run(args, io) {
-    const format = args.format(FORMATS, 'text');
+    const format = args.format('text');
 
     const root = args.projectRoot;
     const { config } = readConfig(root);

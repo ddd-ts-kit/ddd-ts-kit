@@ -24,10 +24,11 @@ import { stdoutJson } from '../json/stdout-json';
  */
 export const citedCommand = defineCommand({
   name: 'cited',
+  positionals: '[<context>]',
   options: {
-    rows: { type: 'string' },
-    base: { type: 'string' },
-    'removed-since': { type: 'string' },
+    rows: { type: 'string', value: '<id,...>' },
+    base: { type: 'string', value: '<ref>' },
+    'removed-since': { type: 'string', value: '<ref>' },
   },
   run(args, io) {
     const root = args.projectRoot;

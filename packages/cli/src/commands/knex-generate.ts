@@ -32,6 +32,7 @@ const MIGRATION = /\.js$/;
  */
 export const knexGenerateCommand = defineCommand({
   name: 'knex-generate',
+  usage: ['ddd-ts-kit knex-generate --name <what-it-does> [--custom]'],
   options: { name: { type: 'string' }, custom: { type: 'boolean' } },
   endsAScript: true,
   run(args, io) {

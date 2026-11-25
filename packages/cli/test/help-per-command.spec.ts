@@ -266,7 +266,7 @@ describe('a refused option', () => {
 
   it('names the alias g among the commands when the command is unknown', () => {
     expect(cli(tempDir('unknown-command'), 'nothing-of-the-kind').stderr).toMatch(
-      /fix: Use one of: affected, init, generate, .*explain\. g is generate\./,
+      /fix: Use one of: init, generate, list, .*explain\. g is generate\./,
     );
   });
 

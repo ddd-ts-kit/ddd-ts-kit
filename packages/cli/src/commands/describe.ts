@@ -10,6 +10,7 @@ import { stdoutJson } from '../json/stdout-json';
 /** Prints what one context holds, read from the config and the source text: the facts an agent needs before it opens a file. */
 export const describeCommand = defineCommand({
   name: 'describe',
+  positionals: '<context>',
   options: {},
   run(args, io) {
     const root = args.projectRoot;

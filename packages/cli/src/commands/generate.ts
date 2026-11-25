@@ -25,6 +25,11 @@ import { keepFlatPlatform } from '../platform-folders';
 /** `generate <kind> ...`: the files of one building block, placed, declared and listed where the project lists them. */
 export const generateCommand = defineCommand({
   name: 'generate',
+  alias: 'g',
+  usage: [
+    `ddd-ts-kit generate <kind> ... ${COMMON_FLAGS.map((flag) => `[--${flag}]`).join(' ')}     (alias: g)`,
+    'ddd-ts-kit generate [<kind>] --help [--json]',
+  ],
   options: GENERATE_OPTIONS,
   optionsOn: generateOptionsOn,
   takesTheLock: true,

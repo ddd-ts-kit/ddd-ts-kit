@@ -1,7 +1,6 @@
-import { CliError } from '../cli-error';
 import { readConfig } from '../config';
 import { openStoryScope } from '../stories/open-story-scope';
-import { STORY_KINDS, type StoryKind } from '../stories/story-kind';
+import { STORY_KINDS } from '../stories/story-kind';
 import type { StoryScope } from '../stories/story-scope';
 import { defineCommand } from './command';
 import { stdoutJson } from '../json/stdout-json';
@@ -9,19 +8,20 @@ import { stdoutJson } from '../json/stdout-json';
 /** Opens the worktree of one story, or finds it again, and names the other stories open in the repository. */
 export const storyScopeCommand = defineCommand({
   name: 'story-scope',
+  positionals: '<story>',
   options: {
-    from: { type: 'string' },
-    kind: { type: 'string' },
-    worktree: { type: 'string' },
-    branch: { type: 'string' },
-    base: { type: 'string' },
-    'dry-run': { type: 'boolean' },
+    from: { type: 'string', value: '<file>' },
+    kind: { type: 'string', values: STORY_KINDS },
+    base: { type: 'string', value: '<ref>' },
+    worktree: { type: 'string', value: '<path>' },
+    branch: { type: 'string', value: '<name>' },
     'no-install': { type: 'boolean' },
+    'dry-run': { type: 'boolean' },
   },
   run(args, io) {
     const root = args.projectRoot;
     const { config } = readConfig(root);
-    const kind = kindOf(args.text('kind'));
+    const kind = args.text('kind');
 
     const scope = openStoryScope(root, config, {
       story: args.positionals[0] ?? '',
@@ -36,20 +36,6 @@ export const storyScopeCommand = defineCommand({
     return 0;
   },
 });
-
-function kindOf(text: string | undefined): StoryKind | undefined {
-  if (text === undefined) {
-    return undefined;
-  }
-
-  const kind = STORY_KINDS.find((known) => known === text);
-
-  if (kind === undefined) {
-    throw new CliError(`Unknown kind "${text}".`, `Pass --kind ${STORY_KINDS.join(' or --kind ')}.`);
-  }
-
-  return kind;
-}
 
 function formatScope(scope: StoryScope): string {
   const would = scope.dryRun ? 'would be ' : '';

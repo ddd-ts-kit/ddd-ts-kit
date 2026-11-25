@@ -33,6 +33,10 @@ const DEFAULT_BASE = 'origin/main';
  */
 export const drizzleGenerateCommand = defineCommand({
   name: 'drizzle-generate',
+  usage: [
+    'ddd-ts-kit drizzle-generate --name <what-it-does> [--custom]',
+    'ddd-ts-kit drizzle-generate --replay [--base <git-ref>]',
+  ],
   options: {
     name: { type: 'string' },
     custom: { type: 'boolean' },

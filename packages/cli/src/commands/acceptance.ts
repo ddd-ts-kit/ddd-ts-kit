@@ -1,5 +1,5 @@
 import { checkLockedFiles } from '../acceptance/check-locked-files';
-import { ACCEPTANCE_GATES, type AcceptanceGate } from '../acceptance/acceptance-gate';
+import { ACCEPTANCE_GATES } from '../acceptance/acceptance-gate';
 import { countsFor } from '../acceptance/counts-for';
 import { formatAcceptance } from '../acceptance/format-acceptance';
 import { type Locked, lockAcceptance } from '../acceptance/lock-acceptance';
@@ -24,14 +24,15 @@ import { stdoutJson } from '../json/stdout-json';
  */
 export const acceptanceCommand = defineCommand({
   name: 'acceptance',
+  positionals: '[<story>]',
   options: {
-    gate: { type: 'string' },
+    gate: { type: 'string', values: ACCEPTANCE_GATES },
     lock: { type: 'boolean' },
   },
   takesTheLock: { onlyWith: 'lock' },
   run(args, io) {
     const ws = new Workspace(args.projectRoot, false);
-    const gate = gateOf(args.text('gate'));
+    const gate = args.text('gate');
     const [asked] = args.positionals;
     const stories = readAcceptance(ws, readSlices(ws) ?? [], asked);
 
@@ -115,18 +116,4 @@ function lockedWhat({ scenarios, tests }: Locked): string {
   return tests > 0 && scenarios === 0
     ? `${tests} regression test${tests === 1 ? '' : 's'}`
     : `${scenarios} scenario${scenarios === 1 ? '' : 's'}`;
-}
-
-function gateOf(text: string | undefined): AcceptanceGate | undefined {
-  if (text === undefined) {
-    return undefined;
-  }
-
-  const gate = ACCEPTANCE_GATES.find((known) => known === text);
-
-  if (gate === undefined) {
-    throw new CliError(`Unknown gate "${text}".`, `Pass --gate ${ACCEPTANCE_GATES.join(' or --gate ')}.`);
-  }
-
-  return gate;
 }

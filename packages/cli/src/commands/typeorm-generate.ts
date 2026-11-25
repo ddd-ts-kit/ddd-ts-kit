@@ -37,6 +37,7 @@ const IN_PROCESS_ENV = { DATABASE_URL: '{url}', DATABASE_POOL_SIZE: '1' };
  */
 export const typeormGenerateCommand = defineCommand({
   name: 'typeorm-generate',
+  positionals: '<folder>/<what-it-does>',
   options: {},
   run(args, io) {
     const root = args.projectRoot;

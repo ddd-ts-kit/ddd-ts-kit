@@ -12,6 +12,7 @@ import { defineCommand } from './command';
  */
 export const digestCommand = defineCommand({
   name: 'digest',
+  usage: ['ddd-ts-kit digest --base <ref> [--json]'],
   options: { base: { type: 'string' } },
   run(args, io) {
     const root = args.projectRoot;
