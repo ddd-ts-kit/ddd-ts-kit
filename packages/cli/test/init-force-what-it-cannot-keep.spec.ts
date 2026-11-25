@@ -173,6 +173,9 @@ describe('generate --grant on a roles file with a bracket in a comment', () => {
     );
 
     expect(read(root, ROLES)).toContain('[Role.Admin]: [ // keep ] bracket\n');
-    expect(read(root, ROLES)).toContain("    orderingPermissions['order.cancel'],\n");
+
+    expect(read(root, ROLES)).toContain(
+      "    '*', orderingPermissions['order.place'], orderingPermissions['order.cancel']],\n",
+    );
   });
 });

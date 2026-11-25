@@ -146,16 +146,7 @@ describe('the dispatch and the unit of work', () => {
 
     await bus.execute(new OpenCart('c1'));
 
-    expect(journal).toEqual([
-      'begin',
-      'saved c1',
-      'handling c1',
-      'begin',
-      'saved c2',
-      'commit',
-      'handling c2',
-      'commit',
-    ]);
+    expect(journal).toEqual(['begin', 'saved c1', 'handling c1', 'saved c2', 'handling c2', 'commit']);
   });
 
   it('still dispatches outside of any unit of work: the state is written, then the handlers run', async () => {

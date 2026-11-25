@@ -1,11 +1,11 @@
 import { wholeLiteral } from '../check/declarations/whole-literal';
 import { scan, type Scan } from '../check/scan/scan';
 import { callArguments } from '../check/text/call-arguments';
-import { classBody } from '../generate/errors/class-body';
 import { staticMethods, type StaticMethod } from '../generate/errors/static-methods';
 import type { ConceptErrorClass, ConceptFactory } from './concept-error-class';
 import { firstParameter } from './first-parameter';
 import { memberStart } from './member-start';
+import { classBody } from '../source-text';
 
 const CLASS = /export\s+class\s+([A-Za-z_$][\w$]*)\s+extends\s+ConceptError\b/;
 const REFUSAL_CALL = /(?<![\w$])([A-Za-z_$][\w$]*)\s*\.\s*refusal\s*\(/g;
@@ -27,7 +27,7 @@ export function readConceptError(source: string, origin: Origin): ConceptErrorCl
   const scanned = scan(source);
   const declared = CLASS.exec(scanned.code);
   const className = declared?.[1] ?? '';
-  const body = classBody(scanned, className);
+  const body = classBody(scanned.code, className);
 
   if (declared === null || body === undefined) {
     return undefined;

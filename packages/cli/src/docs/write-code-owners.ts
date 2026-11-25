@@ -39,7 +39,7 @@ export function writeCodeOwners(ws: Workspace, config: Config, contexts: readonl
   const existing = ws.read(CODE_OWNERS);
 
   if (existing === undefined) {
-    ws.create(CODE_OWNERS, `${[...HEADER, OPEN, ...lines, CLOSE].join('\n')}\n`);
+    ws.create(CODE_OWNERS, `${[...HEADER.map((line) => ws.spoken(line)), OPEN, ...lines, CLOSE].join('\n')}\n`);
 
     return;
   }

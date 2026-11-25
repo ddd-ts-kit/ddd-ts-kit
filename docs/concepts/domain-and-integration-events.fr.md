@@ -1,5 +1,5 @@
 [English](domain-and-integration-events.md) · **Français**
-<!-- translation-of: domain-and-integration-events.md sha256:281f042d77260019 -->
+<!-- translation-of: domain-and-integration-events.md sha256:413cd38e48c31cef -->
 
 # Événements du domaine et événements d'intégration
 
@@ -536,25 +536,32 @@ seule fois. Une instance d'agrégat d'une commande qui a échoué n'est pas réu
 
 ### Où vit la file
 
-La file appartient à une portée ouverte par `withinUnitOfWork(work, transaction)` du kernel,
-dans un `AsyncLocalStorage`. Chaque `UnitOfWork.run` du kit est construit dessus
-(`InMemoryUnitOfWork`, drizzle, knex, prisma, typeorm), si bien qu'un `run` appelé directement
-par un consommateur ou un script a le même déroulé qu'une commande. `unitOfWorkMiddleware`
-l'appelle aussi : une commande est couverte même avec une `UnitOfWork` propre au projet qui ne le
-fait pas.
+La file appartient à une portée ouverte par l'unité de travail que rend
+`unitOfWorkOver(transaction)` du kernel, dans un `AsyncLocalStorage`. Chaque `UnitOfWork` du kit
+est construite dessus (`InMemoryUnitOfWork`, drizzle, knex, prisma, typeorm), si bien qu'un `run`
+appelé directement par un consommateur ou un script a le même déroulé qu'une commande.
+`unitOfWorkMiddleware` ne fait qu'appeler `run` : une `UnitOfWork` propre au projet qui n'ouvre
+aucune portée est refusée avant le gestionnaire (`UnscopedUnitOfWorkError`).
 
 - Un `run` imbriqué, ou une commande envoyée depuis une unité de travail par un gestionnaire,
   rejoint la portée en cours : une seule distribution, à la fin de la plus externe, et la phase
   `after-commit` après la validation de la plus externe.
 - Deux commandes concurrentes ne partagent jamais une portée.
-- Un projet qui écrit sa propre `UnitOfWork` construit `run` dessus, et exécute
+- Deux bases de données n'en partagent jamais une non plus : une unité de travail exécutée dans
+  celle d'une autre base de données ouvre sa propre transaction, distribue ses événements avant
+  sa propre validation et exécute ses gestionnaires `after-commit` après elle.
+- Une unité de travail est validée ou annulée en entier : dès qu'un `run` imbriqué a échoué,
+  elle n'est plus validée. Quand le travail a intercepté cet échec et continué, le `run` le plus
+  externe est rejeté avec une `UnitOfWorkAbortedError` dont il est la `cause`, et aucun événement
+  n'est distribué.
+- Un projet qui écrit sa propre `UnitOfWork` la construit sur `unitOfWorkOver`, et exécute
   `unitOfWorkContract` de `@ddd-ts-kit/testing/contracts`, qui fait échouer un adaptateur qui
   l'aurait oublié :
 
 <!-- checked sample -->
 ```ts
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { withinUnitOfWork, type UnitOfWork } from '@ddd-ts-kit/kernel';
+import { unitOfWorkOver, type UnitOfWork } from '@ddd-ts-kit/kernel';
 
 /** Le pilote du projet : commence, appelle, valide quand le travail est résolu, annule quand il est rejeté. */
 interface Ledger {
@@ -568,22 +575,21 @@ interface LedgerTransaction {
 export class LedgerUnitOfWork implements UnitOfWork {
   private readonly current = new AsyncLocalStorage<LedgerTransaction>();
 
+  // Appelée pour ouvrir une transaction seulement : un run imbriqué rejoint celle en cours.
+  private readonly unitOfWork = unitOfWorkOver((work) =>
+    this.ledger.transaction((transaction) => this.current.run(transaction, work)),
+  );
+
   constructor(private readonly ledger: Ledger) {}
 
   run<T>(work: () => Promise<T>): Promise<T> {
-    return withinUnitOfWork(work, (scoped) => {
-      if (this.current.getStore() !== undefined) {
-        return scoped(); // un run imbriqué rejoint la transaction en cours
-      }
-
-      return this.ledger.transaction((transaction) => this.current.run(transaction, scoped));
-    });
+    return this.unitOfWork.run(work);
   }
 }
 ```
 
 `transaction` commence, appelle ce qu'on lui donne, valide quand c'est résolu et annule quand
-c'est rejeté. `withinUnitOfWork` fait le reste.
+c'est rejeté. `unitOfWorkOver` fait le reste.
 
 Le contrat est exécuté par les quatre *packages* d'ORM sur PGlite, dans le processus. Les
 *packages* knex, prisma et typeorm l'exécutent aussi sur un vrai PostgreSQL quand
@@ -607,7 +613,7 @@ transaction. Ce qu'il faut vérifier lors de la mise à jour :
 |---|---|
 | un gestionnaire qui comptait s'exécuter entre deux `save` d'une commande | il s'exécute maintenant après les deux : lisez l'état dont il a besoin dans ce qui est enregistré, ou scindez la commande |
 | un gestionnaire avec un effet hors de la base de données (une *gateway*, un cache, un appel distant) | déclarez-le `phase: 'after-commit'`, ou placez le travail derrière un événement d'intégration quand il ne doit pas être perdu ; `domain-events/transactional-before-commit` le signale |
-| sa propre `UnitOfWork` | construisez `run` sur `withinUnitOfWork` et exécutez `unitOfWorkContract` |
+| sa propre `UnitOfWork` | construisez-la sur `unitOfWorkOver` et exécutez `unitOfWorkContract` |
 | son propre `DomainEventDispatcher` | `dispatch(events, phase?)` et `on(name, handler, { phase }?)` : respectez la phase, et ne rejetez jamais dans la phase `after-commit` |
 | un gestionnaire d'événement du domaine qui envoie une commande | envoyée avant la validation, la commande rejoint l'unité de travail en cours : ses événements sont distribués avec les autres, pas avant qu'elle rende la main. Envoyée après la validation, elle ouvre une unité de travail à elle |
 | un appel à `apartFromDomainEventFlow` | retiré de `@ddd-ts-kit/kernel`, sans remplacement : voir la ligne ci-dessus |

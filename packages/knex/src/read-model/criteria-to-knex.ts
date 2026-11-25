@@ -7,8 +7,9 @@ import { predicateToKnex } from './predicate-to-knex';
  * Adds a criteria plan to a query on the table of a read model: its filters and the scope of
  * the actor, the keyset of a cursor page, the total order and the window.
  * `criteriaToKnex(db('appointment_list'), planCriteria(definition, criteria), columns)`, then
- * `pageOfPlan(plan, rows)`. A field that may be null is ordered as the plan means it, on every
- * dialect: nulls last ascending, first descending.
+ * `pageOfPlan(plan, rows)`. A field that may be null is ordered as the plan means it: nulls
+ * last ascending, first descending. Written for PostgreSQL, as the read model is: a search that
+ * ignores case is an `ilike`.
  */
 export function criteriaToKnex<Builder extends Knex.QueryBuilder>(
   builder: Builder,
