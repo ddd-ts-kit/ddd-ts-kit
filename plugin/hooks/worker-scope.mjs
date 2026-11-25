@@ -5,7 +5,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { isRecord, readJson, realOf, realPlace } from './disk.mjs';
 import { git } from './git.mjs';
 import { sharedStateFile, stateFile, writeState } from './guard-state.mjs';
-import { toolInput, writesOf } from './hook-input.mjs';
+import { isWorkerAgent, toolInput, writesOf } from './hook-input.mjs';
 import { removeKitFile } from './kit-files.mjs';
 import { E2E_SPEC, findProject, insideContexts, projectPath } from './project.mjs';
 import { commonDirOf, hasWorkerWorktree, repositoryTop, WORKER_SCOPE, workerWorktrees } from './repository.mjs';
@@ -13,7 +13,6 @@ import { COMMIT_ID, CONTEXT_NAME, GIT_REF, named } from './said-as-data.mjs';
 
 // The report a worker keeps current after each commit and before it ends, ignored by git: what the conductor reads when it stops.
 const WORKER_REPORT = '.ddd-ts-kit/report.md';
-export const WORKER_AGENT = 'context-builder';
 
 // A decision record of a worker's own slices: a new file of docs/adr/. With --deviation it also writes the config.
 export const DECISION_RECORD = /^docs\/adr\/[^/]+\.md$/;
@@ -84,10 +83,6 @@ function isWorkingMigration(project, path) {
 export function workerContext(project, input) {
   const scope = workerScope(project, input);
   return scope?.away ? undefined : scope?.context;
-}
-
-export function isWorkerAgent(input) {
-  return String(input.agent_type ?? '').includes(WORKER_AGENT);
 }
 
 // The scope of a worker is pinned at its first call: its context and its worktree are recorded

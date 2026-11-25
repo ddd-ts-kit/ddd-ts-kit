@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { isRecord, parseJson, readText } from './disk.mjs';
 import { gitRun } from './git.mjs';
-import { editsOf, hostOf } from './hook-input.mjs';
+import { editsOf, hostOf, isSubAgent, isTestWriter } from './hook-input.mjs';
 import {
   CONFIG,
   describe,
@@ -186,10 +186,6 @@ export function isBarrel(project, path) {
   );
 }
 
-export function isTestWriter(input) {
-  return String(input.agent_type ?? '').includes('domain-test-writer');
-}
-
 // A spec, the tests at the root of the project, or the test folders of a context: another folder
 // named `test` holds no test of the kit.
 export function testWriterScopeReason(project, file, input) {
@@ -273,7 +269,7 @@ export function scopeFileReason(project, { place, below }, input) {
       existsSync(join(project.root, scope)) &&
       (path === scope || path === dirname(scope) || (holdsFile(path, scope) && reachesScope(project, scope, below))),
   );
-  const own = input.agent_type || findProject(input.cwd ?? process.cwd())?.root === project.root;
+  const own = isSubAgent(input) || findProject(input.cwd ?? process.cwd())?.root === project.root;
   return held && own
     ? `${held} is a shared file of this worktree, its scope: the conductor writes it with \`story-scope\` or \`worker-scope\`, and it holds the gates of the work done here. ${REPORT_TO_CONDUCTOR}`
     : undefined;

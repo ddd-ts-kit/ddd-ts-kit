@@ -5,6 +5,13 @@ import { resolve } from 'node:path';
 import { call } from './call.mjs';
 import { parseJson } from './disk.mjs';
 
+const WORKER_AGENT = 'context-builder';
+
+// The builder of the plugin, as its hooks of SubagentStart and SubagentStop match it: the one counted.
+const BUILDER_AGENT = `ddd-ts-kit:${WORKER_AGENT}`;
+
+const JUDGE_AGENT = 'acceptance-judge';
+
 // The tools of VS Code that write a file named by `filePath`, by the names its chat gives its hooks.
 const VS_CODE_WRITERS = new Set([
   'create_file',
@@ -40,6 +47,9 @@ const VS_CODE_READERS = new Set([
   'resolve_memory_file_uri',
 ]);
 
+// The agents of the plugin that only read: they write their findings in their answer.
+const READ_ONLY_AGENTS = ['architecture-reviewer', 'domain-explorer', 'story-verifier'];
+
 export function readInput() {
   try {
     return JSON.parse(readFileSync(0, 'utf8'));
@@ -71,6 +81,33 @@ export function toolInput(input) {
   const args = typeof input.toolArgs === 'string' ? parseJson(input.toolArgs) : input.toolArgs;
 
   return args && typeof args === 'object' ? args : {};
+}
+
+// A sub-agent names itself in the input of its calls; the session itself names no agent.
+export function isSubAgent(input) {
+  return Boolean(input.agent_type);
+}
+
+export function isWorkerAgent(input) {
+  return String(input.agent_type ?? '').includes(WORKER_AGENT);
+}
+
+// The context-builder of the plugin in Claude Code: its tool calls are counted, its runs and stops recorded.
+// An agent of the project named otherwise is held to the scope of a worker (`workerContext`), not counted.
+export function isBuilder(input) {
+  return hostOf(input) === 'claude' && input.agent_type === BUILDER_AGENT;
+}
+
+export function isTestWriter(input) {
+  return String(input.agent_type ?? '').includes('domain-test-writer');
+}
+
+export function isJudge(input) {
+  return String(input.agent_type ?? '').includes(JUDGE_AGENT);
+}
+
+export function isReadOnlyAgent(input) {
+  return READ_ONLY_AGENTS.some((name) => String(input.agent_type ?? '').includes(name));
 }
 
 export function sessionOf(input) {

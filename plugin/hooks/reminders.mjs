@@ -1,11 +1,9 @@
 // What the guard says and never refuses: the size of what is uncommitted, a row that departed from its
 // design. Read by session and stop.
-import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { readBounded } from './disk.mjs';
 import { git, gitRun } from './git.mjs';
-import { alreadyRemembered, forget, markerOf, reminderMarker } from './guard-state.mjs';
-import { sessionOf } from './hook-input.mjs';
+import { alreadyRemembered, forget, reminderMarker, saidOnce } from './guard-state.mjs';
 import { insideContexts, outsideItsModule, runCli } from './project.mjs';
 import { WORKER_SCOPE } from './repository.mjs';
 import { fixOf, storyOf } from './story-rules.mjs';
@@ -28,13 +26,8 @@ export function designReminder(project, input) {
   if (design.length === 0) {
     return undefined;
   }
-  const key = createHash('sha256')
-    .update(
-      `${project.root}\n${sessionOf(input)}\n${design.map(({ document, line, cited }) => `${document}:${line}:${cited}`).join('\n')}`,
-    )
-    .digest('hex')
-    .slice(0, 24);
-  if (alreadyRemembered(markerOf(project, 'design', key))) {
+  const names = design.map(({ document, line, cited }) => `${document}:${line}:${cited}`).join('\n');
+  if (saidOnce(project, input, 'design', names)) {
     return undefined;
   }
   const named = design

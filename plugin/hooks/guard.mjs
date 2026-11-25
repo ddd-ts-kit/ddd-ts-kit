@@ -1,19 +1,29 @@
 #!/usr/bin/env node
 // Fails open by design: a guard that breaks must never block the work it guards.
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { planPointer, projectBriefing } from './briefing.mjs';
 import { call } from './call.mjs';
 import { isRecord, readJson } from './disk.mjs';
 import { git, unreadRepositoryNotice } from './git.mjs';
-import { alreadyRemembered, markerOf, pruneGuardState, sharedStateFile, stateFile } from './guard-state.mjs';
+import { pruneGuardState, saidOnce, sharedStateFile, stateFile } from './guard-state.mjs';
 import { branchOutsideReason, heldChangeReason, pendingChangeReason, settleNote } from './held-changes.mjs';
-import { decide, emit, hostOf, patchWrites, readInput, sessionOf, toolInput, writesOf } from './hook-input.mjs';
+import {
+  decide,
+  emit,
+  hostOf,
+  isBuilder,
+  isWorkerAgent,
+  patchWrites,
+  readInput,
+  toolInput,
+  writesOf,
+} from './hook-input.mjs';
 import { removeKitFile } from './kit-files.mjs';
 import {
   ANSWER_BYTES,
+  decisionOf,
   describe,
   errorsOf,
   findProject,
@@ -62,14 +72,12 @@ import {
 } from './story-rules.mjs';
 import {
   commandDirectory,
-  isWorkerAgent,
   linkReason,
   readPin,
   releasePin,
   REPORT_TO_CONDUCTOR,
   strayWriteReason,
   withPinnedMode,
-  WORKER_AGENT,
   workerContext,
   workerScope,
   workerScopeReason,
@@ -85,9 +93,6 @@ import {
   scriptsChangeReason,
   testWriterScopeReason,
 } from './write-rules.mjs';
-
-// The builder of the plugin, as its hooks of SubagentStart and SubagentStop match it: the one counted.
-const BUILDER_AGENT = `ddd-ts-kit:${WORKER_AGENT}`;
 
 const FORMAT_TIMEOUT = 5000;
 
@@ -185,7 +190,7 @@ function strayFileVerdict(input) {
   }
   const where = pinned ? `your worktree ${pinned.worktree}` : 'the worktree of your briefing';
   return {
-    decision: home.mode === 'advise' ? 'ask' : 'deny',
+    decision: decisionOf(home),
     reason: `${stray.file} is outside every project: a worker writes in ${where}, and in the temp directory. ${REPORT_TO_CONDUCTOR}`,
   };
 }
@@ -213,7 +218,7 @@ function pendingOfWriter(input) {
     return undefined;
   }
   const pending = pendingChangeReason(project, input, []);
-  return pending?.reason ? { decision: project.mode === 'advise' ? 'ask' : 'deny', reason: pending.reason } : undefined;
+  return pending?.reason ? { decision: decisionOf(project), reason: pending.reason } : undefined;
 }
 
 // The writes of a call in a project the guard judges, each with its project.
@@ -324,7 +329,7 @@ async function shellVerdict(input, command, cwd) {
   if (!project || project.mode === 'off') {
     return undefined;
   }
-  const decision = project.mode === 'advise' ? 'ask' : 'deny';
+  const decision = decisionOf(project);
   const commands = readCommands(project, command, cwd);
   if (!commands) {
     return isHeldToAWorktree(project, input) ? { decision, reason: UNREADABLE_COMMAND } : undefined;
@@ -411,7 +416,7 @@ async function codexPatchVerdict(input, command, cwd) {
     return !project || project.mode === 'off'
       ? undefined
       : {
-          decision: project.mode === 'advise' ? 'ask' : 'deny',
+          decision: decisionOf(project),
           reason:
             "apply_patch is judged when the command holds the patch: give it as a here-document (`apply_patch <<'EOF'` ... `EOF`), not from a file or a pipe.",
         };
@@ -472,12 +477,6 @@ function formatWrites(writes) {
       });
     }
   }
-}
-
-// The context-builder of the plugin in Claude Code: its tool calls are counted, its runs and stops recorded.
-// An agent of the project named otherwise is held to the scope of a worker (`workerContext`), not counted.
-function isBuilder(input) {
-  return hostOf(input) === 'claude' && input.agent_type === BUILDER_AGENT;
 }
 
 async function countBuilderCall(input, project, command) {
@@ -616,12 +615,8 @@ function stopAlreadyRefused(project, input, errors) {
   if (typeof input.stop_hook_active === 'boolean') {
     return false;
   }
-  const key = createHash('sha256')
-    .update(`${project.root}\n${sessionOf(input)}\n${describe(errors)}`)
-    .digest('hex')
-    .slice(0, 24);
 
-  return alreadyRemembered(markerOf(project, 'stop', key));
+  return saidOnce(project, input, 'stop', describe(errors));
 }
 
 function blockStop(errors) {

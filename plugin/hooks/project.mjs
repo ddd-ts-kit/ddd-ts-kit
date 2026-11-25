@@ -142,6 +142,11 @@ function readConfig(path) {
   return { config: isRecord(config) ? config : {} };
 }
 
+// What a refusal is in the mode of the project: a question put to the user under advise, a denial otherwise.
+export function decisionOf(project) {
+  return project.mode === 'advise' ? 'ask' : 'deny';
+}
+
 function guardMode(asked) {
   return GUARD_MODES.includes(asked) ? { mode: asked } : { mode: 'enforce', unknownMode: asked };
 }

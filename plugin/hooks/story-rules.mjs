@@ -7,8 +7,8 @@ import { join, sep } from 'node:path';
 import { call } from './call.mjs';
 import { isDirectory, readJson, readText } from './disk.mjs';
 import { gitRun } from './git.mjs';
-import { alreadyRemembered, GUARD_STATE, markerOf, writeState } from './guard-state.mjs';
-import { sessionOf } from './hook-input.mjs';
+import { GUARD_STATE, saidOnce, writeState } from './guard-state.mjs';
+import { isJudge, isSubAgent } from './hook-input.mjs';
 import { CLEAN_INSTALL, insideContexts, projectPath, runCli, SPEC_FILE, TEST_DIRECTORY } from './project.mjs';
 import { repositoryTop, STORY_SCOPE } from './repository.mjs';
 import { ABSOLUTE_PATH, GIT_REF, named, quoted, STORY_ID } from './said-as-data.mjs';
@@ -48,7 +48,6 @@ const ACCEPTANCE_SPEC = /^test\/acceptance\/[^/]+\.acceptance\.spec\.ts$/;
 const ACCEPTANCE_LOCK = /^test\/acceptance\/[^/]+\.acceptance\.lock\.json$/;
 // The verdicts that let a locked acceptance change: written by the acceptance-judge agent alone.
 const ACCEPTANCE_VERDICT = /^test\/acceptance\/verdicts\/[^/]+\.md$/;
-const JUDGE_AGENT = 'acceptance-judge';
 
 // The scope files of the story worktrees this run has read, by project root.
 const storyScopes = new Map();
@@ -65,11 +64,7 @@ export function unfinishedStoryReason(project, input) {
   if (!report || report.met) {
     return undefined;
   }
-  const key = createHash('sha256')
-    .update(`${project.root}\n${sessionOf(input)}\n${phases.next}`)
-    .digest('hex')
-    .slice(0, 24);
-  if (typeof input.stop_hook_active !== 'boolean' && alreadyRemembered(markerOf(project, 'story', key))) {
+  if (typeof input.stop_hook_active !== 'boolean' && saidOnce(project, input, 'story', phases.next)) {
     return undefined;
   }
   return `ddd-ts-kit: story ${story} is not finished. Next: ${quoted(phases.next)} Go on without asking: a question now is a provisional decision, recorded in docs/architecture/stories/${story}.md. If something truly blocks the story, write its \`## Report\` there with what blocks it and every decision taken so far, then stop.`;
@@ -104,17 +99,13 @@ export function acceptanceReason(project, input, { file, written, replaced }) {
   if (ACCEPTANCE_LOCK.test(path)) {
     return `${path} is the lock of a story's acceptance: \`npx ddd-ts-kit acceptance <story> --lock\` writes it, and refuses a change since the lock that no verdict of the acceptance-judge agent lets through.`;
   }
-  if (!ACCEPTANCE_SPEC.test(path) || !input.agent_type) {
+  if (!ACCEPTANCE_SPEC.test(path) || !isSubAgent(input)) {
     return undefined;
   }
   const before = replaced.trim() === '' ? (readText(file) ?? '') : replaced;
   return existsSync(file) && asserted(written) === asserted(before)
     ? undefined
     : `${path} is the acceptance of a story, locked with its specification: a sub-agent only removes \`pending(...)\` around a scenario its rows now satisfy. A scenario that seems wrong is not changed to pass: name it and the criterion it fails in your report, and the conductor has the acceptance-judge agent judge it before anything changes. ${REPORT_TO_CONDUCTOR}`;
-}
-
-function isJudge(input) {
-  return String(input.agent_type ?? '').includes(JUDGE_AGENT);
 }
 
 // The fix of the worktree, when its story.json says `kind: 'fix'` (absent, a story): its code, whether
@@ -136,7 +127,7 @@ export function fixOf(project) {
 // needs no verdict.
 export function lockedRegressionReason(project, path, input) {
   const fix = fixOf(project);
-  return fix?.files.includes(path) && input.agent_type
+  return fix?.files.includes(path) && isSubAgent(input)
     ? `${path} is a regression spec of fix ${fix.story}, locked: it is the proof of the fix, and a sub-agent does not change it. Fix the code instead, and if the spec seems wrong, name it and the statement it fails in your report: the main session of the fix writes a new version, runs \`npx ddd-ts-kit acceptance ${fix.story}\` (it reports the change since the lock with its subject and fingerprint), has the acceptance-judge agent rule on it with the statement of the fix (\`## Statement\` of docs/architecture/stories/${fix.story}.md) as the criterion, and locks again with \`--lock\` once the verdict is \`amend\`. ${REPORT_TO_CONDUCTOR}`
     : undefined;
 }
@@ -153,7 +144,7 @@ function verdictReason(judging, path) {
 export function acceptanceFilesShellReason(project, input, { command, commands }) {
   const judging = isJudge(input);
   const written = writtenProjectPaths(project, commands);
-  const fixFiles = input.agent_type ? (fixOf(project)?.files ?? []) : [];
+  const fixFiles = isSubAgent(input) ? (fixOf(project)?.files ?? []) : [];
   // Where only the shell knows the place, any held file may be it.
   const unnamed = fixFiles.length > 0 && writtenPlaces(commands).includes(undefined);
   // A command touches a held file by a place it writes (a glob expanded, a folder that holds the file)
@@ -306,13 +297,11 @@ function asserted(text) {
 // A sub-agent unwrapping a scenario writes outside its context: what it writes was judged above.
 // A worker that strayed from its worktree unwraps nothing there.
 export function isUnwrapping(project, file, input) {
-  return (
-    Boolean(input.agent_type) && ACCEPTANCE_SPEC.test(projectPath(project, file)) && !workerScope(project, input)?.away
-  );
+  return isSubAgent(input) && ACCEPTANCE_SPEC.test(projectPath(project, file)) && !workerScope(project, input)?.away;
 }
 
 export function acceptanceLockingReason(input, commands) {
-  if (!input.agent_type) {
+  if (!isSubAgent(input)) {
     return undefined;
   }
   const locking = kitInvocations(commands).some(
@@ -446,7 +435,7 @@ export function crossingNotice(project, input, file) {
     .filter((other) => other.story !== own)
     .map((other) => ({ other, forYou: forYouWith(stories.view, own, other) }))
     .filter(({ other, forYou }) => other.files.includes(path) || forYou.includes(path))
-    .filter(({ other }) => !alreadyRemembered(crossingMarker(project, input, `${path}\n${other.story}`)))
+    .filter(({ other }) => !saidOnce(project, input, 'crossing', `${path}\n${other.story}`))
     .map(({ other, forYou }) => crossingLine(other, forYou, path));
   return lines.length === 0
     ? undefined
@@ -469,14 +458,6 @@ function crossingLine(other, forYou, path) {
   return forYou.includes(path)
     ? `${where} changes ${path} too, and merging its branch into this one now leaves that file to settle by hand.`
     : `${where} changes ${path} too.`;
-}
-
-function crossingMarker(project, input, subject) {
-  const key = createHash('sha256')
-    .update(`${project.root}\n${sessionOf(input)}\n${subject}`)
-    .digest('hex')
-    .slice(0, 24);
-  return markerOf(project, 'crossing', key);
 }
 
 // What `stories --json` says, read again once its copy in the guard's folder is a minute old,

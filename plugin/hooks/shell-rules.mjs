@@ -16,6 +16,7 @@ import {
   workerPlaceReason,
 } from './git-rules.mjs';
 import { noteBeforeCode, pendingChangeReason } from './held-changes.mjs';
+import { isReadOnlyAgent, isSubAgent, isTestWriter, isWorkerAgent } from './hook-input.mjs';
 import { CONFIG, describePlace, findProject, projectPath } from './project.mjs';
 import { hasWorkerWorktree } from './repository.mjs';
 import {
@@ -47,12 +48,11 @@ import {
   storyCodeReason,
   worktreeCodeReason,
 } from './story-rules.mjs';
-import { isWorkerAgent, linkReason, REPORT_TO_CONDUCTOR, workerScope, workerScopeReason } from './worker-scope.mjs';
+import { linkReason, REPORT_TO_CONDUCTOR, workerScope, workerScopeReason } from './worker-scope.mjs';
 import {
   baselineFileReason,
   generatedFileReason,
   handWrittenRoleReason,
-  isTestWriter,
   scopeFileReason,
   testWriterScopeReason,
 } from './write-rules.mjs';
@@ -85,9 +85,6 @@ const LANDING_COMMANDS = new Set(['cp', 'mv', 'ln', 'install', 'rsync']);
 const CP_BRINGS = /^(?:-[a-zA-Z]*[alrRs][a-zA-Z]*|--(?:link|symbolic-link|recursive|archive))$/;
 const CP_TREE = /^(?:-[a-zA-Z]*[arR][a-zA-Z]*|--(?:recursive|archive))$/;
 
-// The agents of the plugin that only read: they write their findings in their answer.
-const READ_ONLY_AGENTS = ['architecture-reviewer', 'domain-explorer', 'story-verifier'];
-
 // The variables that move where the shell finds a path, a directory or a program, or git its repository.
 const PLACE_VARIABLES = /^(?:TMPDIR|XDG_RUNTIME_DIR|CDPATH|HOME|GIT_DIR|GIT_WORK_TREE|PATH)=/;
 
@@ -115,7 +112,7 @@ export function sessionShellReason(input, commands) {
 // The reviewer, the explorer and the verifier of the plugin change no file of a project, by any tool:
 // nor its work tree by git, whose index alone they may stage.
 function readOnlyReason(input, commands) {
-  if (!READ_ONLY_AGENTS.some((name) => String(input.agent_type ?? '').includes(name))) {
+  if (!isReadOnlyAgent(input)) {
     return undefined;
   }
   for (const command of commands) {
@@ -298,7 +295,7 @@ function unknownProgramReason(commands) {
 // resolves each hunk instead. A derived file outside the sources (openapi/, the context map) is
 // taken from either side and regenerated, so only the sources and the tests are held.
 function oneSideMergeReason(project, input, commands) {
-  if (!input.agent_type) {
+  if (!isSubAgent(input)) {
     return undefined;
   }
   const taken = commands.some(({ words, directory }) => {

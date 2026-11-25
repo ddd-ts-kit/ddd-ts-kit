@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 import { call } from './call.mjs';
 import { readJson, realOf } from './disk.mjs';
 import { git, gitFields } from './git.mjs';
+import { isSubAgent, isWorkerAgent } from './hook-input.mjs';
 import { findProject } from './project.mjs';
 import { hasWorkerWorktree, repositoryTop, WORKER_SCOPE } from './repository.mjs';
 import { GIT_REF, named } from './said-as-data.mjs';
@@ -20,7 +21,7 @@ import {
   readsAnywhere,
   SCRIPT_MANAGERS,
 } from './shell-reads.mjs';
-import { isWorkerAgent, namedContext, readPin, REPORT_TO_CONDUCTOR, workerScope } from './worker-scope.mjs';
+import { namedContext, readPin, REPORT_TO_CONDUCTOR, workerScope } from './worker-scope.mjs';
 import { BASELINE_OWNER } from './write-rules.mjs';
 
 // What a worker's git may name of the refs: the options of push, fetch, tag, checkout and switch
@@ -136,7 +137,7 @@ function hooksSkippedBySubcommand(subcommand, rest) {
 // A sub-agent never deletes, moves or resets a branch checked out in another worktree of the
 // repository: the branch of another worker, or the trunk of the conductor.
 export function otherBranchReason(input, commands) {
-  if (!input.agent_type) {
+  if (!isSubAgent(input)) {
     return undefined;
   }
   const cwd = input.cwd ?? process.cwd();
@@ -221,7 +222,7 @@ const CONFIG_VERBS = new Map([
 // A sub-agent never sets the git configuration (shared by every checkout of the repository) nor
 // passes a dangerous `-c key=value`; it reads the config with `--get` or `--list`.
 export function gitConfigReason(input, commands) {
-  if (!input.agent_type) {
+  if (!isSubAgent(input)) {
     return undefined;
   }
   const variable = commands.flatMap(exportedVariables).find((word) => GIT_PROGRAM_VARIABLES.test(word));
@@ -307,7 +308,7 @@ function scriptCommands(project, { words, directory }) {
 // `worker-scope` adds a worktree and a branch: the conductor's to place, from the trunk. A sub-agent
 // reads a briefing (`--dry-run`) or where a worker stands (`--resume`): both create nothing.
 export function workerPlaceReason(input, commands) {
-  if (!input.agent_type) {
+  if (!isSubAgent(input)) {
     return undefined;
   }
   const preparing = kitInvocations(commands).some(
@@ -324,7 +325,7 @@ export function workerPlaceReason(input, commands) {
 // squash merge: the conductor's step. A sub-agent brings the trunk in with `merge-trunk` alone,
 // however it launches the CLI.
 export function landingReason(input, commands) {
-  if (!input.agent_type) {
+  if (!isSubAgent(input)) {
     return undefined;
   }
   const landing = kitInvocations(commands).some(

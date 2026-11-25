@@ -55,7 +55,17 @@ export function reminderMarker(project, input) {
   return markerOf(project, 'commit-reminder', key);
 }
 
-export function markerOf(project, kind, key) {
+// Whether `text` was already said, or refused, to this session in this project: asking leaves its
+// marker, so that the first asking answers no and each later one yes.
+export function saidOnce(project, input, kind, text) {
+  const key = createHash('sha256')
+    .update(`${project.root}\n${sessionOf(input)}\n${text}`)
+    .digest('hex')
+    .slice(0, 24);
+  return alreadyRemembered(markerOf(project, kind, key));
+}
+
+function markerOf(project, kind, key) {
   return join(project.root, GUARD_MARKERS, `${kind}-${key}`);
 }
 
