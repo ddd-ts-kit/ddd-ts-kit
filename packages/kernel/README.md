@@ -1138,7 +1138,8 @@ What every unit of work carries, whatever started it: `correlationId`, `causatio
 `locale?`, `deadline?`, `scheduledAt?` (for a scheduled job, the instant it was due), `origin`
 (`http`, `event`, `schedule`, `queue` for a background job, `cli`, or a string of the project)
 and `extensions`. `executionContext(init)` builds one and takes the tenant of the actor;
-`withActor(context, actor)` is the same work seen as another actor.
+`withActor(context, actor)` is the same work seen as another actor, without the session and
+the elevation of the previous one.
 
 `ExecutionScope` (`current()`, `require()`, `run(context, work)`) gives the context of the work
 in progress to code that is not handed it. The boundary sets it once:

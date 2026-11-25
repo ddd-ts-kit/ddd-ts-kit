@@ -58,6 +58,13 @@ describe('ExecutionContext', () => {
     expect(withActor(request, ada)).toBe(request);
   });
 
+  it('seen as another actor leaves the elevation with the actor it was opened for', () => {
+    const elevated = { ...request, elevation: { reason: 'SUPPORT_TICKET', tenants: 'all' as const } };
+
+    expect(withActor(elevated, bob).elevation).toBeUndefined();
+    expect(withActor(elevated, ada).elevation).toEqual({ reason: 'SUPPORT_TICKET', tenants: 'all' });
+  });
+
   it('knows when its deadline has passed', () => {
     const clock = new FixedClock(new Date('2026-03-01T10:00:00.000Z'));
     const hurried = executionContext({ ...job, deadline: new Date('2026-03-01T10:00:05.000Z') });

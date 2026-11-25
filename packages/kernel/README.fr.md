@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:93b7b654f025d9ea -->
+<!-- translation-of: README.md sha256:2540a29a4f5aeadd -->
 
 # @ddd-ts-kit/kernel
 
@@ -1178,7 +1178,8 @@ lit par-dessus les *tenants*, voir « Multitenance »), `locale?`, `deadline?`, 
 (pour un *job* planifié, l'instant où il était dû), `origin` (`http`, `event`, `schedule`,
 `queue` pour un *job* en arrière-plan, `cli`, ou une chaîne du projet) et `extensions`.
 `executionContext(init)` en construit un et prend le *tenant* de l'acteur ;
-`withActor(context, actor)` est le même travail vu par un autre acteur.
+`withActor(context, actor)` est le même travail vu par un autre acteur, sans la session ni
+l'élévation du précédent.
 
 `ExecutionScope` (`current()`, `require()`, `run(context, work)`) donne le contexte du travail en
 cours au code à qui on ne le passe pas. La frontière le pose une fois :
