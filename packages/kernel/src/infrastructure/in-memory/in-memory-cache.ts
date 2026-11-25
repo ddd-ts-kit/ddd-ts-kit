@@ -1,6 +1,7 @@
 import type { CacheKey } from '../../application/cache/cache-key';
 import type { Cache, CacheEntryOptions } from '../../application/ports/cache';
 import type { Clock } from '../../application/ports/clock';
+import { asJsonCarries } from './as-json-carries';
 
 export interface InMemoryCacheOptions {
   /** Beyond it the oldest entry goes. Default 1000. */
@@ -8,6 +9,7 @@ export interface InMemoryCacheOptions {
 }
 
 interface Entry {
+  /** The value as JSON carried it at the write: the copy of the cache. */
   readonly value: unknown;
   readonly expiresAt?: number;
 }
@@ -16,7 +18,9 @@ const DEFAULT_MAX_ENTRIES = 1000;
 
 /**
  * A bounded map in the memory of the process, with expiry read from the `Clock`. Fine for one
- * instance and for tests; several instances share nothing.
+ * instance and for tests; several instances share nothing. It keeps and hands values as a shared
+ * cache does, as JSON carries them: a copy at each write and each read, a `Date` as its text,
+ * and a value JSON cannot carry (a bigint, a cycle) refused at the write.
  */
 export class InMemoryCache implements Cache {
   private readonly entries = new Map<string, Entry>();
@@ -48,14 +52,16 @@ export class InMemoryCache implements Cache {
     }
 
     // eslint-disable-next-line ddd-ts-kit/clean-no-escape-hatch -- entries of every type share one map: the link between a key and the type of its value is only known to the CacheKey that wrote it
-    return entry.value as T;
+    return asJsonCarries(entry.value) as T;
   }
 
   async set<T>(key: CacheKey<T>, value: T, options: CacheEntryOptions = {}): Promise<void> {
+    const carried = asJsonCarries(value);
+
     this.entries.delete(key.name);
 
     this.entries.set(key.name, {
-      value,
+      value: carried,
       ...(options.ttlMs === undefined ? {} : { expiresAt: this.clock.now().getTime() + options.ttlMs }),
     });
 
