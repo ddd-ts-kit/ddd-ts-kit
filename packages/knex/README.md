@@ -233,6 +233,9 @@ run after the commit. Handlers declared `after-commit` run once the transaction 
 A nested `run` joins the unit of work in progress: one dispatch, at the end of the outermost.
 Called inside the unit of work of another database, `run` opens its own: its events are
 dispatched before its own commit.
+The unit of work commits or rolls back as a whole: once a nested `run` has failed it no longer
+commits, and when the work caught that failure and went on the outermost `run` rejects with a
+`UnitOfWorkAbortedError` whose `cause` it is.
 A `run` called directly (a consumer, a script) has the same timing as a command.
 `unitOfWorkContract` of `@ddd-ts-kit/testing/contracts` proves it, with a deferred constraint
 for the commit that fails; on a real PostgreSQL (`DDD_TS_KIT_TEST_DATABASE_URL`) it also proves

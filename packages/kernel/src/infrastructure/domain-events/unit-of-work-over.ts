@@ -7,6 +7,7 @@ import { TransactionTimeoutError } from '../persistence/transaction-timeout-erro
 import { dispatchAfterCommit } from './dispatch-after-commit';
 import { dispatchBeforeCommit } from './dispatch-before-commit';
 import type { CommitStep } from './commit-step';
+import { UnitOfWorkAbortedError } from './unit-of-work-aborted-error';
 import { unitOfWorkScope, type UnitOfWorkScope } from './unit-of-work-scope';
 
 /** Runs what it is given atomically: it begins, calls it, and commits when it resolved or rolls back when it rejected. */
@@ -35,6 +36,10 @@ type Transaction = <T>(work: () => Promise<T>) => Promise<T>;
  * so one dispatch, at the end of the outermost. A unit of work over another database is another
  * one, wherever it is called from: its own transaction, and its own events dispatched before its
  * own commit. Two concurrent calls never share a scope.
+ *
+ * It commits or rolls back as a whole: once a `run` that joined has failed, the outermost one
+ * rejects, with that failure when it travelled up, with a `UnitOfWorkAbortedError` whose
+ * `cause` it is when the work caught it, a retry that then succeeded included.
  */
 export function unitOfWorkOver(transaction: Transaction): UnitOfWork {
   // The scope of the transaction of this unit of work open on the asynchronous call chain.
@@ -45,7 +50,7 @@ export function unitOfWorkOver(transaction: Transaction): UnitOfWork {
       const joined = open.getStore();
 
       if (isRunning(joined)) {
-        return unitOfWorkScope.run(joined, work);
+        return joining(joined, work);
       }
 
       const scope = openScope();
@@ -55,6 +60,17 @@ export function unitOfWorkOver(transaction: Transaction): UnitOfWork {
       );
     },
   };
+}
+
+/** The work of a run that joined: its failure aborts the unit of work, whatever the caller does with it. */
+async function joining<T>(scope: UnitOfWorkScope, work: () => Promise<T>): Promise<T> {
+  try {
+    return await unitOfWorkScope.run(scope, work);
+  } catch (error) {
+    scope.abortedBy ??= { failure: error };
+
+    throw error;
+  }
 }
 
 /** The outermost run: the work, the dispatch and the commit steps inside `transaction`, the rest once it resolved. */
@@ -100,7 +116,9 @@ function openScope(): UnitOfWorkScope {
 async function thenDispatched<T>(work: () => Promise<T>, scope: UnitOfWorkScope, applied: CommitStep[]): Promise<T> {
   const result = await work();
 
+  refuseAborted(scope);
   await dispatchBeforeCommit(scope);
+  refuseAborted(scope);
 
   for (const step of scope.atCommit ?? []) {
     await step.apply();
@@ -108,6 +126,13 @@ async function thenDispatched<T>(work: () => Promise<T>, scope: UnitOfWorkScope,
   }
 
   return result;
+}
+
+/** Asked before the events leave and again before the commit: a handler may have caught such a failure too. */
+function refuseAborted({ abortedBy }: UnitOfWorkScope): void {
+  if (abortedBy !== undefined) {
+    throw new UnitOfWorkAbortedError(abortedBy.failure);
+  }
 }
 
 /** Newest first; an undo that fails reported itself, and the others still run. */

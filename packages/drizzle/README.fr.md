@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:9a8694cbaff38ebd -->
+<!-- translation-of: README.md sha256:bbaa42cc6f816be6 -->
 
 # @ddd-ts-kit/drizzle
 
@@ -156,7 +156,10 @@ reste rien : aucune ligne, aucun enregistrement d'outbox, aucun gestionnaire ex�
 validation. Les gestionnaires déclarés `after-commit` s'exécutent une fois la transaction
 validée. Un `run` imbriqué rejoint l'unité de travail en cours : une seule distribution, à la fin
 de la plus externe. Appelé dans l'unité de travail d'une autre base de données, `run` ouvre la sienne : ses
-événements sont distribués avant sa propre validation. Un `run` appelé directement (un consommateur, un script) suit le même
+événements sont distribués avant sa propre validation. L'unité de travail est validée ou annulée
+en entier : dès qu'un `run` imbriqué a échoué elle n'est plus validée, et quand le travail a
+intercepté cet échec et continué, le `run` le plus externe est rejeté avec une
+`UnitOfWorkAbortedError` dont il est la `cause`. Un `run` appelé directement (un consommateur, un script) suit le même
 déroulé qu'une commande. `unitOfWorkContract` de `@ddd-ts-kit/testing/contracts` le prouve sur
 PGlite, avec une contrainte différée pour la validation qui échoue. Le README de
 `@ddd-ts-kit/kernel` dessine ce déroulé

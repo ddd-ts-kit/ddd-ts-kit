@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:33d57adc0706e1c0 -->
+<!-- translation-of: README.md sha256:8d7fd40773092ae1 -->
 
 # @ddd-ts-kit/kernel
 
@@ -36,7 +36,7 @@ avec une bibliothèque.
 | Ports | `Clock`, `IdGenerator`, `UnitOfWork`, `Repository` (classes abstraites : chacune est son propre jeton d'injection), `UseCase`, `DependencyKind` (les rôles que déclare une liaison, lus par di, le traçage et les aspects : `repository`, `gateway`, `external`, `use-case`, `publisher`, `consumer`, `domain-event-handler`, `job`) |
 | Bus | `Command`, `Query`, `CommandBus`, `QueryBus`, `BusMiddleware`, les `InMemoryCommandBus` et `InMemoryQueryBus` en processus (`register(type, handler, { context })` nomme le contexte délimité dans `MessageInfo`), `unitOfWorkMiddleware` |
 | Événements | `IntegrationEvent`, `IntegrationEventPublisher`, `IntegrationEventSubscriber`, `EventBus` (les deux à la fois), `EventSubscribers` (l'abonné de chaque contexte délimité), `ProcessedEventStore`, `idempotent`, `InMemoryEventBus` (exécute chaque gestionnaire d'un événement, puis rejette avec une `AggregateError` des échecs ; avec `{ failures: 'as-thrown' }`, la valeur par défaut d'une prochaine version mineure, l'échec d'un seul gestionnaire est relancé tel quel, avec son `code`), `EventBusFailures`, `DomainEventDispatcher`, `IntegrationEventCallback` et `DomainEventCallback` (les fonctions que reçoivent un abonné et un distributeur), `executionContextOfEvent`, `inEventScope`, `scopedPublisher`, `EventDelivery` (ce qu'un fournisseur dit d'une livraison : tentative, dernière tentative, transport, source, consommateur), `messagingSystemOf` |
-| Événements du domaine et unité de travail | `dispatchingOnSave` (l'enveloppe qui fait remettre par un *repository* ce qu'ont enregistré les agrégats qu'on lui confie), `announceDomainEvents`, `unitOfWorkOver` (ce sur quoi repose chaque `UnitOfWork` : file, distribution avant la validation, phase `after-commit`), `UnscopedUnitOfWorkError`, `unitOfWorkStage` et `UnitOfWorkStage`, `DomainEventPhase`, `DomainEventSubscription`, `SaveAfterCommitError`, `AfterCommitFailure`, `reportAfterCommitFailures`, `InMemoryDomainEventDispatcher` |
+| Événements du domaine et unité de travail | `dispatchingOnSave` (l'enveloppe qui fait remettre par un *repository* ce qu'ont enregistré les agrégats qu'on lui confie), `announceDomainEvents`, `unitOfWorkOver` (ce sur quoi repose chaque `UnitOfWork` : file, distribution avant la validation, phase `after-commit`), `UnscopedUnitOfWorkError`, `UnitOfWorkAbortedError`, `unitOfWorkStage` et `UnitOfWorkStage`, `DomainEventPhase`, `DomainEventSubscription`, `SaveAfterCommitError`, `AfterCommitFailure`, `reportAfterCommitFailures`, `InMemoryDomainEventDispatcher` |
 | Machines à états | `defineStateMachine`, `StateMachine`, `TransitionError`, `InvalidStateMachineError`, `mermaidOfStateMachine` (voir « Machines à états ») |
 | Acteur | `Actor`, `AuthorizedCommand`, `AuthorizedQuery`, `ActorContext`, `systemActor` |
 | Interfaces standard | `Session`, `ExecutionContext` et `ExecutionScope`, `Logger`, `Metrics`, `ErrorReporter`, `Cache`, `CacheInvalidation` et `CachePurger` (avec `cacheTag`, `tenantCacheTags`, `CachePurgeRequest`, `PublishedCacheInvalidation`, `PurgingPublisher`, `RepeatedCachePurger` : voir « Purger les caches HTTP »), `Lock`, `RateLimiter`, `Page` et `PageRequest`, `AuditStamp`, `TenantScoped`, `AuditTrail`, `AuditReader` et `AuditEntry` |
@@ -660,6 +660,14 @@ seule distribution, à la fin de la plus externe, et la phase `after-commit` apr
 la plus externe. Deux commandes concurrentes ne partagent jamais une portée, et deux bases de
 données non plus : une unité de travail exécutée dans celle d'une autre base de données ouvre sa
 propre transaction et distribue ses événements avant sa propre validation.
+
+Une unité de travail est validée ou annulée en entier. Un `run` imbriqué qui échoue l'interrompt :
+quand l'échec remonte, le `run` le plus externe est rejeté avec lui ; quand le travail l'a
+intercepté et a continué (`await unitOfWork.run(step).catch(fallback)`, une nouvelle tentative
+autour d'une commande envoyée depuis un gestionnaire), le `run` le plus externe est rejeté avec
+une `UnitOfWorkAbortedError` dont la `cause` est cet échec, avant toute distribution
+d'événement. Ce que l'étape en échec a écrit n'est jamais validé à part du reste : décidez avant
+l'écriture, ou laissez passer l'échec.
 
 Un `UnitOfWork` écrit dans un projet repose dessus. `transaction` commence, appelle ce qu'on lui
 donne, valide quand cela s'est résolu et annule quand cela a été rejeté ; elle est appelée pour

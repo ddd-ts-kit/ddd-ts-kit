@@ -1,4 +1,4 @@
-import { InMemoryUnitOfWork } from '@ddd-ts-kit/kernel';
+import { InMemoryUnitOfWork, UnitOfWorkAbortedError } from '@ddd-ts-kit/kernel';
 import { ContractSuite } from '../contract-suite';
 import { failureOf } from '../failure-of';
 import { Parcel } from './parcel';
@@ -19,6 +19,7 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
 
     this.refusedSave();
     this.failingWork();
+    this.failingNestedRun();
     this.failingHandler();
     this.failingHandlerInsideAnotherDatabase();
     this.failingCommit();
@@ -105,6 +106,32 @@ export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
       this.expect(bench.journal).toEqual(['saved p1', 'published p1', 'committed p1']);
       this.expect(await bench.relayed()).toEqual(['evt-p1']);
     });
+  }
+
+  private failingNestedRun(): void {
+    this.it(
+      'refuses to commit once a nested run failed, although the work caught its failure: nothing stored, no handler',
+      async () => {
+        const bench = this.everyEffect();
+
+        const failure = await failureOf(() =>
+          bench.run(async () => {
+            await failureOf(() =>
+              bench.run(async () => {
+                await bench.register('p1');
+                throw new CarrierDown();
+              }),
+            );
+
+            await bench.register('p2');
+          }),
+        );
+
+        this.expect(failure instanceof UnitOfWorkAbortedError).toBe(true);
+        this.expect(failure instanceof Error && failure.cause instanceof CarrierDown).toBe(true);
+        await this.expectNothingLeft(bench, ['saved p1', 'saved p2']);
+      },
+    );
   }
 
   private failingHandler(): void {

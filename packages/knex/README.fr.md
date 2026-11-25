@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:b87bc72d4773944b -->
+<!-- translation-of: README.md sha256:c955608f8abdbaf8 -->
 
 # @ddd-ts-kit/knex
 
@@ -244,7 +244,10 @@ ne reste rien : aucune ligne, aucun enregistrement d'outbox, aucun gestionnaire 
 validation. Les gestionnaires déclarés `after-commit` s'exécutent une fois la transaction
 validée. Un `run` imbriqué rejoint l'unité de travail en cours : une seule distribution, à la fin
 du plus externe. Appelé dans l'unité de travail d'une autre base de données, `run` ouvre la sienne : ses
-événements sont distribués avant sa propre validation. Un `run` appelé directement (un consommateur, un script) a le même déroulement
+événements sont distribués avant sa propre validation. L'unité de travail est validée ou annulée
+en entier : dès qu'un `run` imbriqué a échoué elle n'est plus validée, et quand le travail a
+intercepté cet échec et continué, le `run` le plus externe est rejeté avec une
+`UnitOfWorkAbortedError` dont il est la `cause`. Un `run` appelé directement (un consommateur, un script) a le même déroulement
 qu'une commande. `unitOfWorkContract` de `@ddd-ts-kit/testing/contracts` le prouve, avec une
 contrainte différée pour la validation qui échoue ; sur un vrai PostgreSQL
 (`DDD_TS_KIT_TEST_DATABASE_URL`), il prouve aussi que les lignes d'un gestionnaire

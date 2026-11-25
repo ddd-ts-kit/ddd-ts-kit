@@ -33,7 +33,7 @@ starts, so a business rule never changes with a library.
 | Ports | `Clock`, `IdGenerator`, `UnitOfWork`, `Repository` (abstract classes: each one is its own injection token), `UseCase`, `DependencyKind` (the roles a binding declares, read by di, tracing and aspects: `repository`, `gateway`, `external`, `use-case`, `publisher`, `consumer`, `domain-event-handler`, `job`) |
 | Buses | `Command`, `Query`, `CommandBus`, `QueryBus`, `BusMiddleware`, the in-process `InMemoryCommandBus` and `InMemoryQueryBus` (`register(type, handler, { context })` names the bounded context in `MessageInfo`), `unitOfWorkMiddleware` |
 | Events | `IntegrationEvent`, `IntegrationEventPublisher`, `IntegrationEventSubscriber`, `EventBus` (both at once), `EventSubscribers` (the subscriber of each bounded context), `ProcessedEventStore`, `idempotent`, `InMemoryEventBus` (runs every handler of an event, then rejects with an `AggregateError` of the failures; with `{ failures: 'as-thrown' }`, the default in a later minor version, the failure of a single handler is rethrown as it is, with its `code`), `EventBusFailures`, `DomainEventDispatcher`, `IntegrationEventCallback` and `DomainEventCallback` (the functions a subscriber and a dispatcher are given), `executionContextOfEvent`, `inEventScope`, `scopedPublisher`, `EventDelivery` (what a provider says of one delivery: attempt, last attempt, transport, source, consumer), `messagingSystemOf` |
-| Domain events and the unit of work | `dispatchingOnSave` (the wrapper that makes a repository hand over what the aggregates it is given recorded), `announceDomainEvents`, `unitOfWorkOver` (what every `UnitOfWork` is built on: queue, dispatch before the commit, `after-commit` phase), `UnscopedUnitOfWorkError`, `unitOfWorkStage` and `UnitOfWorkStage`, `DomainEventPhase`, `DomainEventSubscription`, `SaveAfterCommitError`, `AfterCommitFailure`, `reportAfterCommitFailures`, `InMemoryDomainEventDispatcher` |
+| Domain events and the unit of work | `dispatchingOnSave` (the wrapper that makes a repository hand over what the aggregates it is given recorded), `announceDomainEvents`, `unitOfWorkOver` (what every `UnitOfWork` is built on: queue, dispatch before the commit, `after-commit` phase), `UnscopedUnitOfWorkError`, `UnitOfWorkAbortedError`, `unitOfWorkStage` and `UnitOfWorkStage`, `DomainEventPhase`, `DomainEventSubscription`, `SaveAfterCommitError`, `AfterCommitFailure`, `reportAfterCommitFailures`, `InMemoryDomainEventDispatcher` |
 | State machines | `defineStateMachine`, `StateMachine`, `TransitionError`, `InvalidStateMachineError`, `mermaidOfStateMachine` (see "State machines") |
 | Actor | `Actor`, `AuthorizedCommand`, `AuthorizedQuery`, `ActorContext`, `systemActor` |
 | Standard interfaces | `Session`, `ExecutionContext` and `ExecutionScope`, `Logger`, `Metrics`, `ErrorReporter`, `Cache`, `CacheInvalidation` and `CachePurger` (with `cacheTag`, `tenantCacheTags`, `CachePurgeRequest`, `PublishedCacheInvalidation`, `PurgingPublisher`, `RepeatedCachePurger`: see "Purging the HTTP caches"), `Lock`, `RateLimiter`, `Page` and `PageRequest`, `AuditStamp`, `TenantScoped`, `AuditTrail`, `AuditReader` and `AuditEntry` |
@@ -644,6 +644,13 @@ unit of work, joins the scope in progress: one dispatch, at the end of the outer
 `after-commit` phase after the outermost commit. Two concurrent commands never share a scope,
 and neither do two databases: a unit of work run inside the one of another database opens its
 own transaction and dispatches its events before its own commit.
+
+A unit of work commits or rolls back as a whole. A nested `run` that fails aborts it: when the
+failure travels up, the outermost `run` rejects with it; when the work caught it and went on
+(`await unitOfWork.run(step).catch(fallback)`, a retry around a command sent from a handler),
+the outermost `run` rejects with a `UnitOfWorkAbortedError` whose `cause` is that failure,
+before any event is dispatched. What the failed step wrote is never committed apart from the
+rest: decide before the write, or let the failure through.
 
 A `UnitOfWork` written in a project is built on it. `transaction` begins, calls what it is
 given, commits when it resolved and rolls back when it rejected; it is called to open a

@@ -1,5 +1,5 @@
 [English](domain-and-integration-events.md) · **Français**
-<!-- translation-of: domain-and-integration-events.md sha256:b6acafa99f8ffafb -->
+<!-- translation-of: domain-and-integration-events.md sha256:413cd38e48c31cef -->
 
 # Événements du domaine et événements d'intégration
 
@@ -550,6 +550,10 @@ aucune portée est refusée avant le gestionnaire (`UnscopedUnitOfWorkError`).
 - Deux bases de données n'en partagent jamais une non plus : une unité de travail exécutée dans
   celle d'une autre base de données ouvre sa propre transaction, distribue ses événements avant
   sa propre validation et exécute ses gestionnaires `after-commit` après elle.
+- Une unité de travail est validée ou annulée en entier : dès qu'un `run` imbriqué a échoué,
+  elle n'est plus validée. Quand le travail a intercepté cet échec et continué, le `run` le plus
+  externe est rejeté avec une `UnitOfWorkAbortedError` dont il est la `cause`, et aucun événement
+  n'est distribué.
 - Un projet qui écrit sa propre `UnitOfWork` la construit sur `unitOfWorkOver`, et exécute
   `unitOfWorkContract` de `@ddd-ts-kit/testing/contracts`, qui fait échouer un adaptateur qui
   l'aurait oublié :

@@ -28,6 +28,8 @@ export interface UnitOfWorkScope {
   readonly queue: QueuedDomainEvent[];
   /** Dispatched before the commit, in that order: what the `after-commit` phase is given. */
   readonly dispatched: QueuedDomainEvent[];
+  /** The first failure of a run that joined this unit of work: it no longer commits. */
+  abortedBy?: { readonly failure: unknown };
   /** What `afterCommit` was handed in a unit of work: run after the `after-commit` handlers, never on a rollback. */
   readonly committed?: (() => Promise<void>)[];
   /** What `atCommit` was handed in a unit of work: applied last, inside the transaction. */

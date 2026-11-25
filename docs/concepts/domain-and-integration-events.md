@@ -539,6 +539,9 @@ own `UnitOfWork` that opens no scope is refused before the handler (`UnscopedUni
 - Two databases never share one either: a unit of work run inside the one of another database
   opens its own transaction, dispatches its events before its own commit and runs its
   `after-commit` handlers after it.
+- A unit of work commits or rolls back as a whole: once a nested `run` has failed it no longer
+  commits. When the work caught that failure and went on, the outermost `run` rejects with a
+  `UnitOfWorkAbortedError` whose `cause` it is, and no event is dispatched.
 - A project that writes its own `UnitOfWork` builds it on `unitOfWorkOver`, and runs `unitOfWorkContract`
   of `@ddd-ts-kit/testing/contracts`, which fails an adapter that forgot:
 
