@@ -165,11 +165,11 @@ describe('a context generated in the declared style, towards the outside', () =>
     );
 
     expect(read(root, 'src/platform/composition/platform.module.ts')).toContain(
-      '      // ddd-ts-kit:bindings\n      builder.bind(InvoiceStatusContract).toValue({});\n      // /ddd-ts-kit:bindings',
+      `      // ddd-ts-kit:bindings\n${refusalAt('      ')}\n      // /ddd-ts-kit:bindings`,
     );
 
     expect(read(root, 'src/platform/composition/platform-test.module.ts')).toContain(
-      '    // ddd-ts-kit:test-bindings\n    builder.bind(InvoiceStatusContract).toValue({});\n    // /ddd-ts-kit:test-bindings',
+      `    // ddd-ts-kit:test-bindings\n${refusalAt('    ')}\n    // /ddd-ts-kit:test-bindings`,
     );
   });
 });
@@ -260,3 +260,15 @@ describe('a declared context and what hosts it', () => {
     );
   });
 });
+
+/** The binding of a contract nobody implements yet, as `generate gateway` writes it at a depth of the platform. */
+function refusalAt(indent: string): string {
+  return [
+    '// TODO(platform): bind the implementation billing gives of InvoiceStatusContract in place of this refusal.',
+    'builder.bind(InvoiceStatusContract).toFactory(() => {',
+    "  throw undecided('what billing answers as InvoiceStatusContract');",
+    '});',
+  ]
+    .map((line) => `${indent}${line}`)
+    .join('\n');
+}
