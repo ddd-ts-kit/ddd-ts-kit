@@ -8,6 +8,7 @@ export { lazy } from './builders/lazy';
 export type { Resolvable } from './builders/resolvable';
 export { resolve } from './builders/resolve';
 export { resetSequences, sequence } from './builders/sequence';
+export { restartTestData } from './builders/restart-test-data';
 export { aSession } from './execution/a-session';
 export { anExecutionContext } from './execution/an-execution-context';
 export { ExecutionContextBuilder } from './execution/execution-context-builder';

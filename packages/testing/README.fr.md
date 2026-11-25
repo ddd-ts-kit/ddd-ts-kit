@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:ddc1b7f5fe173c66 -->
+<!-- translation-of: README.md sha256:00c8782b1156a688 -->
 
 # @ddd-ts-kit/testing
 
@@ -22,6 +22,7 @@ npm i -D @ddd-ts-kit/testing
 | `@ddd-ts-kit/testing/vitest` | `decorators()`, le *plugin* Vite qui permet à Vitest d'exécuter les décorateurs standard, et `decoratorCoverage()` | Node seulement ; exécute le `tsc` du projet |
 | `@ddd-ts-kit/testing/coverage` | `governedCoverage()`, `governedJestCoverage()`, `unaffectedContexts()` : la couverture que mesure le runner et son plancher, lus dans `ddd-ts-kit.config.json` | Node seulement |
 | `@ddd-ts-kit/testing/budget`, `/budget/vitest`, `/budget/jest` | le budget de temps de chaque niveau de *specs*, lu dans `ddd-ts-kit.config.json`, et les reporters qui y tiennent chaque fichier de *spec* | Node seulement ; le runner |
+| `@ddd-ts-kit/testing/setup/vitest`, `/setup/jest` | le fichier de *setup* du runner : avant chaque test, les séquences repartent de 1 et le générateur de données de sa graine | le runner (`vitest`, pair optionnel ; le `beforeEach` que Jest rend global) |
 | `@ddd-ts-kit/testing/mutation` | `governedMutation()` : ce que Stryker mute, l'*ignorer* du kit qui écarte les textes des refus, les mutants statiques ignorés et le plancher, lus dans `ddd-ts-kit.config.json` | Node seulement |
 
 L'entrée principale, `/contracts` et `/e2e` suivent les
@@ -224,7 +225,11 @@ aLine().with('quantity', 3).build(); // { sku: 'sku-1', quantity: 3 }
   et dans les tableaux : `.with('lines', [aLine(), { sku: 'pen', quantity: 2 }])`.
 - `sequence('order')` donne `order-1`, `order-2`... à chaque construction ; `lazy(() => new Date())`
   calcule une valeur par défaut à chaque construction. Une valeur donnée par `with` ne consomme rien.
-- Appelez `resetSequences()` dans `beforeEach`, pour qu'un test ne dépende pas de ceux qui le précèdent.
+- Un test ne dépend pas de ceux qui le précèdent : la configuration du runner qu'écrit `init` liste
+  l'entrée de *setup* du *package*, `setupFiles: ['@ddd-ts-kit/testing/setup/vitest']` ou
+  `setupFilesAfterEnv: ['@ddd-ts-kit/testing/setup/jest']`, qui appelle `restartTestData()` avant chaque
+  test : chaque séquence repart de 1 et le générateur de données de `/faker` de sa graine. Sans cette
+  entrée, appelez `resetSequences()` dans `beforeEach`, comme le fait l'exemple ci-dessus.
 - La forme en classe garde `with`, `withMany` et `adding` protégées à dessein : la surface publique
   d'un *builder* d'agrégat est le langage du domaine, pas les noms de ses propriétés.
 

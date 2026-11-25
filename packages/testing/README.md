@@ -21,6 +21,7 @@ npm i -D @ddd-ts-kit/testing
 | `@ddd-ts-kit/testing/vitest` | `decorators()`, the Vite plugin that lets Vitest run standard decorators, and `decoratorCoverage()` | Node only; runs the `tsc` of the project |
 | `@ddd-ts-kit/testing/coverage` | `governedCoverage()`, `governedJestCoverage()`, `unaffectedContexts()`: the coverage the runner measures and its floor, read from `ddd-ts-kit.config.json` | Node only |
 | `@ddd-ts-kit/testing/budget`, `/budget/vitest`, `/budget/jest` | the time budget of each level of specs, read from `ddd-ts-kit.config.json`, and the reporters that hold each spec file to it | Node only; the runner |
+| `@ddd-ts-kit/testing/setup/vitest`, `/setup/jest` | the setup file of the runner: before each test, the sequences start again at 1 and the data generator at its seed | the runner (`vitest`, an optional peer; the `beforeEach` Jest makes global) |
 | `@ddd-ts-kit/testing/mutation` | `governedMutation()`: what Stryker mutates, the ignorer of the kit that leaves the texts of refusals out, the static mutants ignored and the floor, read from `ddd-ts-kit.config.json` | Node only |
 
 The main entry, `/contracts` and `/e2e` follow the
@@ -220,7 +221,11 @@ aLine().with('quantity', 3).build(); // { sku: 'sku-1', quantity: 3 }
   and inside arrays: `.with('lines', [aLine(), { sku: 'pen', quantity: 2 }])`.
 - `sequence('order')` yields `order-1`, `order-2`... at each build; `lazy(() => new Date())`
   computes a default at each build. A value given with `with` consumes nothing.
-- Call `resetSequences()` in `beforeEach`, so a test does not depend on the ones before it.
+- A test does not depend on the ones before it: the runner config `init` writes lists the setup
+  entry of the package, `setupFiles: ['@ddd-ts-kit/testing/setup/vitest']` or
+  `setupFilesAfterEnv: ['@ddd-ts-kit/testing/setup/jest']`, which calls `restartTestData()` before
+  each test: every sequence starts again at 1 and the data generator of `/faker` at its seed.
+  Without the entry, call `resetSequences()` in `beforeEach`, as the sample above does.
 - The class form keeps `with`, `withMany` and `adding` protected on purpose: the public
   surface of an aggregate builder is the language of the domain, not its property names.
 
