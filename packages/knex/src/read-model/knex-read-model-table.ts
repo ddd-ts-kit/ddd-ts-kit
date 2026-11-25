@@ -16,7 +16,7 @@ import { criteriaToKnex } from './criteria-to-knex';
 import type { KnexReadModelOptions } from './knex-read-model-options';
 import { TENANT_COLUMN } from '../tenancy/where-tenant';
 import { KnexStampedRows } from './knex-stamped-rows';
-import { postgresOnly } from './postgres-only';
+import { postgresOnly, type ReadModelContext } from './postgres-only';
 import { predicateToKnex } from './predicate-to-knex';
 import { recordsOf } from './records-of';
 import { RowMapper } from './row.mapper';
@@ -36,7 +36,7 @@ export class KnexReadModelTable<Row extends object> implements ReadModelTable<Ro
 
   private readonly traces: PostgresTraceColumns;
 
-  private readonly context: KnexContext;
+  private readonly context: ReadModelContext;
 
   constructor(
     context: KnexContext,

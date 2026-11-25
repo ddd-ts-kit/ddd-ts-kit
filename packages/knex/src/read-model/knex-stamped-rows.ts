@@ -8,8 +8,8 @@ import {
 } from '@ddd-ts-kit/kernel';
 import { insertIgnoringConflict } from '../sql/insert-ignoring-conflict';
 import { TENANT_COLUMN, whereTenant } from '../tenancy/where-tenant';
-import type { KnexContext } from '../unit-of-work/knex-context';
 import type { KnexReadModelOptions } from './knex-read-model-options';
+import type { ReadModelContext } from './postgres-only';
 import { recordsOf } from './records-of';
 import { RowMapper } from './row.mapper';
 
@@ -18,7 +18,7 @@ export class KnexStampedRows<Row extends object> implements ReadModelRows<Row> {
   private readonly mapper: RowMapper<Row>;
 
   constructor(
-    private readonly context: KnexContext,
+    private readonly context: ReadModelContext,
     private readonly options: KnexReadModelOptions<Row>,
     /** Of the table itself, which the copy of a rebuild is made like. */
     private readonly traces: PostgresTraceColumns,

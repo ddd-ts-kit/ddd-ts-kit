@@ -3,6 +3,9 @@ import { dialectOf } from '../sql/dialect-of';
 import { StatementOutsideUnitOfWorkError } from '../tenancy/statement-outside-unit-of-work-error';
 import type { KnexContext } from '../unit-of-work/knex-context';
 
+/** What a read model asks of its context: where its statements run. */
+export type ReadModelContext = Pick<KnexContext, 'executor'>;
+
 /**
  * The context of a read model: its executor is on PostgreSQL, or refused by name. The stamp of a
  * row, the trace of a deleted one, the rebuild and a search that ignores case are written for
@@ -10,11 +13,8 @@ import type { KnexContext } from '../unit-of-work/knex-context';
  * would answer wrong before they fail. Asked at once, when the read model is built; a context
  * that has no database outside a unit of work (database per tenant) answers at each statement.
  */
-export function postgresOnly(context: KnexContext): KnexContext {
-  const checked: KnexContext = {
-    executor: () => onPostgres(context.executor()),
-    inTransaction: () => context.inTransaction(),
-  };
+export function postgresOnly(context: KnexContext): ReadModelContext {
+  const checked: ReadModelContext = { executor: () => onPostgres(context.executor()) };
 
   try {
     checked.executor();
