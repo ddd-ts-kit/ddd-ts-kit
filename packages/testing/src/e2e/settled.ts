@@ -1,3 +1,4 @@
+import { AssertionError } from 'node:assert';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 /** The work a source still holds, as the stats of an outbox store give it: `failed` of them wait for a retry. */
@@ -23,7 +24,8 @@ export interface SettledOptions {
 /**
  * Resolves as soon as every source counts nothing pending: the work the requests so far started
  * has finished, and what it changed can be asserted at once, without a fixed delay. When the time
- * is up, fails naming each source still pending, how much it holds and how much of it failed.
+ * is up, fails as an assertion does, naming each source still pending, how much it holds and how
+ * much of it failed.
  */
 export async function settled(
   sources: Readonly<Record<string, PendingWork>>,
@@ -40,7 +42,12 @@ export async function settled(
     }
 
     if (performance.now() + intervalMs > deadline) {
-      throw new Error(`Still pending after ${timeoutMs} ms: ${pending.join(', ')}`);
+      throw new AssertionError({
+        message: `Still pending after ${timeoutMs} ms: ${pending.join(', ')}`,
+        actual: pending,
+        expected: [],
+        operator: 'settled',
+      });
     }
 
     await sleep(intervalMs);

@@ -6,7 +6,7 @@ import {
 } from '@ddd-ts-kit/kernel';
 import type { Awaitable } from '../awaitable';
 import type { ContractRunner } from '../contract-runner';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
 import type { ReadModelTableShape } from './read-model-table-shape';
 import { READ_MODEL_TABLE_SHAPES as TABLES } from './read-model-table-shapes';
 import type { ReadModelTablesUnderContract } from './read-model-tables-under-contract';

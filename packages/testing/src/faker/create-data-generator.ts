@@ -1,5 +1,6 @@
 import { Faker, base, en, type LocaleDefinition } from '@faker-js/faker';
 import type { DataGenerator } from './data-generator';
+import { testEpoch } from '../harness/test-epoch';
 
 export interface DataGeneratorOptions {
   /** Default: the `TEST_SEED` environment variable, else a random seed. */
@@ -17,13 +18,11 @@ export function createDataGenerator(options: DataGeneratorOptions = {}): DataGen
   const seed = options.seed ?? seedFromEnvironment() ?? randomSeed();
   const faker = new Faker({ locale: [...(options.locales ?? [en, base])] });
 
-  faker.setDefaultRefDate(options.referenceDate ?? DEFAULT_REFERENCE_DATE);
+  faker.setDefaultRefDate(options.referenceDate ?? testEpoch());
   faker.seed(seed);
 
   return { seed, faker, restart: () => void faker.seed(seed) };
 }
-
-const DEFAULT_REFERENCE_DATE = new Date('2026-01-01T00:00:00.000Z');
 
 function seedFromEnvironment(): number | undefined {
   const raw = process.env.TEST_SEED;

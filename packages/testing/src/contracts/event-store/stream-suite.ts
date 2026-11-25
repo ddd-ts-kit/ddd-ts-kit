@@ -1,7 +1,8 @@
 import { CONCURRENCY_CONFLICT, type EventStore } from '@ddd-ts-kit/kernel';
 import { ContractSuite } from '../contract-suite';
-import { failureOf } from '../failure-of';
+import { failureOf } from '../../scenarios/failure-of';
 import { eventOf } from './event-of';
+import { codeOf } from '../../scenarios/code-of';
 
 /** One stream: appended at the version it was read at, read back in order, refused when somebody appended first. */
 export class StreamSuite extends ContractSuite<EventStore> {
@@ -113,8 +114,4 @@ export class StreamSuite extends ContractSuite<EventStore> {
       this.expect((await this.subject.readStream('consignment-c1')).length).toBe(2);
     });
   }
-}
-
-function codeOf(failure: unknown): unknown {
-  return typeof failure === 'object' && failure !== null && 'code' in failure ? failure.code : undefined;
 }
