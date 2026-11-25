@@ -41,9 +41,10 @@ describe('marker regions', () => {
   it('sets a statement on several lines that opens a region apart from the statement right above the region', () => {
     const under = file.replace('function wire() {', 'function wire() {\n  prepare();\n  // why the region follows');
     const refusal = "// TODO(platform): bind it.\nbind(Contract).toFactory(() => {\n  throw undecided('it');\n});";
-    const opened = '  // ddd-ts-kit:registrations\n  // TODO(platform): bind it.\n  bind(Contract).toFactory(() => {';
+    const bound = '  // TODO(platform): bind it.\n  bind(Contract).toFactory(() => {';
+    const opened = `  // ddd-ts-kit:registrations\n${bound}`;
 
-    expect(insertInRegion(under, 'registrations', refusal)).toContain(opened.replace('\n', '\n\n'));
+    expect(insertInRegion(under, 'registrations', refusal)).toContain(`  // ddd-ts-kit:registrations\n\n${bound}`);
     expect(insertInRegion(under, 'registrations', 'first();')).toContain('  // ddd-ts-kit:registrations\n  first();');
     expect(insertInRegion(file, 'registrations', refusal)).toContain(opened);
   });

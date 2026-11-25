@@ -8,6 +8,8 @@ const SHIPPING_HANDLER =
 
 const SHIPPING_HANDLER_SPEC = 'src/contexts/shipping/test/unit/billing-invoice-issued.integration-handler.spec.ts';
 const SHIPPING_E2E = 'test/e2e/ship-parcel.e2e.spec.ts';
+const ISSUED_HANDLER = 'src/contexts/billing/application/event-handlers/invoice-issued.event-handler.ts';
+const ISSUED_HANDLER_SPEC = 'src/contexts/billing/test/unit/invoice-issued.event-handler.spec.ts';
 const PREPARE_PARCEL = 'src/contexts/shipping/application/commands/prepare-parcel/prepare-parcel.handler.ts';
 const PREPARE_PARCEL_SPEC = 'src/contexts/shipping/test/unit/prepare-parcel.handler.spec.ts';
 
@@ -66,6 +68,7 @@ export function writeBusinessDecisions(root: string): void {
   ]);
 
   writePrepareParcel(root);
+  writeTheReactionOfBilling(root);
 
   // The command the handler executes is decided: the pending entry of its spec becomes the test of it.
   edit(root, SHIPPING_HANDLER_SPEC, [
@@ -147,12 +150,34 @@ export function writeBusinessDecisions(root: string): void {
 function writePrepareParcel(root: string): void {
   edit(root, PREPARE_PARCEL, [
     [/^ {4}throw undecided\([^\n]*\n/m, ''],
-    [/^import \{ undecided \} from '@ddd-ts-kit\/kernel';\n|undecided, /m, ''],
+    // Declared, the handler imports the refusal alone; in a module file, beside the type of its role.
+    [/(?:^import \{ undecided \} from '@ddd-ts-kit\/kernel';\n|\bundecided, )/m, ''],
   ]);
 
   edit(root, PREPARE_PARCEL_SPEC, [
     [/ {2}\/\/ TODO\(domain\): a generated handler refuses[^\n]*\n/, ''],
     [/it\('is refused until what "prepare parcel" does is written'/, "it('prepares a parcel and answers nothing'"],
+    ['rejects.toMatchObject({ code: NOT_IMPLEMENTED })', 'resolves.toBeUndefined()'],
+    [/^import \{ NOT_IMPLEMENTED \} from '@ddd-ts-kit\/kernel';\n/m, ''],
+  ]);
+}
+
+/**
+ * What billing does when an invoice is issued, which the proof keeps to nothing: the aggregate now
+ * records that fact, and the refusal the generator left in its handler would refuse every invoice.
+ */
+function writeTheReactionOfBilling(root: string): void {
+  edit(root, ISSUED_HANDLER, [
+    [/^ {4}throw undecided\([^\n]*\n/m, ''],
+    ['import { undecided, type CommandBus }', 'import type { CommandBus }'],
+  ]);
+
+  edit(root, ISSUED_HANDLER_SPEC, [
+    [/ {2}\/\/ TODO\(domain\): a generated handler refuses[^\n]*\n/, ''],
+    [
+      "it('refuses the fact until the policy that follows it is written'",
+      "it('sends no command when an invoice is issued'",
+    ],
     ['rejects.toMatchObject({ code: NOT_IMPLEMENTED })', 'resolves.toBeUndefined()'],
     [/^import \{ NOT_IMPLEMENTED \} from '@ddd-ts-kit\/kernel';\n/m, ''],
   ]);
