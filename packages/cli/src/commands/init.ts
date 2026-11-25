@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import { CliError } from '../cli-error';
 import { runInit, type InitOptions } from '../init/run-init';
-import { Arguments } from './arguments';
-import { type Command } from './command';
+import type { Arguments } from './arguments';
+import { defineCommand } from './command';
 import { printReport } from './print-report';
 import { VERSION } from '../version';
 
@@ -53,32 +53,35 @@ const OTHER_TEXT_FLAGS = [
   'agent-profile',
 ];
 
-export const initCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {
+export const initCommand = defineCommand({
+  name: 'init',
+  options: {
     ...Object.fromEntries([...STACK_FLAGS, ...OTHER_TEXT_FLAGS].map((flag) => [flag, { type: 'string' as const }])),
     context: { type: 'string', multiple: true },
     preset: { type: 'string', multiple: true },
-    'dry-run': { type: 'boolean', default: false },
-    force: { type: 'boolean', default: false },
-    sdk: { type: 'boolean', default: false },
-  });
+    'dry-run': { type: 'boolean' },
+    force: { type: 'boolean' },
+    sdk: { type: 'boolean' },
+  },
+  takesTheLock: { at: 'working-directory' },
+  run(args, io) {
+    if (args.positionals.length > 0) {
+      throw new CliError(
+        `Unexpected argument "${args.positionals[0] ?? ''}".`,
+        'Pass the target directory with --cwd <dir>.',
+      );
+    }
 
-  if (args.positionals.length > 0) {
-    throw new CliError(
-      `Unexpected argument "${args.positionals[0] ?? ''}".`,
-      'Pass the target directory with --cwd <dir>.',
-    );
-  }
+    const root = args.workingDirectory;
+    const dryRun = args.flag('dry-run');
 
-  const root = args.workingDirectory;
-  const dryRun = args.flag('dry-run');
+    if (!dryRun) {
+      fs.mkdirSync(root, { recursive: true });
+    }
 
-  if (!dryRun) {
-    fs.mkdirSync(root, { recursive: true });
-  }
-
-  return printReport(io, args, runInit(root, { ...initOptions(args, dryRun), rerun: rerunOf(argv) }));
-};
+    return printReport(io, args, runInit(root, { ...initOptions(args, dryRun), rerun: rerunOf(args.asWritten) }));
+  },
+});
 
 /** The command the owner runs outside a sandbox to write what this one could not: the same flags, written for real. */
 function rerunOf(argv: readonly string[]): string {

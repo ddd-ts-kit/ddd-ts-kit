@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { Arguments } from '../../commands/arguments';
-import { type Command } from '../../commands/command';
+import { defineCommand } from '../../commands/command';
 import { CONFIG_FILE, readConfig } from '../../config';
 import { DELEGATED_RULES } from '../catalogue/delegated-rules';
 import { RULES } from '../catalogue/rules';
@@ -16,16 +15,19 @@ interface ListedRule {
   readonly checkedBy: string;
 }
 
-export const rulesCommand: Command = (argv, io) => {
-  const args = Arguments.parse(argv, {});
-  const rules = listedRules(args.projectRoot);
-  const width = Math.max(...rules.map((rule) => rule.id.length));
-  const lines = rules.map((rule) => `${rule.id.padEnd(width)}  ${rule.severity.padEnd(5)}  ${rule.description}`);
+export const rulesCommand = defineCommand({
+  name: 'rules',
+  options: {},
+  run(args, io) {
+    const rules = listedRules(args.projectRoot);
+    const width = Math.max(...rules.map((rule) => rule.id.length));
+    const lines = rules.map((rule) => `${rule.id.padEnd(width)}  ${rule.severity.padEnd(5)}  ${rule.description}`);
 
-  io.out(args.json ? stdoutJson(rules) : lines.join('\n'));
+    io.out(args.json ? stdoutJson(rules) : lines.join('\n'));
 
-  return 0;
-};
+    return 0;
+  },
+});
 
 function listedRules(root: string): ListedRule[] {
   const configured = fs.existsSync(path.join(root, CONFIG_FILE))

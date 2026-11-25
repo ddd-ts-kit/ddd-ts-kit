@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { CliError } from '../cli-error';
-import type { Command } from './command';
+import { defineCommand } from './command';
 
 /** The native compiler as the project installs it: its package exports no path to its executable, which is found from its manifest. */
 const NATIVE_COMPILER = '@typescript/native';
@@ -13,51 +13,41 @@ const NATIVE_COMPILER = '@typescript/native';
  * workspace), with the arguments as given. The `tsc` of `node_modules/.bin` may be the one of
  * `typescript`, which the linter keeps beside it.
  */
-export const tscCommand: Command = (argv, io) => {
-  const { root, compilerArguments } = splitCwd(argv);
+export const tscCommand = defineCommand({
+  name: 'tsc',
+  options: {},
+  passesArgumentsOn: true,
+  run(args, io) {
+    const root = args.workingDirectory;
+    const compilerArguments = args.positionals;
 
-  const run = spawnSync(
-    process.execPath,
-    [compilerOf(root), ...compilerArguments, ...prettyInATerminal(compilerArguments)],
-    {
-      cwd: root,
-      encoding: 'utf8',
-      maxBuffer: 1024 * 1024 * 1024,
-    },
-  );
+    const run = spawnSync(
+      process.execPath,
+      [compilerOf(root), ...compilerArguments, ...prettyInATerminal(compilerArguments)],
+      {
+        cwd: root,
+        encoding: 'utf8',
+        maxBuffer: 1024 * 1024 * 1024,
+      },
+    );
 
-  if (run.stdout.trim() !== '') {
-    io.out(run.stdout.trimEnd());
-  }
+    if (run.stdout.trim() !== '') {
+      io.out(run.stdout.trimEnd());
+    }
 
-  if (run.stderr.trim() !== '') {
-    io.err(run.stderr.trimEnd());
-  }
+    if (run.stderr.trim() !== '') {
+      io.err(run.stderr.trimEnd());
+    }
 
-  return run.status ?? 1;
-};
+    return run.status ?? 1;
+  },
+});
 
 /** The compiler writes through a pipe here, where it would leave its colours out: asked back when the output is a terminal, unless the arguments say. */
 function prettyInATerminal(compilerArguments: readonly string[]): string[] {
   return process.stdout.isTTY && !compilerArguments.some((argument) => argument.startsWith('--pretty'))
     ? ['--pretty']
     : [];
-}
-
-/** `--cwd` names the project, as for every command of the kit; every other argument is the compiler's. */
-function splitCwd(argv: readonly string[]): { root: string; compilerArguments: string[] } {
-  const at = argv.findIndex((argument) => argument === '--cwd' || argument.startsWith('--cwd='));
-
-  if (at === -1) {
-    return { root: process.cwd(), compilerArguments: [...argv] };
-  }
-
-  const flag = argv[at] ?? '';
-  const inline = flag.startsWith('--cwd=');
-  const value = inline ? flag.slice('--cwd='.length) : (argv[at + 1] ?? '');
-  const compilerArguments = argv.filter((_, index) => index !== at && (inline || index !== at + 1));
-
-  return { root: path.resolve(value), compilerArguments };
 }
 
 function compilerOf(root: string): string {

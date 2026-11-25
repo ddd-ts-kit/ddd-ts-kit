@@ -4,7 +4,6 @@ import type { Io } from './commands/io';
 import { acceptanceCommand } from './commands/acceptance';
 import { affectedCommand } from './commands/affected';
 import { buildAliasesCommand } from './commands/build-aliases';
-import { takingTheLock } from './commands/taking-the-lock';
 import { tscCommand } from './commands/tsc';
 import { checkFileCommand, explainCommand, rulesCommand } from './commands/check';
 import { checksCommand } from './commands/checks';
@@ -54,11 +53,11 @@ import { refuseWindowsShell } from './refuse-windows-shell';
 import { VERSION } from './version';
 import { stdoutJson } from './json/stdout-json';
 
-/** Every command of the CLI. One that reads the shared files of a project and writes them back says so here: it takes the lock of the project (`takingTheLock`). */
+/** Every command of the CLI, under the name it is run by. */
 export const COMMANDS: Readonly<Record<string, Command>> = {
   affected: affectedCommand,
-  init: takingTheLock('init', initCommand, { at: 'working-directory' }),
-  generate: takingTheLock('generate', generateCommand),
+  init: initCommand,
+  generate: generateCommand,
   list: listCommand,
   describe: describeCommand,
   status: statusCommand,
@@ -84,7 +83,7 @@ export const COMMANDS: Readonly<Record<string, Command>> = {
   'depcruise-config': depcruiseConfigCommand,
   tsc: tscCommand,
   'build-aliases': buildAliasesCommand,
-  'drizzle-generate': takingTheLock('drizzle-generate', drizzleGenerateCommand),
+  'drizzle-generate': drizzleGenerateCommand,
   'knex-generate': knexGenerateCommand,
   'prisma-client': prismaClientCommand,
   'prisma-generate': prismaGenerateCommand,
@@ -101,9 +100,6 @@ export const COMMANDS: Readonly<Record<string, Command>> = {
   rules: rulesCommand,
   explain: explainCommand,
 };
-
-/** The commands whose arguments belong to the tool they run: `ddd-ts-kit tsc --help` is the help of the compiler, `ddd-ts-kit help tsc` the one of the kit. */
-const PASSES_ARGUMENTS_ON: readonly string[] = ['tsc'];
 
 /** The exit code of a fault of the kit itself, apart from `1` (violations) and `2` (a mistake of the caller). */
 const INTERNAL_ERROR = 4;
@@ -148,7 +144,10 @@ export function run(asked: readonly string[], io: Io = processIo, options?: RunO
   }
 }
 
-/** No command, `help`, or `--help` anywhere but in the arguments of a command that passes them on. */
+/**
+ * No command, `help`, or `--help` anywhere but in the arguments of a command that passes them on:
+ * `ddd-ts-kit tsc --help` is the help of the compiler, `ddd-ts-kit help tsc` the one of the kit.
+ */
 function asksForHelp(asked: readonly string[], argv: readonly string[]): boolean {
   const [command] = argv;
 
@@ -157,7 +156,8 @@ function asksForHelp(asked: readonly string[], argv: readonly string[]): boolean
   }
 
   return (
-    !PASSES_ARGUMENTS_ON.includes(asked[0] ?? '') && argv.some((argument) => argument === '--help' || argument === '-h')
+    ownEntry(COMMANDS, asked[0] ?? '')?.spec?.passesArgumentsOn !== true &&
+    argv.some((argument) => argument === '--help' || argument === '-h')
   );
 }
 

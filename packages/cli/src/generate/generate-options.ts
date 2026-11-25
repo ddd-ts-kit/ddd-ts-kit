@@ -1,5 +1,5 @@
 export const TEXT = { type: 'string' } as const;
-const SWITCH = { type: 'boolean', default: false } as const;
+const SWITCH = { type: 'boolean' } as const;
 const TEXTS = { type: 'string', multiple: true } as const;
 
 /** The flags of `generate` every kind takes, whatever its usage shows: the `generate` line of the help states them. */

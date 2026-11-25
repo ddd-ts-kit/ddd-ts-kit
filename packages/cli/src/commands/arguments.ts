@@ -55,6 +55,28 @@ export class Arguments<Text extends string = string, Flag extends string = strin
     return new Arguments(args, ...read(args, options));
   }
 
+  /**
+   * The arguments of a command that passes them on to the tool it runs: `--cwd` alone is the kit's,
+   * every other word is a positional, a flag of the tool included.
+   */
+  static passedOn(args: readonly string[]): Arguments {
+    const at = args.findIndex((argument) => argument === '--cwd' || argument.startsWith('--cwd='));
+
+    if (at === -1) {
+      return new Arguments(args, {}, args);
+    }
+
+    const flag = args[at] ?? '';
+    const inline = flag.startsWith('--cwd=');
+    const cwd = inline ? flag.slice('--cwd='.length) : (args[at + 1] ?? '');
+
+    return new Arguments(
+      args,
+      { cwd },
+      args.filter((_, index) => index !== at && (inline || index !== at + 1)),
+    );
+  }
+
   text(key: Text): string | undefined {
     const value = this.values[key];
 

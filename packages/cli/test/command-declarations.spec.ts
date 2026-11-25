@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Declaration } from '../src/commands/command';
+import { COMMON_FLAGS } from '../src/generate/generate-options';
 import { usageLinesOf } from '../src/help/usage-lines-of';
 import { COMMANDS } from '../src/run';
 
@@ -30,7 +31,10 @@ describe('a command declared with defineCommand', () => {
   it.each(DECLARED.map((spec) => [spec.name, spec] as const))(
     '%s names in its usage exactly the options it declares',
     (name, spec) => {
-      expect(optionsInUsageOf(name)).toEqual(Object.keys(spec.options).sort());
+      // `generate` names the flags every kind takes; each kind names its own (`generate <kind> --help`).
+      const declared = name === 'generate' ? COMMON_FLAGS : Object.keys(spec.options);
+
+      expect(optionsInUsageOf(name)).toEqual([...declared].sort());
     },
   );
 });

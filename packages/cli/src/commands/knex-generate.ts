@@ -15,9 +15,9 @@ import {
   writtenPaths,
 } from '../migration';
 import type { Arguments } from './arguments';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import type { Io } from './io';
-import { parseMigrationArguments } from './parse-migration-arguments';
+import { refuseSecondName } from './refuse-second-name';
 
 const KNEX = 'knex/bin/cli.js';
 const FOLDER = 'migrations';
@@ -30,21 +30,27 @@ const MIGRATION = /\.js$/;
  * becomes and replays on a fresh database. `--custom` writes the empty migration of knex, to fill
  * by hand: a change of data, or what the comparison reports and cannot write.
  */
-export const knexGenerateCommand: Command = (argv, io) => {
-  const args = parseMigrationArguments(argv, { name: { type: 'string' }, custom: { type: 'boolean', default: false } });
-  const root = args.projectRoot;
+export const knexGenerateCommand = defineCommand({
+  name: 'knex-generate',
+  options: { name: { type: 'string' }, custom: { type: 'boolean' } },
+  endsAScript: true,
+  run(args, io) {
+    refuseSecondName(args);
 
-  refuseOtherOrm(root, 'knex');
+    const root = args.projectRoot;
 
-  const name = requiredMigrationName(args.text('name'));
+    refuseOtherOrm(root, 'knex');
 
-  refuseTakenMigrationName(root, 'knex', name);
-  refuseLiveMigrations(root);
+    const name = requiredMigrationName(args.text('name'));
 
-  return args.json
-    ? answeredAsJson({ root, folders: [FOLDER] }, io, (held) => generateMigration(args, name, held))
-    : generateMigration(args, name, io);
-};
+    refuseTakenMigrationName(root, 'knex', name);
+    refuseLiveMigrations(root);
+
+    return args.json
+      ? answeredAsJson({ root, folders: [FOLDER] }, io, (held) => generateMigration(args, name, held))
+      : generateMigration(args, name, io);
+  },
+});
 
 function generateMigration(args: Arguments, name: string, io: Io): number {
   const root = args.projectRoot;

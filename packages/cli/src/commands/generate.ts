@@ -2,7 +2,8 @@ import { readConfig } from '../config';
 import { CliError } from '../cli-error';
 import { findKind } from '../generate/find-kind';
 import { generateArguments } from '../generate/generate-arguments';
-import { COMMON_FLAGS, GENERATE_FLAGS } from '../generate/generate-options';
+import { COMMON_FLAGS, GENERATE_FLAGS, GENERATE_OPTIONS } from '../generate/generate-options';
+import { generateOptionsOn } from '../generate/generate-options-on';
 import type { Kind, KindFlags } from '../generate/kind';
 import type { GeneratorProbe } from '../generate/generator-probe';
 import { KINDS } from '../generate/kinds';
@@ -17,22 +18,32 @@ import { keepThePicture } from '../generate/kinds/same-name/keep-the-picture';
 import { Workspace } from '../workspace';
 import type { Arguments } from './arguments';
 import type { Io } from './io';
-import type { Command } from './command';
+import { defineCommand } from './command';
 import { printReport } from './print-report';
 import { keepFlatPlatform } from '../platform-folders';
 
-export const generateCommand: Command = (argv, io) => generate(argv, io);
+/** `generate <kind> ...`: the files of one building block, placed, declared and listed where the project lists them. */
+export const generateCommand = defineCommand({
+  name: 'generate',
+  options: GENERATE_OPTIONS,
+  optionsOn: generateOptionsOn,
+  takesTheLock: true,
+  run: (args, io) => generateAsked(args, io),
+});
 
 /**
  * `generate`, and with a probe, the same command hearing its names instead of judging them, and
  * telling the files it builds on and the files it created.
  */
 export function generate(argv: readonly string[], io: Io, probe?: GeneratorProbe): number {
-  const args = generateArguments(argv);
+  return generateAsked(generateArguments(argv), io, probe);
+}
+
+function generateAsked(args: Arguments, io: Io, probe?: GeneratorProbe): number {
   const [kindName, ...rest] = args.positionals;
   const kind = requestedKind(kindName, rest);
 
-  return generateKind({ argv, io, probe, args, kind, rest });
+  return generateKind({ argv: args.asWritten, io, probe, args, kind, rest });
 }
 
 /** What `generate` was asked: the command line, read, with the kind it names and the arguments of the kind. */
