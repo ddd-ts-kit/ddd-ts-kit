@@ -336,6 +336,9 @@ the work queue keeps filling.
 - **`publishTimeoutMs`** (default 30000): a publication the broker has not confirmed by then is
   rejected with `PUBLISH_NOT_CONFIRMED`, as on NATS and Kafka, so the relay retries it instead of
   waiting for a confirmation that a stalled broker never sends.
+  The same bound holds for the copy of a failed message to its retry or dead queue, which is then
+  handed back to its work queue, and for each copy of `replayDead`, which then rejects and leaves
+  the message in the dead queue: `close()` never waits for a confirmation longer than that.
 - **A consumer that crashes mid-handler** gets its messages back without `x-attempt` being
   incremented. Quorum queues bound that with their delivery limit, after which the message is
   dead-lettered to the dead queue by the broker; classic queues do not bound it. This path is

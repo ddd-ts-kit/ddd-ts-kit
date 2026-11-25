@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:59c4d00f9d43a2f9 -->
+<!-- translation-of: README.md sha256:f55e817f7c782777 -->
 
 # @ddd-ts-kit/rabbitmq
 
@@ -350,6 +350,10 @@ liées, et la file de travail continue de se remplir.
 - **`publishTimeoutMs`** (30000 par défaut) : une publication que le broker n'a pas confirmée
   d'ici là est rejetée avec `PUBLISH_NOT_CONFIRMED`, comme sur NATS et Kafka, si bien que le
   relais la retente au lieu d'attendre une confirmation qu'un broker bloqué n'envoie jamais.
+  La même borne vaut pour la copie d'un message en échec vers sa file de nouvelles tentatives ou
+  sa file de rejet, le message étant alors rendu à sa file de travail, et pour chaque copie de
+  `replayDead`, qui est alors rejeté et laisse le message dans la file de rejet : `close()`
+  n'attend jamais une confirmation plus longtemps.
 - **Un consommateur qui plante en plein gestionnaire** récupère ses messages sans que `x-attempt`
   soit incrémenté. Les files quorum bornent cela par leur limite de livraisons, au-delà de
   laquelle le *broker* envoie le message dans la file de rejet ; les files classiques ne le

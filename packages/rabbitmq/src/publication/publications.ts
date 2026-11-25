@@ -3,9 +3,9 @@ import type { IntegrationEvent } from '@ddd-ts-kit/kernel';
 import { within } from '../connection/within';
 import { encode } from '../codec/encode';
 import { BrokerUnavailableError } from '../errors/broker-unavailable-error';
-import { PublishNotConfirmedError } from '../errors/publish-not-confirmed-error';
 import { UnroutableEventError } from '../errors/unroutable-event-error';
 import { ignore } from '../ignore';
+import { Confirmations } from './confirmations';
 
 export interface PublicationSettings {
   readonly exchange: string;
@@ -24,11 +24,13 @@ export interface PublicationSettings {
 export class Publications {
   private readonly returned = new Set<string>();
 
-  private readonly unconfirmed = new Set<(error: unknown) => void>();
+  private readonly confirmations: Confirmations;
 
   private channel: ConfirmChannel | undefined;
 
-  constructor(private readonly settings: PublicationSettings) {}
+  constructor(private readonly settings: PublicationSettings) {
+    this.confirmations = new Confirmations(settings.publishTimeoutMs);
+  }
 
   async attach(model: ChannelModel): Promise<void> {
     const channel = await model.createConfirmChannel();
@@ -53,10 +55,7 @@ export class Publications {
   detach(): void {
     this.channel = undefined;
     this.returned.clear();
-
-    for (const confirmed of [...this.unconfirmed]) {
-      confirmed(new Error('channel lost'));
-    }
+    this.confirmations.abandon();
   }
 
   /** Resolves when every event is confirmed; rejects with the first failure otherwise. */
@@ -88,34 +87,17 @@ export class Publications {
     await within(this.settings.publishTimeoutMs, channel?.close().catch(ignore));
   }
 
-  private send(channel: ConfirmChannel, event: IntegrationEvent): Promise<void> {
+  private async send(channel: ConfirmChannel, event: IntegrationEvent): Promise<void> {
     const { content, properties } = encode(event);
     const options = { ...properties, mandatory: this.settings.failOnUnroutable };
 
-    return new Promise((resolve, reject) => {
-      const confirmed = (error: unknown): void => {
-        clearTimeout(late);
-        this.unconfirmed.delete(confirmed);
-
-        // The broker sends the return of an unroutable message before its confirmation.
-        if (error !== null && error !== undefined) {
-          reject(new PublishNotConfirmedError(event.id));
-        } else if (this.returned.delete(event.id)) {
-          reject(new UnroutableEventError(event.id, event.type));
-        } else {
-          resolve();
-        }
-      };
-
-      this.unconfirmed.add(confirmed);
-      // A confirmation that never comes (a broker stalled under a full disk, a reply lost) fails the publication.
-      const late = setTimeout(() => confirmed(new Error('not confirmed in time')), this.settings.publishTimeoutMs);
-
-      try {
-        channel.publish(this.settings.exchange, event.type, content, options, confirmed);
-      } catch {
-        confirmed(new Error('channel closed'));
-      }
+    await this.confirmations.of(event.id, (confirmed) => {
+      channel.publish(this.settings.exchange, event.type, content, options, confirmed);
     });
+
+    // The broker sends the return of an unroutable message before its confirmation.
+    if (this.returned.delete(event.id)) {
+      throw new UnroutableEventError(event.id, event.type);
+    }
   }
 }
