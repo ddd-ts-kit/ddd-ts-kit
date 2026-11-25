@@ -25,7 +25,7 @@ export class InMemoryJobStore implements JobStore {
   private sequence = 0;
 
   async add(job: NewJob): Promise<EnqueuedJob> {
-    const existing = this.withKey(job);
+    const existing = this.kept(job);
 
     if (existing !== undefined) {
       return { id: existing.id, duplicate: true };
@@ -174,6 +174,11 @@ export class InMemoryJobStore implements JobStore {
     });
   }
 
+  /** The job already there under the key, or under the id. */
+  private kept(job: NewJob): StoredJob | undefined {
+    return this.withKey(job) ?? this.jobs.get(job.id);
+  }
+
   /** The key is scoped by the tenant: two tenants never share one. */
   private withKey({ name, idempotencyKey, enqueuedBy }: NewJob): StoredJob | undefined {
     if (idempotencyKey === undefined) {
@@ -186,9 +191,9 @@ export class InMemoryJobStore implements JobStore {
     );
   }
 
-  /** A job of the same key may have committed while this one waited for its own commit. */
+  /** A job of the same key, or of the same id, may have committed while this one waited for its own commit. */
   private store(job: NewJob): void {
-    if (this.withKey(job) !== undefined) {
+    if (this.kept(job) !== undefined) {
       return;
     }
 
