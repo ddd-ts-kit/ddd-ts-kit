@@ -14,6 +14,7 @@ export interface Settings {
   readonly queueType: QueueType;
   readonly failOnUnroutable: boolean;
   readonly publishTimeoutMs: number;
+  readonly connectTimeoutMs: number;
   readonly retry: Required<RetryOptions>;
   readonly reconnect: Required<ReconnectOptions>;
   readonly onFailure: (failure: RabbitMqFailure) => void;

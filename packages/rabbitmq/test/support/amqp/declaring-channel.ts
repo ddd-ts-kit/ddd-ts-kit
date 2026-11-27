@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import type { Connection, Options, Replies } from 'amqplib';
 import { AmqpError, IllegalOperation, Unsupported } from './errors';
 import { SERVER_PROPERTIES, argumentsOf } from './messages';
-import type { BrokerState, Exchange, QueueState } from './model';
+import type { BrokerState, Exchange, QueueState, Wire } from './model';
 
 /**
  * The half of a channel that declares: exchanges, queues and their bindings. A refusal closes
@@ -13,11 +13,15 @@ export abstract class DeclaringChannel extends EventEmitter {
 
   protected open = true;
 
-  constructor(protected readonly broker: BrokerState) {
+  constructor(
+    protected readonly broker: BrokerState,
+    protected readonly wire: Wire,
+  ) {
     super();
   }
 
   async assertQueue(queue = '', options: Options.AssertQueue = {}): Promise<Replies.AssertQueue> {
+    await this.wire.answered('declaration');
     this.ensureOpen();
     const declared = this.broker.declareQueue(queue, options.durable ?? true, argumentsOf(options));
 
@@ -46,6 +50,7 @@ export abstract class DeclaringChannel extends EventEmitter {
   }
 
   async bindQueue(queue: string, source: string, pattern: string): Promise<Replies.Empty> {
+    await this.wire.answered('declaration');
     const exchange = this.existingExchange(source);
 
     this.existingQueue(queue);
@@ -70,6 +75,7 @@ export abstract class DeclaringChannel extends EventEmitter {
     type: string,
     options: Options.AssertExchange = {},
   ): Promise<Replies.AssertExchange> {
+    await this.wire.answered('declaration');
     this.ensureOpen();
     const declared = this.broker.declareExchange(exchange, type, options.durable ?? true);
 

@@ -2,10 +2,14 @@ import { inspect } from 'node:util';
 import type { ChannelModel } from 'amqplib';
 import { BrokerUnavailableError } from '../errors/broker-unavailable-error';
 import { EventBusClosedError } from '../errors/event-bus-closed-error';
+import { connectionFailureCode } from '../errors/connection-failure-code';
 import { failureCode } from '../errors/failure-code';
 import { ignore } from '../ignore';
 import type { ReconnectOptions } from '../options/reconnect-options';
 import { conceal } from '../secrecy/conceal';
+import { answeredWithin } from './answered-within';
+import { openedWithin } from './opened-within';
+import { within } from './within';
 
 export interface LinkHooks {
   /** Sets channels, topology and consumers up on a fresh connection. A failure retries. */
@@ -18,13 +22,18 @@ export interface LinkHooks {
 export interface LinkSettings {
   readonly open: () => Promise<ChannelModel>;
   readonly reconnect: Required<ReconnectOptions>;
+  /** The time the broker has to open the connection, then to answer what the hooks set up on it. */
+  readonly connectTimeoutMs: number;
+  /** The time a close waits for the answer of the broker. */
+  readonly publishTimeoutMs: number;
 }
 
 const DESCRIPTION = 'BrokerLink [connection concealed]';
 
 /**
  * The one connection of a bus, kept alive: when it drops, it is opened again after a delay
- * that grows with each failed attempt, and the hooks rebuild what lived on it.
+ * that grows with each failed attempt, and the hooks rebuild what lived on it. An attempt the
+ * broker stops answering fails in time and is retried: it never holds the link.
  */
 export class BrokerLink {
   private model: ChannelModel | undefined;
@@ -85,7 +94,7 @@ export class BrokerLink {
     const model = this.model ?? (await this.opening?.catch(ignore));
 
     this.model = undefined;
-    await model?.close().catch(ignore);
+    await this.closeInTime(model);
   }
 
   toJSON(): string {
@@ -107,7 +116,7 @@ export class BrokerLink {
           this.failures = 0;
         },
         (error: unknown) => {
-          this.failed(error instanceof BrokerUnavailableError ? error.reason : failureCode(error));
+          this.failed(connectionFailureCode(error));
         },
       )
       .finally(() => {
@@ -116,7 +125,8 @@ export class BrokerLink {
   }
 
   private async establish(): Promise<ChannelModel> {
-    const model = await this.connect();
+    const { connectTimeoutMs } = this.settings;
+    const model = await openedWithin(connectTimeoutMs, this.connect());
 
     model.on('error', ignore);
 
@@ -125,15 +135,15 @@ export class BrokerLink {
     });
 
     try {
-      await this.hooks.opened(model);
+      await answeredWithin(connectTimeoutMs, this.hooks.opened(model));
     } catch (error) {
       this.hooks.lost();
-      await model.close().catch(ignore);
-      throw new BrokerUnavailableError(failureCode(error));
+      await this.closeInTime(model);
+      throw unavailable(error);
     }
 
     if (this.closed) {
-      await model.close().catch(ignore);
+      await this.closeInTime(model);
       throw new EventBusClosedError();
     }
 
@@ -149,6 +159,11 @@ export class BrokerLink {
       // Rethrown without its message or cause: a connection error may quote the URL.
       throw new BrokerUnavailableError(failureCode(error));
     }
+  }
+
+  /** A broker that stopped answering does not answer a close either: it is not waited for longer. */
+  private async closeInTime(model: ChannelModel | undefined): Promise<void> {
+    await within(this.settings.publishTimeoutMs, model?.close().catch(ignore));
   }
 
   private lost(model: ChannelModel): void {
@@ -180,4 +195,9 @@ export class BrokerLink {
       this.open();
     }, delay);
   }
+}
+
+// A request the broker did not answer in time keeps its reason; any other failure gives its code.
+function unavailable(error: unknown): BrokerUnavailableError {
+  return error instanceof BrokerUnavailableError ? error : new BrokerUnavailableError(failureCode(error));
 }

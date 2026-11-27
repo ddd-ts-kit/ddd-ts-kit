@@ -16,9 +16,9 @@ export class Confirmations {
 
   /**
    * Resolves once the broker confirmed what `send` wrote. Rejects with `PublishNotConfirmedError`
-   * when the broker refused it, when the channel was closed, and when no answer came in time.
+   * when the broker refused it, when the channel was closed, and when no answer came in `timeoutMs`.
    */
-  of(messageId: string, send: (confirmed: Confirmed) => void): Promise<void> {
+  of(messageId: string, send: (confirmed: Confirmed) => void, timeoutMs = this.timeoutMs): Promise<void> {
     return new Promise((resolve, reject) => {
       const confirmed: Confirmed = (error) => {
         clearTimeout(late);
@@ -33,7 +33,7 @@ export class Confirmations {
 
       this.awaited.add(confirmed);
       // A confirmation that never comes (a broker stalled under a full disk, a reply lost) fails what waits for it.
-      const late = setTimeout(() => confirmed(new Error('not confirmed in time')), this.timeoutMs);
+      const late = setTimeout(() => confirmed(new Error('not confirmed in time')), timeoutMs);
 
       try {
         send(confirmed);

@@ -81,6 +81,8 @@ describe('RabbitMqEventBus: a broker that stopped confirming or answering', { ti
       await bus.publish([anEvent('evt-1')]);
       await broker.settled(bus);
       subscription.unsubscribe();
+      const channels = network.openChannels;
+
       network.stopAnswering(request);
 
       const replay = bus.replayDead({ consumer, type: PLACED }).catch((error: unknown) => error);
@@ -93,6 +95,11 @@ describe('RabbitMqEventBus: a broker that stopped confirming or answering', { ti
       expect(await broker.readyIn(dead)).toBe(1);
 
       network.restore();
+      await pause(50);
+
+      // What the broker answers after the timeout changes nothing: a late channel is closed when it arrives.
+      expect(network.openChannels).toBe(channels);
+      expect(await broker.readyIn(dead)).toBe(1);
       await network.close();
     });
   }

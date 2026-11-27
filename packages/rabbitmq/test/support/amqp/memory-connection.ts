@@ -3,7 +3,7 @@ import type { Channel, ChannelModel, ConfirmChannel, Connection } from 'amqplib'
 import { IllegalOperation, Unsupported } from './errors';
 import { MemoryChannel } from './memory-channel';
 import { SERVER_PROPERTIES } from './messages';
-import { type BrokerState, type ChannelOwner, type Closable, type Severable, type Wire, unanswered } from './model';
+import type { BrokerState, ChannelOwner, Closable, Severable, Wire } from './model';
 
 /** A connection to the in-memory broker: its channels close with it. */
 export class MemoryConnection extends EventEmitter implements ChannelModel, Severable, ChannelOwner {
@@ -20,6 +20,10 @@ export class MemoryConnection extends EventEmitter implements ChannelModel, Seve
     super();
   }
 
+  get channelCount(): number {
+    return this.channels.size;
+  }
+
   async createChannel(): Promise<Channel> {
     return this.channel();
   }
@@ -33,6 +37,8 @@ export class MemoryConnection extends EventEmitter implements ChannelModel, Seve
   }
 
   async close(): Promise<void> {
+    await this.wire.answered('close');
+
     if (!this.open) {
       throw new IllegalOperation('Connection closed');
     }
@@ -58,12 +64,10 @@ export class MemoryConnection extends EventEmitter implements ChannelModel, Seve
   }
 
   private async channel(): Promise<MemoryChannel> {
+    await this.wire.answered('channel');
+
     if (!this.open) {
       throw new IllegalOperation('Connection closed');
-    }
-
-    if (!this.wire.answering('channel')) {
-      return unanswered();
     }
 
     const channel = new MemoryChannel(this.broker, this, this.wire);
