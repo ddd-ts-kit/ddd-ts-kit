@@ -44,26 +44,21 @@ export interface Consumer {
 }
 
 /** A request of a client that a stalled broker may leave unanswered. */
-export type BrokerRequest = 'channel' | 'get';
+export type BrokerRequest = 'connection' | 'channel' | 'declaration' | 'get' | 'close';
 
 /** What a connection asks of the network it was opened on. */
 export interface Wire {
   holdingReplies(): boolean;
-  /** False once the broker stopped answering this request: it never returns. */
-  answering(request: BrokerRequest): boolean;
+  /** Resolves once the broker answers this request: at once, or late, when a broker that stopped answering is back. */
+  answered(request: BrokerRequest): Promise<void>;
   /** The closing of the channels started and the broker did not answer yet: they refuse to send. */
   closingChannels(): boolean;
   sent(): void;
 }
 
-/** What a client gets back from a broker that stopped answering: a promise that never settles. */
-export function unanswered<T>(): Promise<T> {
-  return new Promise(() => undefined);
-}
-
 export const RELIABLE: Wire = {
   holdingReplies: () => false,
-  answering: () => true,
+  answered: async () => undefined,
   closingChannels: () => false,
   sent: () => undefined,
 };
@@ -116,6 +111,8 @@ export interface ChannelOwner {
 
 /** A connection the network can cut. */
 export interface Severable extends ChannelModel {
+  /** The channels open on this connection. */
+  readonly channelCount: number;
   sever(): void;
 }
 

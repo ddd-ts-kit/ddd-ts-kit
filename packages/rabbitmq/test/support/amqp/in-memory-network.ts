@@ -4,8 +4,8 @@ import type { BrokerRequest, Opening, Severable, Wire } from './model';
 
 /**
  * The network between a bus and the broker: it can stop passing the replies of the broker
- * (confirmations never arrive) or its answer to one request, cut every connection made through
- * it and refuse new ones.
+ * (confirmations never arrive) or its answer to one request until it is restored, cut every
+ * connection made through it and refuse new ones.
  * The same sabotage as the TCP relay used against a real broker, without a socket.
  */
 export class InMemoryNetwork implements Wire {
@@ -19,6 +19,9 @@ export class InMemoryNetwork implements Wire {
 
   private readonly unanswered = new Set<BrokerRequest>();
 
+  /** The requests left unanswered: answered, late, when the network is restored. */
+  private readonly awaitingAnswer = new Set<() => void>();
+
   private closing = false;
 
   /** Publications sent through this network, to know that one left the bus. */
@@ -31,6 +34,7 @@ export class InMemoryNetwork implements Wire {
       throw new ConnectionRefused();
     }
 
+    await this.answered('connection');
     const connection = await this.broker.open(this);
 
     this.connections.add(connection);
@@ -43,8 +47,18 @@ export class InMemoryNetwork implements Wire {
     return this.repliesHeld;
   }
 
-  answering(request: BrokerRequest): boolean {
-    return !this.unanswered.has(request);
+  get openConnections(): number {
+    return this.connections.size;
+  }
+
+  get openChannels(): number {
+    return [...this.connections].reduce((count, connection) => count + connection.channelCount, 0);
+  }
+
+  async answered(request: BrokerRequest): Promise<void> {
+    if (this.unanswered.has(request)) {
+      await new Promise<void>((answer) => this.awaitingAnswer.add(answer));
+    }
   }
 
   closingChannels(): boolean {
@@ -80,6 +94,12 @@ export class InMemoryNetwork implements Wire {
   restore(): void {
     this.repliesHeld = false;
     this.unanswered.clear();
+
+    for (const answer of this.awaitingAnswer) {
+      answer();
+    }
+
+    this.awaitingAnswer.clear();
     this.closing = false;
     this.refusing = false;
   }
