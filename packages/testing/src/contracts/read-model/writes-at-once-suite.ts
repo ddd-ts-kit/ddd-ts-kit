@@ -39,8 +39,6 @@ export class WritesAtOnceSuite extends ReadModelStoreSuite {
   }
 
   protected tests(): void {
-    this.closesAfterEach();
-
     if (this.storage.uniqueTitle !== true) {
       this.todo(
         'takes once a row several writers insert at once, and refuses a unique value taken at once by several rows (hold title unique, and say uniqueTitle)',

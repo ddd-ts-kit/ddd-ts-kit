@@ -12,7 +12,6 @@ type Row = CriteriaContractRow;
 /** A rebuild from the source of truth that loses no event, whatever happens while it runs. */
 export class RebuildSuite extends ReadModelStoreSuite<ReadModelStoreUnderContract> {
   protected tests(): void {
-    this.closesAfterEach();
     this.rebuilds();
     this.leavesTheTableOnAFailedExport();
     this.rebuildsUnderEvents();

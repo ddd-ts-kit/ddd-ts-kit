@@ -54,10 +54,6 @@ class CriteriaSuite extends ContractSuite<ReadModelUnderContract> {
   }
 
   protected tests(): void {
-    this.afterEach(async () => {
-      await this.subject.close?.();
-    });
-
     for (const example of CASES) {
       this.answers(example);
     }

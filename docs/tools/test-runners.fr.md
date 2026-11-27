@@ -1,5 +1,5 @@
 [English](test-runners.md) · **Français**
-<!-- translation-of: test-runners.md sha256:5f770125bd613119 -->
+<!-- translation-of: test-runners.md sha256:ac8c817c66a090e8 -->
 
 # Lanceurs de tests : Vitest et Jest
 
@@ -402,6 +402,10 @@ mailerContract({ describe, it, expect, beforeEach, afterEach }, { name: 'InMemor
 La *spec* de l'adaptateur, sous `test/integration/`, appelle le même `mailerContract` avec un
 `create` qui construit l'adaptateur réel. Sous Jest, la première ligne importe plutôt les cinq
 fonctions depuis `@jest/globals` ; `ContractRunner` ne leur demande rien de plus.
+
+Un sujet qui a un `close()`, comme celui qui tient une connexion ouverte par la fabrique, est
+fermé par `ContractSuite` après chaque test quand le *runner* donne `afterEach` : une suite à
+vous n'écrit aucun *hook* pour cela.
 
 **Avec Vitest (le défaut) :**
 

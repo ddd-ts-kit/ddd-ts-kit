@@ -30,7 +30,6 @@ export class DeletionsSuite extends ReadModelStoreSuite {
   }
 
   protected tests(): void {
-    this.closesAfterEach();
     this.deletesARowItHolds();
     this.deletesAKeyItDoesNotHold();
     this.deletesWhileTheCreationArrives();

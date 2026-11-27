@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:77e42d057795cd80 -->
+<!-- translation-of: README.md sha256:771bb74fe99a5fe8 -->
 
 # @ddd-ts-kit/testing
 
@@ -947,7 +947,8 @@ Les suites n'utilisent que `describe`, `it`, `beforeEach`, `expect(...).toBe` et
 runner est le type `ContractRunner`.
 
 Un *package* qui tient un port à lui publie son contrat sur la même base, `ContractSuite` : un sujet créé à
-neuf avant chaque test, et `it`, `expect`, `afterEach` liés au runner. `holds(condition, otherwise)`
+neuf avant chaque test et fermé après lui quand il a un `close()` et le runner un `afterEach`, et `it`,
+`expect`, `afterEach` liés au runner. `holds(condition, otherwise)`
 affirme ce qui n'est pas une valeur à comparer, et échoue avec la phrase qui dit ce que l'adaptateur a
 fait : l'auteur d'un adaptateur lit `the key is still refused after its holder released it`, jamais
 `expected false to be true`. Les suites du *package* sont écrites ainsi.

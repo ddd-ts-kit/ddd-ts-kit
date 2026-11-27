@@ -21,10 +21,6 @@ class TruckLost extends Error {}
  */
 export class OneTransactionSuite extends ContractSuite<EventStoreUnderContract> {
   protected tests(): void {
-    this.afterEach(async () => {
-      await this.subject.close?.();
-    });
-
     this.commitsTogether();
     this.publishesNothingRefused();
   }

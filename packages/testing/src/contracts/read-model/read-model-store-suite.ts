@@ -7,16 +7,10 @@ import type { ReadModelRowsUnderContract } from './read-model-rows-under-contrac
 
 type Row = CriteriaContractRow;
 
-/** A suite about a `TableReadModelStore` over the table under contract, closed after each test. */
+/** A suite about a `TableReadModelStore` over the table under contract. */
 export abstract class ReadModelStoreSuite<
   Subject extends ReadModelRowsUnderContract = ReadModelRowsUnderContract,
 > extends ContractSuite<Subject> {
-  protected closesAfterEach(): void {
-    this.afterEach(async () => {
-      await this.subject.close?.();
-    });
-  }
-
   protected get store(): TableReadModelStore<Row> {
     return new TableReadModelStore(this.subject.table, criteriaContractDefinition);
   }

@@ -382,6 +382,10 @@ The adapter's spec, under `test/integration/`, calls the same `mailerContract` w
 that builds the real adapter. Under Jest the first line imports the five functions from
 `@jest/globals` instead; `ContractRunner` asks nothing more of them.
 
+A subject that has a `close()`, such as one holding a connection the factory opened, is closed
+by `ContractSuite` after each test when the runner gives `afterEach`: a suite of your own writes
+no hook for it.
+
 **With Vitest (the default):**
 
 - `vitest.config.ts` with `unit` and `integration` projects and the coverage thresholds of the

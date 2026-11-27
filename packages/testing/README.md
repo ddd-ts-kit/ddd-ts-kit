@@ -938,7 +938,8 @@ The suites use only `describe`, `it`, `beforeEach`, `expect(...).toBe` and `toEq
 runner is the `ContractRunner` type.
 
 A package that holds a port of its own publishes its contract on the same base, `ContractSuite`:
-a subject created anew before each test, and `it`, `expect`, `afterEach` bound to the runner.
+a subject created anew before each test and closed after it when it has a `close()` and the runner
+an `afterEach`, and `it`, `expect`, `afterEach` bound to the runner.
 `holds(condition, otherwise)` asserts what is no value to compare, and fails with the sentence
 that says what the adapter did: the author of an adapter reads `the key is still refused after
 its holder released it`, never `expected false to be true`. The suites of the package are written

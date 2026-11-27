@@ -9,10 +9,6 @@ class CacheDown extends Error {}
 /** The `after-commit` phase: after the commit, never without it, and never in the way of the caller. */
 export class AfterCommitSuite extends ContractSuite<UnitOfWorkUnderContract> {
   protected tests(): void {
-    this.afterEach(async () => {
-      await this.subject.close?.();
-    });
-
     this.runsOnceCommitted();
     this.isolatesFailures();
     this.refusesToSave();
