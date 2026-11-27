@@ -508,7 +508,8 @@ would hold the outbox row is over.
 A unit of work that rolled back puts the aggregates it saved back as it found them: at the
 version they were loaded at, with the events its saves had taken. A retry may run the command
 again on reloaded aggregates or save the same instances; either way their events are dispatched
-once. A unit of work that undoes nothing, as `InMemoryUnitOfWork`, leaves them as their saves did.
+once. `InMemoryUnitOfWork` rolls back too: the stores in memory undo what the work wrote
+(`onRollback`, a `RollbackMap`), the in-memory outbox included, and the aggregates are given back.
 
 ### Where the queue lives
 
