@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:688a1c5acdf4b045 -->
+<!-- translation-of: CONTRIBUTING.md sha256:c0d74c57cfa216a9 -->
 
 # Contribuer
 
@@ -192,8 +192,10 @@ bout prend 2,5 à 7 Go, et plusieurs à la fois (plusieurs sessions de code, un 
   commande : `request.flags.text('permission')` ne compile que pour une sorte qui déclare
   `--permission`, et une fonction d'aide nomme les flags qu'elle lit
   (`Scope<Reading<'permission', 'public'>>`). Un concept du modèle que ses templates disent en
-  entier est un `conceptKind` (`entity-kind.ts`). Son usage, les flags qu'elle refuse,
-  `generate <kind> --help` et `generate --help --json` s'écrivent depuis la déclaration ;
+  entier est un `conceptKind` (`entity-kind.ts`), un nom qui n'est pas un concept du modèle (un
+  port, un *guard*, un schéma) un `labelKind` (`port-kind.ts`) ; une sorte qui écrit pour la pile
+  HTTP déclare `needsHttp`, refusée dans un projet qui n'en a pas. Son usage, les flags qu'elle
+  refuse, `generate <kind> --help` et `generate --help --json` s'écrivent depuis la déclaration ;
   `shownOptions` n'écrit ses flags à la main que pour des formes qui s'excluent ou un flag qu'elle
   exige.
 - Les packages d'exécution gardent les bibliothèques tierces derrière des dépendances pairs
