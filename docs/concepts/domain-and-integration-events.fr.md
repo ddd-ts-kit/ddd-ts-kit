@@ -1,5 +1,5 @@
 [English](domain-and-integration-events.md) · **Français**
-<!-- translation-of: domain-and-integration-events.md sha256:7ffff2b1e4c44300 -->
+<!-- translation-of: domain-and-integration-events.md sha256:9e8da82dc6c7f55b -->
 
 # Événements du domaine et événements d'intégration
 
@@ -518,8 +518,9 @@ contiendrait la ligne d'outbox est terminée.
 Une unité de travail annulée remet les agrégats qu'elle a sauvegardés comme elle les a trouvés : à
 la version où ils ont été chargés, avec les événements que ses `save` avaient pris. Une nouvelle
 tentative (retry) peut exécuter à nouveau la commande sur des agrégats rechargés ou sauvegarder les
-mêmes instances ; dans les deux cas leurs événements sont distribués une seule fois. Une unité de
-travail qui ne défait rien, comme `InMemoryUnitOfWork`, les laisse comme ses `save` les ont laissés.
+mêmes instances ; dans les deux cas leurs événements sont distribués une seule fois.
+`InMemoryUnitOfWork` est annulée elle aussi : les magasins en mémoire défont ce que le travail a écrit
+(`onRollback`, une `RollbackMap`), l'outbox en mémoire comprise, et les agrégats sont rendus.
 
 ### Où vit la file
 

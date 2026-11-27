@@ -323,6 +323,7 @@ export * from './infrastructure/in-memory/in-memory-snapshot-store';
 export * from './infrastructure/in-memory/in-memory-subject-key-store';
 export * from './infrastructure/in-memory/in-memory-rate-limiter';
 export * from './infrastructure/in-memory/in-memory-unit-of-work';
+export * from './infrastructure/in-memory/rollback-map';
 export * from './infrastructure/in-memory/metric-sample';
 export * from './infrastructure/in-memory/unit-of-work-middleware';
 export * from './infrastructure/in-memory/in-memory-tenant-directory';

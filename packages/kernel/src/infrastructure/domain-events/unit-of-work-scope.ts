@@ -36,7 +36,9 @@ export interface UnitOfWorkScope {
   readonly committed?: (() => Promise<void>)[];
   /** What `atCommit` was handed in a unit of work: applied last, inside the transaction. */
   readonly atCommit?: CommitStep[];
-  /** The aggregates saved in a unit of work whose transaction rolls back, as it found them: what a rollback gives back. */
+  /** What `onRollback` was handed in a unit of work: run newest first when it rolls back, never on a commit. */
+  readonly rolledBack?: (() => void)[];
+  /** The aggregates saved in a unit of work, as it found them: what a rollback gives back. */
   readonly found?: Map<AggregateTracking, AsFound>;
 }
 

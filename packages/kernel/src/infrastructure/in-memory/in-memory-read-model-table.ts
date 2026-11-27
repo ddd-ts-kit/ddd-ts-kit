@@ -7,15 +7,17 @@ import { sameStamp } from '../../application/read-model/same-stamp';
 import type { SearchedRows } from '../../application/read-model/searched-rows';
 import type { StampedRow } from '../../application/read-model/stamped-row';
 import type { TouchedKey } from '../../application/read-model/touched-key';
+import { RollbackMap } from './rollback-map';
 
 type Rows<Row> = Map<string, StampedRow<Row>>;
 
 /**
  * The table of a read model in memory: the fake of every ORM adapter, held to the same
- * contract, rebuild included. Rows are kept and answered as copies.
+ * contract, rebuild included. Rows are kept and answered as copies; a unit of work that rolls
+ * back undoes what it wrote to them.
  */
 export class InMemoryReadModelTable<Row extends object> implements ReadModelTable<Row> {
-  private live: Rows<Row> = new Map();
+  private live: Rows<Row> = new RollbackMap();
 
   private copy: Rows<Row> | undefined;
 
@@ -48,7 +50,7 @@ export class InMemoryReadModelTable<Row extends object> implements ReadModelTabl
   }
 
   async beginRebuild(): Promise<void> {
-    this.copy = new Map([...this.live].filter(([, entry]) => entry.row === undefined));
+    this.copy = new RollbackMap([...this.live].filter(([, entry]) => entry.row === undefined));
     this.marks.clear();
   }
 

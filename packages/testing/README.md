@@ -518,8 +518,13 @@ A handler spec has the production timing. `commandBus` runs every command in `un
 (an `InMemoryUnitOfWork`), as the bus of the application does: the events of every save wait
 until the command handler has returned, then are dispatched in recording order, and
 `execute` resolves once the handlers of both phases ran. A handler that fails in the
-`before-commit` phase rejects `execute`; nothing is undone, since there is no transaction in
-memory. Called outside a command, `orders.save(order)` dispatches before it resolves.
+`before-commit` phase rejects `execute`, and a failed command leaves nothing in the fakes, as a
+transaction that rolls back: `InMemoryRepository`, the outbox, read model, process, checkpoint,
+snapshot and event stores in memory undo what it wrote (a `RollbackMap` does it for a fake of
+your own), and the aggregates it saved are given back. `eventBus.published` keeps what a handler
+published straight on the bus: the bus stands for a broker, which no transaction covers; in the
+application a publisher writes to the outbox instead. Called outside a command,
+`orders.save(order)` dispatches before it resolves.
 
 ```ts
 domainEvents.on('ordering.order.placed', (event) => board.refresh(event.aggregateId), { phase: 'after-commit' });

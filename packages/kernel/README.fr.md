@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:a779e3dbc5a865ff -->
+<!-- translation-of: README.md sha256:0cd38c85fd4eb805 -->
 
 # @ddd-ts-kit/kernel
 
@@ -50,7 +50,7 @@ avec une bibliothèque.
 | Côté lecture | `Criteria`, `defineCriteria`, `validateCriteria`, `scoped`, `planCriteria`, `evaluateCriteria`, `pageOfPlan`, `hydrate`, `ReadModelStore`, `stampOf`, `TableReadModelStore`, `ProjectionRebuild`, `InMemoryReadModelStore` (voir « Critères », « Hydratation » et « Projections ») |
 | Aides à la persistance | `aggregateMapper` (un *mapper* qui déclare l'état et jamais la version), `loadedAt`, `optimisticUpdate`, `expectVersion` (la version qu'un appelant a lue, `If-Match` en HTTP, est toujours la version courante, sinon `PreconditionFailedError` : 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `restamped`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
 | Remontée des erreurs | `ErrorReporter`, `ErrorReport`, `errorReportOf`, `reportOnce`, `isUnexpectedError`, `errorReportingMiddleware`, `DeadLetterReports`, `reportProcessFailures`, `NoopErrorReporter` |
-| Doubles | `FixedClock`, `SequentialIdGenerator`, `InMemoryUnitOfWork`, `FixedActorContext`, `FixedExecutionScope`, `InMemoryLogger`, `InMemoryMetrics`, `InMemoryErrorReporter`, `InMemoryCache`, `InMemoryCacheInvalidation`, `InMemoryCachePurger`, `InMemoryLock`, `InMemoryRateLimiter` |
+| Doubles | `FixedClock`, `SequentialIdGenerator`, `InMemoryUnitOfWork`, `RollbackMap`, `onRollback`, `FixedActorContext`, `FixedExecutionScope`, `InMemoryLogger`, `InMemoryMetrics`, `InMemoryErrorReporter`, `InMemoryCache`, `InMemoryCacheInvalidation`, `InMemoryCachePurger`, `InMemoryLock`, `InMemoryRateLimiter` |
 | Tests (`@ddd-ts-kit/kernel/testing`) | `RecordingCommandBus`, `RecordingQueryBus` : des bus qui gardent chaque message qu'on leur confie, dans l'ordre (`executed`), et répondent ce que la *spec* leur a dit (`answering(type, answer)`), rien sinon (voir « La *spec* d'une réaction ») |
 | Déclarations (`@ddd-ts-kit/kernel/declarations`) | `Requires`, `Public`, `CommandHandler`, `QueryHandler`, `IntegrationEventHandler`, `DomainEventHandler`, `Scheduled`, `Background`, `Projection`, `On`, `applyingProjection`, `Repository`, `Gateway`, `Adapter`, `Policy`, `Edge` (pour les décorateurs d'un *package* de transport, comme `@Controller`), `injected`, `injectedDependencies`, `declarationOf`, `listDeclarations`, `DeclarationError`, `Token`, `describeToken`, `tokenIdentity`, `portDefect` |
 
@@ -664,6 +664,12 @@ autour d'une commande envoyée depuis un gestionnaire), le `run` le plus externe
 une `UnitOfWorkAbortedError` dont la `cause` est cet échec, avant toute distribution
 d'événement. Ce que l'étape en échec a écrit n'est jamais validé à part du reste : décidez avant
 l'écriture, ou laissez passer l'échec.
+
+`InMemoryUnitOfWork` n'a pas de transaction, et s'annule quand même : un magasin en mémoire confie
+à `onRollback` l'annulation de chaque écriture, et le `run` le plus externe rejeté les exécute, de la
+plus récente à la plus ancienne. Une `RollbackMap` est une Map qui le fait pour chaque clé, et laisse
+une clé qu'une commande exécutée à côté a écrite depuis ; les *fakes* du kit reposent dessus, et un
+*fake* à vous peut aussi.
 
 Un `UnitOfWork` écrit dans un projet repose dessus. `transaction` commence, appelle ce qu'on lui
 donne, valide quand cela s'est résolu et annule quand cela a été rejeté ; elle est appelée pour
