@@ -12,10 +12,12 @@ import type { UseCaseContext } from './use-case-context';
 import { commandOutputs } from './command-outputs';
 import { existingAggregate } from './existing-aggregate';
 import { generateRepository } from './generate-repository';
+import { repositoryKind } from './repository-kind';
 import { repositoryLine } from './repository-line';
 import { wireRepositoryOnFirstUse } from './wire-repository-on-first-use';
 import { GRANTED, GRANTS, STORAGE, STORED } from '../shared-write';
 import { defineKind } from '../define-kind';
+import { writingAs } from '../writing-as';
 
 export const commandKind = defineKind({
   name: 'command',
@@ -78,7 +80,8 @@ function writeCommand(
     aggregate !== undefined &&
     !scope.ws.exists(`${scope.dir}/domain/repositories/${aggregate.kebab}.repository.ts`)
   ) {
-    generateRepository(scope, aggregate);
+    // The repository of the first use of an aggregate is the one `generate repository` writes given none of its flags.
+    generateRepository(writingAs(scope, repositoryKind.options), aggregate);
   }
 
   emit(scope, vars, commandOutputs(scope, name));

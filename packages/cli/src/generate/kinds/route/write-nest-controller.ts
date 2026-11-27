@@ -14,7 +14,7 @@ import { sharesSchemas } from './shares-schemas';
  * Writes a Nest controller in its folder, its DTO classes beside it, its spec and its group when it
  * is new, and lists it in the module of its context, for Nest to build it and the kit to serve it.
  */
-export function writeNestController(scope: Scope, plan: ControllerPlan): void {
+export function writeNestController(scope: Scope<Reading<never, 'mapper' | 'serializer'>>, plan: ControllerPlan): void {
   assertWritable(scope);
 
   const { name, group } = plan;

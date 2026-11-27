@@ -3,7 +3,7 @@ import { toName, type Name } from '../../naming';
 import type { RenderContext } from '../../templating';
 import type { Output } from '../emit';
 import { rendered } from '../rendered';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { wirings } from '../wirings';
 import { commandContext } from './command-context';
 import { commandOutputs } from './command-outputs';
@@ -40,7 +40,11 @@ interface Rewrite {
  * False when one of them was changed since, or for a search: the code is then the team's, and
  * only a marker is left.
  */
-export function askPolicyInGeneratedUseCase(scope: Scope, useCase: string, kind: string): boolean {
+export function askPolicyInGeneratedUseCase(
+  scope: Scope<Reading<'grant' | 'permission', 'public'>>,
+  useCase: string,
+  kind: string,
+): boolean {
   const generated = generatedUseCase(scope, toName(useCase), kind);
 
   if (generated === undefined) {
@@ -92,7 +96,11 @@ function pointAtTheQuestion(scope: Scope, handler: string, kind: string): void {
   });
 }
 
-function generatedUseCase(scope: Scope, name: Name, kind: string): Generated | undefined {
+function generatedUseCase(
+  scope: Scope<Reading<'grant' | 'permission', 'public'>>,
+  name: Name,
+  kind: string,
+): Generated | undefined {
   if (kind === 'command') {
     const folder = `application/commands/${name.kebab}`;
     const handler = scope.ws.read(`${scope.dir}/${folder}/${name.kebab}.handler.ts`) ?? '';

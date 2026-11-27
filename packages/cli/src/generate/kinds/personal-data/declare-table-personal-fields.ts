@@ -3,7 +3,7 @@ import { readPersonalData } from '../../../docs/read-personal-data';
 import { treeOf } from '../../../model-modules';
 import { toName, type Name } from '../../../naming';
 import { named } from '../../named';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 import { vars } from '../../vars';
 import { tenantVars } from '../generate-repository';
 import { repositoryPrefix } from '../repository-prefix';
@@ -23,7 +23,10 @@ import { writePersonalDeclaration } from './write-personal-declaration';
  * and no repository nor builder writes its rows, so the spec of a first declaration names each
  * case to prove as `it.todo`.
  */
-export function declareTablePersonalFields(scope: Scope, name: string): void {
+export function declareTablePersonalFields(
+  scope: Scope<Reading<'erasure' | 'personal' | 'retention' | 'subject', 'tenant-scoped'>>,
+  name: string,
+): void {
   const request = personalRequestOfTable(scope);
   const found = tableOfSchema(scope, name);
   const owner = ownerOf(found);

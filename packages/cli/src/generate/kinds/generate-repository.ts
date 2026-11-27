@@ -15,7 +15,10 @@ import { REPOSITORY_ADAPTERS } from './repository-adapter';
 import { repositoryPrefix } from './repository-prefix';
 
 /** The port of the repository of an aggregate, the adapter of the ORM of the stack, the fake and the contract both pass. */
-export function generateRepository(scope: Scope, aggregate: Name): RenderContext {
+/** The flags of `generate repository` its files are written from. */
+export type RepositoryFlags = Reading<'erasure' | 'personal' | 'retention' | 'subject', 'tenant-scoped'>;
+
+export function generateRepository(scope: Scope<RepositoryFlags>, aggregate: Name): RenderContext {
   if (isEventSourced(scope, aggregate)) {
     return generateEventSourcedRepository(scope, aggregate);
   }

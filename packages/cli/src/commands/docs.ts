@@ -64,7 +64,7 @@ interface DocsRun {
  * `docs --behaviour`: the pages of what the tests state alone, which the pre-commit hook writes when a
  * spec is staged, every other generated document left as it is; with `--check`, those pages alone.
  */
-function behaviourOnly(io: Io, args: Arguments, run: DocsRun): number {
+function behaviourOnly(io: Io, args: Arguments<never, 'check' | 'dry-run'>, run: DocsRun): number {
   writeBehaviour(run.ws, run.config, describeOnDisk(run.ws, run.config, readContexts(run.ws, run.config)));
 
   if (!args.flag('check')) {
@@ -84,7 +84,7 @@ function behaviourOnly(io: Io, args: Arguments, run: DocsRun): number {
 }
 
 /** `docs --check`: the generated files that would change, and the stored-event versions not recorded yet or recorded by 0.82.0 or earlier; 0 when there is none. */
-function reportCheck(io: Io, args: Arguments, { ws, config }: DocsRun): number {
+function reportCheck(io: Io, args: Arguments<never, 'stored-events'>, { ws, config }: DocsRun): number {
   const report = ws.commit(true);
   const stale = [...report.created, ...report.updated, ...report.deleted];
   const drift = Object.fromEntries(stale.flatMap((file) => driftOf(ws.root, ws, file)));

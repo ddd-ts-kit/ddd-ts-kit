@@ -22,7 +22,7 @@ export interface JobSpec {
 const GLOBALS = ['afterAll', 'beforeAll', 'beforeEach', 'describe', 'it'];
 
 /** The spec of a use case its jobs start: one test per job, the scheduled one run at once, the background one with what is due on its queue. */
-export function jobSpec(scope: Scope, name: Name, { jobs, e2e }: JobStart): JobSpec {
+export function jobSpec(scope: Scope<Reading<'job'>>, name: Name, { jobs, e2e }: JobStart): JobSpec {
   const caseOf = (job: SendingJob, template: string): string =>
     renderTemplate(template, vars(scope, { name: named(name), job: { ...job } })).trimEnd();
 

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { CliError } from '../cli-error';
 import { runInit, type InitOptions } from '../init/run-init';
-import type { Arguments } from './arguments';
+import type { Arguments, OptionSpecs } from './arguments';
 import { defineCommand } from './command';
 import { printReport } from './print-report';
 import { VERSION } from '../version';
@@ -51,7 +51,24 @@ const OTHER_TEXT_FLAGS = [
   'package-manager',
   'value-objects',
   'agent-profile',
-];
+] as const;
+
+/** What `init` reads of its command line: the stack and the texts above, its switches, the contexts and presets it starts with. */
+type InitArguments = Arguments<
+  (typeof STACK_FLAGS)[number] | (typeof OTHER_TEXT_FLAGS)[number],
+  'force' | 'sdk',
+  'context' | 'preset'
+>;
+
+/** The options of `init`: a text per choice of the stack, read by the names of the lists above. */
+const INIT_OPTIONS: OptionSpecs = {
+  ...Object.fromEntries([...STACK_FLAGS, ...OTHER_TEXT_FLAGS].map((flag) => [flag, { type: 'string' as const }])),
+  context: { type: 'string', multiple: true },
+  preset: { type: 'string', multiple: true },
+  'dry-run': { type: 'boolean' },
+  force: { type: 'boolean' },
+  sdk: { type: 'boolean' },
+};
 
 export const initCommand = defineCommand({
   name: 'init',
@@ -76,14 +93,7 @@ export const initCommand = defineCommand({
     '                [--import-extension none|js] [--sdk] [--agent-profile regulated|none]',
     '                [--context <name>:<core|supporting|generic>]... [--preset identity]... [--dry-run] [--force]',
   ],
-  options: {
-    ...Object.fromEntries([...STACK_FLAGS, ...OTHER_TEXT_FLAGS].map((flag) => [flag, { type: 'string' as const }])),
-    context: { type: 'string', multiple: true },
-    preset: { type: 'string', multiple: true },
-    'dry-run': { type: 'boolean' },
-    force: { type: 'boolean' },
-    sdk: { type: 'boolean' },
-  },
+  options: INIT_OPTIONS,
   takesTheLock: { at: 'working-directory' },
   run(args, io) {
     if (args.positionals.length > 0) {
@@ -115,7 +125,7 @@ function quoted(arg: string): string {
   return /^[\w./:=@,+-]+$/.test(arg) ? arg : `'${arg.replaceAll("'", "'\\''")}'`;
 }
 
-function initOptions(args: Arguments, dryRun: boolean): InitOptions {
+function initOptions(args: InitArguments, dryRun: boolean): InitOptions {
   return {
     ...stackOptions(args),
     contexts: args.many('context'),
@@ -125,7 +135,7 @@ function initOptions(args: Arguments, dryRun: boolean): InitOptions {
   };
 }
 
-function stackOptions(args: Arguments) {
+function stackOptions(args: InitArguments) {
   const docsUi = args.text('docs-ui');
   const httpCache = args.text('http-cache');
   const eventSourcing = args.text('event-sourcing');
@@ -152,7 +162,7 @@ function stackOptions(args: Arguments) {
 }
 
 /** What `init` records about the agents of the project: the typed clients they get, the profile that holds them. */
-function agentOptions(args: Arguments): Pick<InitOptions, 'sdk' | 'agentProfile'> {
+function agentOptions(args: InitArguments): Pick<InitOptions, 'sdk' | 'agentProfile'> {
   const agentProfile = args.text('agent-profile');
 
   return {

@@ -61,9 +61,16 @@ const COMMON: ParseArgsConfig['options'] = {
 
 /**
  * The arguments of one command, read as its options declare them: the options it reads as one
- * text, as a switch and as several texts. A helper that names none takes those of any command.
+ * text, as a switch and as several texts. A helper names the options it reads, and takes the
+ * arguments of any command that declares them; one that names none takes those of any command.
  */
-export class Arguments<Text extends string = string, Flag extends string = string, Many extends string = string> {
+export class Arguments<in Text extends string = never, in Flag extends string = never, in Many extends string = never> {
+  /**
+   * What makes the arguments of a command that declares fewer options than a reader reads not
+   * reach it, whatever else they are typed with: no value, a type only.
+   */
+  declare private readonly reader?: (text: Text, flag: Flag, many: Many) => void;
+
   private constructor(
     /** The words of the command line after the name of the command, as they were written. */
     readonly asWritten: readonly string[],
@@ -91,7 +98,7 @@ export class Arguments<Text extends string = string, Flag extends string = strin
   static readAs<const O extends OptionSpecs>(
     args: Arguments<string, string, string>,
     options: O,
-  ): asserts args is ArgumentsOf<O> {
+  ): asserts args is Arguments<string, string, string> & ArgumentsOf<O> {
     const misread = Object.entries(options).find(([name, option]) => !holds(option, args.values[name]));
 
     if (misread !== undefined) {
@@ -162,6 +169,14 @@ export class Arguments<Text extends string = string, Flag extends string = strin
 
   get json(): boolean {
     return this.values['json'] === true;
+  }
+
+  /**
+   * Whether the command line gives the switch `name`, whatever the command declares: false for one
+   * it does not declare, which it refused. For what reads a switch of any command, as the lock does.
+   */
+  givesSwitch(name: string): boolean {
+    return this.values[name] === true;
   }
 
   /** The output the caller asks for: `--json` is `--format json`; `otherwise` when it asks for none. */

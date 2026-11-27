@@ -1,6 +1,6 @@
 import { emit, type Output } from '../../emit';
 import { named } from '../../named';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 import { vars } from '../../vars';
 import { wire } from '../../wire';
 import { controllerImports } from '../route/controller-imports';
@@ -10,7 +10,7 @@ import { groupVars } from '../route/group-vars';
 import { uploadFileVars } from './upload-file-vars';
 
 /** Writes the controller of an upload in its folder, its group when it is new, and its spec; registers it where controllers are listed. */
-export function writeUploadController(scope: Scope, plan: ControllerPlan): void {
+export function writeUploadController(scope: Scope<Reading<'text'>>, plan: ControllerPlan): void {
   const { name, group, folder } = plan;
 
   const httpImports = [

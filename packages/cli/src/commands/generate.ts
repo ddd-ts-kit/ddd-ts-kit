@@ -45,7 +45,7 @@ export function generate(argv: readonly string[], io: Io, probe?: GeneratorProbe
   return generateAsked(generateArguments(argv), io, probe);
 }
 
-function generateAsked(args: Arguments, io: Io, probe?: GeneratorProbe): number {
+function generateAsked(args: Arguments<string, string, string>, io: Io, probe?: GeneratorProbe): number {
   const [kindName, ...rest] = args.positionals;
   const kind = requestedKind(kindName, rest);
 
@@ -57,7 +57,7 @@ interface Asked {
   readonly argv: readonly string[];
   readonly io: Io;
   readonly probe: GeneratorProbe | undefined;
-  readonly args: Arguments;
+  readonly args: Arguments<string, string, string>;
   readonly kind: Kind;
   readonly rest: readonly string[];
 }
@@ -106,7 +106,10 @@ function generateKind({ argv, io, probe, args, kind, rest }: Asked): number {
 }
 
 /** How far the documents are written again: nothing but the declarations under a probe, which reads none of them. */
-function docsScope(args: Arguments, probe: GeneratorProbe | undefined): 'whole' | 'context' | 'declarations' {
+function docsScope(
+  args: Arguments<string, string, string>,
+  probe: GeneratorProbe | undefined,
+): 'whole' | 'context' | 'declarations' {
   if (probe !== undefined) {
     return 'declarations';
   }
@@ -115,7 +118,7 @@ function docsScope(args: Arguments, probe: GeneratorProbe | undefined): 'whole' 
 }
 
 /** The flags of `generate` given on the command line, by their name. */
-function passedFlags(args: Arguments): string[] {
+function passedFlags(args: Arguments<string, string, string>): string[] {
   return GENERATE_FLAGS.filter((key) => args.text(key) !== undefined || args.flag(key) || args.many(key).length > 0);
 }
 

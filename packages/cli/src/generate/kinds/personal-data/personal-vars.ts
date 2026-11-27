@@ -1,5 +1,5 @@
 import type { RenderContext } from '../../../templating';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 import { classHeader } from './class-header';
 import { columnLines } from './column-lines';
 import { fieldsLine } from './fields-line';
@@ -33,7 +33,7 @@ type ColumnOf = (column: string) => PersonalColumn;
  * the columns the storage gains, and for each ORM the names its declaration, its rows and its tests
  * spell. Nothing when the flag is absent.
  */
-export function personalVars(scope: Scope): RenderContext {
+export function personalVars(scope: Scope<Reading<'erasure' | 'personal' | 'retention' | 'subject'>>): RenderContext {
   const request = personalRequestOf(scope);
 
   return request === undefined

@@ -17,7 +17,7 @@ import { worldArrangement } from './world/world-arrangement';
  * one page of a search, whose reader answers lines.
  */
 export function queryContext(
-  scope: Scope<Reading<'permission'>>,
+  scope: Scope<Reading<'grant' | 'permission', 'public'>>,
   name: Name,
   { asksPolicy, search = false }: { asksPolicy: boolean; search?: boolean },
 ): UseCaseContext {

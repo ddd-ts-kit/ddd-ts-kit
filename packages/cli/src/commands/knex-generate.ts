@@ -54,7 +54,7 @@ export const knexGenerateCommand = defineCommand({
   },
 });
 
-function generateMigration(args: Arguments, name: string, io: Io): number {
+function generateMigration(args: Arguments<never, 'custom'>, name: string, io: Io): number {
   const root = args.projectRoot;
 
   if (args.flag('custom')) {

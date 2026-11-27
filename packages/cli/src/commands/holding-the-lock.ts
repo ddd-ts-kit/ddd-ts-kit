@@ -37,7 +37,7 @@ export function holdingTheLock({ name, args }: Asked, writing: Writing, run: () 
 }
 
 function writesNow(args: Arguments, onlyWith: string | undefined): boolean {
-  return !ONLY_SAYS.some((flag) => args.flag(flag)) && (onlyWith === undefined || args.flag(onlyWith));
+  return !ONLY_SAYS.some((flag) => args.givesSwitch(flag)) && (onlyWith === undefined || args.givesSwitch(onlyWith));
 }
 
 /** The root of the project the command runs in; undefined when no config is there. */

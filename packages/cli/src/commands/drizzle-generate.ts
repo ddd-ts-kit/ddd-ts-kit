@@ -52,7 +52,7 @@ export const drizzleGenerateCommand = defineCommand({
   },
 });
 
-function generateMigration(args: Arguments, io: Io): number {
+function generateMigration(args: Arguments<'base' | 'name', 'replay' | 'custom'>, io: Io): number {
   const root = args.projectRoot;
 
   refuseOtherOrm(root, 'drizzle');
@@ -64,7 +64,7 @@ function generateMigration(args: Arguments, io: Io): number {
   return migrate(args, io, process.stdin.isTTY && process.stdout.isTTY);
 }
 
-function migrate(args: Arguments, io: Io, interactive: boolean): number {
+function migrate(args: Arguments<'base' | 'name', 'replay' | 'custom'>, io: Io, interactive: boolean): number {
   const root = args.projectRoot;
 
   if (args.flag('replay')) {
@@ -128,7 +128,7 @@ function refuseNameOfTheJournal(root: string, name: string): void {
   }
 }
 
-function refuseNamedReplay(args: Arguments): void {
+function refuseNamedReplay(args: Arguments<'name', 'custom'>): void {
   if (args.text('name') !== undefined || args.flag('custom')) {
     throw new CliError(
       'A replay generates the migrations of the branch again under their own names, custom ones included.',
@@ -137,7 +137,7 @@ function refuseNamedReplay(args: Arguments): void {
   }
 }
 
-function namedMigration(args: Arguments): string {
+function namedMigration(args: Arguments<'name' | 'base'>): string {
   const name = args.text('name')?.trim() ?? '';
 
   if (args.text('base') !== undefined) {

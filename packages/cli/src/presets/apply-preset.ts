@@ -1,6 +1,6 @@
 import { CONFIG_FILE, parseConfig, type Config } from '../config';
 import { CliError } from '../cli-error';
-import { Arguments } from '../commands/arguments';
+import { Arguments, type OptionSpecs } from '../commands/arguments';
 import { EVERY_KIND } from '../generate/kind-options';
 import { learnTerms } from '../generate/learn-terms';
 import type { Scope } from '../generate/scope';
@@ -182,7 +182,8 @@ function generated(scope: Scope, preset: Preset): Config {
 
   for (const step of preset.steps) {
     const own = typeof step.flags === 'function' ? step.flags(config) : (step.flags ?? []);
-    const flags = Arguments.declared(['--allow-name', ...own], { ...EVERY_KIND, ...optionsOf(step.kind) });
+    const options: OptionSpecs = { ...EVERY_KIND, ...optionsOf(step.kind) };
+    const flags = Arguments.declared(['--allow-name', ...own], options);
 
     step.kind.run({ ws: scope.ws, config, args: [scope.context.kebab, ...step.args], flags });
     config = current(scope.ws) ?? config;

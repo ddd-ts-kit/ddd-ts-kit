@@ -52,7 +52,7 @@ export const affectedCommand = defineCommand({
   },
 });
 
-function selectionFor(root: string, config: Config, args: Arguments): Selection {
+function selectionFor(root: string, config: Config, args: Arguments<'base' | 'head'>): Selection {
   const base = args.text('base');
 
   if (base === undefined || base === '') {

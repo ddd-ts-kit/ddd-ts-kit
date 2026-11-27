@@ -9,7 +9,9 @@ import { personalRequestOf, type PersonalRequest } from './personal-request-of';
  * the person, and a declaration that said `id` would have the erasure look for the person in the
  * wrong column while the register says the table is covered.
  */
-export function personalRequestOfTable(scope: Scope<Reading<'personal' | 'subject'>>): PersonalRequest {
+export function personalRequestOfTable(
+  scope: Scope<Reading<'erasure' | 'personal' | 'retention' | 'subject'>>,
+): PersonalRequest {
   const personal = scope.flags.text('personal');
   const subject = scope.flags.text('subject');
   const request = personal === undefined || subject === undefined ? undefined : personalRequestOf(scope);

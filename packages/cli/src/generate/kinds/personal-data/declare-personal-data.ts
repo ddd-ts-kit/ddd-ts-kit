@@ -1,6 +1,6 @@
 import type { Name } from '../../../naming';
 import type { RenderContext } from '../../../templating';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 import { personalNames, type PersonalNames } from './personal-names';
 import { personalRequestOf, type PersonalRequest } from './personal-request-of';
 import { writePersonalDeclaration } from './write-personal-declaration';
@@ -12,7 +12,11 @@ import { writePersonalDeclaration } from './write-personal-declaration';
  * listed once in the copies and in the exports of the platform; a later table of the same context
  * joins the declarations of both adapters.
  */
-export function declarePersonalData(scope: Scope, aggregate: Name, context: RenderContext): void {
+export function declarePersonalData(
+  scope: Scope<Reading<'erasure' | 'personal' | 'retention' | 'subject'>>,
+  aggregate: Name,
+  context: RenderContext,
+): void {
   const request = personalRequestOf(scope);
 
   if (request === undefined) {

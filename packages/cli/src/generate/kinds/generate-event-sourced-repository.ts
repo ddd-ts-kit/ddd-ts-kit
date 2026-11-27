@@ -16,7 +16,7 @@ import { assertEventStore } from './assert-event-store';
  * with the codec of the stored events, the fake that is that adapter over the in-memory stores,
  * and the contract suite run on both. No table and no row mapper: the events are the storage.
  */
-export function generateEventSourcedRepository(scope: Scope, aggregate: Name): RenderContext {
+export function generateEventSourcedRepository(scope: Scope<Reading<'personal'>>, aggregate: Name): RenderContext {
   assertEventStore(scope);
   assertCodec(scope, aggregate);
   assertNoColumns(scope);

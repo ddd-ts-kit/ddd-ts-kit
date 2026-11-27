@@ -15,7 +15,7 @@ import type { UseCaseContext } from './use-case-context';
  * changes one that exists, and its handler refuses until the domain is decided.
  */
 export function commandContext(
-  scope: Scope<Reading<'permission'>>,
+  scope: Scope<Reading<'grant' | 'permission', 'public'>>,
   { name, aggregate, creates }: { name: Name; aggregate: Name | undefined; creates: boolean },
   asksPolicy: boolean,
 ): UseCaseContext {

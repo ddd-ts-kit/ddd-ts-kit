@@ -37,7 +37,7 @@ export const e2eKind = defineKind({
 });
 
 /** The spec of a use case no route reaches, or whose starter a flag names: it publishes the event its handler receives, or runs the jobs that send its command. Answers what it needs of the support. */
-function startedSpec(scope: Scope, name: Name, routeFile: string): readonly Support[] {
+function startedSpec(scope: Scope<Reading<'event' | 'job'>>, name: Name, routeFile: string): readonly Support[] {
   const reaction = reactionOf(scope, name, routeFile);
 
   if ('jobs' in reaction) {

@@ -1,7 +1,7 @@
 import type { RenderContext } from '../../../templating';
 import { emit, type Output } from '../../emit';
 import { named } from '../../named';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 import { vars } from '../../vars';
 import { controllerImports } from '../route/controller-imports';
 import type { ControllerPlan } from '../route/controller-plan';
@@ -14,7 +14,7 @@ import { uploadFileVars } from './upload-file-vars';
  * `@Upload()` hands its method the file the kit streams, and the generated list of the context
  * names it for Nest to build.
  */
-export function writeNestUploadController(scope: Scope, plan: ControllerPlan): void {
+export function writeNestUploadController(scope: Scope<Reading<'text'>>, plan: ControllerPlan): void {
   const { name, group, folder } = plan;
   const route = nestControllerVars(scope, { ...plan, withMapper: false, withSerializer: false });
 
