@@ -11,12 +11,12 @@ const edit = docsPermissions['document.edit'];
 
 relationTupleStoreContract(runner, {
   name: 'OpenFgaRelationTupleStore on an OpenFGA server',
-  create: async () => new OpenFgaRelationTupleStore(await freshStore(schema), schema),
+  createStore: async () => new OpenFgaRelationTupleStore(await freshStore(schema), schema),
 });
 
 authorizerContract(runner, {
   name: 'OpenFgaAuthorizer on an OpenFGA server',
-  create: async () => {
+  createAuthorizer: async () => {
     const client = await freshStore(schema);
 
     await new OpenFgaRelationTupleStore(client, schema).write([

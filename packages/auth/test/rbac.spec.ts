@@ -20,7 +20,7 @@ authorizerContract(
   { describe, it, expect, beforeEach },
   {
     name: 'RoleBasedAuthorizer',
-    create: () => ({
+    createAuthorizer: () => ({
       authorizer: new RoleBasedAuthorizer({ roles }),
       granted: { actor: ada, permission: issue, resource: { type: 'invoice', id: 'inv-1' } },
       refused: { actor: bob, permission: issue, resource: { type: 'invoice', id: 'inv-1' } },

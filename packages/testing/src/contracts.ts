@@ -34,7 +34,7 @@ export {
 } from './contracts/job-scheduler-contract';
 export { eventStoreContract, type EventStoreContractOptions } from './contracts/event-store-contract';
 export type { TenantEventStore } from './contracts/event-store/tenant-suite';
-export type { EventStoreUnderContract } from './contracts/event-store/event-store-under-contract';
+export type { EventStoreInUnitOfWork } from './contracts/event-store/event-store-in-unit-of-work';
 export {
   eventStoreUnitOfWorkContract,
   type EventStoreUnitOfWorkContractOptions,
@@ -84,9 +84,9 @@ export { readModelContract, type ReadModelContractOptions } from './contracts/re
 export { readModelRowsContract, type ReadModelRowsContractOptions } from './contracts/read-model-rows-contract';
 export { readModelStoreContract, type ReadModelStoreContractOptions } from './contracts/read-model-store-contract';
 export { readModelTablesContract, type ReadModelTablesContractOptions } from './contracts/read-model-tables-contract';
-export type { ReadModelRowsUnderContract } from './contracts/read-model/read-model-rows-under-contract';
+export type { ReadModelTableUnderContract } from './contracts/read-model/read-model-table-under-contract';
 export type { ReadModelStorageUnderContract } from './contracts/read-model/read-model-storage-under-contract';
-export type { ReadModelStoreUnderContract } from './contracts/read-model/read-model-store-under-contract';
+export type { ReadModelTableInUnitOfWork } from './contracts/read-model/read-model-table-in-unit-of-work';
 export type { ReadModelTableShape } from './contracts/read-model/read-model-table-shape';
 export { READ_MODEL_TABLE_SHAPES } from './contracts/read-model/read-model-table-shapes';
 export type { ReadModelTablesUnderContract } from './contracts/read-model/read-model-tables-under-contract';

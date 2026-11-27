@@ -311,7 +311,7 @@ cachePurgerContract(
   { describe, it, expect, beforeEach },
   {
     name: 'SouinCachePurger',
-    createCache: () => {
+    createPurger: () => {
       run += 1;
       const namespace = `/${Date.now()}-${run}`;
 

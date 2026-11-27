@@ -52,7 +52,7 @@ function aRowOf(subject: string, n: number): PersonRow {
 for (const erasure of ['row', 'pseudonymise'] as const) {
   personalDataErasureContract<PersonRow>(runner, {
     name: `InMemoryPersonalData, ${erasure}`,
-    create: () => {
+    createErasure: () => {
       const table = new InMemoryPersonalData('identity.persons', declarationOf(erasure));
 
       return {
@@ -63,7 +63,7 @@ for (const erasure of ['row', 'pseudonymise'] as const) {
         aRowOf,
       };
     },
-    createWithoutFiles: () => {
+    createErasureWithoutFiles: () => {
       const table = new InMemoryPersonalData('identity.persons', declarationWithoutFiles(erasure));
 
       return {
@@ -79,7 +79,7 @@ for (const erasure of ['row', 'pseudonymise'] as const) {
 
 personalDataExportContract<PersonRow>(runner, {
   name: 'InMemoryPersonalData',
-  create: () => {
+  createExport: () => {
     const table = new InMemoryPersonalData('identity.persons', declarationOf('row'));
 
     return {
@@ -95,7 +95,7 @@ personalDataExportContract<PersonRow>(runner, {
 for (const erasure of ['row', 'pseudonymise'] as const) {
   personalDataRetentionContract<PersonRow>(runner, {
     name: `InMemoryPersonalData, ${erasure}`,
-    create: () => {
+    createRetention: () => {
       const declaration = personalFields<PersonRow>('persons', {
         subject: 'id',
         fields: ['display_name', 'email', 'age'],
@@ -137,7 +137,7 @@ describe('the retention contract and a declaration that gives no retention', () 
   it('fails every case that needs the end of the retention, and says so', async () => {
     const collecting = new CollectingRunner();
 
-    personalDataRetentionContract<PersonRow>(collecting, { name: 'no retention', create: withoutRetention });
+    personalDataRetentionContract<PersonRow>(collecting, { name: 'no retention', createRetention: withoutRetention });
 
     const { failed, messages } = await collecting.run();
 

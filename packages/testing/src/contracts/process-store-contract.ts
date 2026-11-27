@@ -29,13 +29,13 @@ export interface ProcessStoreContractOptions {
   /** A fresh, empty store; called before each test. */
   createStore(): Awaitable<ProcessStoreUnderContract>;
   /** The unit of work over the same context as the store just created: the contract then proves that a rolled back save leaves nothing. */
-  readonly unitOfWork?: () => UnitOfWorkOfTheStore;
+  readonly createUnitOfWork?: () => UnitOfWorkOfTheStore;
   /**
    * The store over the same table as the one `createStore` just created, keeping each instance in
    * the tenant `scope` names; called after `createStore`, it empties nothing. The contract then
    * proves that each tenant has its instances of its own, under the keys another tenant uses too.
    */
-  readonly storeInTenant?: (scope: ExecutionScope) => Awaitable<ProcessStoreUnderContract>;
+  readonly createStoreInTenant?: (scope: ExecutionScope) => Awaitable<ProcessStoreUnderContract>;
 }
 
 /**
@@ -66,12 +66,12 @@ class ProcessStoreSuite extends ContractSuite<ProcessStoreUnderContract> {
     this.keeps();
     this.refusesStaleVersions();
 
-    if (this.options.unitOfWork !== undefined) {
-      this.sharesTheUnitOfWork(this.options.unitOfWork);
+    if (this.options.createUnitOfWork !== undefined) {
+      this.sharesTheUnitOfWork(this.options.createUnitOfWork);
     }
 
-    if (this.options.storeInTenant !== undefined) {
-      this.keepsEachTenantApart(this.options.storeInTenant);
+    if (this.options.createStoreInTenant !== undefined) {
+      this.keepsEachTenantApart(this.options.createStoreInTenant);
     }
   }
 
@@ -117,10 +117,10 @@ class ProcessStoreSuite extends ContractSuite<ProcessStoreUnderContract> {
     });
   }
 
-  private sharesTheUnitOfWork(unitOfWork: () => UnitOfWorkOfTheStore): void {
+  private sharesTheUnitOfWork(createUnitOfWork: () => UnitOfWorkOfTheStore): void {
     this.it('leaves nothing behind a unit of work that rolled back', async () => {
       await failureOf(() =>
-        unitOfWork().run(async () => {
+        createUnitOfWork().run(async () => {
           await this.subject.save(anInstance(1));
           throw new Error('the step failed');
         }),
@@ -130,8 +130,10 @@ class ProcessStoreSuite extends ContractSuite<ProcessStoreUnderContract> {
     });
   }
 
-  private keepsEachTenantApart(storeInTenant: (scope: ExecutionScope) => Awaitable<ProcessStoreUnderContract>): void {
-    const tenantStore = () => storeInTenant(ProcessStoreSuite.scope);
+  private keepsEachTenantApart(
+    createStoreInTenant: (scope: ExecutionScope) => Awaitable<ProcessStoreUnderContract>,
+  ): void {
+    const tenantStore = () => createStoreInTenant(ProcessStoreSuite.scope);
 
     this.hidesAnInstanceFromAnotherTenant(tenantStore);
     this.letsTwoTenantsUseOneKey(tenantStore);

@@ -93,7 +93,7 @@ tenantIsolationContract<Notification>(runner, {
 
     return new KnexNotificationRepository(database.persistence.database, scope, clock);
   },
-  recreate: (notification: Notification) => aNotification().identifiedBy(notification.id).build(),
+  createAggregateAgain: (notification: Notification) => aNotification().identifiedBy(notification.id).build(),
   elevatedReads: true,
 });
 

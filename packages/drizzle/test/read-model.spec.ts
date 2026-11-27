@@ -48,7 +48,12 @@ async function stored(key: string) {
   return rowsOf(held)[0];
 }
 
-readModelStoreContract(runner, { name: 'DrizzleReadModelTable', createTable: emptied, stored, uniqueTitle: true });
+readModelStoreContract(runner, {
+  name: 'DrizzleReadModelTable',
+  createTableInUnitOfWork: emptied,
+  stored,
+  uniqueTitle: true,
+});
 
 describe('DrizzleReadModelTable', () => {
   const stamp = { eventId: 'evt-1', occurredAt: new Date('2026-10-10T12:00:00.000Z') };

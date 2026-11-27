@@ -15,7 +15,6 @@ type Row = CriteriaContractRow;
  */
 export class RowsSuite extends ReadModelStoreSuite {
   protected tests(): void {
-    this.closesAfterEach();
     this.keepsRows();
     this.appliesInOrder();
     this.changesARowItHolds();

@@ -12,7 +12,7 @@ export interface PersonalDataExportUnderContract<Row> extends PersonalDataUnderC
 export interface PersonalDataExportContractOptions<Row> {
   readonly name: string;
   /** A fresh subject over an empty table; called before each test. */
-  create(): Awaitable<PersonalDataExportUnderContract<Row>>;
+  createExport(): Awaitable<PersonalDataExportUnderContract<Row>>;
 }
 
 /**
@@ -30,7 +30,7 @@ export function personalDataExportContract<Row extends object>(
 
 class PersonalDataExportSuite<Row extends object> extends ContractSuite<PersonalDataExportUnderContract<Row>> {
   constructor(runner: ContractRunner, options: PersonalDataExportContractOptions<Row>) {
-    super(runner, () => options.create());
+    super(runner, () => options.createExport());
   }
 
   protected tests(): void {

@@ -30,7 +30,7 @@ authorizerContract(
   { describe, it, expect, beforeEach },
   {
     name: 'TenantBoundAuthorizer around roles',
-    create: () => ({
+    createAuthorizer: () => ({
       authorizer: new TenantBoundAuthorizer({ model: new RoleBasedAuthorizer({ roles }) }),
       granted: {
         actor: ada,

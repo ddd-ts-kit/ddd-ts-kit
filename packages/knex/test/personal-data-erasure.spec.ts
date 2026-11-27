@@ -95,7 +95,7 @@ const rowsOf = (subject: string, tenant = 'acme'): Promise<PersonRow[]> =>
 for (const erasure of ['row', 'pseudonymise'] as const) {
   personalDataErasureContract<PersonRow>(runner, {
     name: `KnexPersonalDataErasure, ${erasure}`,
-    create: async () => {
+    createErasure: async () => {
       await database.truncate();
 
       return {
@@ -106,7 +106,7 @@ for (const erasure of ['row', 'pseudonymise'] as const) {
         aRowOf: (subject, n) => aPersonRow(subject, n),
       };
     },
-    createWithoutFiles: async () => {
+    createErasureWithoutFiles: async () => {
       await database.truncate();
 
       return {

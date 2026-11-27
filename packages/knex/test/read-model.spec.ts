@@ -76,7 +76,7 @@ const storedIn = (table: string) => async (key: string) => {
 
 readModelStoreContract(runner, {
   name: 'KnexReadModelTable',
-  createTable: async () => {
+  createTableInUnitOfWork: async () => {
     await tableOf().table.abandonRebuild();
     await database.truncate();
 
@@ -89,7 +89,7 @@ readModelStoreContract(runner, {
 // A read model in the default schema of the connection, its rebuild included.
 readModelStoreContract(runner, {
   name: 'KnexReadModelTable in the default schema',
-  createTable: async () => {
+  createTableInUnitOfWork: async () => {
     const unitOfWork = createKnexUnitOfWork(database.knex);
     const table = new KnexReadModelTable<CriteriaContractRow>(unitOfWork, CONTRACT_TABLE_IN_DEFAULT_SCHEMA);
 

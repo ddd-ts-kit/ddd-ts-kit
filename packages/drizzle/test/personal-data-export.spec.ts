@@ -101,7 +101,7 @@ function recordOf(row: PersonRow, table = 'people') {
 
 personalDataExportContract<PersonRow>(runner, {
   name: 'DrizzlePersonalDataExport',
-  create: async () => {
+  createExport: async () => {
     await database.truncate();
 
     return {

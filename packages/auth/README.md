@@ -1257,8 +1257,8 @@ const accountant = anActor().named('ada').ofTenant('acme').withRole('accountant'
 - **Policies.** Plain objects: call `policy.allows(actor, subject, { now })`, as below.
 - **Boundaries.** `FakeAuthenticator({ 'token-of-ada': ada })` behind `principalResolver`; a credential may stand for a whole session, `{ 'token-of-support': aSession().of(ada).impersonatedBy('support-7').build() }`.
 - **Your own adapters.** Hold an `Authorizer` (an OpenFGA adapter, a custom model) to
-  `authorizerContract(runner, { name, create })` and a tuple store to
-  `relationTupleStoreContract(runner, { name, create })`, with `{ describe, it, expect,
+  `authorizerContract(runner, { name, createAuthorizer })` and a tuple store to
+  `relationTupleStoreContract(runner, { name, createStore })`, with `{ describe, it, expect,
   beforeEach }` of your runner.
 
 A policy spec needs no application, no container and no fake: the policy, two actors, a

@@ -13,10 +13,6 @@ class CarrierDown extends Error {}
  */
 export class FailureSuite extends ContractSuite<UnitOfWorkUnderContract> {
   protected tests(): void {
-    this.afterEach(async () => {
-      await this.subject.close?.();
-    });
-
     this.refusedSave();
     this.failingWork();
     this.failingNestedRun();

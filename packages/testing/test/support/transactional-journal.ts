@@ -9,7 +9,7 @@ import {
   type StoredEvent,
   type UnitOfWork,
 } from '@ddd-ts-kit/kernel';
-import type { EventStoreUnderContract } from '../../src/contracts';
+import type { EventStoreInUnitOfWork } from '../../src/contracts';
 import { claimed } from './claimed';
 
 interface Written {
@@ -18,7 +18,7 @@ interface Written {
 }
 
 /** An event store and an outbox in memory with real transactions: what a unit of work writes is forgotten when it fails. */
-export class TransactionalJournal implements EventStoreUnderContract {
+export class TransactionalJournal implements EventStoreInUnitOfWork {
   readonly unitOfWork: UnitOfWork = unitOfWorkOver((work) => this.atomically(work));
 
   private readonly committed: Written = { events: [], published: [] };
@@ -33,7 +33,7 @@ export class TransactionalJournal implements EventStoreUnderContract {
     head: async () => this.visible().length,
   };
 
-  readonly outbox: EventStoreUnderContract['outbox'] = {
+  readonly outbox: EventStoreInUnitOfWork['outbox'] = {
     append: async (events) => void this.target().published.push(...events),
     claimBatch: async () => this.committed.published.map((event) => claimed(event)),
     stats: async () => ({ pending: this.committed.published.length, failed: 0, dead: 0 }),

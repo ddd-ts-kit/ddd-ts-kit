@@ -49,7 +49,7 @@ eventStoreContract(runner, {
 
 eventStoreUnitOfWorkContract(runner, {
   name: 'createTypeOrmEventSourcing on PostgreSQL',
-  createSubject: async () => {
+  createStoreInUnitOfWork: async () => {
     await database.truncate();
 
     const unitOfWork = createTypeOrmUnitOfWork(database.dataSource);

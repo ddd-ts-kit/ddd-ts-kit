@@ -20,7 +20,7 @@ async function opening(dialect: typeof FASTLY): Promise<FakeCdnApi> {
 
 cachePurgerContract(runner, {
   name: 'FastlyCachePurger, on the purge API Fastly documents',
-  createCache: async () => {
+  createPurger: async () => {
     const api = await opening(FASTLY);
     const purger = new FastlyCachePurger({ serviceId: 'svc-1', token: CDN_TOKEN, endpoint: api.url });
 
@@ -30,7 +30,7 @@ cachePurgerContract(runner, {
 
 cachePurgerContract(runner, {
   name: 'CloudflareCachePurger, on the purge API Cloudflare documents',
-  createCache: async () => {
+  createPurger: async () => {
     const api = await opening(CLOUDFLARE);
     const purger = new CloudflareCachePurger({ zoneId: 'zone-1', token: CDN_TOKEN, endpoint: api.url });
 

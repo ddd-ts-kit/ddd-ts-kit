@@ -4,11 +4,15 @@ import type { ContractRunner } from './contract-runner';
 
 type Expectation = ReturnType<ContractRunner['expect']>;
 
+interface Closable {
+  close(): Awaitable<unknown>;
+}
+
 /**
- * The base of a contract suite: tests about one subject, created anew before each test. A
- * package holding a port extends it to publish the contract of that port. The runner is
- * always called as an object, never through functions taken off it, so a runner that relies
- * on `this` works too.
+ * The base of a contract suite: tests about one subject, created anew before each test and
+ * closed after it when it has a `close()` and the runner an `afterEach`. A package holding a
+ * port extends it to publish the contract of that port. The runner is always called as an
+ * object, never through functions taken off it, so a runner that relies on `this` works too.
  */
 export abstract class ContractSuite<Subject> {
   private subjectOfTheTest: Subject | undefined;
@@ -24,11 +28,21 @@ export abstract class ContractSuite<Subject> {
         this.subjectOfTheTest = await this.createSubject();
       });
 
+      this.afterEach(() => this.closeTheSubject());
+
       this.tests();
     });
   }
 
   protected abstract tests(): void;
+
+  private async closeTheSubject(): Promise<void> {
+    const subject: unknown = this.subjectOfTheTest;
+
+    if (isClosable(subject)) {
+      await subject.close();
+    }
+  }
 
   protected it(name: string, test: () => Promise<void>): void {
     this.runner.it(name, test);
@@ -70,4 +84,8 @@ export abstract class ContractSuite<Subject> {
 
     return this.subjectOfTheTest;
   }
+}
+
+function isClosable(subject: unknown): subject is Closable {
+  return typeof subject === 'object' && subject !== null && 'close' in subject && typeof subject.close === 'function';
 }

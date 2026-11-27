@@ -28,7 +28,8 @@ const orders = {
 tenantIsolationContract<Order>(runner, {
   ...orders,
   name: 'in memory, shared storage confined by the tenant of the work',
-  recreate: (order: Order) => Order.place(order.id, { id: 'c-2', name: 'Bob' }, [{ sku: 'b', quantity: 2 }], at),
+  createAggregateAgain: (order: Order) =>
+    Order.place(order.id, { id: 'c-2', name: 'Bob' }, [{ sku: 'b', quantity: 2 }], at),
   elevatedReads: true,
   createRepository: (scope) => new TenantOrders(scope),
 });
@@ -56,7 +57,8 @@ class FakeOrders extends InMemoryRepository<Order> {
 tenantIsolationContract<Order>(runner, {
   ...orders,
   name: 'InMemoryRepository confined to a scope',
-  recreate: (order: Order) => Order.place(order.id, { id: 'c-2', name: 'Bob' }, [{ sku: 'b', quantity: 2 }], at),
+  createAggregateAgain: (order: Order) =>
+    Order.place(order.id, { id: 'c-2', name: 'Bob' }, [{ sku: 'b', quantity: 2 }], at),
   elevatedReads: true,
   createRepository: (scope) => new FakeOrders(scope),
 });
@@ -205,7 +207,8 @@ describe('the tenant isolation contract and a repository that keeps nothing', ()
       tenantIsolationContract<Order>(collecting, {
         ...orders,
         name: 'forgetful',
-        recreate: (order: Order) => Order.place(order.id, { id: 'c-2', name: 'Bob' }, [{ sku: 'b', quantity: 2 }], at),
+        createAggregateAgain: (order: Order) =>
+          Order.place(order.id, { id: 'c-2', name: 'Bob' }, [{ sku: 'b', quantity: 2 }], at),
         elevatedReads,
         createRepository: () => new ForgetfulOrders(),
       });

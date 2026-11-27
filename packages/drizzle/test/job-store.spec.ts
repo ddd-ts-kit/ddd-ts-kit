@@ -30,7 +30,7 @@ jobStoreContract(runner, {
 
     return new DrizzleJobStore(shared, jobs);
   },
-  unitOfWork: () => shared,
+  createUnitOfWork: () => shared,
 });
 
 jobStoreContract(runner, {

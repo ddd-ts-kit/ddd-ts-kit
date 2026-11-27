@@ -14,10 +14,6 @@ class RegisterParcels extends Command<undefined> {
 /** When the domain events of a unit of work reach their handlers. */
 export class DispatchSuite extends ContractSuite<UnitOfWorkUnderContract> {
   protected tests(): void {
-    this.afterEach(async () => {
-      await this.subject.close?.();
-    });
-
     this.dispatchesAtTheEnd();
     this.queuesWhatHandlersRecord();
     this.joinsANestedRun();

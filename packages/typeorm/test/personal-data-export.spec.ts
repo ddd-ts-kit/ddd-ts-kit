@@ -98,7 +98,7 @@ function recordOf(row: PersonRow, table = 'people') {
 
 personalDataExportContract<PersonRow>(runner, {
   name: 'TypeOrmPersonalDataExport',
-  create: async () => {
+  createExport: async () => {
     await database.truncate();
 
     return {

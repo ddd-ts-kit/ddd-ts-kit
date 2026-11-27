@@ -1,14 +1,14 @@
 import type { Awaitable } from './awaitable';
 import type { ContractRunner } from './contract-runner';
 import { DeletionsSuite } from './read-model/deletions-suite';
-import type { ReadModelRowsUnderContract } from './read-model/read-model-rows-under-contract';
+import type { ReadModelTableUnderContract } from './read-model/read-model-table-under-contract';
 import { RowsSuite } from './read-model/rows-suite';
 import { WritesAtOnceSuite } from './read-model/writes-at-once-suite';
 
 export interface ReadModelRowsContractOptions {
   readonly name: string;
-  /** Called before each test. */
-  createTable(): Awaitable<ReadModelRowsUnderContract>;
+  /** An empty table of the contract; called before each test. */
+  createTable(): Awaitable<ReadModelTableUnderContract>;
   /**
    * What the storage holds under a key, by field of the row (`{ id, status, startsAt... }`), read
    * beside the store, by a statement of your own: the contract checks that a deleted row keeps
@@ -29,7 +29,7 @@ export interface ReadModelRowsContractOptions {
  * that last and leave no data, and searching. A store with a rebuild runs `readModelStoreContract`, which holds it.
  */
 export function readModelRowsContract(runner: ContractRunner, options: ReadModelRowsContractOptions): void {
-  const create = (): Awaitable<ReadModelRowsUnderContract> => options.createTable();
+  const create = (): Awaitable<ReadModelTableUnderContract> => options.createTable();
 
   new RowsSuite(runner, create).describe(`${options.name} (read model store contract: rows)`);
   new DeletionsSuite(runner, create, options).describe(`${options.name} (read model store contract: deletions)`);

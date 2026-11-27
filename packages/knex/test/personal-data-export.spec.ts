@@ -110,7 +110,7 @@ function recordOf(row: PersonRow, table = 'people') {
 
 personalDataExportContract<PersonRow>(runner, {
   name: 'KnexPersonalDataExport',
-  create: async () => {
+  createExport: async () => {
     await database.truncate();
 
     return {
