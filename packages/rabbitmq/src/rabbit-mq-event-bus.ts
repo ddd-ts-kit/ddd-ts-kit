@@ -11,11 +11,14 @@ import { ATTEMPT_HEADER } from './codec/headers';
 import { republication } from './codec/republication';
 import { BrokerLink } from './connection/broker-link';
 import { answeredWithin } from './connection/answered-within';
+import { Deadline } from './connection/deadline';
+import { openedWithin } from './connection/opened-within';
 import { within } from './connection/within';
 import { Consumption } from './consumption/consumption';
 import { ConsumerNameRequiredError } from './errors/consumer-name-required-error';
 import { MESSAGING_SYSTEM } from './messaging-system';
 import { EventBusClosedError } from './errors/event-bus-closed-error';
+import { ignore } from './ignore';
 import type { RabbitMqEventBusOptions } from './options/rabbit-mq-event-bus-options';
 import type { Settings } from './options/settings';
 import { settingsOf } from './options/settings-of';
@@ -93,17 +96,18 @@ export class RabbitMqEventBus implements EventBus {
 
   /**
    * Resolves when the broker confirmed every event, rejects otherwise: nothing is buffered
-   * for later, so the caller (the outbox relay) knows what to retry.
+   * for later, so the caller (the outbox relay) knows what to retry. One deadline,
+   * `publishTimeoutMs`, bounds the whole call, the opening of the connection included.
    */
   async publish(events: readonly IntegrationEvent[]): Promise<void> {
     if (events.length === 0) {
       return;
     }
 
-    await this.link.opened();
-    // The queues of this bus are bound before it publishes: it never misses its own events.
-    await this.consumption.started();
-    await this.publications.publish(events);
+    const deadline = new Deadline(this.settings.publishTimeoutMs);
+
+    await deadline.answered(this.readyToPublish());
+    await this.publications.publish(events, deadline.leftMs);
   }
 
   /** Subscribes the consumer named by the `consumer` option. */
@@ -127,16 +131,24 @@ export class RabbitMqEventBus implements EventBus {
   /**
    * Connects if needed and declares the exchange, the queues and the bindings of the
    * subscriptions made so far. Idempotent. Resolves once those subscriptions are consuming.
+   * One deadline, `publishTimeoutMs`, bounds the whole call, however many declarations it makes.
    */
   async assertTopology(): Promise<void> {
-    const model = await this.link.opened();
+    const deadline = new Deadline(this.settings.publishTimeoutMs);
+    const model = await deadline.answered(this.link.opened());
     // On a channel of its own: a refused declaration closes the channel it was made on.
-    const channel = await model.createChannel();
+    const channel = await deadline.opened(model.createChannel());
 
-    channel.on('error', () => undefined);
-    await declareTopology(channel, this.describeTopology());
-    await channel.close();
-    await this.consumption.started();
+    channel.on('error', ignore);
+
+    try {
+      await deadline.answered(declareTopology(channel, this.describeTopology()));
+    } finally {
+      // In the time left: once the deadline passed, the close is not waited for.
+      await within(deadline.leftMs, channel.close().catch(ignore));
+    }
+
+    await deadline.answered(this.consumption.started());
   }
 
   describeTopology(): RabbitMqTopology {
@@ -154,7 +166,7 @@ export class RabbitMqEventBus implements EventBus {
     const { work, dead } = queueNamesOf(binding);
     const { publishTimeoutMs } = this.settings;
     const model = await this.link.opened();
-    const channel = await answeredWithin(publishTimeoutMs, model.createConfirmChannel());
+    const channel = await openedWithin(publishTimeoutMs, model.createConfirmChannel());
     const confirmations = new Confirmations(publishTimeoutMs);
 
     channel.on('error', () => undefined);
@@ -202,6 +214,12 @@ export class RabbitMqEventBus implements EventBus {
   /** What `console.log` and `util.inspect` show of the bus: the same. */
   [inspect.custom](): string {
     return DESCRIPTION;
+  }
+
+  private async readyToPublish(): Promise<void> {
+    await this.link.opened();
+    // The queues of this bus are bound before it publishes: it never misses its own events.
+    await this.consumption.started();
   }
 
   /** Adds a handler to the queue of one consumer for one type, and connects if needed. */

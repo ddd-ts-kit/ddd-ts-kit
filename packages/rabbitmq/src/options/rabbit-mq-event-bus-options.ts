@@ -24,10 +24,12 @@ export interface RabbitMqEventBusOptions {
   /** What `publish` does with an event no queue is bound for. Default `ignore`. */
   readonly onUnroutable?: 'ignore' | 'fail';
   /**
-   * Time the broker has to confirm a publication before `publish` rejects (`PUBLISH_NOT_CONFIRMED`),
-   * to confirm the copy of a failed message to its retry or dead queue, to answer each request of
-   * `replayDead` (`BROKER_UNAVAILABLE`, reason `REQUEST_TIMEOUT`), and to answer each step of
-   * `close()`, which goes on without the answer. Default 30000.
+   * Time the broker has to answer, for every wait on it. `publish` settles within it, the opening of
+   * the connection included (`PUBLISH_NOT_CONFIRMED`, or `BROKER_UNAVAILABLE` of reason
+   * `REQUEST_TIMEOUT`), and so does `assertTopology`. It bounds each attempt to open the connection
+   * (retried after it), the start of a subscription, the copy of a failed message to its retry or dead
+   * queue, each request of `replayDead`, and each step of `close()`, which goes on without the answer.
+   * Default 30000.
    */
   readonly publishTimeoutMs?: number;
   readonly retry?: RetryOptions;

@@ -58,15 +58,18 @@ export class Publications {
     this.confirmations.abandon();
   }
 
-  /** Resolves when every event is confirmed; rejects with the first failure otherwise. */
-  async publish(events: readonly IntegrationEvent[]): Promise<void> {
+  /**
+   * Resolves when every event is confirmed within `timeoutMs`; rejects with the first failure
+   * otherwise.
+   */
+  async publish(events: readonly IntegrationEvent[], timeoutMs: number): Promise<void> {
     const channel = this.channel;
 
     if (channel === undefined) {
       throw new BrokerUnavailableError('RECONNECTING');
     }
 
-    const outcomes = await Promise.allSettled(events.map((event) => this.send(channel, event)));
+    const outcomes = await Promise.allSettled(events.map((event) => this.send(channel, event, timeoutMs)));
 
     for (const outcome of outcomes) {
       if (outcome.status === 'rejected') {
@@ -87,13 +90,17 @@ export class Publications {
     await within(this.settings.publishTimeoutMs, channel?.close().catch(ignore));
   }
 
-  private async send(channel: ConfirmChannel, event: IntegrationEvent): Promise<void> {
+  private async send(channel: ConfirmChannel, event: IntegrationEvent, timeoutMs: number): Promise<void> {
     const { content, properties } = encode(event);
     const options = { ...properties, mandatory: this.settings.failOnUnroutable };
 
-    await this.confirmations.of(event.id, (confirmed) => {
-      channel.publish(this.settings.exchange, event.type, content, options, confirmed);
-    });
+    await this.confirmations.of(
+      event.id,
+      (confirmed) => {
+        channel.publish(this.settings.exchange, event.type, content, options, confirmed);
+      },
+      timeoutMs,
+    );
 
     // The broker sends the return of an unroutable message before its confirmation.
     if (this.returned.delete(event.id)) {

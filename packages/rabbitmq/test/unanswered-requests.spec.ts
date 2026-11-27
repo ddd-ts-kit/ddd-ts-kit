@@ -90,6 +90,46 @@ describe('RabbitMqEventBus: a broker that stopped answering its requests', { tim
     await network.close();
   });
 
+  it('bounds a publication with one deadline, the opening of the link included', async () => {
+    const network = await broker.network();
+    const bus = broker.bus({ connection: network.connection, publishTimeoutMs: 1_000 });
+    const started = performance.now();
+
+    network.stopAnswering('connection');
+    const publication = outcomeOf(bus.publish([anEvent('evt-1')]));
+
+    await pause(600);
+    network.restore();
+    network.holdReplies();
+
+    expect(await publication).toMatchObject({ code: 'PUBLISH_NOT_CONFIRMED' });
+    expect(performance.now() - started).toBeLessThan(1_400);
+
+    network.restore();
+    await network.close();
+  });
+
+  for (const request of ['channel', 'declaration'] as const) {
+    it(`rejects assertTopology in time when the broker never answers its ${request}, and closes its channel`, async () => {
+      const network = await broker.network();
+      const bus = broker.bus({ connection: network.connection, publishTimeoutMs: 100 });
+
+      await bus.assertTopology();
+      const channels = network.openChannels;
+
+      network.stopAnswering(request);
+
+      expect(await outcomeOf(bus.assertTopology())).toMatchObject(TIMED_OUT);
+
+      network.restore();
+      await pause(50);
+
+      expect(network.openChannels).toBe(channels);
+      await bus.assertTopology();
+      await network.close();
+    });
+  }
+
   it('closes in time when the broker never answers the close of its connection', async () => {
     const network = await broker.network();
     const bus = broker.bus({ connection: network.connection, publishTimeoutMs: 100 });

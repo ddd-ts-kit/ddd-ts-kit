@@ -92,10 +92,7 @@ export class BrokerLink {
     const model = this.model ?? (await this.opening?.catch(ignore));
 
     this.model = undefined;
-
-    if (model !== undefined) {
-      await this.closeInTime(model);
-    }
+    await this.closeInTime(model);
   }
 
   toJSON(): string {
@@ -163,8 +160,8 @@ export class BrokerLink {
   }
 
   /** A broker that stopped answering does not answer a close either: it is not waited for longer. */
-  private async closeInTime(model: ChannelModel): Promise<void> {
-    await within(this.settings.publishTimeoutMs, model.close().catch(ignore));
+  private async closeInTime(model: ChannelModel | undefined): Promise<void> {
+    await within(this.settings.publishTimeoutMs, model?.close().catch(ignore));
   }
 
   private lost(model: ChannelModel): void {
