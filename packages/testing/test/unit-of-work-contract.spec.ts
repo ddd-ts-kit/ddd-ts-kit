@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { unitOfWorkContract } from '../src/contracts';
 import { CollectingRunner } from './support/collecting-runner';
+import { FakesInMemory } from './support/fakes-in-memory';
 import { TransactionalMemory } from './support/transactional-memory';
 
 // The globals of the runner are passed as they are: the suites import no runner themselves.
@@ -25,6 +26,12 @@ unitOfWorkContract(runner, {
       ids: () => memory.ids(),
     };
   },
+});
+
+// What a handler spec runs on: a failed command leaves nothing in the fakes, as a real adapter.
+unitOfWorkContract(runner, {
+  name: 'InMemoryUnitOfWork, over an InMemoryRepository and an InMemoryOutboxStore',
+  createUnitOfWork: () => new FakesInMemory(),
 });
 
 describe('the unit of work contract and an adapter that forgot unitOfWorkOver', () => {
