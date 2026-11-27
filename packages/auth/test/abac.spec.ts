@@ -69,7 +69,7 @@ authorizerContract(
   { describe, it, expect, beforeEach },
   {
     name: 'PolicyBasedAuthorizer',
-    create: () => ({
+    createAuthorizer: () => ({
       authorizer: new PolicyBasedAuthorizer({ policies, clock: new FixedClock(MORNING), attributes: invoices() }),
       granted: { actor: salesClerk, permission: read, resource: first },
       refused: { actor: salesClerk, permission: read, resource: second },

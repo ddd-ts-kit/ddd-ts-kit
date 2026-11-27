@@ -1,5 +1,5 @@
 [English](test-runners.md) · **Français**
-<!-- translation-of: test-runners.md sha256:ac8c817c66a090e8 -->
+<!-- translation-of: test-runners.md sha256:0dd13c0b5b718cf6 -->
 
 # Lanceurs de tests : Vitest et Jest
 
@@ -367,8 +367,8 @@ export abstract class Mailer {
 }
 
 // test/contracts/mailer.contract.ts : ce que tout Mailer doit faire, sans aucun lanceur importé
-export function mailerContract(runner: ContractRunner, options: { name: string; create(): Awaitable<Mailer> }): void {
-  new MailerSuite(runner, () => options.create()).describe(`${options.name} (mailer contract)`);
+export function mailerContract(runner: ContractRunner, options: { name: string; createMailer(): Awaitable<Mailer> }): void {
+  new MailerSuite(runner, () => options.createMailer()).describe(`${options.name} (mailer contract)`);
 }
 
 class MailerSuite extends ContractSuite<Mailer> {
@@ -396,11 +396,11 @@ class InMemoryMailer implements Mailer {
 }
 
 // test/unit/in-memory-mailer.contract.spec.ts : le lanceur remet ses fonctions
-mailerContract({ describe, it, expect, beforeEach, afterEach }, { name: 'InMemoryMailer', create: () => new InMemoryMailer() });
+mailerContract({ describe, it, expect, beforeEach, afterEach }, { name: 'InMemoryMailer', createMailer: () => new InMemoryMailer() });
 ```
 
 La *spec* de l'adaptateur, sous `test/integration/`, appelle le même `mailerContract` avec un
-`create` qui construit l'adaptateur réel. Sous Jest, la première ligne importe plutôt les cinq
+`createMailer` qui construit l'adaptateur réel. Sous Jest, la première ligne importe plutôt les cinq
 fonctions depuis `@jest/globals` ; `ContractRunner` ne leur demande rien de plus.
 
 Un sujet qui a un `close()`, comme celui qui tient une connexion ouverte par la fabrique, est

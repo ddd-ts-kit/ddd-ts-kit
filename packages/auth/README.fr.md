@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:b355848086b1bd25 -->
+<!-- translation-of: README.md sha256:92f20476aa327756 -->
 
 # @ddd-ts-kit/auth
 
@@ -1321,8 +1321,8 @@ const accountant = anActor().named('ada').ofTenant('acme').withRole('accountant'
   `principalResolver` ; un justificatif peut représenter une session entière,
   `{ 'token-of-support': aSession().of(ada).impersonatedBy('support-7').build() }`.
 - **Vos propres adaptateurs.** Tenez un `Authorizer` (un adaptateur OpenFGA, un modèle sur
-  mesure) à `authorizerContract(runner, { name, create })` et un magasin de tuples à
-  `relationTupleStoreContract(runner, { name, create })`, avec `{ describe, it, expect,
+  mesure) à `authorizerContract(runner, { name, createAuthorizer })` et un magasin de tuples à
+  `relationTupleStoreContract(runner, { name, createStore })`, avec `{ describe, it, expect,
   beforeEach }` de votre *runner*.
 
 Une *spec* de politique n'a besoin ni d'application, ni de conteneur, ni de *fake* : la

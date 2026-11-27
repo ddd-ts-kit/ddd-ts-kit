@@ -17,7 +17,7 @@ relationTupleStoreContract(
   { describe, it, expect, beforeEach },
   {
     name: 'The relation tuple store of the platform',
-    create: async () => {
+    createStore: async () => {
       await database.reset();
 
       return new KnexRelationTupleStore(database.persistence.database, { schema: AUTHORIZATION_SCHEMA });

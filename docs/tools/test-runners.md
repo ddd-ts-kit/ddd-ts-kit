@@ -346,8 +346,8 @@ export abstract class Mailer {
 }
 
 // test/contracts/mailer.contract.ts: what any Mailer must do, with no runner imported
-export function mailerContract(runner: ContractRunner, options: { name: string; create(): Awaitable<Mailer> }): void {
-  new MailerSuite(runner, () => options.create()).describe(`${options.name} (mailer contract)`);
+export function mailerContract(runner: ContractRunner, options: { name: string; createMailer(): Awaitable<Mailer> }): void {
+  new MailerSuite(runner, () => options.createMailer()).describe(`${options.name} (mailer contract)`);
 }
 
 class MailerSuite extends ContractSuite<Mailer> {
@@ -375,10 +375,10 @@ class InMemoryMailer implements Mailer {
 }
 
 // test/unit/in-memory-mailer.contract.spec.ts: the runner hands its functions over
-mailerContract({ describe, it, expect, beforeEach, afterEach }, { name: 'InMemoryMailer', create: () => new InMemoryMailer() });
+mailerContract({ describe, it, expect, beforeEach, afterEach }, { name: 'InMemoryMailer', createMailer: () => new InMemoryMailer() });
 ```
 
-The adapter's spec, under `test/integration/`, calls the same `mailerContract` with a `create`
+The adapter's spec, under `test/integration/`, calls the same `mailerContract` with a `createMailer`
 that builds the real adapter. Under Jest the first line imports the five functions from
 `@jest/globals` instead; `ContractRunner` asks nothing more of them.
 

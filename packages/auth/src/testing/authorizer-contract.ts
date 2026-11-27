@@ -18,12 +18,12 @@ export interface AuthorizerFixture {
 export interface AuthorizerContractOptions {
   readonly name: string;
   /** A fresh authorizer with its two requests; called before each test. */
-  create(): Awaitable<AuthorizerFixture>;
+  createAuthorizer(): Awaitable<AuthorizerFixture>;
 }
 
 /** What every authorization model guarantees to the middleware and the handlers. */
 export function authorizerContract(runner: ContractRunner, options: AuthorizerContractOptions): void {
-  new AuthorizerSuite(runner, () => options.create()).describe(`${options.name} (authorizer contract)`);
+  new AuthorizerSuite(runner, () => options.createAuthorizer()).describe(`${options.name} (authorizer contract)`);
 }
 
 const NEVER_GRANTED: Permission = {

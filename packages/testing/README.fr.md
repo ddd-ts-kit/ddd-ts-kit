@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:611b699a42587a3f -->
+<!-- translation-of: README.md sha256:d4440177f67a3156 -->
 
 # @ddd-ts-kit/testing
 
@@ -962,8 +962,8 @@ export interface Geocoder {
   locate(address: string): Promise<{ readonly latitude: number; readonly longitude: number } | undefined>;
 }
 
-export function geocoderContract(runner: ContractRunner, options: { name: string; create(): Awaitable<Geocoder> }): void {
-  new GeocoderSuite(runner, () => options.create()).describe(`${options.name} (geocoder contract)`);
+export function geocoderContract(runner: ContractRunner, options: { name: string; createGeocoder(): Awaitable<Geocoder> }): void {
+  new GeocoderSuite(runner, () => options.createGeocoder()).describe(`${options.name} (geocoder contract)`);
 }
 
 class GeocoderSuite extends ContractSuite<Geocoder> {

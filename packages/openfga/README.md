@@ -332,7 +332,7 @@ relationTupleStoreContract(
   { describe: describe.runIf(OPENFGA_URL !== ''), it, expect, beforeEach, afterEach },
   {
     name: 'OpenFgaRelationTupleStore on an OpenFGA server',
-    create: async () => new OpenFgaRelationTupleStore(await freshStore(), contractSchema),
+    createStore: async () => new OpenFgaRelationTupleStore(await freshStore(), contractSchema),
   },
 );
 ```

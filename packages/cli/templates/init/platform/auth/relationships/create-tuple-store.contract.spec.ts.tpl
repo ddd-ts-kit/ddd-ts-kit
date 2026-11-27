@@ -4,7 +4,7 @@ import { createTupleStore } from '{{alias.platform}}/auth/relationships/create-t
 
 relationTupleStoreContract(
   { describe, it, expect, beforeEach },
-  { name: 'The relation tuple store of the platform', create: () => createTupleStore('test') },
+  { name: 'The relation tuple store of the platform', createStore: () => createTupleStore('test') },
 );
 
 describe('The relation tuple store of the platform, by environment', () => {

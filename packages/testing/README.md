@@ -954,8 +954,8 @@ export interface Geocoder {
   locate(address: string): Promise<{ readonly latitude: number; readonly longitude: number } | undefined>;
 }
 
-export function geocoderContract(runner: ContractRunner, options: { name: string; create(): Awaitable<Geocoder> }): void {
-  new GeocoderSuite(runner, () => options.create()).describe(`${options.name} (geocoder contract)`);
+export function geocoderContract(runner: ContractRunner, options: { name: string; createGeocoder(): Awaitable<Geocoder> }): void {
+  new GeocoderSuite(runner, () => options.createGeocoder()).describe(`${options.name} (geocoder contract)`);
 }
 
 class GeocoderSuite extends ContractSuite<Geocoder> {

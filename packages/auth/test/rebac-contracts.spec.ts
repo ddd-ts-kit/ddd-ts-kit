@@ -9,7 +9,7 @@ authorizerContract(
   { describe, it, expect, beforeEach },
   {
     name: 'RelationBasedAuthorizer',
-    create: async () => ({
+    createAuthorizer: async () => ({
       authorizer: await authorizerWith([
         fact('document:1', 'editor', 'group:eng'),
         fact('group:eng', 'member', 'user:ada'),
@@ -23,5 +23,5 @@ authorizerContract(
 
 relationTupleStoreContract(
   { describe, it, expect, beforeEach },
-  { name: 'InMemoryRelationTupleStore', create: () => new InMemoryRelationTupleStore() },
+  { name: 'InMemoryRelationTupleStore', createStore: () => new InMemoryRelationTupleStore() },
 );

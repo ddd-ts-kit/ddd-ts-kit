@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:1367233de38e63a0 -->
+<!-- translation-of: README.md sha256:b58808992c692171 -->
 
 # @ddd-ts-kit/openfga
 
@@ -337,7 +337,7 @@ relationTupleStoreContract(
   { describe: describe.runIf(OPENFGA_URL !== ''), it, expect, beforeEach, afterEach },
   {
     name: 'OpenFgaRelationTupleStore on an OpenFGA server',
-    create: async () => new OpenFgaRelationTupleStore(await freshStore(), contractSchema),
+    createStore: async () => new OpenFgaRelationTupleStore(await freshStore(), contractSchema),
   },
 );
 ```
