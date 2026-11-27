@@ -115,6 +115,14 @@ export class Arguments<in Text extends string = never, in Flag extends string = 
   }
 
   /**
+   * The positionals of a command line read with `options`, before the command that reads it is
+   * known: a flag none of them declares reads as a switch, and nothing is refused.
+   */
+  static positionalsOf(args: readonly string[], options: OptionSpecs): readonly string[] {
+    return read(args, options, false)[1];
+  }
+
+  /**
    * The arguments of a command that passes them on to the tool it runs: `--cwd` alone is the kit's,
    * every other word is a positional, a flag of the tool included.
    */
