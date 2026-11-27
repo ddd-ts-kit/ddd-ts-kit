@@ -23,7 +23,7 @@ export const domainErrorKind = defineKind({
   },
   writesInModules: true,
   run: (scope, request) => {
-    refuseBuiltThroughFactories(request.config.stack.refusals, scope.context.kebab);
+    refuseBuiltThroughFactories(scope.config.stack.refusals, scope.context.kebab);
 
     const name = concept(scope, request.args[1] ?? '', {
       what: 'domain error',

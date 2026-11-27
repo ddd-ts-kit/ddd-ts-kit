@@ -24,18 +24,18 @@ export const vocabularyKind = defineKind({
     }
 
     const file = `${scope.dir}/domain/vocabularies/${name.kebab}.vocabulary.ts`;
-    const existing = request.ws.read(file);
+    const existing = scope.ws.read(file);
     const text = vocabularyText(name.pascal, entriesOf(request.flags.many('value')), existing);
 
     if (existing === undefined) {
-      request.ws.create(file, text);
+      scope.ws.create(file, text);
 
       // Every other kind of the domain is held by its spec; a list of values has none, and nothing reads it yet.
-      request.ws.note(
+      scope.ws.note(
         `${name.pascal} is read by nothing yet: \`npm run deadcode\` reports ${file} as unused until a value object, an aggregate or a schema names it.`,
       );
     } else {
-      request.ws.update(file, text);
+      scope.ws.update(file, text);
     }
   },
 });

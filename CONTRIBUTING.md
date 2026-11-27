@@ -178,9 +178,12 @@ restarted a desktop. Two things bound them:
   declares them, as the arguments of a command are: `request.flags.text('permission')` compiles
   only for a kind that declares `--permission`, and a helper names the flags it reads
   (`Scope<Reading<'permission', 'public'>>`). One concept of the model its templates say whole is a
-  `conceptKind` (`entity-kind.ts`). Its usage, the flags it refuses, `generate <kind> --help` and
-  `generate --help --json` are written from the declaration; `shownOptions` writes its flags by
-  hand only for forms that exclude each other or a flag it requires.
+  `conceptKind` (`entity-kind.ts`), one name that is not a concept of the model (a port, a guard, a
+  schema) a `labelKind` (`port-kind.ts`); a kind that writes for the HTTP stack declares
+  `needsHttp`, refused in a project without one. Its usage, the flags it refuses,
+  `generate <kind> --help` and `generate --help --json` are written from the declaration;
+  `shownOptions` writes its flags by hand only for forms that exclude each other or a flag it
+  requires.
 - Runtime packages keep third-party libraries behind optional peer dependencies and subpath
   entries. `@ddd-ts-kit/kernel` and the CLI have no runtime dependency.
 - Skills stay short: they tell an agent what to run and what to decide, and point to the

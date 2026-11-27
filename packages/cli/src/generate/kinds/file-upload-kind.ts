@@ -15,6 +15,7 @@ import { writeUploadController } from './file-upload/write-upload-controller';
 import { findUseCase } from './route/find-use-case';
 import { parseEndpoint } from './route/parse-endpoint';
 import { planController } from './route/plan-controller';
+import { NO_HTTP_STACK } from '../refuse-without-http';
 import { GRANTED, GRANTS } from '../shared-write';
 import { defineKind } from '../define-kind';
 
@@ -89,9 +90,7 @@ function assertFileStack(scope: Scope): void {
   }
 
   throw new CliError(
-    storage === 'none'
-      ? 'This project keeps no files (stack.storage is "none").'
-      : 'This project has no HTTP stack (stack.http is "none").',
+    storage === 'none' ? 'This project keeps no files (stack.storage is "none").' : NO_HTTP_STACK,
     `Run \`ddd-ts-kit init --force --storage local\` (or s3) to wire the file storage, with an HTTP stack in ${CONFIG_FILE}; the content of files never goes in the database.`,
   );
 }

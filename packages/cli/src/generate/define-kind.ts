@@ -5,6 +5,7 @@ import type { KindFlags, ReadRequest } from './read-request';
 import { EVERY_KIND } from './kind-options';
 import { learnTerms } from './learn-terms';
 import { openScope } from './open-scope';
+import { type NeedsHttp, refuseWithoutHttp } from './refuse-without-http';
 import type { Scope } from './scope';
 
 /** What a kind declares of itself, wherever it writes. */
@@ -17,6 +18,8 @@ interface Declared<O extends OptionSpecs> extends Omit<Kind, 'aliases' | 'scope'
 /** A kind that writes in the context its first argument names. */
 interface InAContext<O extends OptionSpecs> extends Declared<O> {
   readonly scope: 'context' | 'context-or-shared-kernel';
+  /** Said by a kind that writes for the HTTP stack: it is refused in a project without one, with this fix. */
+  readonly needsHttp?: NeedsHttp;
   /** What it writes in the context opened for it, the rows of its `--term` already in the glossary. */
   run(scope: Scope<KindFlags<O>>, request: ReadRequest<O>): void;
 }
@@ -34,8 +37,8 @@ export type KindSpec<O extends OptionSpecs> = InAContext<O> | Elsewhere<O>;
  * A kind of `generate` from its declaration: it reads its flags as it declares them, as a command
  * reads its options, and the steps every kind that writes in a context takes are taken once, before
  * its own. The context its first argument names is opened (or the shared kernel, for a kind of what
- * the shared kernel holds), and when the kind is held to the glossary, the rows of `--term` join it
- * before any name is judged.
+ * the shared kernel holds), when the kind is held to the glossary, the rows of `--term` join it
+ * before any name is judged, and a kind that needs the HTTP stack is refused in a project without one.
  */
 export function defineKind<const O extends OptionSpecs>(spec: KindSpec<O>): Kind {
   const declared: typeof EVERY_KIND & O = { ...EVERY_KIND, ...spec.options };
@@ -57,6 +60,7 @@ export function defineKind<const O extends OptionSpecs>(spec: KindSpec<O>): Kind
           learnTerms(scope, request.flags.many('term'));
         }
 
+        refuseWithoutHttp(scope.config, spec.needsHttp);
         spec.run(scope, read);
       } else {
         spec.run(read);
