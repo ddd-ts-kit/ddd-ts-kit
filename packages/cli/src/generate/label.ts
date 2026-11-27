@@ -13,9 +13,12 @@ const BUCKET_WORDS = ['manager', 'helper', 'util', 'utils', 'data', 'info'];
  * that it does not end with a technical bucket, unless a term of the glossary holds that word.
  */
 export function label(scope: Scope, input: string, role: ConceptRole): Name {
-  const name = parseConceptName(input, role.what, { strip: role.strip ?? [], allowReserved: scope.flags.allowName });
+  const name = parseConceptName(input, role.what, {
+    strip: role.strip ?? [],
+    allowReserved: scope.flags.flag('allow-name'),
+  });
 
-  if (!scope.flags.allowName) {
+  if (!scope.flags.flag('allow-name')) {
     refuseBucket(scope, name);
   }
 

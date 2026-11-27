@@ -3,7 +3,7 @@ import { CliError } from '../../cli-error';
 import { readName, toName } from '../../naming';
 import { emit } from '../emit';
 import { label } from '../label';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { vars } from '../vars';
 import { declareRole } from '../vocabulary/declare-role';
 import { groupFile } from './route/group-file';
@@ -35,7 +35,8 @@ export const routeGroupKind = defineKind({
   writesInModules: false,
   run: (scope, request) => {
     const name = label(scope, (request.args[1] ?? '').replace(/Routes$/, ''), { what: 'route group' });
-    const { prefix = '', role } = scope.flags;
+    const prefix = scope.flags.text('prefix') ?? '';
+    const role = scope.flags.text('role');
 
     if (!PREFIX.test(prefix)) {
       throw new CliError(
@@ -44,7 +45,7 @@ export const routeGroupKind = defineKind({
       );
     }
 
-    if (scope.flags.public && role !== undefined) {
+    if (scope.flags.flag('public') && role !== undefined) {
       throw new CliError('--public and --role exclude each other.', 'A group is open, or it requires a role.');
     }
 
@@ -60,11 +61,11 @@ export const routeGroupKind = defineKind({
   },
 });
 
-function accessOf(scope: Scope): Pick<GroupDeclaration, 'access' | 'parent'> {
-  const asked = scope.flags.group;
+function accessOf(scope: Scope<Reading<'group', 'public'>>): Pick<GroupDeclaration, 'access' | 'parent'> {
+  const asked = scope.flags.text('group');
 
   if (asked === undefined) {
-    return { access: scope.flags.public ? 'public' : 'authenticated' };
+    return { access: scope.flags.flag('public') ? 'public' : 'authenticated' };
   }
 
   readName(
@@ -79,7 +80,7 @@ function accessOf(scope: Scope): Pick<GroupDeclaration, 'access' | 'parent'> {
   groupPrefix(scope, parent.kebab);
 
   return {
-    access: scope.flags.public ? 'public' : 'inherited',
+    access: scope.flags.flag('public') ? 'public' : 'inherited',
     parent: {
       className: `${parent.pascal}Routes`,
       specifier: specifierOf(scope.config, `${scope.dir}/${groupFile(parent.kebab)}.ts`),

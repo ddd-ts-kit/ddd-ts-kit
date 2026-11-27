@@ -16,7 +16,7 @@ export function eventNames(scope: Scope, aggregateInput: string, factInput: stri
 
   const fact = concept(scope, factInput, { what: 'fact', strip: ['event'] });
 
-  assertPastFact(fact, scope.flags.allowName);
+  assertPastFact(fact, scope.flags.flag('allow-name'));
 
   return {
     aggregate,

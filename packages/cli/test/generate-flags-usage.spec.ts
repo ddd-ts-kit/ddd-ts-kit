@@ -8,23 +8,6 @@ import { REPO_ROOT } from './helpers';
 const SOURCES = path.join(REPO_ROOT, 'packages/cli/src');
 const KINDS_DIRECTORY = path.join(SOURCES, 'generate/kinds');
 const DEFINE_KIND = path.join(SOURCES, 'generate/define-kind.ts');
-const KIND_FLAGS = fs.readFileSync(path.join(SOURCES, 'generate/kind.ts'), 'utf8');
-
-/** The fields of `KindFlags` the probe of `plan-waves` gives in place of a flag: the names it hears, the files built on. */
-const PROBED = new Set(['language', 'builtOn']);
-
-/** The fields of `KindFlags`, each the reading of one flag of the command line, but the probe of `plan-waves`. */
-const FIELDS = new Set(
-  [
-    ...KIND_FLAGS.slice(
-      KIND_FLAGS.indexOf('export interface KindFlags'),
-      KIND_FLAGS.indexOf('export interface KindRequest'),
-    ).matchAll(/^\s+readonly (\w+)\??:/gm),
-  ].flatMap((match) => (match[1] === undefined || PROBED.has(match[1]) ? [] : [match[1]])),
-);
-
-/** The flag a field reads: `tenantScoped` is `--tenant-scoped`, `commandName` the `--command <UseCase>` of a job. */
-const FLAG_OF: Readonly<Record<string, string>> = { commandName: 'command', timeZone: 'time-zone' };
 
 /**
  * Flags the sources a kind runs read, and that its command line still refuses, with the reason.
@@ -70,16 +53,11 @@ function closureOf(file: string, seen = new Set<string>()): Set<string> {
   return seen;
 }
 
-/** The fields of the flags a source reads: `flags.permission`, `const { prefix, role } = scope.flags`. */
-function fieldsReadBy(file: string): string[] {
+/** The flags a source reads: `flags.text('permission')`, `scope.flags.flag('public')`. */
+function flagsReadBy(file: string): string[] {
   const source = fs.readFileSync(file, 'utf8');
-  const dotted = [...source.matchAll(/flags\??\.([a-zA-Z]+)/g)].map((match) => match[1] ?? '');
 
-  const destructured = [...source.matchAll(/\{([^{}]*)\}\s*=\s*[\w.]*flags\b/g)].flatMap((match) =>
-    (match[1] ?? '').split(',').map((part) => part.trim().split(/[:=\s]/)[0] ?? ''),
-  );
-
-  return [...dotted, ...destructured].filter((field) => FIELDS.has(field));
+  return [...source.matchAll(/flags\.(?:text|flag|many)\('([a-z-]+)'\)/g)].map((match) => match[1] ?? '');
 }
 
 function sourceOf(kind: string): string {
@@ -107,14 +85,12 @@ function unshown(kind: (typeof KINDS)[number]): string[] {
     ...(READ_WITH_FLAGS_OF_ITS_OWN[kind.name]?.flags ?? []),
   ]);
 
-  // The steps `defineKind` takes for every kind read `--term` of the kinds that declare it alone.
+  // The steps `defineKind` takes for every kind read `--module` and `--term` of the kinds that declare them alone.
   const read = [...closureOf(sourceOf(kind.name), new Set([DEFINE_KIND]))]
     .filter((file) => file !== DEFINE_KIND)
-    .flatMap(fieldsReadBy);
+    .flatMap(flagsReadBy);
 
-  const flags = read.map((field) => FLAG_OF[field] ?? field.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`));
-
-  return [...new Set(flags)].filter((flag) => !shown.has(flag));
+  return [...new Set(read)].filter((flag) => !shown.has(flag));
 }
 
 describe('the usage of each kind of generate', () => {
@@ -141,7 +117,7 @@ describe('the usage of each kind of generate', () => {
   );
 
   it('reads, in the sources of a kind, the flags a helper it calls reads', () => {
-    expect(fieldsReadBy(path.join(SOURCES, 'generate/access-vars.ts'))).toEqual(
+    expect(flagsReadBy(path.join(SOURCES, 'generate/access-vars.ts'))).toEqual(
       expect.arrayContaining(['permission', 'public']),
     );
 

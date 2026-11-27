@@ -59,11 +59,19 @@ export const fileUploadKind = defineKind({
 
     wire(scope, 'file-upload', context);
 
-    const endpoint = parseEndpoint({ method: request.flags.method ?? 'POST', path: request.flags.path });
+    const endpoint = parseEndpoint({
+      method: request.flags.text('method') ?? 'POST',
+      path: request.flags.text('path'),
+    });
+
     // The text fields of an upload are read by its own templates: the route does not read the message from them.
     const useCase = { ...findUseCase(scope, name, { command: true, query: false }), fields: [] };
 
-    const plan = planController(scope, { name, endpoint, useCase });
+    const plan = planController(
+      scope,
+      { name, endpoint, useCase },
+      { mapper: false, serializer: false, cache: undefined },
+    );
 
     if (scope.config.stack.routes === 'nest') {
       writeNestUploadController(scope, plan);

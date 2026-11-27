@@ -1,22 +1,5 @@
-import type { KindFlags } from '../generate/kind';
+import { Arguments } from '../commands/arguments';
+import { EVERY_KIND } from '../generate/kind-options';
 
-/** The flags of a generator nobody passed: what a preset starts each of its steps from. */
-export const NO_FLAGS: KindFlags = {
-  upstream: [],
-  term: [],
-  value: [],
-  transition: [],
-  field: [],
-  command: false,
-  query: false,
-  allowName: false,
-  public: false,
-  tenantScoped: false,
-  search: false,
-  decorators: false,
-  global: false,
-  mapper: false,
-  serializer: false,
-  eventSourced: false,
-  creates: false,
-};
+/** The flags of a scope no command opened, the context of a preset or the platform it rewires: none given. */
+export const NO_FLAGS = Arguments.declared([], EVERY_KIND);

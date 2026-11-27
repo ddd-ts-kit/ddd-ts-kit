@@ -1,5 +1,5 @@
 import { CliError } from '../../../cli-error';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 import { personalRequestOf, type PersonalRequest } from './personal-request-of';
 
 /**
@@ -9,8 +9,9 @@ import { personalRequestOf, type PersonalRequest } from './personal-request-of';
  * the person, and a declaration that said `id` would have the erasure look for the person in the
  * wrong column while the register says the table is covered.
  */
-export function personalRequestOfTable(scope: Scope): PersonalRequest {
-  const { personal, subject } = scope.flags;
+export function personalRequestOfTable(scope: Scope<Reading<'personal' | 'subject'>>): PersonalRequest {
+  const personal = scope.flags.text('personal');
+  const subject = scope.flags.text('subject');
   const request = personal === undefined || subject === undefined ? undefined : personalRequestOf(scope);
 
   if (request !== undefined) {

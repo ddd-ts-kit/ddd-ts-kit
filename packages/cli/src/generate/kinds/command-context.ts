@@ -2,7 +2,7 @@ import type { Name } from '../../naming';
 import { accessVars } from '../access-vars';
 import { isDeclared } from '../is-declared';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { specVars } from '../spec-vars';
 import { vars } from '../vars';
 import { worldArrangement } from './world/world-arrangement';
@@ -15,12 +15,12 @@ import type { UseCaseContext } from './use-case-context';
  * changes one that exists, and its handler refuses until the domain is decided.
  */
 export function commandContext(
-  scope: Scope,
+  scope: Scope<Reading<'permission'>>,
   { name, aggregate, creates }: { name: Name; aggregate: Name | undefined; creates: boolean },
   asksPolicy: boolean,
 ): UseCaseContext {
   const births = aggregate !== undefined && creates;
-  const reference = `${scope.context.camel}Permissions['${scope.flags.permission ?? ''}']`;
+  const reference = `${scope.context.camel}Permissions['${scope.flags.text('permission') ?? ''}']`;
   const required = accessVars(scope, { name, kind: 'Command' });
   const access = { ...required, policy: asksPolicy, policyApplies: asksPolicy && isDeclared(scope.config), reference };
   const spec = { ...specVars(scope, access), ...refusalCodes(required['protected'] === true, births) };

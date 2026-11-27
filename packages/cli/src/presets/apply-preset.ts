@@ -1,6 +1,7 @@
 import { CONFIG_FILE, parseConfig, type Config } from '../config';
 import { CliError } from '../cli-error';
-import type { KindFlags } from '../generate/kind';
+import { Arguments } from '../commands/arguments';
+import { EVERY_KIND } from '../generate/kind-options';
 import { learnTerms } from '../generate/learn-terms';
 import type { Scope } from '../generate/scope';
 import { vars } from '../generate/vars';
@@ -13,6 +14,7 @@ import { adapterOf } from './adapter-of';
 import { platformPath } from '../generate/platform-path';
 import { grantToSignedIn } from './grant-to-signed-in';
 import { layOutPrismaModels } from './lay-out-prisma-models';
+import { optionsOf } from '../generate/options-of';
 import { NO_FLAGS } from './no-flags';
 import { organisationsAsAuditChains } from './organisations-as-audit-chains';
 import { organisationsAsTenantDirectory } from './organisations-as-tenant-directory';
@@ -179,8 +181,8 @@ function generated(scope: Scope, preset: Preset): Config {
   let config = scope.config;
 
   for (const step of preset.steps) {
-    const own = typeof step.flags === 'function' ? step.flags(config) : step.flags;
-    const flags: KindFlags = { ...NO_FLAGS, allowName: true, ...own };
+    const own = typeof step.flags === 'function' ? step.flags(config) : (step.flags ?? []);
+    const flags = Arguments.declared(['--allow-name', ...own], { ...EVERY_KIND, ...optionsOf(step.kind) });
 
     step.kind.run({ ws: scope.ws, config, args: [scope.context.kebab, ...step.args], flags });
     config = current(scope.ws) ?? config;

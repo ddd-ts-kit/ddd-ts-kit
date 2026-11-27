@@ -1,6 +1,6 @@
 import { CliError } from '../../../cli-error';
 import type { Name } from '../../../naming';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 import { entriesOf } from '../../vocabulary/entries-of';
 import { heldEntries } from '../../vocabulary/held-entries';
 import type { VocabularyEntry } from '../../vocabulary/vocabulary-entry';
@@ -10,11 +10,11 @@ import { vocabularyText } from '../../vocabulary/vocabulary-text';
  * The closed vocabulary of the status of an aggregate, `<Aggregate>Status`: created from the
  * values of `--value`, or extended with the ones it does not hold. Answers every entry, in order.
  */
-export function statusVocabulary(scope: Scope, aggregate: Name): VocabularyEntry[] {
+export function statusVocabulary(scope: Scope<Reading<never, never, 'value'>>, aggregate: Name): VocabularyEntry[] {
   const name = `${aggregate.pascal}Status`;
   const file = `${scope.dir}/domain/vocabularies/${aggregate.kebab}-status.vocabulary.ts`;
   const existing = scope.ws.read(file);
-  const asked = scope.flags.value.length === 0 ? [] : entriesOf(scope.flags.value);
+  const asked = scope.flags.many('value').length === 0 ? [] : entriesOf(scope.flags.many('value'));
 
   if (existing === undefined && asked.length < 2) {
     throw new CliError(

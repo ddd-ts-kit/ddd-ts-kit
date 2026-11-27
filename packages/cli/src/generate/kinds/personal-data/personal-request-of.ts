@@ -1,6 +1,6 @@
 import { CONFIG_FILE, type OrmStack } from '../../../config';
 import { CliError } from '../../../cli-error';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 
 /** What `--personal` asks for: the personal columns of the table, the column that names the data subject, how the rows of a subject are erased. */
 export interface PersonalRequest {
@@ -28,8 +28,13 @@ const MODES: readonly PersonalRequest['erasure'][] = ['pseudonymise', 'row'];
 const ADAPTED: readonly OrmStack[] = ['knex', 'drizzle', 'prisma', 'typeorm'];
 
 /** The request of `--personal`, checked before anything is written; nothing without the flag, and then `--subject` or `--erasure` alone is refused. */
-export function personalRequestOf(scope: Scope): PersonalRequest | undefined {
-  const { personal, subject = 'id', erasure = 'pseudonymise', retention } = scope.flags;
+export function personalRequestOf(
+  scope: Scope<Reading<'personal' | 'subject' | 'erasure' | 'retention'>>,
+): PersonalRequest | undefined {
+  const personal = scope.flags.text('personal');
+  const subject = scope.flags.text('subject') ?? 'id';
+  const erasure = scope.flags.text('erasure') ?? 'pseudonymise';
+  const retention = scope.flags.text('retention');
 
   if (personal === undefined) {
     assertNothingAlone(scope);
@@ -51,8 +56,12 @@ export function personalRequestOf(scope: Scope): PersonalRequest | undefined {
   };
 }
 
-function assertNothingAlone(scope: Scope): void {
-  if (scope.flags.subject === undefined && scope.flags.erasure === undefined && scope.flags.retention === undefined) {
+function assertNothingAlone(scope: Scope<Reading<'subject' | 'erasure' | 'retention'>>): void {
+  if (
+    scope.flags.text('subject') === undefined &&
+    scope.flags.text('erasure') === undefined &&
+    scope.flags.text('retention') === undefined
+  ) {
     return;
   }
 

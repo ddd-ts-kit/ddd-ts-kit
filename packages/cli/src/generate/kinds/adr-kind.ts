@@ -1,11 +1,10 @@
 import { CONFIG_FILE, editConfigText, type Deviation } from '../../config';
 import type { Workspace } from '../../workspace';
-import type { Kind } from '../kind';
+import { defineKind } from '../define-kind';
 import { writeAdr } from './write-adr';
 
-export const adrKind: Kind = {
+export const adrKind = defineKind({
   name: 'adr',
-  aliases: [],
   summary:
     'A decision record in docs/adr/, numbered after the highest or by --number; with --deviation, the entry of the config that points to it.',
   scope: 'project',
@@ -23,7 +22,9 @@ export const adrKind: Kind = {
   writesInModules: false,
   run: ({ ws, args, flags }) => {
     const title = (args[0] ?? '').trim();
-    const { deviation: what, reason = title, number: asked } = flags;
+    const what = flags.text('deviation');
+    const reason = flags.text('reason') ?? title;
+    const asked = flags.text('number');
 
     const number = writeAdr(ws, {
       title,
@@ -35,7 +36,7 @@ export const adrKind: Kind = {
       declareDeviation(ws, { what, adr: number, reason });
     }
   },
-};
+});
 
 function declareDeviation(ws: Workspace, deviation: Deviation): void {
   const text = ws.read(CONFIG_FILE);

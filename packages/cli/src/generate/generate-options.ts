@@ -1,19 +1,18 @@
 import type { OptionSpec, OptionSpecs } from '../commands/arguments';
 import type { Kind } from './kind';
+import { EVERY_KIND } from './kind-options';
 import { KINDS } from './kinds';
 import { optionsOf } from './options-of';
 
-const SWITCH = { type: 'boolean' } as const;
-
-/** The flags of `generate` every kind takes, whatever it declares: the `generate` line of the help states them. */
-export const COMMON_FLAGS = ['allow-name', 'local-only', 'dry-run', 'force'] as const;
+/** The flags of `generate` every kind takes, by their name. */
+export const COMMON_FLAGS: readonly string[] = Object.keys(EVERY_KIND);
 
 /**
  * Every flag a kind may take, so that a kind refuses the flag of another in its own words rather
  * than in the parser's: the flags every kind takes, then those the kinds declare.
  */
 export const GENERATE_OPTIONS: OptionSpecs = {
-  ...Object.fromEntries(COMMON_FLAGS.map((flag) => [flag, SWITCH])),
+  ...EVERY_KIND,
   ...declaredBy(KINDS),
 };
 

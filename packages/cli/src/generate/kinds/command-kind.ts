@@ -43,24 +43,24 @@ export const commandKind = defineKind({
     const name = concept(scope, request.args[1] ?? '', {
       what: 'use case',
       strip: ['command', 'handler'],
-      alongside: permissionWords(scope.flags.permission),
+      alongside: permissionWords(scope.flags.text('permission')),
     });
 
-    const aggregate =
-      request.flags.aggregate === undefined ? undefined : existingAggregate(scope, request.flags.aggregate);
+    const asked = request.flags.text('aggregate');
+    const aggregate = asked === undefined ? undefined : existingAggregate(scope, asked);
 
-    if (scope.flags.creates && aggregate === undefined) {
+    if (scope.flags.flag('creates') && aggregate === undefined) {
       throw new CliError(
         '--creates names a command that gives birth to an aggregate, and no aggregate is named.',
         'Add --aggregate <Name>, or drop --creates: without an aggregate the handler has nothing to create.',
       );
     }
 
-    const { permission } = scope.flags;
+    const permission = scope.flags.text('permission');
 
     const generated = commandContext(
       scope,
-      { name, aggregate, creates: scope.flags.creates },
+      { name, aggregate, creates: scope.flags.flag('creates') },
       permission !== undefined && refinedByPolicy(scope, permission),
     );
 

@@ -3,7 +3,7 @@ import type { Name } from '../../naming';
 import type { RenderContext } from '../../templating';
 import { emit } from '../emit';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { vars } from '../vars';
 import { wire } from '../wire';
 import { generateEventSourcedRepository } from './generate-event-sourced-repository';
@@ -66,10 +66,10 @@ const TENANT_AWARE: readonly OrmStack[] = ['drizzle', 'knex', 'prisma', 'typeorm
  * `tenantCondition`, `tenantWhere`). Defence in depth: the permission is still decided in the
  * application layer.
  */
-export function tenantVars(scope: Scope): RenderContext {
+export function tenantVars(scope: Scope<Reading<never, 'tenant-scoped'>>): RenderContext {
   const { config } = scope;
   const inherited = config.stack.tenancy !== 'none' && !isControlPlane(config, scope.context.kebab);
-  const asked = scope.flags.tenantScoped || inherited;
+  const asked = scope.flags.flag('tenant-scoped') || inherited;
   const scoped = asked && TENANT_AWARE.includes(config.stack.orm);
 
   if (asked && !scoped) {

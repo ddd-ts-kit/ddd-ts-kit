@@ -3,7 +3,7 @@ import { isGranted } from '../check/authz/is-granted';
 import { scan } from '../check/scan/scan';
 import { CliError } from '../cli-error';
 import { permissionsFile } from './permissions-file';
-import type { Scope } from './scope';
+import type { Reading, Scope } from './scope';
 import { declareRole } from './vocabulary/declare-role';
 import { withImport } from './with-import';
 import { platformPath } from './platform-path';
@@ -17,8 +17,8 @@ const SYSTEM = '[Role.System]';
  * role vocabulary when it is new. Without it, the next steps say the grant is left to do, since
  * only the super-admin wildcard reaches the permission until then (rule authz/granted).
  */
-export function grantPermission(scope: Scope, permission: string): void {
-  const role = scope.flags.grant;
+export function grantPermission(scope: Scope<Reading<'grant'>>, permission: string): void {
+  const role = scope.flags.text('grant');
   const file = platformPath(scope, 'auth/roles/roles.ts');
 
   if (scope.config.stack.authz !== 'rbac') {

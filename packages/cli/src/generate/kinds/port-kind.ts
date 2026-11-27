@@ -15,7 +15,7 @@ export const portKind = defineKind({
   writesInModules: true,
   run: (scope, request) => {
     const name = label(scope, request.args[1] ?? '', { what: 'port', strip: ['port'] });
-    const module = request.flags.module === undefined ? '' : ` --module ${toName(request.flags.module).kebab}`;
+    const module = scope.module === undefined ? '' : ` --module ${toName(scope.module).kebab}`;
     const adapter = `\`ddd-ts-kit generate adapter ${scope.context.kebab} ${name.pascal}${module}\``;
 
     emit(scope, vars(scope, { name: named(name) }), [

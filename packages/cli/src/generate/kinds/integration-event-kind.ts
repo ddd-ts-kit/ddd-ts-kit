@@ -29,7 +29,7 @@ export const integrationEventKind = defineKind({
   },
   writesInModules: true,
   run: (scope, request) => {
-    const version = parseVersion(request.flags.version ?? '1');
+    const version = parseVersion(request.flags.text('version') ?? '1');
     const names = ensureDomainEvent(scope, request.args[1] ?? '', request.args[2] ?? '');
 
     assertDeclaresItsName(scope, names);

@@ -1,6 +1,6 @@
 import { splitWords, type Name } from '../naming';
 import { concept } from './concept';
-import type { Scope } from './scope';
+import type { Reading, Scope } from './scope';
 
 /** The element `--name` names, and the role words its generator adds itself after the name. */
 export interface NamedElement {
@@ -14,8 +14,8 @@ export interface NamedElement {
  * event it reacts to): that name, or the one `--name` gives, as the design calls the element,
  * checked as any concept of the context is.
  */
-export function givenName(scope: Scope, derived: Name, element: NamedElement): Name {
-  const given = scope.flags.name;
+export function givenName(scope: Scope<Reading<'name'>>, derived: Name, element: NamedElement): Name {
+  const given = scope.flags.text('name');
 
   if (given === undefined) {
     return derived;

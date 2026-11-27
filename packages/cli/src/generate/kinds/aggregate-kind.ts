@@ -3,7 +3,7 @@ import { concept } from '../concept';
 import { emit } from '../emit';
 import { TERM } from '../kind-options';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { vars } from '../vars';
 import type { Name } from '../../naming';
 import { birthNames } from './birth-names';
@@ -23,7 +23,7 @@ export const aggregateKind = defineKind({
   run: (scope, request) => {
     const name = concept(scope, request.args[1] ?? '', { what: 'aggregate', strip: ['aggregate'] });
 
-    if (scope.flags.eventSourced) {
+    if (scope.flags.flag('event-sourced')) {
       writeEventSourcedAggregate(scope, name);
     } else {
       writeAggregate(scope, name);
@@ -37,8 +37,8 @@ export const aggregateKind = defineKind({
  * An aggregate that keeps its state in a table: the class, its builder and its spec; with `--birth`,
  * the domain event of its birth too, which `create` records, the builder and the spec named after it.
  */
-function writeAggregate(scope: Scope, name: Name): void {
-  const input = scope.flags.birth;
+function writeAggregate(scope: Scope<Reading<'birth'>>, name: Name): void {
+  const input = scope.flags.text('birth');
   const birth = input === undefined ? undefined : birthNames(scope, name, input);
 
   const [aggregate] = emit(scope, vars(scope, { name: named(name), aggregate: named(name), birth: birthVars(birth) }), [

@@ -6,7 +6,7 @@ import { declarePermission } from './declare-permission';
 import { grantPermission } from './grant-permission';
 import { permissionNamed } from './permission-named';
 import { permissionsFile } from './permissions-file';
-import type { Scope } from './scope';
+import type { Reading, Scope } from './scope';
 import type { UseCaseMessage } from './use-case-message';
 
 /**
@@ -14,7 +14,10 @@ import type { UseCaseMessage } from './use-case-message';
  * default: a use case that declares neither is not generated. A new permission joins the
  * permissions of the context.
  */
-export function accessVars(scope: Scope, useCase: UseCaseMessage): RenderContext {
+/** The flags that say who may reach a use case. */
+type Access = Scope<Reading<'permission' | 'grant', 'public'>>;
+
+export function accessVars(scope: Access, useCase: UseCaseMessage): RenderContext {
   const permission = requestedPermission(scope, useCase);
 
   if (permission === undefined) {
@@ -27,8 +30,9 @@ export function accessVars(scope: Scope, useCase: UseCaseMessage): RenderContext
   return protectedAccess(scope, useCase, permission);
 }
 
-function requestedPermission(scope: Scope, useCase: UseCaseMessage): string | undefined {
-  const { permission, public: isPublic } = scope.flags;
+function requestedPermission(scope: Access, useCase: UseCaseMessage): string | undefined {
+  const permission = scope.flags.text('permission');
+  const isPublic = scope.flags.flag('public');
 
   if (permission !== undefined && isPublic) {
     throw new CliError(
@@ -37,7 +41,7 @@ function requestedPermission(scope: Scope, useCase: UseCaseMessage): string | un
     );
   }
 
-  if (scope.flags.grant !== undefined && isPublic) {
+  if (scope.flags.text('grant') !== undefined && isPublic) {
     throw new CliError(
       '--grant and --public exclude each other.',
       'A public use case needs no role to hold it: keep --public alone, or give --permission with --grant <role>.',

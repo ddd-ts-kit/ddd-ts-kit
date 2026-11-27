@@ -1,7 +1,7 @@
 import type { Name } from '../../naming';
 import { emit } from '../emit';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { vars } from '../vars';
 import { assertEventStore } from './assert-event-store';
 import { birthNames } from './birth-names';
@@ -16,10 +16,10 @@ const DEFAULT_BIRTH = 'Created';
  * of its stored events, a builder that replays a history and a given-events spec. Refused while
  * the platform has no event store to save it through.
  */
-export function writeEventSourcedAggregate(scope: Scope, name: Name): void {
+export function writeEventSourcedAggregate(scope: Scope<Reading<'birth'>>, name: Name): void {
   assertEventStore(scope);
 
-  const names = birthNames(scope, name, scope.flags.birth ?? DEFAULT_BIRTH);
+  const names = birthNames(scope, name, scope.flags.text('birth') ?? DEFAULT_BIRTH);
 
   const event = {
     ...named(names.event),

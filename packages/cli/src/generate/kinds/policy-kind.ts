@@ -29,7 +29,7 @@ export const policyKind = defineKind({
   writesInModules: true,
   run: (scope, request) => {
     const name = label(scope, request.args[1] ?? '', { what: 'policy', strip: ['policy'] });
-    const { permission } = scope.flags;
+    const permission = scope.flags.text('permission');
 
     if (permission === undefined) {
       throw new CliError(

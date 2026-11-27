@@ -84,6 +84,22 @@ export class Arguments<Text extends string = string, Flag extends string = strin
   }
 
   /**
+   * Asserts that arguments read with the options of several readers at once hold, for each of the
+   * options `O`, a value of the shape it declares: a reader of `O` may take them. The flags of
+   * `generate` are read with those of every kind, then handed to the kind as it declares its own.
+   */
+  static readAs<const O extends OptionSpecs>(
+    args: Arguments<string, string, string>,
+    options: O,
+  ): asserts args is ArgumentsOf<O> {
+    const misread = Object.entries(options).find(([name, option]) => !holds(option, args.values[name]));
+
+    if (misread !== undefined) {
+      throw new Error(`--${misread[0]} was not read as it is declared.`);
+    }
+  }
+
+  /**
    * What every command accepts (`--json`, `--cwd`), read from a command line that may hold anything
    * else: what the entry knows of it before its command read it, and once a command refused it.
    */
@@ -197,6 +213,24 @@ export class Arguments<Text extends string = string, Flag extends string = strin
 
     return (Array.isArray(value) ? value : [value]).filter((item) => typeof item === 'string');
   }
+}
+
+/** Whether a value is of the shape an option declares: absent, a switch given, or the texts it takes. */
+function holds(option: OptionSpec, value: unknown): boolean {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (option.type === 'boolean') {
+    return value === true;
+  }
+
+  const texts: unknown = option.multiple === true ? value : [value];
+
+  return (
+    Array.isArray(texts) &&
+    texts.every((text) => typeof text === 'string' && (option.values === undefined || option.values.includes(text)))
+  );
 }
 
 /** The values an option names, when it does. */

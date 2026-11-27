@@ -6,7 +6,7 @@ import { emit } from '../emit';
 import { TERM } from '../kind-options';
 import { label } from '../label';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { vars } from '../vars';
 import { wire } from '../wire';
 import { wiringFamily } from '../wiring-family';
@@ -63,7 +63,7 @@ export const readModelKind = defineKind({
     listTable(scope, store);
     noteTheMigration(scope);
 
-    if (scope.flags.tenantScoped && !store.needsDatabase) {
+    if (scope.flags.flag('tenant-scoped') && !store.needsDatabase) {
       scope.ws.note(
         `--tenant-scoped is written for drizzle, knex, prisma and typeorm: ${store.adapter} keeps one read model in memory for every tenant.`,
       );
@@ -93,8 +93,8 @@ function refusePlainPort(scope: Scope, name: Name): void {
   );
 }
 
-function readModelVars(scope: Scope, name: Name, store: ReadModelStore): RenderContext {
-  const fields = readModelFields(scope.flags.field);
+function readModelVars(scope: Scope<Reading<never, never, 'field'>>, name: Name, store: ReadModelStore): RenderContext {
+  const fields = readModelFields(scope.flags.many('field'));
 
   return vars(scope, {
     name: named(name),

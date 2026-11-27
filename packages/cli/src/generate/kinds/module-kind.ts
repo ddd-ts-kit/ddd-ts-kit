@@ -8,7 +8,7 @@ import { renderTemplate } from '../../templating';
 import { readName, type Name } from '../../naming';
 import { TERM } from '../kind-options';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { spokenInLanguage } from '../spoken-in-language';
 import { vars } from '../vars';
 import { wire } from '../wire';
@@ -34,7 +34,7 @@ export const moduleKind = defineKind({
     const doc = `${scope.dir}/CONTEXT.md`;
 
     declareModule(scope, module.kebab);
-    scope.ws.update(doc, withModuleRow(scope.ws.read(doc) ?? '', module.kebab, scope.flags.purpose));
+    scope.ws.update(doc, withModuleRow(scope.ws.read(doc) ?? '', module.kebab, scope.flags.text('purpose')));
     writeModuleFile(scope, module);
 
     // What the context held before its first module is laid out for none: its tests and what no module owns move once.
@@ -108,8 +108,8 @@ function moduleName(scope: Scope, input: string): Name {
   return name;
 }
 
-function declareModule(scope: Scope, module: string): void {
-  const { classification } = scope.flags;
+function declareModule(scope: Scope<Reading<'classification'>>, module: string): void {
+  const classification = scope.flags.text('classification');
 
   if (classification !== undefined && !isOneOf(CLASSIFICATIONS, classification)) {
     throw new CliError(

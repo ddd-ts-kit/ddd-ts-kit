@@ -4,7 +4,7 @@ import { findKind } from '../generate/find-kind';
 import { generateArguments } from '../generate/generate-arguments';
 import { COMMON_FLAGS, GENERATE_FLAGS, GENERATE_OPTIONS } from '../generate/generate-options';
 import { generateOptionsOn } from '../generate/generate-options-on';
-import type { Kind, KindFlags } from '../generate/kind';
+import type { Kind } from '../generate/kind';
 import type { GeneratorProbe } from '../generate/generator-probe';
 import { KINDS } from '../generate/kinds';
 import { placeGeneratedFiles } from '../generate/place-generated-files';
@@ -69,21 +69,21 @@ function generateKind({ argv, io, probe, args, kind, rest }: Asked): number {
 
   keepFlatPlatform(ws, config);
 
-  const flags = flagsOf(args);
+  const module = args.text('module');
 
-  refuseModuleOf(kind, flags);
+  refuseModuleOf(kind, module);
   refuseUndeclaredFlags(kind, passedFlags(args), COMMON_FLAGS);
 
   const context = writesInAContext(kind) ? contextArgument(config, rest[0] ?? '').kebab : undefined;
 
   const stopPlacing = placeGeneratedFiles(ws, config, {
     context,
-    module: flags.module,
+    module,
     command: ['generate', ...argv].join(' '),
     declaresModule: kind.declaresModule === true,
   });
 
-  kind.run({ ws, config, args: rest, flags, probe });
+  kind.run({ ws, config, args: rest, flags: args, probe });
   stopPlacing();
   // A worker confined to its context leaves another context in the single declarations file of 0.84: the trunk moves it.
   refreshDocs(ws, args.flag('local-only') ? 'keep' : 'move', docsScope(args, probe));
@@ -143,13 +143,13 @@ function requestedKind(name: string | undefined, rest: readonly string[]): Kind 
 }
 
 /** `--module` given to a kind that writes nothing a module of the model divides: it would have no effect. */
-function refuseModuleOf(kind: Kind, flags: KindFlags): void {
-  if (flags.module === undefined || kind.writesInModules) {
+function refuseModuleOf(kind: Kind, module: string | undefined): void {
+  if (module === undefined || kind.writesInModules) {
     return;
   }
 
   throw new CliError(
-    `generate ${kind.name} writes nothing into a module of the model: what it writes stays at the level of the context, or outside the contexts, so --module ${flags.module} would have no effect.`,
+    `generate ${kind.name} writes nothing into a module of the model: what it writes stays at the level of the context, or outside the contexts, so --module ${module} would have no effect.`,
     `Run it again without --module. The kinds that take it show ${MODULE_OPTION} in their usage (\`ddd-ts-kit generate --help --json\`, writesInModules).`,
   );
 }
@@ -160,87 +160,4 @@ function expectedArguments(required: readonly string[], optional: readonly strin
   return optional.length === 0
     ? `${required.length} argument(s): ${named}`
     : `${required.length} to ${required.length + optional.length} arguments: ${named}`;
-}
-
-/** The flags of `generate` that take one word. */
-const TEXT_FLAGS = [
-  'classification',
-  'purpose',
-  'preset',
-  'code',
-  'aggregate',
-  'method',
-  'path',
-  'version',
-  'permission',
-  'grant',
-  'deviation',
-  'reason',
-  'number',
-  'name',
-  'kind',
-  'every',
-  'cron',
-  'phase',
-  'event',
-  'job',
-  'group',
-  'prefix',
-  'role',
-  'cache',
-  'text',
-  'module',
-  'personal',
-  'subject',
-  'birth',
-  'erasure',
-  'retention',
-] as const;
-
-function flagsOf(args: Arguments): KindFlags {
-  const timeZone = args.text('time-zone');
-  const commandName = args.text('command');
-
-  return {
-    ...args.texts(TEXT_FLAGS),
-    ...(timeZone === undefined ? {} : { timeZone }),
-    ...(commandName === undefined ? {} : { commandName }),
-    upstream: args.many('upstream'),
-    term: args.many('term'),
-    value: args.many('value'),
-    transition: args.many('transition'),
-    field: args.many('field'),
-    ...switchesOf(args),
-  };
-}
-
-type Switch =
-  | 'command'
-  | 'query'
-  | 'allowName'
-  | 'public'
-  | 'tenantScoped'
-  | 'search'
-  | 'decorators'
-  | 'global'
-  | 'mapper'
-  | 'serializer'
-  | 'eventSourced'
-  | 'creates';
-
-function switchesOf(args: Arguments): Pick<KindFlags, Switch> {
-  return {
-    command: args.flag('command'),
-    query: args.flag('query'),
-    allowName: args.flag('allow-name'),
-    public: args.flag('public'),
-    tenantScoped: args.flag('tenant-scoped'),
-    search: args.flag('search'),
-    decorators: args.flag('decorators'),
-    global: args.flag('global'),
-    mapper: args.flag('mapper'),
-    serializer: args.flag('serializer'),
-    eventSourced: args.flag('event-sourced'),
-    creates: args.flag('creates'),
-  };
 }

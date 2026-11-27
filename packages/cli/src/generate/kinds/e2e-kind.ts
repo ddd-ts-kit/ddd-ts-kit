@@ -6,7 +6,7 @@ import type { RenderContext } from '../../templating';
 import { renderTemplate } from '../../templating';
 import { label } from '../label';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { vars } from '../vars';
 import { actingRole } from './e2e/acting-role';
 import { jobSpec, type Support } from './e2e/job-spec';
@@ -99,8 +99,9 @@ function noteRefusing(scope: Scope, refusing: readonly string[], consequence: st
 }
 
 /** True when a flag says what starts the use case: its route is then left aside. `--event` and `--job` name two different specs. */
-function namesItsStarter(scope: Scope): boolean {
-  const { event, job } = scope.flags;
+function namesItsStarter(scope: Scope<Reading<'event' | 'job'>>): boolean {
+  const event = scope.flags.text('event');
+  const job = scope.flags.text('job');
 
   if (event !== undefined && job !== undefined) {
     throw new CliError(
