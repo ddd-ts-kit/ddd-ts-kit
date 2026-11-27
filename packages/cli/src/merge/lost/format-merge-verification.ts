@@ -48,7 +48,7 @@ function verdictOf({ errors, warnings }: MergeCheck): string {
 }
 
 function baseLine({ base, baseFrom, ours, theirs }: MergeCheck): string {
-  const from = { trailer: 'its Merge-Base trailer', option: '--base', 'merge-base': 'git merge-base' }[baseFrom];
+  const from = { trailer: 'its Merge-Base trailer', option: '--merge-base', 'merge-base': 'git merge-base' }[baseFrom];
 
   return `base ${base.slice(0, 7)} (${from}), ours ${ours.slice(0, 7)}, theirs ${theirs.slice(0, 7)}`;
 }

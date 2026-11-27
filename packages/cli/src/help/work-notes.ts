@@ -164,7 +164,7 @@ export const WORK_NOTES: readonly Note[] = [
       'warnings: a line one side removed brought back, a line one side wrote where the other',
       'changed the same lines or deleted the file (the merge chose), a line the merge replaced',
       'by lines of its own. Derived files, files a tool says it wrote, migrations, lockfiles',
-      'and slices.md are left out of the lines. The base is --base, else the Merge-Base:',
+      'and slices.md are left out of the lines. The base is --merge-base, else the Merge-Base:',
       'trailer of the merge, else git merge-base; entries of a Lost-Accepted: <file:line>,...',
       'trailer, or <file>@<side>#<hash> as merge-trunk writes what its Drizzle settle takes out,',
       'are listed and never fail, nor what a later commit restored; the lines a Kit-Written:',

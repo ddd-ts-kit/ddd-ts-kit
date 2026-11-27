@@ -25,7 +25,8 @@ export interface MergesToVerify {
   /** The commit `since` names, when the caller resolved it already. */
   readonly sinceCommit?: string;
   readonly theirs?: string;
-  readonly base?: string;
+  /** The commit named as the base of the merge in question (`--merge-base`). */
+  readonly mergeBase?: string;
 }
 
 /**
@@ -68,12 +69,12 @@ function listed(repo: MergeRepository, request: MergesToVerify, since: Since | u
     );
   }
 
-  const inProgress = inProgressMerge(repo.top, request.base);
+  const inProgress = inProgressMerge(repo.top, request.mergeBase);
 
-  if (request.base !== undefined && inProgress === undefined) {
+  if (request.mergeBase !== undefined && inProgress === undefined) {
     throw new CliError(
-      '--base is the base of one merge: a named commit, or the merge in progress, and none is in progress.',
-      'Name the merge: `ddd-ts-kit verify-merge <merge commit> --base <commit>`.',
+      '--merge-base is the base of one merge: a named commit, or the merge in progress, and none is in progress.',
+      'Name the merge: `ddd-ts-kit verify-merge <merge commit> --merge-base <commit>`.',
     );
   }
 

@@ -8,7 +8,7 @@ import type { MergeToVerify } from './merge-to-verify';
 export interface MergeOptions {
   /** The head of the branch a one-parent commit squashed. */
   readonly theirs?: string;
-  readonly base?: string;
+  readonly mergeBase?: string;
 }
 
 /**
@@ -38,7 +38,7 @@ export function mergeOfRecord(top: string, record: MergeRecord, options: MergeOp
     ...mergeBaseOf(top, {
       ours,
       theirs,
-      ...(options.base === undefined ? {} : { option: options.base }),
+      ...(options.mergeBase === undefined ? {} : { option: options.mergeBase }),
       ...(record.mergeBase === undefined ? {} : { trailer: record.mergeBase }),
     }),
     ours,

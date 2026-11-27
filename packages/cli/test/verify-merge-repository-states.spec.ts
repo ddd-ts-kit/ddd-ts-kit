@@ -80,8 +80,8 @@ describe('verify-merge, a merge whose base git cannot give', () => {
       /[0-9a-f]{7} and [0-9a-f]{7} have no common ancestor: the merge has no base to compare with\./,
     );
 
-    expect(refused.stderr).toContain('fix: Name it: `--base <commit>`.');
-    expect(cli(root, 'verify-merge', 'HEAD', '--base', 'main').code).toBe(0);
+    expect(refused.stderr).toContain('fix: Name it: `--merge-base <commit>`.');
+    expect(cli(root, 'verify-merge', 'HEAD', '--merge-base', 'main').code).toBe(0);
   });
 
   it('says which git command could not run in a repository that lacks the tree of the base', () => {

@@ -1,5 +1,5 @@
 [English](commands.md) · **Français**
-<!-- translation-of: commands.md sha256:cff4cbf516fa5b36 -->
+<!-- translation-of: commands.md sha256:06508c7c46a46cdc -->
 
 # Quelle commande, quand
 
@@ -333,7 +333,7 @@ Usage
   ddd-ts-kit worktree <name> [--base <ref>] [--branch <name>] [--no-install] [--dry-run]
   ddd-ts-kit verify-slice <context> --since <git-ref>
   ddd-ts-kit cited [<context>] [--rows <id,...>] [--base <ref>] [--removed-since <ref>]
-  ddd-ts-kit verify-merge [<commit>] [--since <git-ref>] [--theirs <git-ref>] [--base <commit>] [--warn]
+  ddd-ts-kit verify-merge [<commit>] [--since <git-ref>] [--theirs <git-ref>] [--merge-base <commit>] [--warn]
   ddd-ts-kit merge-trunk [--trunk <git-ref>] [--since <commit>] [--to-land] [--dry-run]
   ddd-ts-kit merge-trunk --continue [--accept-lost] | --abort
   ddd-ts-kit docs [--check] [--dry-run] [--stored-events] [--behaviour]
@@ -679,7 +679,7 @@ ddd-ts-kit <command> --help prints the usage and the notes of that command alone
                    warnings: a line one side removed brought back, a line one side wrote where the other
                    changed the same lines or deleted the file (the merge chose), a line the merge replaced
                    by lines of its own. Derived files, files a tool says it wrote, migrations, lockfiles
-                   and slices.md are left out of the lines. The base is --base, else the Merge-Base:
+                   and slices.md are left out of the lines. The base is --merge-base, else the Merge-Base:
                    trailer of the merge, else git merge-base; entries of a Lost-Accepted: <file:line>,...
                    trailer, or <file>@<side>#<hash> as merge-trunk writes what its Drizzle settle takes out,
                    are listed and never fail, nor what a later commit restored; the lines a Kit-Written:

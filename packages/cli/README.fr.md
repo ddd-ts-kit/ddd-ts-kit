@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:607c1084428bb8f6 -->
+<!-- translation-of: README.md sha256:18371e6c7e7efb14 -->
 
 # ddd-ts-kit
 
@@ -2107,7 +2107,7 @@ Also cited: 4 present, 3 planned (silent).
 ## verify-merge
 
 ```
-ddd-ts-kit verify-merge [<commit>] [--since <ref>] [--theirs <ref>] [--base <commit>] [--warn]
+ddd-ts-kit verify-merge [<commit>] [--since <ref>] [--theirs <ref>] [--merge-base <commit>] [--warn]
 ```
 
 Dit ce que les fusions d'une branche ont perdu, lu dans git seul (sans *build*, sans
@@ -2116,7 +2116,7 @@ configuration), en une seconde environ. Sans *commit*, elle contrôle chaque *co
 nouveaux fichiers non suivis compris ; `--since` vaut par défaut la base de
 `.ddd-ts-kit/worker.json`, puis `origin/HEAD`, puis `origin/main`. Avec un *commit*, elle contrôle
 celui-là : un *commit* de fusion, ou un *commit* de *squash* avec
-`--theirs <tête de la branche qu'il a intégrée>`. Une fusion est comparée à sa base : `--base`,
+`--theirs <tête de la branche qu'il a intégrée>`. Une fusion est comparée à sa base : `--merge-base`,
 sinon le *trailer* `Merge-Base:` de son message (une fusion calculée depuis la base propre de la
 branche après un *squash* a une autre base que celle que git trouverait), sinon `git merge-base`.
 
@@ -2156,7 +2156,7 @@ le côté apporté, une ligne de `slices.md` est lue aussi là où les côtés s
 trouvée sur la branche après un *squash* peut porter une ligne, ou un `done`, que le tronc n'a
 jamais pris, et une ligne que le tronc n'a jamais portée n'est pas une ligne qu'il a supprimée ou
 rouverte. Le fichier ajouté ci-dessus est lu de là aussi : une base nommée trop récente
-(`--since`, `--base`, un *trailer* `Merge-Base:`) ne le cache pas. Une ligne de la branche dans un fichier
+(`--since`, `--merge-base`, un *trailer* `Merge-Base:`) ne le cache pas. Une ligne de la branche dans un fichier
 que la branche n'a pas touché depuis sa bifurcation de la branche principale (le fichier est le même sur
 la branche et à `git merge-base`) ne l'est pas non plus : ce que la branche principale y a supprimé ou
 remplacé depuis est son propre changement, quelle que soit la base du calcul de la fusion. Une

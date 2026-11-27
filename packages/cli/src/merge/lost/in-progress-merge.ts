@@ -10,7 +10,7 @@ import type { MergeToVerify } from './merge-to-verify';
  * the index plus the working tree. The trailers are read from the message prepared for its
  * commit (MERGE_MSG), so that the merge is judged on the base it will record.
  */
-export function inProgressMerge(top: string, base: string | undefined): MergeToVerify | undefined {
+export function inProgressMerge(top: string, mergeBase: string | undefined): MergeToVerify | undefined {
   const theirs = commitOf(top, 'MERGE_HEAD');
   const ours = commitOf(top, 'HEAD');
 
@@ -33,7 +33,7 @@ export function inProgressMerge(top: string, base: string | undefined): MergeToV
     ...mergeBaseOf(top, {
       ours,
       theirs,
-      ...(base === undefined ? {} : { option: base }),
+      ...(mergeBase === undefined ? {} : { option: mergeBase }),
       ...(trailer === undefined ? {} : { trailer }),
     }),
     ours,
