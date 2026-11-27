@@ -17,8 +17,6 @@ export interface KindRequest {
   readonly flags: Arguments<string, string, string>;
   /** What `plan-waves` hears of the command: the names to judge, in place of the judgement, and each file it builds on. */
   readonly probe?: GeneratorProbe | undefined;
-  /** `generate controller`: a controller class is written whatever the form of routes the config records. */
-  readonly asController?: boolean;
 }
 
 /**
