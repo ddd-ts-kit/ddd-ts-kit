@@ -1977,7 +1977,7 @@ Also cited: 4 present, 3 planned (silent).
 ## verify-merge
 
 ```
-ddd-ts-kit verify-merge [<commit>] [--since <ref>] [--theirs <ref>] [--base <commit>] [--warn]
+ddd-ts-kit verify-merge [<commit>] [--since <ref>] [--theirs <ref>] [--merge-base <commit>] [--warn]
 ```
 
 Reports what the merges of a branch lost, read from git alone (no build, no config needed), in
@@ -1985,7 +1985,7 @@ about a second. Without a commit it checks every merge commit of `<since>..HEAD`
 progress, whose result is the index plus the working tree, new untracked files included;
 `--since` defaults to the base of `.ddd-ts-kit/worker.json`, then `origin/HEAD`, then
 `origin/main`. With a commit it checks that one: a merge commit, or a squash commit with
-`--theirs <head of the branch it took in>`. A merge is compared with its base: `--base`, else the
+`--theirs <head of the branch it took in>`. A merge is compared with its base: `--merge-base`, else the
 `Merge-Base:` trailer of its message (a merge computed from the branch's own base after a squash
 has another base than git would find), else `git merge-base`.
 
@@ -2021,7 +2021,7 @@ competed with (an edit with a new method under it). What one side deleted, or re
 reported. For the side brought in, a row of `slices.md` is read where the sides parted too: a base
 found on the branch after a squash may hold a row, or a `done`, the trunk never took, and a row
 the trunk never held is not a row the trunk deleted or reopened. The added file above is read
-from there as well, so a base named too new (`--since`, `--base`, a `Merge-Base:` trailer) does
+from there as well, so a base named too new (`--since`, `--merge-base`, a `Merge-Base:` trailer) does
 not hide it. Nor is a line of the branch in a file the branch did not touch since its fork from the trunk
 (the file is the same on the branch and at `git merge-base`): what the trunk removed or replaced
 there since is the trunk's change, whatever base the merge is computed from. A removal decided on purpose is recorded in the merge commit as a trailer

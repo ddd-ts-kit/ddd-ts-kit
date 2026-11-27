@@ -50,7 +50,7 @@ describe('verify-merge, the base of a merge', () => {
     });
 
     const fromGit = cli(root, 'verify-merge', 'HEAD', '--json').json();
-    const named = cli(root, 'verify-merge', 'HEAD', '--base', firstBranch, '--json').json();
+    const named = cli(root, 'verify-merge', 'HEAD', '--merge-base', firstBranch, '--json').json();
 
     git(
       root,
@@ -226,10 +226,11 @@ describe('verify-merge, refusals', () => {
       [cli(outside, 'verify-merge'), 'is not inside a git repository'],
       [cli(root, 'verify-merge', 'nothing-here'), 'nothing-here is not a commit of this repository'],
       [cli(root, 'verify-merge', '--theirs', 'main'), '--theirs names the branch a squash commit took in'],
-      [cli(root, 'verify-merge', '--base', 'main'), '--base is the base of one merge'],
+      [cli(root, 'verify-merge', '--merge-base', 'main'), '--merge-base is the base of one merge'],
       [cli(root, 'verify-merge', '--since', 'nothing-here'), 'Fetch it first, or pass the trunk'],
+      [cli(root, 'verify-merge', 'HEAD', '--base', 'main'), "Unknown option '--base'"],
       [
-        cli(root, 'verify-merge', 'HEAD', '--theirs', 'main', '--base', 'nothing-here'),
+        cli(root, 'verify-merge', 'HEAD', '--theirs', 'main', '--merge-base', 'nothing-here'),
         'nothing-here is not a commit of this repository',
       ],
       [
@@ -280,7 +281,7 @@ describe('verify-merge, refusals', () => {
     for (const refused of [
       cli(root, 'verify-merge', `--since=${dashed}`),
       cli(root, 'verify-merge', 'main', `--theirs=${dashed}`),
-      cli(root, 'verify-merge', 'HEAD', '--theirs', 'main', `--base=${dashed}`),
+      cli(root, 'verify-merge', 'HEAD', '--theirs', 'main', `--merge-base=${dashed}`),
     ]) {
       expect(refused.code).toBe(2);
       expect(refused.stderr).toContain(`--output=${output} is not a commit of this repository.`);

@@ -4,7 +4,7 @@ export interface MergeToVerify {
   readonly commit?: string;
   readonly subject: string;
   readonly base: string;
-  /** Where the base comes from: the `Merge-Base:` trailer, `--base`, or `git merge-base`. */
+  /** Where the base comes from: the `Merge-Base:` trailer, `--merge-base`, or `git merge-base`. */
   readonly baseFrom: 'trailer' | 'option' | 'merge-base';
   /** The first parent: the branch the merge was made on. */
   readonly ours: string;

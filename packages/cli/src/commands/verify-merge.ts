@@ -21,16 +21,18 @@ export const verifyMergeCommand = defineCommand({
   options: {
     since: { type: 'string', value: '<git-ref>' },
     theirs: { type: 'string', value: '<git-ref>' },
-    base: { type: 'string', value: '<commit>' },
+    'merge-base': { type: 'string', value: '<commit>' },
     warn: { type: 'boolean' },
   },
   run(args, io) {
     const [commit] = args.positionals;
+    const mergeBase = args.text('merge-base');
 
     const verification = verifyMerges({
       root: args.projectRoot,
       ...(commit === undefined ? {} : { commit }),
-      ...args.texts(['since', 'theirs', 'base']),
+      ...args.texts(['since', 'theirs']),
+      ...(mergeBase === undefined ? {} : { mergeBase }),
     });
 
     const warnOnly = args.flag('warn');

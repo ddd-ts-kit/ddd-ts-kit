@@ -8,14 +8,14 @@ import type { MergeToVerify } from './merge-to-verify';
 export interface BaseCandidates {
   readonly ours: string;
   readonly theirs: string;
-  /** `--base`, which must name a commit. */
+  /** `--merge-base`, which must name a commit. */
   readonly option?: string;
   /** The `Merge-Base:` trailer; a value that names no commit is passed over. */
   readonly trailer?: string;
 }
 
 /**
- * The base a merge is compared against: `--base`, else the `Merge-Base:` trailer the merge
+ * The base a merge is compared against: `--merge-base`, else the `Merge-Base:` trailer the merge
  * recorded (a merge computed from its own base, after a squash, has another base than git
  * would find), else `git merge-base`.
  */
@@ -24,7 +24,7 @@ export function mergeBaseOf(top: string, candidates: BaseCandidates): Pick<Merge
 
   if (option !== undefined) {
     return {
-      base: knownCommit(top, option, 'Pass a commit, a branch or a tag: `--base <commit>`.'),
+      base: knownCommit(top, option, 'Pass a commit, a branch or a tag: `--merge-base <commit>`.'),
       baseFrom: 'option',
     };
   }
@@ -40,7 +40,7 @@ export function mergeBaseOf(top: string, candidates: BaseCandidates): Pick<Merge
   if (base === undefined || base === '') {
     throw new CliError(
       `${ours.slice(0, 7)} and ${theirs.slice(0, 7)} have no common ancestor: the merge has no base to compare with.`,
-      'Name it: `--base <commit>`.',
+      'Name it: `--merge-base <commit>`.',
     );
   }
 
