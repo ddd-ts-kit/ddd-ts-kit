@@ -34,8 +34,8 @@ processStoreContract(runner, {
 
     return new KnexProcessStore(shared, { schema: 'billing' });
   },
-  unitOfWork: () => shared,
-  storeInTenant: (tenant) => new KnexProcessStore(shared, { schema: 'billing', tenant }),
+  createUnitOfWork: () => shared,
+  createStoreInTenant: (tenant) => new KnexProcessStore(shared, { schema: 'billing', tenant }),
 });
 
 processStoreContract(runner, {

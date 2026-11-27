@@ -1,7 +1,7 @@
 import type { UnitOfWork } from '@ddd-ts-kit/kernel';
-import type { ReadModelRowsUnderContract } from './read-model-rows-under-contract';
+import type { ReadModelTableUnderContract } from './read-model-table-under-contract';
 
-export interface ReadModelStoreUnderContract extends ReadModelRowsUnderContract {
+export interface ReadModelTableInUnitOfWork extends ReadModelTableUnderContract {
   /** The unit of work of its database: the swap of a rebuild runs in it. */
   readonly unitOfWork: UnitOfWork;
 }

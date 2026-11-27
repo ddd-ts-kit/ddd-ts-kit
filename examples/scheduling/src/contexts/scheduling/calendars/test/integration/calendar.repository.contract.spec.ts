@@ -71,7 +71,7 @@ tenantIsolationContract<Calendar>(runner, {
 
     return new KnexCalendarRepository(database.persistence.database, scope, clock);
   },
-  recreate: (calendar: Calendar) => aCalendar().identifiedBy(calendar.id).build(),
+  createAggregateAgain: (calendar: Calendar) => aCalendar().identifiedBy(calendar.id).build(),
   elevatedReads: true,
 });
 

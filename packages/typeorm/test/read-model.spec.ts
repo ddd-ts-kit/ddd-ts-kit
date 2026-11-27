@@ -81,7 +81,12 @@ async function stored(key: string) {
   return rows[0];
 }
 
-readModelStoreContract(runner, { name: 'TypeOrmReadModelTable', createTable: emptied, stored, uniqueTitle: true });
+readModelStoreContract(runner, {
+  name: 'TypeOrmReadModelTable',
+  createTableInUnitOfWork: emptied,
+  stored,
+  uniqueTitle: true,
+});
 
 describe('TypeOrmReadModelTable', () => {
   const stamp = { eventId: 'evt-1', occurredAt: new Date('2026-10-10T12:00:00.000Z') };

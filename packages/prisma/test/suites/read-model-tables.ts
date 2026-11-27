@@ -24,7 +24,7 @@ const CLOSED = 'postgresql://app:app@127.0.0.1:1/none';
 
 readModelTablesContract(runner, {
   name: 'PrismaReadModelTable',
-  unreachable: ({ table, key, fields }) => {
+  createUnreachableTable: ({ table, key, fields }) => {
     const closed = new PrismaClient({ adapter: new PrismaPg({ connectionString: CLOSED }) });
 
     return {

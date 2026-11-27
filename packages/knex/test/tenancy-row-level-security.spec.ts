@@ -46,7 +46,7 @@ const truncate = () => application.withSchema(BILLING).table('invoices').truncat
 
 const invoices = {
   createAggregate: () => Invoice.draft(`inv-${(next += 1)}`, 100),
-  recreate: (invoice: Invoice) => Invoice.draft(invoice.id, 100),
+  createAggregateAgain: (invoice: Invoice) => Invoice.draft(invoice.id, 100),
   mutate: (invoice: Invoice) => invoice.addCharge(50),
   idOf: (invoice: Invoice) => invoice.id,
   stateOf: (invoice: Invoice) => invoice.state,

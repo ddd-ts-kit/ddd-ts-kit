@@ -8,7 +8,7 @@ import { ContractSuite } from '../contract-suite';
 import { failureOf } from '../../scenarios/failure-of';
 import { Consignment } from './consignment';
 import { Consignments } from './consignments';
-import type { EventStoreUnderContract } from './event-store-under-contract';
+import type { EventStoreInUnitOfWork } from './event-store-in-unit-of-work';
 
 const LATER = new Date('2100-01-01T00:00:00.000Z');
 
@@ -19,7 +19,7 @@ class TruckLost extends Error {}
  * written by one transaction. The store is fed by the save; the publisher, a handler of the domain
  * events run before the commit, feeds the outbox: both commit, or neither does.
  */
-export class OneTransactionSuite extends ContractSuite<EventStoreUnderContract> {
+export class OneTransactionSuite extends ContractSuite<EventStoreInUnitOfWork> {
   protected tests(): void {
     this.commitsTogether();
     this.publishesNothingRefused();

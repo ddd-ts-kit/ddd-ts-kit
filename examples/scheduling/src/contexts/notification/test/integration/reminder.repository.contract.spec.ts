@@ -121,7 +121,7 @@ tenantIsolationContract<Reminder>(runner, {
 
     return new KnexReminderRepository(database.persistence.database, scope, clock);
   },
-  recreate: (reminder: Reminder) => aReminder().identifiedBy(reminder.id).build(),
+  createAggregateAgain: (reminder: Reminder) => aReminder().identifiedBy(reminder.id).build(),
   elevatedReads: true,
 });
 

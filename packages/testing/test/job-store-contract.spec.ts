@@ -9,7 +9,7 @@ jobStoreContract(
   {
     name: 'InMemoryJobStore',
     createStore: () => new InMemoryJobStore(),
-    unitOfWork: () => new InMemoryUnitOfWork(),
+    createUnitOfWork: () => new InMemoryUnitOfWork(),
   },
 );
 

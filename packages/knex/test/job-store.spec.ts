@@ -34,7 +34,7 @@ jobStoreContract(runner, {
 
     return new KnexJobStore(shared, { schema: 'billing' });
   },
-  unitOfWork: () => shared,
+  createUnitOfWork: () => shared,
 });
 
 describe('KnexJobStore sharing the unit of work of the command', () => {

@@ -93,7 +93,7 @@ eventStoreContract(runner, {
 jobStoreContract(runner, {
   name: 'The job store of the platform',
   createStore: async () => (await emptied()).jobs,
-  unitOfWork: () => database.persistence.unitOfWork,
+  createUnitOfWork: () => database.persistence.unitOfWork,
 });
 {{/if}}
 {{#if queue.processTable}}
@@ -116,9 +116,9 @@ const work = new FixedExecutionScope(
 processStoreContract(runner, {
   name: 'The process store of the platform',
   createStore: async () => (await emptied()).processes(work),
-  unitOfWork: () => database.persistence.unitOfWork,
+  createUnitOfWork: () => database.persistence.unitOfWork,
 {{#if tenancy.any}}
-  storeInTenant: (scope) => database.persistence.processes(scope),
+  createStoreInTenant: (scope) => database.persistence.processes(scope),
 {{/if}}
 });
 {{/if}}

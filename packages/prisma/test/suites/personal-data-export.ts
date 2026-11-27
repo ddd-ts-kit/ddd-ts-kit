@@ -95,7 +95,7 @@ function recordOf(row: PersonRow, table = 'people') {
 
 personalDataExportContract<PersonRow>(runner, {
   name: 'PrismaPersonalDataExport',
-  create: async () => {
+  createExport: async () => {
     await database.truncate();
 
     return {

@@ -3,7 +3,7 @@ import type { Awaitable } from '../awaitable';
 import type { ContractRunner } from '../contract-runner';
 import type { CriteriaContractRow } from '../criteria/criteria-contract-row';
 import { ReadModelStoreSuite } from './read-model-store-suite';
-import type { ReadModelRowsUnderContract } from './read-model-rows-under-contract';
+import type { ReadModelTableUnderContract } from './read-model-table-under-contract';
 import type { ReadModelStorageUnderContract } from './read-model-storage-under-contract';
 import { rowOf as row } from './row-of';
 import { stampedAt as at } from './stamped-at';
@@ -32,7 +32,7 @@ export interface WritesAtOnce extends ReadModelStorageUnderContract {
 export class WritesAtOnceSuite extends ReadModelStoreSuite {
   constructor(
     runner: ContractRunner,
-    create: () => Awaitable<ReadModelRowsUnderContract>,
+    create: () => Awaitable<ReadModelTableUnderContract>,
     private readonly storage: WritesAtOnce,
   ) {
     super(runner, create);

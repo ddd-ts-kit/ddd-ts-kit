@@ -65,7 +65,7 @@ tenantIsolationContract<Person>(runner, {
 
     return new KnexPersonRepository(database.persistence.database, scope, clock);
   },
-  recreate: (person: Person) => aPerson().identifiedBy(person.id).build(),
+  createAggregateAgain: (person: Person) => aPerson().identifiedBy(person.id).build(),
   elevatedReads: true,
 });
 

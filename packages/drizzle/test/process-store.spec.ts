@@ -28,8 +28,8 @@ processStoreContract(runner, {
 
     return new DrizzleProcessStore(shared, { table: processes });
   },
-  unitOfWork: () => shared,
-  storeInTenant: (tenant) => new DrizzleProcessStore(shared, { table: processes, tenant }),
+  createUnitOfWork: () => shared,
+  createStoreInTenant: (tenant) => new DrizzleProcessStore(shared, { table: processes, tenant }),
 });
 
 processStoreContract(runner, {

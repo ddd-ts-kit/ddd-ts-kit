@@ -62,7 +62,7 @@ tenantIsolationContract<Delegation>(runner, {
 
     return new KnexDelegationRepository(database.persistence.database, scope, clock);
   },
-  recreate: (delegation: Delegation) => aDelegation().identifiedBy(delegation.id).build(),
+  createAggregateAgain: (delegation: Delegation) => aDelegation().identifiedBy(delegation.id).build(),
   elevatedReads: true,
 });
 

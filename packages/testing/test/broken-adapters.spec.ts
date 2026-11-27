@@ -13,7 +13,7 @@ import {
   eventStoreUnitOfWorkContract,
   lockContract,
   repositoryContract,
-  type EventStoreUnderContract,
+  type EventStoreInUnitOfWork,
 } from '../src/contracts';
 import { anOrder } from './support/builders';
 import { CollectingRunner } from './support/collecting-runner';
@@ -185,7 +185,7 @@ describe('the lock contract and a lock that never frees a key', () => {
 });
 
 /** An event store that takes every append and reads every stream back empty. */
-class ForgetfulJournal implements EventStoreUnderContract {
+class ForgetfulJournal implements EventStoreInUnitOfWork {
   private readonly journal = new TransactionalJournal();
 
   readonly unitOfWork = this.journal.unitOfWork;
@@ -204,7 +204,10 @@ describe('the event store contract and a store that loses what it appended', () 
   it('fails it wherever a stream is read back, and says which aggregate was saved and not found', async () => {
     const collecting = new CollectingRunner();
 
-    eventStoreUnitOfWorkContract(collecting, { name: 'forgetful', createSubject: () => new ForgetfulJournal() });
+    eventStoreUnitOfWorkContract(collecting, {
+      name: 'forgetful',
+      createStoreInUnitOfWork: () => new ForgetfulJournal(),
+    });
 
     const { failed, messages } = await collecting.run();
 

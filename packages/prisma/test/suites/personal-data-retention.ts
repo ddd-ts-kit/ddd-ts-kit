@@ -80,7 +80,7 @@ const rowsOfTenant = (tenant: string) => database.prisma.privacyPerson.findMany(
 for (const erasure of ['row', 'pseudonymise'] as const) {
   personalDataRetentionContract<PersonRow>(runner, {
     name: `PrismaPersonalDataErasure, the retention, ${erasure}`,
-    create: async () => {
+    createRetention: async () => {
       await database.truncate();
 
       return {

@@ -12,12 +12,12 @@ export interface PersonalDataErasureUnderContract<Row> extends PersonalDataUnder
 export interface PersonalDataErasureContractOptions<Row> {
   readonly name: string;
   /** A fresh subject over an empty table; called before each test. */
-  create(): Awaitable<PersonalDataErasureUnderContract<Row>>;
+  createErasure(): Awaitable<PersonalDataErasureUnderContract<Row>>;
   /**
    * A fresh subject over an empty table whose declaration names no file column, with no file
    * storage given to the adapter: what most tables of a context are. Called before each test.
    */
-  createWithoutFiles(): Awaitable<PersonalDataErasureUnderContract<Row>>;
+  createErasureWithoutFiles(): Awaitable<PersonalDataErasureUnderContract<Row>>;
 }
 
 type Columns = Readonly<Record<string, unknown>>;
@@ -32,11 +32,11 @@ export function personalDataErasureContract<Row extends object>(
   runner: ContractRunner,
   options: PersonalDataErasureContractOptions<Row>,
 ): void {
-  new PersonalDataErasureSuite(runner, () => options.create()).describe(
+  new PersonalDataErasureSuite(runner, () => options.createErasure()).describe(
     `${options.name} (personal data erasure contract)`,
   );
 
-  new WithoutFilesSuite(runner, () => options.createWithoutFiles()).describe(
+  new WithoutFilesSuite(runner, () => options.createErasureWithoutFiles()).describe(
     `${options.name} (personal data erasure contract: a declaration without file column)`,
   );
 }

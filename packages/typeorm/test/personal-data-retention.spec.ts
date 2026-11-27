@@ -86,7 +86,7 @@ const rowsOfTenant = (tenant: string): Promise<PersonRow[]> =>
 for (const erasure of ['row', 'pseudonymise'] as const) {
   personalDataRetentionContract<PersonRow>(runner, {
     name: `TypeOrmPersonalDataErasure, the retention, ${erasure}`,
-    create: async () => {
+    createRetention: async () => {
       await database.truncate();
 
       return {

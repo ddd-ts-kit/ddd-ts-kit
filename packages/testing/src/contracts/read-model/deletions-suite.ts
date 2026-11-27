@@ -3,7 +3,7 @@ import type { ContractRunner } from '../contract-runner';
 import { failureOf } from '../../scenarios/failure-of';
 import type { Awaitable } from '../awaitable';
 import { ReadModelStoreSuite } from './read-model-store-suite';
-import type { ReadModelRowsUnderContract } from './read-model-rows-under-contract';
+import type { ReadModelTableUnderContract } from './read-model-table-under-contract';
 import type { ReadModelStorageUnderContract } from './read-model-storage-under-contract';
 import { rowOf as row } from './row-of';
 import { stampedAt as at } from './stamped-at';
@@ -23,7 +23,7 @@ const NO_DATA = Object.fromEntries(
 export class DeletionsSuite extends ReadModelStoreSuite {
   constructor(
     runner: ContractRunner,
-    create: () => Awaitable<ReadModelRowsUnderContract>,
+    create: () => Awaitable<ReadModelTableUnderContract>,
     private readonly storage: ReadModelStorageUnderContract,
   ) {
     super(runner, create);

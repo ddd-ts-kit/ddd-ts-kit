@@ -14,7 +14,7 @@ export interface PersonalDataRetentionUnderContract<Row> extends PersonalDataUnd
 export interface PersonalDataRetentionContractOptions<Row> {
   readonly name: string;
   /** A fresh subject over an empty table; called before each test. */
-  create(): Awaitable<PersonalDataRetentionUnderContract<Row>>;
+  createRetention(): Awaitable<PersonalDataRetentionUnderContract<Row>>;
 }
 
 const NOW = new Date('2026-06-15T12:00:00.000Z');
@@ -35,7 +35,7 @@ export function personalDataRetentionContract<Row extends object>(
 
 class PersonalDataRetentionSuite<Row extends object> extends ContractSuite<PersonalDataRetentionUnderContract<Row>> {
   constructor(runner: ContractRunner, options: PersonalDataRetentionContractOptions<Row>) {
-    super(runner, () => options.create());
+    super(runner, () => options.createRetention());
   }
 
   protected tests(): void {

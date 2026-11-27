@@ -14,8 +14,8 @@ export interface CachePurgerUnderContract {
 
 export interface CachePurgerContractOptions {
   readonly name: string;
-  /** A cache holding nothing yet, or nothing under the keys of the test; called before each test. */
-  createCache(): Awaitable<CachePurgerUnderContract>;
+  /** A purger with its cache, holding nothing yet or nothing under the keys of the test; called before each test. */
+  createPurger(): Awaitable<CachePurgerUnderContract>;
 }
 
 /** What every adapter of the kernel `CachePurger` port guarantees, the in-memory one included. */
@@ -29,7 +29,7 @@ const EVERY_CALENDAR = cacheTag('calendar');
 
 class CachePurgerSuite extends ContractSuite<CachePurgerUnderContract> {
   constructor(runner: ContractRunner, options: CachePurgerContractOptions) {
-    super(runner, () => options.createCache());
+    super(runner, () => options.createPurger());
   }
 
   protected tests(): void {

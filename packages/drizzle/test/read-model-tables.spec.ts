@@ -54,7 +54,7 @@ const CLOSED = 'postgresql://app:app@127.0.0.1:1/none';
 
 readModelTablesContract(runner, {
   name: 'DrizzleReadModelTable',
-  unreachable: (shape) => {
+  createUnreachableTable: (shape) => {
     const pool = new pg.Pool({ connectionString: CLOSED, max: 1 });
     const defined = definitionOf(shape);
     const columns: Readonly<Record<string, PgColumn>> = getTableColumns(defined);

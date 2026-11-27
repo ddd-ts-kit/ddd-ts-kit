@@ -33,7 +33,7 @@ jobStoreContract(runner, {
 
     return messagingJobs(shared);
   },
-  unitOfWork: () => shared,
+  createUnitOfWork: () => shared,
 });
 
 jobStoreContract(runner, {

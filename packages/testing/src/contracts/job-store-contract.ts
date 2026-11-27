@@ -15,7 +15,7 @@ export interface JobStoreContractOptions {
    * store just created: the contract then proves that a job added inside it exists if and only
    * if it committed.
    */
-  readonly unitOfWork?: () => UnitOfWorkOfTheStore;
+  readonly createUnitOfWork?: () => UnitOfWorkOfTheStore;
 }
 
 /**
@@ -32,10 +32,10 @@ export function jobStoreContract(runner: ContractRunner, options: JobStoreContra
   new ReportSuite(runner, create).describe(`${options.name} (job store contract: reports of an attempt)`);
   new KeepSuite(runner, create).describe(`${options.name} (job store contract: cancellation and housekeeping)`);
 
-  const { unitOfWork } = options;
+  const { createUnitOfWork } = options;
 
-  if (unitOfWork !== undefined) {
-    new TransactionSuite(runner, async () => ({ store: await create(), unitOfWork: unitOfWork() })).describe(
+  if (createUnitOfWork !== undefined) {
+    new TransactionSuite(runner, async () => ({ store: await create(), unitOfWork: createUnitOfWork() })).describe(
       `${options.name} (job store contract: in a unit of work)`,
     );
   }
