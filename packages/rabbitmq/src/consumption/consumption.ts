@@ -4,7 +4,7 @@ import { attemptOf } from '../codec/attempt-of';
 import { decode } from '../codec/decode';
 import { ATTEMPT_HEADER, DEAD_REASON_HEADER, ERROR_CODE_HEADER } from '../codec/headers';
 import { republication } from '../codec/republication';
-import { failureCode } from '../errors/failure-code';
+import { connectionFailureCode } from '../errors/connection-failure-code';
 import { ignore } from '../ignore';
 import { MESSAGING_SYSTEM } from '../messaging-system';
 import type { RabbitMqDelivery } from '../options/rabbit-mq-delivery';
@@ -20,6 +20,7 @@ import type { TopologySettings } from '../topology/topology-settings';
 import { failureOf } from './failure-of';
 import { POISON_MESSAGE } from './poison-message';
 import { track } from './track';
+import { answeredWithin } from '../connection/answered-within';
 import { within } from '../connection/within';
 
 export interface ConsumptionSettings {
@@ -29,8 +30,9 @@ export interface ConsumptionSettings {
   readonly onFailure: (failure: RabbitMqFailure) => void;
   readonly onDelivery: (delivery: RabbitMqDelivery) => void;
   /**
-   * How long the copy of a message to its retry or dead queue waits for its confirmation, and a
-   * close for each answer of the broker: one that stopped answering holds neither.
+   * How long the copy of a message to its retry or dead queue waits for its confirmation, the
+   * start of a subscription for its declarations, and a close for each answer of the broker: one
+   * that stopped answering holds none of them.
    */
   readonly publishTimeoutMs: number;
   /** Called when the channel dies while the connection lives. */
@@ -165,9 +167,10 @@ export class Consumption {
 
   private async startOrGiveUp(channel: ConfirmChannel, subscription: QueueSubscription): Promise<void> {
     try {
-      await this.start(channel, subscription);
+      // A broker that stops answering a declaration loses the channel too: the link rebuilds it.
+      await answeredWithin(this.settings.publishTimeoutMs, this.start(channel, subscription));
     } catch (error) {
-      this.settings.onFailure({ kind: 'connection', code: failureCode(error) });
+      this.settings.onFailure({ kind: 'connection', code: connectionFailureCode(error) });
       this.settings.channelLost();
     }
   }

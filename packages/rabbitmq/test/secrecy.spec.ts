@@ -50,6 +50,7 @@ describe('RabbitMqEventBus: what it shows of its credentials', () => {
       {
         open: () => Promise.reject(new Error(`cannot reach ${URL_WITH_PASSWORD}`)),
         reconnect: { initialMs: 1, factor: 1, maxMs: 1 },
+        publishTimeoutMs: 1_000,
       },
       { opened: async () => undefined, lost: () => undefined, failed: () => undefined },
     );
