@@ -1,6 +1,8 @@
 import type { ProcessedEventStore } from '../../application/ports/processed-event-store';
+import { onRollback } from '../domain-events/on-rollback';
 import { compositeKey } from './composite-key';
 
+/** The marks in memory: one taken inside a unit of work that rolls back is given back with it. */
 export class InMemoryProcessedEventStore implements ProcessedEventStore {
   private readonly seen = new Set<string>();
 
@@ -12,6 +14,7 @@ export class InMemoryProcessedEventStore implements ProcessedEventStore {
     }
 
     this.seen.add(key);
+    onRollback(() => this.seen.delete(key));
 
     return true;
   }

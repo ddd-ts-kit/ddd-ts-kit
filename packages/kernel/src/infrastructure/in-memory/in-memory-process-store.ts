@@ -2,10 +2,11 @@ import type { ProcessStore } from '../../application/ports/process-store';
 import type { StoredProcess } from '../../application/process/stored-process';
 import { ConcurrencyError } from '../../domain/errors/concurrency-error';
 import { compositeKey } from './composite-key';
+import { RollbackMap } from './rollback-map';
 
-/** The instances of the process managers in the memory of the process, as JSON: for tests and one process. Not transactional. */
+/** The instances of the process managers in the memory of the process, as JSON: for tests and one process. A unit of work that rolls back undoes its saves. */
 export class InMemoryProcessStore implements ProcessStore {
-  private readonly processes = new Map<string, StoredProcess>();
+  private readonly processes = new RollbackMap<string, StoredProcess>();
 
   async load(name: string, id: string): Promise<StoredProcess | undefined> {
     const stored = this.processes.get(compositeKey(name, id));

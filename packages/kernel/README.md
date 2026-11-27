@@ -47,7 +47,7 @@ starts, so a business rule never changes with a library.
 | Read side | `Criteria`, `defineCriteria`, `validateCriteria`, `scoped`, `planCriteria`, `evaluateCriteria`, `pageOfPlan`, `hydrate`, `ReadModelStore`, `stampOf`, `TableReadModelStore`, `ProjectionRebuild`, `InMemoryReadModelStore` (see "Criteria", "Hydration" and "Projections") |
 | Persistence helpers | `aggregateMapper` (a mapper that declares the state and never the version), `loadedAt`, `optimisticUpdate`, `expectVersion` (the version a caller read, `If-Match` over HTTP, still the current one, else `PreconditionFailedError`: 412), `schemaNameOf`, `stampCreation`, `stampUpdate`, `restamped`, `tenantScopeOf`, `encodeCursor`, `decodeCursor` |
 | Error reporting | `ErrorReporter`, `ErrorReport`, `errorReportOf`, `reportOnce`, `isUnexpectedError`, `errorReportingMiddleware`, `DeadLetterReports`, `reportProcessFailures`, `NoopErrorReporter` |
-| Doubles | `FixedClock`, `SequentialIdGenerator`, `InMemoryUnitOfWork`, `FixedActorContext`, `FixedExecutionScope`, `InMemoryLogger`, `InMemoryMetrics`, `InMemoryErrorReporter`, `InMemoryCache`, `InMemoryCacheInvalidation`, `InMemoryCachePurger`, `InMemoryLock`, `InMemoryRateLimiter` |
+| Doubles | `FixedClock`, `SequentialIdGenerator`, `InMemoryUnitOfWork`, `RollbackMap`, `onRollback`, `FixedActorContext`, `FixedExecutionScope`, `InMemoryLogger`, `InMemoryMetrics`, `InMemoryErrorReporter`, `InMemoryCache`, `InMemoryCacheInvalidation`, `InMemoryCachePurger`, `InMemoryLock`, `InMemoryRateLimiter` |
 | Testing (`@ddd-ts-kit/kernel/testing`) | `RecordingCommandBus`, `RecordingQueryBus`: buses that keep every message they are handed, in order (`executed`), and answer what the spec told them (`answering(type, answer)`), nothing otherwise (see "The spec of a reaction") |
 | Declarations (`@ddd-ts-kit/kernel/declarations`) | `Requires`, `Public`, `CommandHandler`, `QueryHandler`, `IntegrationEventHandler`, `DomainEventHandler`, `Scheduled`, `Background`, `Projection`, `On`, `applyingProjection`, `Repository`, `Gateway`, `Adapter`, `Policy`, `Edge` (for the decorators of a transport package, such as `@Controller`), `injected`, `injectedDependencies`, `declarationOf`, `listDeclarations`, `DeclarationError`, `Token`, `describeToken`, `tokenIdentity`, `portDefect` |
 
@@ -647,6 +647,11 @@ failure travels up, the outermost `run` rejects with it; when the work caught it
 the outermost `run` rejects with a `UnitOfWorkAbortedError` whose `cause` is that failure,
 before any event is dispatched. What the failed step wrote is never committed apart from the
 rest: decide before the write, or let the failure through.
+
+`InMemoryUnitOfWork` has no transaction, and rolls back all the same: a store in memory hands
+`onRollback` the undo of each write, and the outermost `run` that rejects runs them, newest first.
+A `RollbackMap` is a Map that does so for each key, and leaves a key a command running alongside
+wrote since; the fakes of the kit are built on it, and a fake of your own can be too.
 
 A `UnitOfWork` written in a project is built on it. `transaction` begins, calls what it is
 given, commits when it resolved and rolls back when it rejected; it is called to open a
