@@ -228,7 +228,6 @@ const BROKERS = {
           redis: 'XADD answers at once, there is no acknowledgement of replicas to wait for',
         },
         connectTimeoutMs: {
-          rabbitmq: 'the connection options of amqplib carry it',
           nats: 'the connection options of the client carry it',
           redis: 'the options of ioredis carry it',
         },
