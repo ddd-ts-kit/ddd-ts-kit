@@ -19,6 +19,7 @@ export function settingsOf(
     queueType: options.queueType ?? 'quorum',
     failOnUnroutable: options.onUnroutable === 'fail',
     publishTimeoutMs: options.publishTimeoutMs ?? 30_000,
+    connectTimeoutMs: options.connectTimeoutMs ?? 10_000,
     retry: retryOf(options.retry),
     reconnect: reconnectOf(options.reconnect),
     // A hook that throws must not leave a message unacknowledged or stop a reconnection.

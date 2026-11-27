@@ -45,6 +45,14 @@ export class FaultyNetwork implements Network {
     return through.href;
   }
 
+  get openConnections(): number {
+    throw new Error('A relay in front of a real broker does not count the connections it passes');
+  }
+
+  get openChannels(): number {
+    throw new Error('A relay in front of a real broker does not see the channels of its connections');
+  }
+
   holdReplies(): void {
     this.repliesHeld = true;
   }

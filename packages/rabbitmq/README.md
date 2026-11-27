@@ -338,15 +338,26 @@ the work queue keeps filling.
   taken by the broker. The relay publishes one by one and retries, consumers deduplicate.
 - **`onUnroutable: 'fail'`** rejects an event no queue is bound for; behind the outbox relay
   such a record is retried, then dead. Use it only when a missing consumer is an incident.
-- **`publishTimeoutMs`** (default 30000): a publication the broker has not confirmed by then is
-  rejected with `PUBLISH_NOT_CONFIRMED`, as on NATS and Kafka, so the relay retries it instead of
-  waiting for a confirmation that a stalled broker never sends.
+- **`publishTimeoutMs`** (default 30000) bounds `publish`, the opening of the connection and the
+  declaration of its own queues included: one deadline for the call, not one per step. A
+  publication the broker has not confirmed by then is rejected with `PUBLISH_NOT_CONFIRMED`, as on
+  NATS and Kafka, and one held up before it was sent with `BROKER_UNAVAILABLE` of reason
+  `REQUEST_TIMEOUT` (as on Kafka), so the relay retries it instead of waiting for a broker that
+  stalled.
   The same bound holds for the copy of a failed message to its retry or dead queue, which is then
   handed back to its work queue, and for each wait of `replayDead`, which then rejects and leaves
   the message in the dead queue: with `PUBLISH_NOT_CONFIRMED` for a copy, and with
-  `BROKER_UNAVAILABLE` of reason `REQUEST_TIMEOUT` (as on Kafka) when the broker does not open
-  its channel or hand over the next dead message in time. `close()` never waits for a
-  confirmation longer than that.
+  `BROKER_UNAVAILABLE` of reason `REQUEST_TIMEOUT` when the broker does not open its channel or
+  hand over the next dead message in time. `close()` never waits longer than that for an answer
+  of the broker, the close of the connection included.
+- **`connectTimeoutMs`** (default 10000), as on Kafka, bounds a connection and an administrative
+  request. An attempt to open the connection that the broker does not finish in time (it accepts
+  the connection and never answers AMQP, or never opens a channel or answers a declaration)
+  fails, is reported to `onFailure` as `REQUEST_TIMEOUT` and is retried with the delays of
+  `reconnect`; so is the start of a subscription whose declarations the broker never answers.
+  `assertTopology` settles within it, however many declarations it makes, and rejects with the
+  same reason. A connection or a channel the broker opens after its timeout is closed when it
+  arrives.
 - **A consumer that crashes mid-handler** gets its messages back without `x-attempt` being
   incremented. Quorum queues bound that with their delivery limit, after which the message is
   dead-lettered to the dead queue by the broker; classic queues do not bound it. This path is
