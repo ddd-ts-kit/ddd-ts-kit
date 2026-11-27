@@ -12,10 +12,12 @@ import type { UseCaseContext } from './use-case-context';
 import { commandOutputs } from './command-outputs';
 import { existingAggregate } from './existing-aggregate';
 import { generateRepository } from './generate-repository';
+import { repositoryKind } from './repository-kind';
 import { repositoryLine } from './repository-line';
 import { wireRepositoryOnFirstUse } from './wire-repository-on-first-use';
 import { GRANTED, GRANTS, STORAGE, STORED } from '../shared-write';
 import { defineKind } from '../define-kind';
+import { writingAs } from '../writing-as';
 
 export const commandKind = defineKind({
   name: 'command',
@@ -43,24 +45,24 @@ export const commandKind = defineKind({
     const name = concept(scope, request.args[1] ?? '', {
       what: 'use case',
       strip: ['command', 'handler'],
-      alongside: permissionWords(scope.flags.permission),
+      alongside: permissionWords(scope.flags.text('permission')),
     });
 
-    const aggregate =
-      request.flags.aggregate === undefined ? undefined : existingAggregate(scope, request.flags.aggregate);
+    const asked = request.flags.text('aggregate');
+    const aggregate = asked === undefined ? undefined : existingAggregate(scope, asked);
 
-    if (scope.flags.creates && aggregate === undefined) {
+    if (scope.flags.flag('creates') && aggregate === undefined) {
       throw new CliError(
         '--creates names a command that gives birth to an aggregate, and no aggregate is named.',
         'Add --aggregate <Name>, or drop --creates: without an aggregate the handler has nothing to create.',
       );
     }
 
-    const { permission } = scope.flags;
+    const permission = scope.flags.text('permission');
 
     const generated = commandContext(
       scope,
-      { name, aggregate, creates: scope.flags.creates },
+      { name, aggregate, creates: scope.flags.flag('creates') },
       permission !== undefined && refinedByPolicy(scope, permission),
     );
 
@@ -78,7 +80,8 @@ function writeCommand(
     aggregate !== undefined &&
     !scope.ws.exists(`${scope.dir}/domain/repositories/${aggregate.kebab}.repository.ts`)
   ) {
-    generateRepository(scope, aggregate);
+    // The repository of the first use of an aggregate is the one `generate repository` writes given none of its flags.
+    generateRepository(writingAs(scope, repositoryKind.options), aggregate);
   }
 
   emit(scope, vars, commandOutputs(scope, name));

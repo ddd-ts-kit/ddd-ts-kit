@@ -61,9 +61,16 @@ const COMMON: ParseArgsConfig['options'] = {
 
 /**
  * The arguments of one command, read as its options declare them: the options it reads as one
- * text, as a switch and as several texts. A helper that names none takes those of any command.
+ * text, as a switch and as several texts. A helper names the options it reads, and takes the
+ * arguments of any command that declares them; one that names none takes those of any command.
  */
-export class Arguments<Text extends string = string, Flag extends string = string, Many extends string = string> {
+export class Arguments<in Text extends string = never, in Flag extends string = never, in Many extends string = never> {
+  /**
+   * What makes the arguments of a command that declares fewer options than a reader reads not
+   * reach it, whatever else they are typed with: no value, a type only.
+   */
+  declare private readonly reader?: (text: Text, flag: Flag, many: Many) => void;
+
   private constructor(
     /** The words of the command line after the name of the command, as they were written. */
     readonly asWritten: readonly string[],
@@ -84,11 +91,35 @@ export class Arguments<Text extends string = string, Flag extends string = strin
   }
 
   /**
+   * Asserts that arguments read with the options of several readers at once hold, for each of the
+   * options `O`, a value of the shape it declares: a reader of `O` may take them. The flags of
+   * `generate` are read with those of every kind, then handed to the kind as it declares its own.
+   */
+  static readAs<const O extends OptionSpecs>(
+    args: Arguments<string, string, string>,
+    options: O,
+  ): asserts args is Arguments<string, string, string> & ArgumentsOf<O> {
+    const misread = Object.entries(options).find(([name, option]) => !holds(option, args.values[name]));
+
+    if (misread !== undefined) {
+      throw new Error(`--${misread[0]} was not read as it is declared.`);
+    }
+  }
+
+  /**
    * What every command accepts (`--json`, `--cwd`), read from a command line that may hold anything
    * else: what the entry knows of it before its command read it, and once a command refused it.
    */
   static ofEveryCommand(args: readonly string[]): Arguments<never, never, never> {
     return new Arguments(args, ...read(args, {}, false));
+  }
+
+  /**
+   * The positionals of a command line read with `options`, before the command that reads it is
+   * known: a flag none of them declares reads as a switch, and nothing is refused.
+   */
+  static positionalsOf(args: readonly string[], options: OptionSpecs): readonly string[] {
+    return read(args, options, false)[1];
   }
 
   /**
@@ -148,6 +179,14 @@ export class Arguments<Text extends string = string, Flag extends string = strin
     return this.values['json'] === true;
   }
 
+  /**
+   * Whether the command line gives the switch `name`, whatever the command declares: false for one
+   * it does not declare, which it refused. For what reads a switch of any command, as the lock does.
+   */
+  givesSwitch(name: string): boolean {
+    return this.values[name] === true;
+  }
+
   /** The output the caller asks for: `--json` is `--format json`; `otherwise` when it asks for none. */
   format(otherwise: string): string {
     return this.json ? 'json' : (this.common('format') ?? otherwise);
@@ -197,6 +236,24 @@ export class Arguments<Text extends string = string, Flag extends string = strin
 
     return (Array.isArray(value) ? value : [value]).filter((item) => typeof item === 'string');
   }
+}
+
+/** Whether a value is of the shape an option declares: absent, a switch given, or the texts it takes. */
+function holds(option: OptionSpec, value: unknown): boolean {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (option.type === 'boolean') {
+    return value === true;
+  }
+
+  const texts: unknown = option.multiple === true ? value : [value];
+
+  return (
+    Array.isArray(texts) &&
+    texts.every((text) => typeof text === 'string' && (option.values === undefined || option.values.includes(text)))
+  );
 }
 
 /** The values an option names, when it does. */

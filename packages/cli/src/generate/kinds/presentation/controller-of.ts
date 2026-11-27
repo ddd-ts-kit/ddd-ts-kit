@@ -26,7 +26,7 @@ export function controllerOf(scope: Scope, useCase: Name): FoundController {
     throw noController(scope, useCase, routed);
   }
 
-  scope.flags.builtOn?.(found);
+  scope.probe?.builtOn(found);
 
   return { file: found, source };
 }

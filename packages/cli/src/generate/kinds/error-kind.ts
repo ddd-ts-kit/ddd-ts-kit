@@ -10,10 +10,9 @@ import { refusalClassName } from '../errors/refusal-class-name';
 import { refusalFactoryName } from '../errors/refusal-factory-name';
 import { refusalName } from '../errors/refusal-name';
 import { writeNamedRefusal } from '../errors/write-named-refusal';
-import type { KindRequest } from '../kind';
 import { TERM } from '../kind-options';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { vars } from '../vars';
 import { IN_SHARED_KERNEL, SHARED_GLOSSARY } from '../shared-write';
 import { defineKind } from '../define-kind';
@@ -47,21 +46,21 @@ export const errorKind = defineKind({
       writeNamedRefusal(scope, {
         refusal: refusalClassName(request.args[1] ?? ''),
         factory: refusalFactoryName(request.args[2] ?? ''),
-        asked: request.flags.code,
+        asked: request.flags.text('code'),
       });
 
       return;
     }
 
-    writeConceptRefusal(scope, request);
+    writeConceptRefusal(scope, request.args);
   },
 });
 
 /** One refusal as a static factory of the error class of a concept: the form of `factories` and `classes`. */
-function writeConceptRefusal(scope: Scope, request: KindRequest): void {
-  const name = concept(scope, request.args[1] ?? '', { what: 'error class', strip: ['error'] });
-  const refusal = refusalName(request.args[2] ?? '');
-  const asked = { concept: name, refusal, code: refusalCode({ concept: name, refusal }, request.flags.code) };
+function writeConceptRefusal(scope: Scope<Reading<'code'>>, args: readonly string[]): void {
+  const name = concept(scope, args[1] ?? '', { what: 'error class', strip: ['error'] });
+  const refusal = refusalName(args[2] ?? '');
+  const asked = { concept: name, refusal, code: refusalCode({ concept: name, refusal }, scope.flags.text('code')) };
   const file = `${scope.dir}/domain/errors/${name.kebab}.error.ts`;
 
   if (!hasFactory(scope, file, asked)) {

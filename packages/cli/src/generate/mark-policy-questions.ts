@@ -3,7 +3,7 @@ import { filesWithoutModules } from './files-without-modules';
 import { askPolicyInGeneratedUseCase } from './kinds/ask-policy-in-generated-use-case';
 import { permissionPattern } from './permission-pattern';
 import { refinedByPolicy } from './refined-by-policy';
-import type { Scope } from './scope';
+import type { Reading, Scope } from './scope';
 
 const MESSAGE_FILE = /^(application\/(?:commands|queries)\/([^/]+))\/\2\.(command|query)\.ts$/;
 const MESSAGE_CLASS = /(?<![\w$.])export\s+class\s+([\w$]+)/;
@@ -33,7 +33,7 @@ interface UseCase {
  * load is a decision of the business, and the authorization module refuses its result until it
  * does. A handler that already names the permission is left as it is.
  */
-export function markPolicyQuestions(scope: Scope, permission: string): void {
+export function markPolicyQuestions(scope: Scope<Reading<'grant' | 'permission', 'public'>>, permission: string): void {
   if (!refinedByPolicy(scope, permission)) {
     return;
   }

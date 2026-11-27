@@ -1,6 +1,6 @@
 import { CliError } from '../../../cli-error';
 import type { RenderContext } from '../../../templating';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 
 const TEXT_RULES = ['utf-8', 'single-byte'];
 
@@ -20,8 +20,8 @@ const DOCUMENT: RenderContext = {
  * with it a text file such as a CSV, under the names browsers give one, held to the text rule asked:
  * `utf-8`, or `single-byte` for the exports of a bank or a spreadsheet in Windows-1252.
  */
-export function uploadFileVars({ flags }: Scope): RenderContext {
-  const { text } = flags;
+export function uploadFileVars({ flags }: Scope<Reading<'text'>>): RenderContext {
+  const text = flags.text('text');
 
   if (text === undefined) {
     return DOCUMENT;

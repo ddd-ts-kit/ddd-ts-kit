@@ -3,7 +3,7 @@ import { emit } from '../emit';
 import { givenName } from '../given-name';
 import { TERM } from '../kind-options';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { wire } from '../wire';
 import { ensureDomainEvent } from './ensure-domain-event';
 import { assertDeclaresItsName } from './assert-declares-its-name';
@@ -42,8 +42,8 @@ export const eventHandlerKind = defineKind({
 const PHASES = ['before-commit', 'after-commit'];
 
 /** What the templates read of the phase: its name, and whether it is the one written out. */
-function phaseVars(scope: Scope): { phase: string; afterCommit: boolean } {
-  const phase = scope.flags.phase ?? 'before-commit';
+function phaseVars(scope: Scope<Reading<'phase'>>): { phase: string; afterCommit: boolean } {
+  const phase = scope.flags.text('phase') ?? 'before-commit';
 
   if (!PHASES.includes(phase)) {
     throw new CliError(

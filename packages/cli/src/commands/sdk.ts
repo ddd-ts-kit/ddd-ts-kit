@@ -42,7 +42,7 @@ interface Run {
   readonly config: Config;
 }
 
-function generate(io: Io, args: Arguments, { ws, config }: Run): number {
+function generate(io: Io, args: Arguments<never, 'dry-run'>, { ws, config }: Run): number {
   const enabled = config.sdk === undefined ? enable(ws) : config;
   const { gone, unlocked } = setUpSdk(ws, enabled);
 

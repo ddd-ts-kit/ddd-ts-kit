@@ -3,7 +3,7 @@ import type { RenderContext } from '../../templating';
 import { accessVars } from '../access-vars';
 import { isDeclared } from '../is-declared';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { searchedElements } from '../searched-elements';
 import { specVars } from '../spec-vars';
 import { vars } from '../vars';
@@ -17,11 +17,11 @@ import { worldArrangement } from './world/world-arrangement';
  * one page of a search, whose reader answers lines.
  */
 export function queryContext(
-  scope: Scope,
+  scope: Scope<Reading<'grant' | 'permission', 'public'>>,
   name: Name,
   { asksPolicy, search = false }: { asksPolicy: boolean; search?: boolean },
 ): UseCaseContext {
-  const reference = `${scope.context.camel}Permissions['${scope.flags.permission ?? ''}']`;
+  const reference = `${scope.context.camel}Permissions['${scope.flags.text('permission') ?? ''}']`;
   const required = accessVars(scope, { name, kind: 'Query' });
   const access = { ...required, policy: asksPolicy, policyApplies: asksPolicy && isDeclared(scope.config), reference };
   const spec = specVars(scope, access);

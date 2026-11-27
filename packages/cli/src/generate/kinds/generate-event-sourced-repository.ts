@@ -5,7 +5,7 @@ import type { Name } from '../../naming';
 import type { RenderContext } from '../../templating';
 import { emit } from '../emit';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { vars } from '../vars';
 import { wire } from '../wire';
 import { assertEventStore } from './assert-event-store';
@@ -16,7 +16,7 @@ import { assertEventStore } from './assert-event-store';
  * with the codec of the stored events, the fake that is that adapter over the in-memory stores,
  * and the contract suite run on both. No table and no row mapper: the events are the storage.
  */
-export function generateEventSourcedRepository(scope: Scope, aggregate: Name): RenderContext {
+export function generateEventSourcedRepository(scope: Scope<Reading<'personal'>>, aggregate: Name): RenderContext {
   assertEventStore(scope);
   assertCodec(scope, aggregate);
   assertNoColumns(scope);
@@ -59,8 +59,8 @@ function assertCodec(scope: Scope, aggregate: Name): void {
 }
 
 /** The columns of a table are rows: an event-sourced aggregate has none, its personal values are sealed in its events. */
-function assertNoColumns(scope: Scope): void {
-  if (scope.flags.personal === undefined) {
+function assertNoColumns(scope: Scope<Reading<'personal'>>): void {
+  if (scope.flags.text('personal') === undefined) {
     return;
   }
 

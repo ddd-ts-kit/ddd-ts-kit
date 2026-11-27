@@ -21,7 +21,7 @@ export function pickDeclaration(
     );
 
   if (newest !== undefined) {
-    scope.flags.builtOn?.(newest.file);
+    scope.probe?.builtOn(newest.file);
   }
 
   return newest?.declaration;

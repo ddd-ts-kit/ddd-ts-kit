@@ -9,7 +9,7 @@ import { defineCommand } from './command';
 import { stdoutJson } from '../json/stdout-json';
 
 /** The options that start a merge, refused with `--continue` or `--abort`. */
-const STARTING = ['trunk', 'since', 'to-land', 'dry-run'];
+const STARTING = ['trunk', 'since', 'to-land', 'dry-run'] as const;
 
 /**
  * Brings the trunk into the branch as one merge commit computed from the branch's own diff, or
@@ -58,7 +58,9 @@ export const mergeTrunkCommand = defineCommand({
   },
 });
 
-function refuseMixed(args: Arguments): void {
+function refuseMixed(
+  args: Arguments<'trunk' | 'since', 'to-land' | 'dry-run' | 'continue' | 'abort' | 'accept-lost'>,
+): void {
   const starting = STARTING.filter((option) =>
     option === 'trunk' || option === 'since' ? args.text(option) !== undefined : args.flag(option),
   );

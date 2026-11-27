@@ -5,10 +5,10 @@ import type { Scope } from '../scope';
 
 /** The name of an aggregate other kinds build on: it has to exist, its vocabulary was judged when it was created. */
 export function existingAggregate(scope: Scope, input: string): Name {
-  const aggregate = concept({ ...scope, flags: { ...scope.flags, allowName: true } }, input, {
+  const aggregate = concept(scope, input, {
     what: 'aggregate',
     strip: ['repository', 'builder'],
-    allowReserved: true,
+    judged: false,
   });
 
   requireFile(scope, {

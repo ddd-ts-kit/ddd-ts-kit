@@ -1,6 +1,7 @@
 import { CONFIG_FILE, parseConfig, type Config } from '../config';
 import { CliError } from '../cli-error';
-import type { KindFlags } from '../generate/kind';
+import { Arguments, type OptionSpecs } from '../commands/arguments';
+import { EVERY_KIND } from '../generate/kind-options';
 import { learnTerms } from '../generate/learn-terms';
 import type { Scope } from '../generate/scope';
 import { vars } from '../generate/vars';
@@ -13,6 +14,7 @@ import { adapterOf } from './adapter-of';
 import { platformPath } from '../generate/platform-path';
 import { grantToSignedIn } from './grant-to-signed-in';
 import { layOutPrismaModels } from './lay-out-prisma-models';
+import { optionsOf } from '../generate/options-of';
 import { NO_FLAGS } from './no-flags';
 import { organisationsAsAuditChains } from './organisations-as-audit-chains';
 import { organisationsAsTenantDirectory } from './organisations-as-tenant-directory';
@@ -52,7 +54,7 @@ export function applyPreset(ws: Workspace, config: Config, request: PresetReques
   const scope = adr === '' ? first : { ...first, config: outsideTheTenancy(first, adr) };
   const rendering = { preset: preset.name, context: vars(scope, { preset: { adr, adapter: adapterOf(config) } }) };
 
-  learnTerms(scope);
+  learnTerms(scope, termsOf(preset));
 
   writeFiles(
     scope,
@@ -134,14 +136,17 @@ function describeContext(scope: Scope, preset: Preset, rendering: Rendering): vo
   scope.ws.update(file, text);
 }
 
-function scopeOf(ws: Workspace, config: Config, { context, preset }: PresetRequest): Scope {
+function scopeOf(ws: Workspace, config: Config, { context }: PresetRequest): Scope {
   const name = parseContextName(context);
 
-  const term = preset.terms.map(
+  return { ws, config, context: name, dir: `${config.contextsDir}/${name.kebab}`, flags: NO_FLAGS };
+}
+
+/** The terms of the preset, as `--term` gives them. */
+function termsOf(preset: Preset): string[] {
+  return preset.terms.map(
     (row) => `${row.term}=${row.meaning}${row.notConfusedWith === undefined ? '' : `|${row.notConfusedWith}`}`,
   );
-
-  return { ws, config, context: name, dir: `${config.contextsDir}/${name.kebab}`, flags: { ...NO_FLAGS, term } };
 }
 
 function writeFiles(scope: Scope, files: readonly PresetFile[], rendering: Rendering): void {
@@ -176,8 +181,9 @@ function generated(scope: Scope, preset: Preset): Config {
   let config = scope.config;
 
   for (const step of preset.steps) {
-    const own = typeof step.flags === 'function' ? step.flags(config) : step.flags;
-    const flags: KindFlags = { ...NO_FLAGS, allowName: true, ...own };
+    const own = typeof step.flags === 'function' ? step.flags(config) : (step.flags ?? []);
+    const options: OptionSpecs = { ...EVERY_KIND, ...optionsOf(step.kind) };
+    const flags = Arguments.declared(['--allow-name', ...own], options);
 
     step.kind.run({ ws: scope.ws, config, args: [scope.context.kebab, ...step.args], flags });
     config = current(scope.ws) ?? config;

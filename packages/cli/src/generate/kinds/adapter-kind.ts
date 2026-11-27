@@ -10,7 +10,7 @@ import { isDeclared } from '../is-declared';
 import { label } from '../label';
 import { named } from '../named';
 import { requireFile } from '../require-file';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { vars } from '../vars';
 import { wire } from '../wire';
 import { writeOwnPolicy } from './write-own-policy';
@@ -40,10 +40,10 @@ export const adapterKind = defineKind({
       createdBy: `ddd-ts-kit generate port ${scope.context.kebab} ${name.pascal}`,
     });
 
-    placeWithItsPort(scope, { name, asked: request.flags.module });
+    placeWithItsPort(scope, { name, asked: scope.module });
     refuseReadModel(scope, name);
 
-    if (scope.flags.kind === 'simulated') {
+    if (scope.flags.text('kind') === 'simulated') {
       writeSimulated(scope, name);
 
       return;
@@ -77,13 +77,13 @@ interface AdapterVars {
  * How the adapter is bound. Declared, the class says it: `@Gateway` in a `*.gateway.ts` file for
  * a call to another context, `@Adapter` with its kind in a `*.adapter.ts` file for anything else.
  */
-function adapterVars(scope: Scope, name: Name): AdapterVars {
+function adapterVars(scope: Scope<Reading<'kind', 'decorators'>>, name: Name): AdapterVars {
   const kind = bindingKind(scope);
   const towardsContext = kind === 'gateway' && isDeclared(scope.config);
 
   return {
     kind,
-    decorated: scope.flags.decorators,
+    decorated: scope.flags.flag('decorators'),
     file: `remote-${name.kebab}.${towardsContext ? 'gateway' : 'adapter'}`,
     decorator: towardsContext ? 'Gateway' : 'Adapter',
     hasKind: !towardsContext,
@@ -91,8 +91,8 @@ function adapterVars(scope: Scope, name: Name): AdapterVars {
   };
 }
 
-function bindingKind(scope: Scope): string {
-  const kind = scope.flags.kind ?? 'external';
+function bindingKind(scope: Scope<Reading<'kind'>>): string {
+  const kind = scope.flags.text('kind') ?? 'external';
 
   if (ADAPTER_KINDS.includes(kind)) {
     return kind;
@@ -190,8 +190,8 @@ function secondAdapterFix(bound: string, simulated: boolean): string {
  * process, under infrastructure like the remote one, so production code never reaches a fake of
  * the tests. Nothing leaves the process, so it carries no policy of its own.
  */
-function writeSimulated(scope: Scope, name: Name): void {
-  if (scope.flags.decorators) {
+function writeSimulated(scope: Scope<Reading<never, 'decorators'>>, name: Name): void {
+  if (scope.flags.flag('decorators')) {
     throw new CliError(
       'A simulated adapter carries no policy: nothing it does leaves the process.',
       `Run it without --decorators: \`ddd-ts-kit generate adapter ${scope.context.kebab} ${name.pascal} --kind simulated\`.`,

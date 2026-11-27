@@ -4,7 +4,7 @@ import { concept } from '../concept';
 import { emit } from '../emit';
 import { TERM } from '../kind-options';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { specVars } from '../spec-vars';
 import { vars } from '../vars';
 import { wire } from '../wire';
@@ -57,8 +57,8 @@ export const backgroundJobKind = defineKind({
   },
 });
 
-function commandNamed(scope: Scope, name: Name): string {
-  const { commandName } = scope.flags;
+function commandNamed(scope: Scope<Reading<'command'>>, name: Name): string {
+  const commandName = scope.flags.text('command');
 
   if (commandName !== undefined && commandName.trim() !== '') {
     return commandName;

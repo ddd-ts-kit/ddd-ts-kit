@@ -48,7 +48,7 @@ function targetsOf(scope: Scope, family: WiringFamily, holding: string | undefin
  * file of the context.
  */
 function moduleFileFor(scope: Scope, holding: string | undefined): string {
-  const { config, context, dir, flags, ws } = scope;
+  const { config, context, dir, module, ws } = scope;
   const own = `${dir}/${context.kebab}.module.ts`;
 
   const holder =
@@ -61,9 +61,7 @@ function moduleFileFor(scope: Scope, holding: string | undefined): string {
   }
 
   const asked =
-    flags.module === undefined
-      ? undefined
-      : `${dir}/${moduleFileOf(declaredModule(config, context.kebab, flags.module))}`;
+    module === undefined ? undefined : `${dir}/${moduleFileOf(declaredModule(config, context.kebab, module))}`;
 
   return asked !== undefined && ws.exists(asked) ? asked : own;
 }

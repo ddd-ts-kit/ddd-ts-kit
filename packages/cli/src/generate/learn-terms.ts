@@ -7,11 +7,11 @@ import { isSharedKernel } from './is-shared-kernel';
 import { withoutLanguageTodo } from './without-language-todo';
 
 /**
- * Writes the `--term` rows into the glossary of the context, and takes away the marker that asked
- * for the first term. Called once per command, before any name is judged.
+ * Writes the `--term` rows (`<Term>=<meaning>`) into the glossary of the context, and takes away the
+ * marker that asked for the first term. Called once per command, before any name is judged.
  */
-export function learnTerms(scope: Scope): void {
-  const rows = parseTerms(scope.flags.term);
+export function learnTerms(scope: Scope<unknown>, terms: readonly string[]): void {
+  const rows = parseTerms(terms);
 
   if (rows.length === 0) {
     return;
@@ -31,6 +31,6 @@ export function learnTerms(scope: Scope): void {
 }
 
 /** The glossary of the shared kernel starts with its first term: a context has its CONTEXT.md from `generate context`. */
-function startingDoc(scope: Scope): string {
+function startingDoc(scope: Scope<unknown>): string {
   return isSharedKernel(scope) ? renderTemplate('shared-kernel/CONTEXT.md.tpl', {}) : '';
 }

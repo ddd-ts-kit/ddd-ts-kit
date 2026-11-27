@@ -9,13 +9,12 @@ import type { Slice } from '../../progress/slice';
 import { stackVars } from '../../stack/stack-vars';
 import { renderTemplate } from '../../templating';
 import type { Workspace } from '../../workspace';
-import type { Kind } from '../kind';
+import { defineKind } from '../define-kind';
 
 const STORY = /^[A-Za-z0-9][A-Za-z0-9-]*$/;
 
-export const acceptanceKind: Kind = {
+export const acceptanceKind = defineKind({
   name: 'acceptance',
-  aliases: [],
   summary:
     'The acceptance spec of a story, in test/acceptance/, written before its code: an it.todo per acceptance criterion of docs/architecture/stories/<story>.md, or per slice row of the story in docs/architecture/slices.md when it states none.',
   scope: 'project',
@@ -54,7 +53,7 @@ export const acceptanceKind: Kind = {
       );
     }
   },
-};
+});
 
 function storyNamed(story: string): string {
   if (!STORY.test(story)) {

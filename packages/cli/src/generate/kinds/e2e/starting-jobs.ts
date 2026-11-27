@@ -1,6 +1,6 @@
 import type { Name } from '../../../naming';
 import { MissingPrerequisite } from '../../missing-prerequisite';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 import { jobSlug } from './job-slug';
 import { jobsSending, type SendingJob, type SendingJobs } from './jobs-sending';
 
@@ -9,9 +9,9 @@ import { jobsSending, type SendingJob, type SendingJobs } from './jobs-sending';
  * command, or the one `--job` names, by its class (`ImportRows`, `ImportRowsBackgroundJob`) or by
  * the name it runs under (`shipping.import-rows`). The file of each is what the command builds on.
  */
-export function startingJobs(scope: Scope, name: Name): SendingJobs {
+export function startingJobs(scope: Scope<Reading<'job'>>, name: Name): SendingJobs {
   const sending = jobsSending(scope, name);
-  const asked = scope.flags.job;
+  const asked = scope.flags.text('job');
 
   const kept = (jobs: readonly SendingJob[]): SendingJob[] =>
     jobs.filter((job) => asked === undefined || isNamed(job, asked));
@@ -24,7 +24,7 @@ export function startingJobs(scope: Scope, name: Name): SendingJobs {
   }
 
   for (const job of all) {
-    scope.flags.builtOn?.(scope.ws.placed(job.file));
+    scope.probe?.builtOn(scope.ws.placed(job.file));
   }
 
   return starting;

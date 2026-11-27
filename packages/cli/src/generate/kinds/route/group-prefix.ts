@@ -16,7 +16,7 @@ export function groupPrefix(scope: Scope, kebab: string, depth = 0): string {
     throw noGroup(file, read === undefined);
   }
 
-  scope.flags.builtOn?.(scope.ws.placed(file));
+  scope.probe?.builtOn(scope.ws.placed(file));
 
   const parent = /\bparent:\s*([A-Za-z_$][\w$]*)/.exec(source)?.[1];
   const own = /\bprefix:\s*['"]([^'"]*)['"]/.exec(source)?.[1] ?? '';

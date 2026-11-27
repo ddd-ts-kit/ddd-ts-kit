@@ -2,7 +2,7 @@ import { CliError } from '../../../cli-error';
 import { toName } from '../../../naming';
 import { foundPrerequisite } from '../../found-prerequisite';
 import { MissingPrerequisite } from '../../missing-prerequisite';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 import type { Endpoint } from './endpoint';
 import { groupFile } from './group-file';
 import { groupPrefix } from './group-prefix';
@@ -15,8 +15,12 @@ import type { UseCase } from './use-case';
  * of the resource its path starts with, created with the controller behind `Authenticated`. A
  * public use case stands in none: its controller says `guards: [Public]` itself.
  */
-export function resolveGroup(scope: Scope, endpoint: Endpoint, useCase: UseCase): RouteGroup | undefined {
-  const asked = scope.flags.group;
+export function resolveGroup(
+  scope: Scope<Reading<'group'>>,
+  endpoint: Endpoint,
+  useCase: UseCase,
+): RouteGroup | undefined {
+  const asked = scope.flags.text('group');
 
   if (asked === undefined && !useCase.isProtected) {
     return undefined;

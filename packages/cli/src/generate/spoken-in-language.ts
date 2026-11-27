@@ -27,12 +27,12 @@ interface Judged {
 export function spokenInLanguage(scope: Scope, together: Name | Together, qualifiers: readonly string[] = []): void {
   const { name, alongside } = 'alongside' in together ? together : { name: together, alongside: [] };
 
-  if (scope.flags.allowName) {
+  if (scope.flags.flag('allow-name')) {
     return;
   }
 
-  if (scope.flags.language !== undefined) {
-    scope.flags.language({ context: scope.context.kebab, dir: scope.dir, name: name.pascal, qualifiers });
+  if (scope.probe !== undefined) {
+    scope.probe.language({ context: scope.context.kebab, dir: scope.dir, name: name.pascal, qualifiers });
 
     return;
   }

@@ -1,15 +1,17 @@
 import { isOneOf, RELATIONSHIPS, type Upstream } from '../../config';
 import { CliError } from '../../cli-error';
 import { parseContextName } from '../../naming';
-import type { Kind } from '../kind';
+import { defineKind } from '../define-kind';
 import { parseTerms } from '../parse-terms';
+import type { Reading } from '../scope';
+import type { Preset } from '../../presets/preset';
+import type { ContextRequest } from './context-request';
 import { applyPreset } from '../../presets/apply-preset';
 import { presetNamed } from '../../presets/preset-named';
 import { generateContext } from './generate-context';
 
-export const contextKind: Kind = {
+export const contextKind = defineKind({
   name: 'context',
-  aliases: [],
   summary:
     'A bounded context: CONTEXT.md with its glossary, published language, config entry, and what assembles it (its declarations, or its module file); with --preset, written whole from a preset of the kit.',
   scope: 'new-context',
@@ -37,25 +39,36 @@ export const contextKind: Kind = {
     ],
   },
   writesInModules: false,
-  run: ({ ws, config, args, flags }) => {
+  run: ({ ws, config, args, flags, probe }) => {
     const name = args[0] ?? '';
-    const preset = flags.preset === undefined ? undefined : presetNamed(flags.preset);
+    const asked = flags.text('preset');
+    const preset = asked === undefined ? undefined : presetNamed(asked);
 
     const declared = generateContext(ws, config, {
       name,
-      classification: flags.classification ?? preset?.classification,
-      upstreams: flags.upstream.map(parseUpstreamFlag),
-      purpose: flags.purpose ?? preset?.purpose,
-      classificationReason: flags.reason ?? preset?.classificationReason,
-      terms: parseTerms(flags.term),
-      builtOn: flags.builtOn,
+      ...describedBy(flags, preset),
+      upstreams: flags.many('upstream').map(parseUpstreamFlag),
+      terms: parseTerms(flags.many('term')),
+      builtOn: probe?.builtOn,
     });
 
     if (preset !== undefined) {
       applyPreset(ws, declared, { context: name, preset });
     }
   },
-};
+});
+
+/** What `--classification`, `--purpose` and `--reason` say of the context, the preset saying what they leave out. */
+function describedBy(
+  flags: Reading<'classification' | 'purpose' | 'reason'>,
+  preset: Preset | undefined,
+): Pick<ContextRequest, 'classification' | 'purpose' | 'classificationReason'> {
+  return {
+    classification: flags.text('classification') ?? preset?.classification,
+    purpose: flags.text('purpose') ?? preset?.purpose,
+    classificationReason: flags.text('reason') ?? preset?.classificationReason,
+  };
+}
 
 function parseUpstreamFlag(value: string): Upstream {
   const [context = '', relationship = 'published-language'] = value.split(':');

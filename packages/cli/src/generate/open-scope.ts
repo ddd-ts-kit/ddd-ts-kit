@@ -1,9 +1,10 @@
+import type { OptionSpecs } from '../commands/arguments';
 import type { Config } from '../config';
 import { CliError } from '../cli-error';
 import type { Name } from '../naming';
 import { contextArgument } from './context-argument';
+import type { KindFlags, ReadRequest } from './read-request';
 import { MissingPrerequisite } from './missing-prerequisite';
-import type { KindRequest } from './kind';
 import type { Scope } from './scope';
 import { SHARED_KERNEL, sharedKernelScope } from './shared-kernel-scope';
 import { ownEntry } from '../config/values/own-entry';
@@ -15,8 +16,11 @@ export interface ScopeOptions {
 }
 
 /** Opens the context named by the first positional argument of a request, or the shared kernel for the kinds that write there. */
-export function openScope(request: KindRequest, options: ScopeOptions = {}): Scope {
-  const { ws, config, flags } = request;
+export function openScope<O extends OptionSpecs>(
+  request: ReadRequest<O>,
+  options: ScopeOptions = {},
+): Scope<KindFlags<O>> {
+  const { ws, config, flags, module, probe } = request;
 
   if (request.args[0] === SHARED_KERNEL) {
     if (options.sharedKernel === true) {
@@ -34,9 +38,9 @@ export function openScope(request: KindRequest, options: ScopeOptions = {}): Sco
 
   const dir = `${config.contextsDir}/${context.kebab}`;
 
-  flags.builtOn?.(`${dir}/CONTEXT.md`);
+  probe?.builtOn(`${dir}/CONTEXT.md`);
 
-  return { ws, config, context, dir, flags };
+  return { ws, config, context, dir, flags, module, probe };
 }
 
 function unknownContext(config: Config, context: Name): MissingPrerequisite {

@@ -10,7 +10,7 @@ import { spokenInLanguage } from './spoken-in-language';
 export function concept(scope: Scope, input: string, role: ConceptRole): Name {
   const name = parseConceptName(input, role.what, {
     strip: role.strip ?? [],
-    allowReserved: role.allowReserved ?? scope.flags.allowName,
+    allowReserved: role.allowReserved ?? (role.judged === false || scope.flags.flag('allow-name')),
   });
 
   const alongside = (role.alongside ?? []).map(({ words, what, label }) => ({
@@ -18,7 +18,9 @@ export function concept(scope: Scope, input: string, role: ConceptRole): Name {
     label,
   }));
 
-  spokenInLanguage(scope, { name, alongside });
+  if (role.judged !== false) {
+    spokenInLanguage(scope, { name, alongside });
+  }
 
   return name;
 }

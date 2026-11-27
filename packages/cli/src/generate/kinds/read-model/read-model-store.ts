@@ -1,7 +1,7 @@
 import { isControlPlane } from '../../../config';
 import type { Name } from '../../../naming';
 import { WITH_DATABASE } from '../../../stack/with-database';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 
 /** The store adapter of a read model, as the ORM of the stack writes it. */
 export interface ReadModelStore {
@@ -34,7 +34,7 @@ const IN_MEMORY = ['InMemory', 'in-memory'] as const;
  * `naming/suffix` asks of a class bound to a port under `infrastructure/persistence/`, and the
  * decorator `declarations/role-declared` asks of that suffix.
  */
-export function readModelStore(scope: Scope, name: Name): ReadModelStore {
+export function readModelStore(scope: Scope<Reading<never, 'tenant-scoped'>>, name: Name): ReadModelStore {
   const { orm } = scope.config.stack;
   const needsDatabase = WITH_DATABASE.includes(orm);
   const [pascal, kebab] = PREFIXES[orm] ?? IN_MEMORY;
@@ -54,8 +54,8 @@ export function readModelStore(scope: Scope, name: Name): ReadModelStore {
  * control plane of the tenants: the store is given the scope of the work, and keeps the tenant of
  * each row itself. The store in memory of a project without an ORM keeps one read model for all.
  */
-function isTenantData(scope: Scope): boolean {
+function isTenantData(scope: Scope<Reading<never, 'tenant-scoped'>>): boolean {
   const { config, context, flags } = scope;
 
-  return flags.tenantScoped || (config.stack.tenancy !== 'none' && !isControlPlane(config, context.kebab));
+  return flags.flag('tenant-scoped') || (config.stack.tenancy !== 'none' && !isControlPlane(config, context.kebab));
 }

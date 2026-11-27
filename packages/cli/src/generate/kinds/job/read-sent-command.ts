@@ -21,9 +21,10 @@ export type CommandSender = 'job' | 'background job';
  * actor, the fields of its payload.
  */
 export function readSentCommand(scope: Scope, input: string, sender: CommandSender = 'job'): SentCommand {
-  const name = concept({ ...scope, flags: { ...scope.flags, allowName: true } }, input, {
+  const name = concept(scope, input, {
     what: 'use case',
     strip: ['command', 'handler'],
+    judged: false,
   });
 
   const file = `application/commands/${name.kebab}/${name.kebab}.command.ts`;

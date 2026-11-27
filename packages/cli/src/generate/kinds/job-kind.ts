@@ -8,7 +8,7 @@ import { concept } from '../concept';
 import { emit } from '../emit';
 import { TERM } from '../kind-options';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { specVars } from '../spec-vars';
 import { vars } from '../vars';
 import { wire } from '../wire';
@@ -74,8 +74,8 @@ export const jobKind = defineKind({
  * Under tenancy a job runs once per tenant unless `--global` says it works across them: a global job
  * runs in no tenant, and a tenant-scoped repository refuses to be read there.
  */
-function tenancyOf(scope: Scope, name: Name): JobTenancy {
-  const { global } = scope.flags;
+function tenancyOf(scope: Scope<Reading<never, 'global'>>, name: Name): JobTenancy {
+  const global = scope.flags.flag('global');
 
   if (scope.config.stack.tenancy === 'none') {
     if (global) {
@@ -97,8 +97,8 @@ function tenancyOf(scope: Scope, name: Name): JobTenancy {
   return global ? 'global' : 'per-tenant';
 }
 
-function commandNamed(scope: Scope, name: Name): string {
-  const { commandName } = scope.flags;
+function commandNamed(scope: Scope<Reading<'command'>>, name: Name): string {
+  const commandName = scope.flags.text('command');
 
   if (commandName !== undefined && commandName.trim() !== '') {
     return commandName;

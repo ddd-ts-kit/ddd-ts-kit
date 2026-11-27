@@ -25,7 +25,7 @@ export const stateMachineKind = defineKind({
     const states = statusVocabulary(scope, aggregate);
 
     const transitions = parseTransitions(
-      request.flags.transition,
+      request.flags.many('transition'),
       states.map(({ value }) => value),
     );
 

@@ -6,7 +6,7 @@ import type { RenderContext } from '../../templating';
 import { renderTemplate } from '../../templating';
 import { label } from '../label';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { vars } from '../vars';
 import { actingRole } from './e2e/acting-role';
 import { jobSpec, type Support } from './e2e/job-spec';
@@ -37,7 +37,7 @@ export const e2eKind = defineKind({
 });
 
 /** The spec of a use case no route reaches, or whose starter a flag names: it publishes the event its handler receives, or runs the jobs that send its command. Answers what it needs of the support. */
-function startedSpec(scope: Scope, name: Name, routeFile: string): readonly Support[] {
+function startedSpec(scope: Scope<Reading<'event' | 'job'>>, name: Name, routeFile: string): readonly Support[] {
   const reaction = reactionOf(scope, name, routeFile);
 
   if ('jobs' in reaction) {
@@ -99,8 +99,9 @@ function noteRefusing(scope: Scope, refusing: readonly string[], consequence: st
 }
 
 /** True when a flag says what starts the use case: its route is then left aside. `--event` and `--job` name two different specs. */
-function namesItsStarter(scope: Scope): boolean {
-  const { event, job } = scope.flags;
+function namesItsStarter(scope: Scope<Reading<'event' | 'job'>>): boolean {
+  const event = scope.flags.text('event');
+  const job = scope.flags.text('job');
 
   if (event !== undefined && job !== undefined) {
     throw new CliError(
@@ -166,7 +167,7 @@ function endpointOf(scope: Scope, name: Name, file: string): Endpoint | undefine
   const route = functionRoute(scope.ws.read(file) ?? '');
 
   if (route !== undefined) {
-    scope.flags.builtOn?.(scope.ws.placed(file));
+    scope.probe?.builtOn(scope.ws.placed(file));
   }
 
   const { method, path, status, isProtected } = route ?? controllerOf(scope, name) ?? {};
@@ -220,7 +221,7 @@ function controllerOf(scope: Scope, name: Name): Declared | undefined {
     return undefined;
   }
 
-  scope.flags.builtOn?.(route.file);
+  scope.probe?.builtOn(route.file);
 
   return {
     method: route.method,

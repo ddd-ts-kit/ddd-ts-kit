@@ -8,7 +8,7 @@ import type { Scope } from './scope';
  * Asked where an event is created; a reference to an event that exists is never refused.
  */
 export function refuseStutteringEvent(scope: Scope, { aggregate, fact }: EventNames): void {
-  if (scope.flags.allowName || !fact.words.startsWith(`${aggregate.words} `)) {
+  if (scope.flags.flag('allow-name') || !fact.words.startsWith(`${aggregate.words} `)) {
     return;
   }
 

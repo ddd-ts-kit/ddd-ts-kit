@@ -1,6 +1,6 @@
 import { emit, type Output } from '../../emit';
 import { named } from '../../named';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 import { searchedElements } from '../../searched-elements';
 import { vars } from '../../vars';
 import { wire } from '../../wire';
@@ -12,7 +12,7 @@ import { sharesSchemas } from './shares-schemas';
 import { SEARCH_LINE_LIBRARIES } from './search-line-libraries';
 
 /** Writes a controller in its folder, with its schemas, its mapper and serializer when asked, its spec and its group when it is new. */
-export function writeController(scope: Scope, plan: ControllerPlan): void {
+export function writeController(scope: Scope<Reading<never, 'mapper' | 'serializer'>>, plan: ControllerPlan): void {
   const { name, group } = plan;
   const { validation } = scope.config.stack;
 
@@ -32,11 +32,11 @@ export function writeController(scope: Scope, plan: ControllerPlan): void {
         }),
   });
 
-  if (scope.flags.mapper && !plan.withMapper) {
+  if (scope.flags.flag('mapper') && !plan.withMapper) {
     scope.ws.note(`--mapper is left out: the controller of a search hands the page over itself.`);
   }
 
-  if (scope.flags.serializer && !plan.withSerializer) {
+  if (scope.flags.flag('serializer') && !plan.withSerializer) {
     scope.ws.note(`--serializer is left out: only the controller of a plain query has a result to serialize.`);
   }
 

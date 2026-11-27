@@ -13,6 +13,8 @@ import { permissionNamed } from '../permission-named';
 import { vars } from '../vars';
 import { platformPath } from '../platform-path';
 import { defineKind } from '../define-kind';
+import { writingAs } from '../writing-as';
+import { commandKind } from './command-kind';
 
 export const policyKind = defineKind({
   name: 'policy',
@@ -29,7 +31,7 @@ export const policyKind = defineKind({
   writesInModules: true,
   run: (scope, request) => {
     const name = label(scope, request.args[1] ?? '', { what: 'policy', strip: ['policy'] });
-    const { permission } = scope.flags;
+    const permission = scope.flags.text('permission');
 
     if (permission === undefined) {
       throw new CliError(
@@ -47,7 +49,8 @@ export const policyKind = defineKind({
       ['policy/policy.spec.ts.tpl', `test/unit/${name.kebab}.policy.spec.ts`],
     ]);
 
-    markPolicyQuestions(scope, permission);
+    // The use cases that require the permission are written again with it alone: no --grant, no --public.
+    markPolicyQuestions(writingAs(scope, commandKind.options, ['--permission', permission]), permission);
 
     // A declared policy is found through its decorator: only a policy written as a value is listed for `Access`.
     if (!isDeclared(scope.config)) {

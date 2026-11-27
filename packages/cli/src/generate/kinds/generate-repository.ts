@@ -3,7 +3,7 @@ import type { Name } from '../../naming';
 import type { RenderContext } from '../../templating';
 import { emit } from '../emit';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { vars } from '../vars';
 import { wire } from '../wire';
 import { generateEventSourcedRepository } from './generate-event-sourced-repository';
@@ -15,7 +15,10 @@ import { REPOSITORY_ADAPTERS } from './repository-adapter';
 import { repositoryPrefix } from './repository-prefix';
 
 /** The port of the repository of an aggregate, the adapter of the ORM of the stack, the fake and the contract both pass. */
-export function generateRepository(scope: Scope, aggregate: Name): RenderContext {
+/** The flags of `generate repository` its files are written from. */
+export type RepositoryFlags = Reading<'erasure' | 'personal' | 'retention' | 'subject', 'tenant-scoped'>;
+
+export function generateRepository(scope: Scope<RepositoryFlags>, aggregate: Name): RenderContext {
   if (isEventSourced(scope, aggregate)) {
     return generateEventSourcedRepository(scope, aggregate);
   }
@@ -66,10 +69,10 @@ const TENANT_AWARE: readonly OrmStack[] = ['drizzle', 'knex', 'prisma', 'typeorm
  * `tenantCondition`, `tenantWhere`). Defence in depth: the permission is still decided in the
  * application layer.
  */
-export function tenantVars(scope: Scope): RenderContext {
+export function tenantVars(scope: Scope<Reading<never, 'tenant-scoped'>>): RenderContext {
   const { config } = scope;
   const inherited = config.stack.tenancy !== 'none' && !isControlPlane(config, scope.context.kebab);
-  const asked = scope.flags.tenantScoped || inherited;
+  const asked = scope.flags.flag('tenant-scoped') || inherited;
   const scoped = asked && TENANT_AWARE.includes(config.stack.orm);
 
   if (asked && !scoped) {

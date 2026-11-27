@@ -8,7 +8,7 @@ import { toName, type Name } from '../../../naming';
 import type { RenderContext } from '../../../templating';
 import { foundPrerequisite } from '../../found-prerequisite';
 import { MissingPrerequisite } from '../../missing-prerequisite';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 import type { SendingJobs } from './jobs-sending';
 import { startingJobs } from './starting-jobs';
 import { declaredModules, wiringTextOf } from '../../../model-modules';
@@ -32,11 +32,11 @@ export interface JobStart {
  * `--event`, or the only one a handler of the context sends that command for. Failing that, or
  * when `--job` names one, the jobs of the context that send it, scheduled or background.
  */
-export function reactionOf(scope: Scope, name: Name, routeFile: string): Reaction | JobStart {
+export function reactionOf(scope: Scope<Reading<'event' | 'job'>>, name: Name, routeFile: string): Reaction | JobStart {
   const sources = sourcesOf(scope);
   const consumed = readConsumedEvents(sources);
   const useCase = { scope, name, consumed };
-  const asked = scope.flags.event;
+  const asked = scope.flags.text('event');
   const event = eventOf(useCase, asked);
   const jobs = event === undefined ? startingJobs(scope, name) : { scheduled: [], background: [] };
 
@@ -45,7 +45,7 @@ export function reactionOf(scope: Scope, name: Name, routeFile: string): Reactio
   }
 
   if (event !== undefined) {
-    scope.flags.builtOn?.(event.file);
+    scope.probe?.builtOn(event.file);
   }
 
   const reads = readRoutes(sources, [])
@@ -65,7 +65,7 @@ export function reactionOf(scope: Scope, name: Name, routeFile: string): Reactio
 
 /** A use case, in the context whose integration event handlers may send its command. */
 interface UseCaseOf {
-  readonly scope: Scope;
+  readonly scope: Scope<Reading<'job'>>;
   readonly name: Name;
   /** The integration events the context handles, one per handler. */
   readonly consumed: readonly ConsumedEventFact[];
@@ -73,7 +73,7 @@ interface UseCaseOf {
 
 /** No event when `--job` names what starts the use case: the spec is the one of that job. */
 function eventOf(useCase: UseCaseOf, asked: string | undefined): ConsumedEventFact | undefined {
-  if (useCase.scope.flags.job !== undefined) {
+  if (useCase.scope.flags.text('job') !== undefined) {
     return undefined;
   }
 

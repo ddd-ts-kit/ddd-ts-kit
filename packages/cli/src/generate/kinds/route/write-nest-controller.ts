@@ -1,6 +1,6 @@
 import { emit, type Output } from '../../emit';
 import { named } from '../../named';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 import { vars } from '../../vars';
 import { wire } from '../../wire';
 import type { ControllerPlan } from './controller-plan';
@@ -14,7 +14,7 @@ import { sharesSchemas } from './shares-schemas';
  * Writes a Nest controller in its folder, its DTO classes beside it, its spec and its group when it
  * is new, and lists it in the module of its context, for Nest to build it and the kit to serve it.
  */
-export function writeNestController(scope: Scope, plan: ControllerPlan): void {
+export function writeNestController(scope: Scope<Reading<never, 'mapper' | 'serializer'>>, plan: ControllerPlan): void {
   assertWritable(scope);
 
   const { name, group } = plan;
@@ -40,8 +40,8 @@ export function writeNestController(scope: Scope, plan: ControllerPlan): void {
 }
 
 /** The method of a Nest controller maps its input and its answer itself. */
-function assertWritable(scope: Scope): void {
-  if (scope.flags.mapper || scope.flags.serializer) {
+function assertWritable(scope: Scope<Reading<never, 'mapper' | 'serializer'>>): void {
+  if (scope.flags.flag('mapper') || scope.flags.flag('serializer')) {
     scope.ws.note(
       '--mapper and --serializer are left out: the method of a Nest controller maps its input and its answer itself.',
     );

@@ -4,7 +4,7 @@ import { emit, type Output } from '../emit';
 import type { Kind } from '../kind';
 import { label } from '../label';
 import { named } from '../named';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { searchedElements } from '../searched-elements';
 import { vars } from '../vars';
 import { wire } from '../wire';
@@ -42,17 +42,25 @@ export const routeKind = defineKind({
     assertHttpStack(scope);
 
     const name = label(scope, request.args[1] ?? '', { what: 'use case', strip: ['route', 'controller', 'handler'] });
-    const parts = { name, endpoint: parseEndpoint(request.flags), useCase: findUseCase(scope, name, request.flags) };
+    const { flags } = request;
+
+    const parts = {
+      name,
+      endpoint: parseEndpoint({ method: flags.text('method'), path: flags.text('path') }),
+      useCase: findUseCase(scope, name, { command: flags.flag('command'), query: flags.flag('query') }),
+    };
+
+    const asked = { mapper: flags.flag('mapper'), serializer: flags.flag('serializer'), cache: flags.text('cache') };
     const { validation, routes } = scope.config.stack;
 
     if (routes === 'nest' && request.asController !== true) {
-      writeNestController(scope, planController(scope, parts));
+      writeNestController(scope, planController(scope, parts, asked));
 
       return;
     }
 
     if (routes === 'controllers' || request.asController === true) {
-      writeController(scope, planController(scope, parts));
+      writeController(scope, planController(scope, parts, asked));
 
       return;
     }
@@ -70,8 +78,8 @@ export const routeKind = defineKind({
   },
 });
 
-function assertNoCachePolicy(scope: Scope): void {
-  if (scope.flags.cache === undefined) {
+function assertNoCachePolicy(scope: Scope<Reading<'cache'>>): void {
+  if (scope.flags.text('cache') === undefined) {
     return;
   }
 

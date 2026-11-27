@@ -1,3 +1,4 @@
+import type { OptionSpecs } from '../commands/arguments';
 import type { Name } from '../naming';
 import { concept } from './concept';
 import type { ConceptRole } from './concept-role';
@@ -9,9 +10,9 @@ import { named } from './named';
 import { vars } from './vars';
 
 /** A concept of the model written from its templates alone, as its kind declares it. */
-interface ConceptKindSpec extends Pick<KindSpec, 'name' | 'aliases' | 'summary' | 'shared'> {
+interface ConceptKindSpec extends Pick<KindSpec<OptionSpecs>, 'name' | 'aliases' | 'summary' | 'shared'> {
   /** Where it is written: in a context, or in the shared kernel too. A context when left out. */
-  readonly scope?: KindSpec['scope'];
+  readonly scope?: 'context' | 'context-or-shared-kernel';
   /** What its name names, and the role words the generator strips from it. */
   readonly role: ConceptRole;
   /** Each template it renders, and the file of the context it renders it to. */

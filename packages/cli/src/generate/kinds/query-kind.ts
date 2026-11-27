@@ -6,7 +6,7 @@ import { TERM } from '../kind-options';
 import { markPolicyQuestions } from '../mark-policy-questions';
 import { refinedByPolicy } from '../refined-by-policy';
 import { permissionWords } from '../permission-words';
-import type { Scope } from '../scope';
+import type { Reading, Scope } from '../scope';
 import { wire } from '../wire';
 import { queryContext } from './query-context';
 import { queryOutputs, type QueryVariant } from './query-outputs';
@@ -38,11 +38,11 @@ export const queryKind = defineKind({
     const name = concept(scope, input, {
       what: 'use case',
       strip: ['query', 'handler'],
-      alongside: permissionWords(scope.flags.permission),
+      alongside: permissionWords(scope.flags.text('permission')),
     });
 
     const variant = queryVariant(scope);
-    const { permission } = scope.flags;
+    const permission = scope.flags.text('permission');
     const asksPolicy = variant === '' && permission !== undefined && refinedByPolicy(scope, permission);
     const { vars: context, worldHint } = queryContext(scope, name, { asksPolicy, search: variant !== '' });
 
@@ -62,12 +62,12 @@ export const queryKind = defineKind({
 });
 
 /** `--search`: the templates of a paginated search. A search is narrowed by what its actor may see, so it names a permission. */
-function queryVariant(scope: Scope): QueryVariant {
-  if (!scope.flags.search) {
+function queryVariant(scope: Scope<Reading<never, 'search' | 'public'>>): QueryVariant {
+  if (!scope.flags.flag('search')) {
     return '';
   }
 
-  if (!scope.flags.public) {
+  if (!scope.flags.flag('public')) {
     return 'search.';
   }
 

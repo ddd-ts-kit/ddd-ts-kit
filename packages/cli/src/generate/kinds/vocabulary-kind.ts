@@ -16,7 +16,7 @@ export const vocabularyKind = defineKind({
   run: (scope, request) => {
     const name = label(scope, request.args[1] ?? '', { what: 'vocabulary', strip: ['vocabulary'] });
 
-    if (request.flags.value.length === 0) {
+    if (request.flags.many('value').length === 0) {
       throw new CliError(
         `The vocabulary ${name.pascal} is given no value.`,
         `Pass each value with --value: \`ddd-ts-kit generate vocabulary ${scope.context.kebab} ${name.pascal} --value <value> --value <value>\`.`,
@@ -25,7 +25,7 @@ export const vocabularyKind = defineKind({
 
     const file = `${scope.dir}/domain/vocabularies/${name.kebab}.vocabulary.ts`;
     const existing = request.ws.read(file);
-    const text = vocabularyText(name.pascal, entriesOf(request.flags.value), existing);
+    const text = vocabularyText(name.pascal, entriesOf(request.flags.many('value')), existing);
 
     if (existing === undefined) {
       request.ws.create(file, text);

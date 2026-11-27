@@ -1,5 +1,5 @@
 [English](CONTRIBUTING.md) · **Français**
-<!-- translation-of: CONTRIBUTING.md sha256:cbb5a0f30c24a697 -->
+<!-- translation-of: CONTRIBUTING.md sha256:688a1c5acdf4b045 -->
 
 # Contribuer
 
@@ -183,15 +183,19 @@ bout prend 2,5 à 7 Go, et plusieurs à la fois (plusieurs sessions de code, un 
 - Un nouveau template compile tel qu'il est généré et ne porte de marqueurs `TODO(domain)` que
   là où une connaissance du métier est nécessaire.
 - Une sorte de `generate` est une déclaration dans `packages/cli/src/generate/kinds/`, listée dans
-  `kinds.ts`. Une sorte qui écrit dans un contexte est `defineKind({ name, summary, scope,
-  positionals, options, shared, writesInModules, run })` : `options` se déclarent comme une commande
-  déclare les siennes (`TERM` quand ses noms sont tenus au glossaire), `shared` dit ce qu'elle écrit
-  hors de son contexte et quand, et `run(scope, request)` reçoit le contexte ouvert et les lignes de
-  `--term` apprises. Un concept du modèle que ses templates disent en entier est un `conceptKind`
-  (`entity-kind.ts`). Son usage, les flags qu'elle refuse, `generate <kind> --help` et
-  `generate --help --json` s'écrivent depuis la déclaration ; `shownOptions` n'écrit ses flags à la
-  main que pour des formes qui s'excluent ou un flag qu'elle exige. Une sorte du projet ou d'un
-  nouveau contexte (`adr`, `context`) est un `Kind` simple.
+  `kinds.ts`, sous la forme `defineKind({ name, summary, scope, positionals, options, shared,
+  writesInModules, run })` : `options` se déclarent comme une commande déclare les siennes (`TERM`
+  quand ses noms sont tenus au glossaire), `shared` dit ce qu'elle écrit hors de son contexte et
+  quand. Une sorte qui écrit dans un contexte reçoit `run(scope, request)`, le contexte ouvert et
+  les lignes de `--term` apprises ; une sorte du projet ou d'un nouveau contexte (`adr`, `context`)
+  reçoit `run(request)`. Ses flags se lisent comme elle les déclare, comme les arguments d'une
+  commande : `request.flags.text('permission')` ne compile que pour une sorte qui déclare
+  `--permission`, et une fonction d'aide nomme les flags qu'elle lit
+  (`Scope<Reading<'permission', 'public'>>`). Un concept du modèle que ses templates disent en
+  entier est un `conceptKind` (`entity-kind.ts`). Son usage, les flags qu'elle refuse,
+  `generate <kind> --help` et `generate --help --json` s'écrivent depuis la déclaration ;
+  `shownOptions` n'écrit ses flags à la main que pour des formes qui s'excluent ou un flag qu'elle
+  exige.
 - Les packages d'exécution gardent les bibliothèques tierces derrière des dépendances pairs
   (peer dependencies) optionnelles et des points d'entrée par sous-chemin.
   `@ddd-ts-kit/kernel` et la CLI n'ont aucune dépendance d'exécution.

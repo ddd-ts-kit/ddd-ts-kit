@@ -1,7 +1,7 @@
 import type { Name } from '../../../naming';
 import { renderTemplate } from '../../../templating';
 import { named } from '../../named';
-import type { Scope } from '../../scope';
+import type { Reading, Scope } from '../../scope';
 import { vars } from '../../vars';
 import { jobSlug } from './job-slug';
 import type { SendingJob, SendingJobs } from './jobs-sending';
@@ -22,7 +22,7 @@ export interface JobSpec {
 const GLOBALS = ['afterAll', 'beforeAll', 'beforeEach', 'describe', 'it'];
 
 /** The spec of a use case its jobs start: one test per job, the scheduled one run at once, the background one with what is due on its queue. */
-export function jobSpec(scope: Scope, name: Name, { jobs, e2e }: JobStart): JobSpec {
+export function jobSpec(scope: Scope<Reading<'job'>>, name: Name, { jobs, e2e }: JobStart): JobSpec {
   const caseOf = (job: SendingJob, template: string): string =>
     renderTemplate(template, vars(scope, { name: named(name), job: { ...job } })).trimEnd();
 
@@ -55,15 +55,16 @@ function needsOf(jobs: SendingJobs): Support[] {
   return [...scheduled, ...background];
 }
 
-function fileOf(scope: Scope, name: Name, jobs: SendingJobs): string {
-  const asked = scope.flags.job === undefined ? [] : [...jobs.scheduled, ...jobs.background].slice(0, 1);
+function fileOf(scope: Scope<Reading<'job'>>, name: Name, jobs: SendingJobs): string {
+  const asked = scope.flags.text('job') === undefined ? [] : [...jobs.scheduled, ...jobs.background].slice(0, 1);
 
   return `test/e2e/${[name.kebab, ...asked.map((job) => jobSlug(job.className))].join('-')}.e2e.spec.ts`;
 }
 
 /** Why the spec runs jobs, said above its tests. */
-function startsOf(scope: Scope, name: Name, jobs: SendingJobs): string {
-  const lead = scope.flags.job === undefined ? `No route starts "${name.words}"` : `"${name.words}" as a job starts it`;
+function startsOf(scope: Scope<Reading<'job'>>, name: Name, jobs: SendingJobs): string {
+  const lead =
+    scope.flags.text('job') === undefined ? `No route starts "${name.words}"` : `"${name.words}" as a job starts it`;
 
   const ways = [
     ...(jobs.scheduled.length === 0

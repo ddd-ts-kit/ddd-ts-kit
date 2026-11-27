@@ -33,7 +33,7 @@ export const integrationHandlerKind = defineKind({
   writesInModules: true,
   run: (scope, request) => {
     const upstream = declaredUpstream(scope, request.args[1] ?? '');
-    const { type: eventType, version } = wantedEvent(upstream, request.args[2] ?? '', request.flags.version);
+    const { type: eventType, version } = wantedEvent(upstream, request.args[2] ?? '', request.flags.text('version'));
 
     const name = givenName(scope, toName(eventType.split('.').join(' ')), {
       what: 'integration handler',

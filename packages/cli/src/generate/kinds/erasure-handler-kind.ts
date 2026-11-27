@@ -63,7 +63,7 @@ function erasureAdapterOf(scope: Scope, names: PersonalNames): string {
     );
   }
 
-  scope.flags.builtOn?.(scope.ws.placed(file));
+  scope.probe?.builtOn(scope.ws.placed(file));
 
   return adapter;
 }

@@ -1,6 +1,5 @@
 import { CliError } from '../../../cli-error';
 import type { Name } from '../../../naming';
-import type { KindFlags } from '../../kind';
 import { requireFile } from '../../require-file';
 import type { Scope } from '../../scope';
 import { messageFieldsOf } from './message-fields-of';
@@ -8,9 +7,15 @@ import type { UseCase } from './use-case';
 
 type MessageKind = 'command' | 'query';
 
+/** Which of the two a route is asked for: `--command`, `--query`, or neither. */
+export interface AskedUseCase {
+  readonly command: boolean;
+  readonly query: boolean;
+}
+
 /** The command or the query of the name, whichever exists, unless `--command` or `--query` says which. */
-export function findUseCase(scope: Scope, name: Name, flags: KindFlags): UseCase {
-  if (flags.command && flags.query) {
+export function findUseCase(scope: Scope, name: Name, asked: AskedUseCase): UseCase {
+  if (asked.command && asked.query) {
     throw new CliError('--command and --query exclude each other.', 'Keep the one matching the use case.');
   }
 
@@ -18,7 +23,7 @@ export function findUseCase(scope: Scope, name: Name, flags: KindFlags): UseCase
     `application/${kind === 'query' ? 'queries' : 'commands'}/${name.kebab}/${name.kebab}.${kind}`;
 
   const has = (kind: MessageKind): boolean => scope.ws.exists(`${scope.dir}/${file(kind)}.ts`);
-  const isQuery = flags.query || (!flags.command && !has('command') && has('query'));
+  const isQuery = asked.query || (!asked.command && !has('command') && has('query'));
   const kind = isQuery ? 'query' : 'command';
 
   requireFile(scope, {

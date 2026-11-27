@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { Arguments } from '../src/commands/arguments';
 import { parseConfig } from '../src/config';
 import { adrKind } from '../src/generate/kinds/adr-kind';
 import { moduleKind } from '../src/generate/kinds/module-kind';
@@ -31,7 +32,10 @@ describe('a generator run over a workspace that holds no config file', () => {
       ws,
       config: CONFIG,
       args: ['Keep one database'],
-      flags: { ...NO_FLAGS, deviation: 'rules.clean/stepdown', reason: 'The handlers read better long.' },
+      flags: Arguments.declared(
+        ['--deviation', 'rules.clean/stepdown', '--reason', 'The handlers read better long.'],
+        adrKind.options,
+      ),
     });
 
     expect(ws.commit(false)).toMatchObject({ created: ['docs/adr/0001-keep-one-database.md'], updated: [] });
@@ -42,7 +46,13 @@ describe('a generator run over a workspace that holds no config file', () => {
     const ws = new Workspace(root, false);
 
     write(root, CONTEXT_DOC, GLOSSARY);
-    moduleKind.run({ ws, config: CONFIG, args: ['billing', 'invoices'], flags: NO_FLAGS });
+
+    moduleKind.run({
+      ws,
+      config: CONFIG,
+      args: ['billing', 'invoices'],
+      flags: Arguments.declared([], moduleKind.options),
+    });
 
     expect(ws.commit(false)).toMatchObject({ created: [], updated: [CONTEXT_DOC] });
   });

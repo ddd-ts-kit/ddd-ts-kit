@@ -25,13 +25,14 @@ export const domainErrorKind = defineKind({
   run: (scope, request) => {
     refuseBuiltThroughFactories(request.config.stack.refusals, scope.context.kebab);
 
-    const name = concept({ ...scope, flags: { ...scope.flags, allowName: true } }, request.args[1] ?? '', {
+    const name = concept(scope, request.args[1] ?? '', {
       what: 'domain error',
       strip: ['error'],
-      allowReserved: scope.flags.allowName,
+      allowReserved: scope.flags.flag('allow-name'),
+      judged: false,
     });
 
-    const code = request.flags.code ?? name.constant;
+    const code = request.flags.text('code') ?? name.constant;
 
     if (!ERROR_CODE.test(code)) {
       throw new CliError(

@@ -4,7 +4,7 @@ import { replaceRegion } from '../../markers';
 import { stackVars } from '../../stack/stack-vars';
 import { renderTemplate } from '../../templating';
 import type { Workspace } from '../../workspace';
-import type { Kind } from '../kind';
+import { defineKind } from '../define-kind';
 import { addComposeService } from './extraction/add-compose-service';
 import { editJson } from './extraction/edit-json';
 import { EntryPoint } from './extraction/entry-point';
@@ -14,9 +14,8 @@ const NAME = 'worker';
 const ENV_EXAMPLE = '.env.example';
 const JOBS_IN_THE_API = 'true by default; `ddd-ts-kit generate worker` moves them to a process of their own';
 
-export const workerKind: Kind = {
+export const workerKind = defineKind({
   name: NAME,
-  aliases: [],
   summary:
     'The scheduled jobs in a process of their own: apps/worker/main.ts (the modules of main.ts, no HTTP server), a start script, a compose service, `worker` in the config, and the API started with its jobs off.',
   scope: 'project',
@@ -58,7 +57,7 @@ export const workerKind: Kind = {
 
     ws.note(severalInstances(config));
   },
-};
+});
 
 function takenByAContext(): CliError {
   return new CliError(
