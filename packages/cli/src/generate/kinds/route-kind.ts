@@ -35,6 +35,9 @@ const CALLING_A_USE_CASE = {
   },
   shownOptions:
     '--method <GET|POST|PUT|PATCH|DELETE> --path <path> [--command|--query] [--group <Name>] [--mapper] [--serializer] [--cache public|private|no-store]',
+  needsHttp: {
+    fix: `Set stack.http to express, fastify or nest in ${CONFIG_FILE} and add the matching platform files, or expose the use case another way.`,
+  },
   writesInModules: true,
 } as const;
 
@@ -70,8 +73,6 @@ const WRITTEN_AS: Readonly<Record<RouteForm, WriteRoute>> = {
 
 /** The route of the use case the input names, in the form given. */
 function writeRoute(scope: RouteScope, input: string, form: RouteForm): void {
-  assertHttpStack(scope);
-
   const name = label(scope, input, { what: 'use case', strip: ['route', 'controller', 'handler'] });
   const { flags } = scope;
 
@@ -113,17 +114,6 @@ function assertNoCachePolicy(scope: Scope<Reading<'cache'>>): void {
   throw new CliError(
     '--cache writes the cache policy of a controller, and this project writes its routes as functions.',
     'Write `cache` in the spec of the route, or generate it as a controller: `ddd-ts-kit generate controller ...`.',
-  );
-}
-
-function assertHttpStack(scope: Scope): void {
-  if (scope.config.stack.http !== 'none') {
-    return;
-  }
-
-  throw new CliError(
-    'This project has no HTTP stack (stack.http is "none").',
-    `Set stack.http to express, fastify or nest in ${CONFIG_FILE} and add the matching platform files, or expose the use case another way.`,
   );
 }
 
