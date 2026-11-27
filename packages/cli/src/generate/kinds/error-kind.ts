@@ -42,7 +42,7 @@ export const errorKind = defineKind({
   },
   writesInModules: true,
   run: (scope, request) => {
-    if (request.config.stack.refusals === 'named') {
+    if (scope.config.stack.refusals === 'named') {
       writeNamedRefusal(scope, {
         refusal: refusalClassName(request.args[1] ?? ''),
         factory: refusalFactoryName(request.args[2] ?? ''),
