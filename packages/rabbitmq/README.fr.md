@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:51f2a4d1e69b66d0 -->
+<!-- translation-of: README.md sha256:c19971720eedb1d3 -->
 
 # @ddd-ts-kit/rabbitmq
 
@@ -353,20 +353,12 @@ liées, et la file de travail continue de se remplir.
 - **`onUnroutable: 'fail'`** rejette un événement pour lequel aucune file n'est liée ; derrière le
   relais de l'outbox, un tel enregistrement est retenté, puis passe à l'état mort (*dead*). Ne
   l'utilisez que lorsqu'un consommateur manquant est un incident.
-- **`publishTimeoutMs`** (30000 par défaut) borne toute attente envers le *broker*. `publish` se
-  conclut dans ce délai, ouverture de la connexion et déclaration de ses propres files comprises :
-  une seule échéance pour l'appel, pas une par étape. Une publication que le *broker* n'a pas
-  confirmée d'ici là est rejetée avec `PUBLISH_NOT_CONFIRMED`, comme sur NATS et Kafka, et une
-  publication retenue avant son envoi avec `BROKER_UNAVAILABLE` de raison `REQUEST_TIMEOUT` (comme
-  sur Kafka), si bien que le relais la retente au lieu d'attendre un *broker* bloqué.
-  `assertTopology` se conclut aussi dans ce délai, quel que soit le nombre de ses déclarations, et
-  rejette avec la même raison.
-  Une ouverture de connexion à laquelle le *broker* cesse de répondre (il accepte la connexion et
-  ne répond jamais en AMQP, ou n'ouvre jamais un canal, ou ne répond pas à une déclaration) échoue
-  dans ce délai, est signalée à `onFailure` comme `REQUEST_TIMEOUT` et est retentée avec les délais
-  de `reconnect` ; de même pour le démarrage d'un abonnement dont le *broker* ne répond jamais aux
-  déclarations. Une connexion ou un canal que le *broker* ouvre après ce délai est fermé dès son
-  arrivée.
+- **`publishTimeoutMs`** (30000 par défaut) borne `publish`, ouverture de la connexion et
+  déclaration de ses propres files comprises : une seule échéance pour l'appel, pas une par étape.
+  Une publication que le *broker* n'a pas confirmée d'ici là est rejetée avec
+  `PUBLISH_NOT_CONFIRMED`, comme sur NATS et Kafka, et une publication retenue avant son envoi avec
+  `BROKER_UNAVAILABLE` de raison `REQUEST_TIMEOUT` (comme sur Kafka), si bien que le relais la
+  retente au lieu d'attendre un *broker* bloqué.
   La même borne vaut pour la copie d'un message en échec vers sa file de nouvelles tentatives ou
   sa file de rejet, le message étant alors rendu à sa file de travail, et pour chaque attente de
   `replayDead`, qui est alors rejeté et laisse le message dans la file de rejet : avec
@@ -374,6 +366,14 @@ liées, et la file de travail continue de se remplir.
   `REQUEST_TIMEOUT` quand le *broker* n'ouvre pas son canal ou ne remet pas le message de rejet
   suivant à temps. `close()` n'attend jamais plus longtemps une réponse du *broker*, fermeture de
   la connexion comprise.
+- **`connectTimeoutMs`** (10000 par défaut), comme sur Kafka, borne une connexion et une requête
+  d'administration. Une tentative d'ouverture de la connexion que le *broker* ne mène pas à terme
+  à temps (il accepte la connexion et ne répond jamais en AMQP, ou n'ouvre jamais un canal, ou ne
+  répond pas à une déclaration) échoue, est signalée à `onFailure` comme `REQUEST_TIMEOUT` et est
+  retentée avec les délais de `reconnect` ; de même pour le démarrage d'un abonnement dont le
+  *broker* ne répond jamais aux déclarations. `assertTopology` se conclut dans ce délai, quel que
+  soit le nombre de ses déclarations, et rejette avec la même raison. Une connexion ou un canal
+  que le *broker* ouvre après ce délai est fermé dès son arrivée.
 - **Un consommateur qui plante en plein gestionnaire** récupère ses messages sans que `x-attempt`
   soit incrémenté. Les files quorum bornent cela par leur limite de livraisons, au-delà de
   laquelle le *broker* envoie le message dans la file de rejet ; les files classiques ne le

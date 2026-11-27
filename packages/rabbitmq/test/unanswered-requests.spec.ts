@@ -46,6 +46,7 @@ describe('RabbitMqEventBus: a broker that stopped answering its requests', { tim
       const bus = broker.bus({
         connection: network.connection,
         publishTimeoutMs: 100,
+        connectTimeoutMs: 100,
         onFailure: failuresOf(reported),
       });
 
@@ -73,6 +74,7 @@ describe('RabbitMqEventBus: a broker that stopped answering its requests', { tim
       connection: network.connection,
       consumer,
       publishTimeoutMs: 100,
+      connectTimeoutMs: 100,
       onFailure: failuresOf(reported),
     });
 
@@ -112,7 +114,7 @@ describe('RabbitMqEventBus: a broker that stopped answering its requests', { tim
   for (const request of ['channel', 'declaration'] as const) {
     it(`rejects assertTopology in time when the broker never answers its ${request}, and closes its channel`, async () => {
       const network = await broker.network();
-      const bus = broker.bus({ connection: network.connection, publishTimeoutMs: 100 });
+      const bus = broker.bus({ connection: network.connection, connectTimeoutMs: 100 });
 
       await bus.assertTopology();
       const channels = network.openChannels;

@@ -30,11 +30,12 @@ export interface ConsumptionSettings {
   readonly onFailure: (failure: RabbitMqFailure) => void;
   readonly onDelivery: (delivery: RabbitMqDelivery) => void;
   /**
-   * How long the copy of a message to its retry or dead queue waits for its confirmation, the
-   * start of a subscription for its declarations, and a close for each answer of the broker: one
-   * that stopped answering holds none of them.
+   * How long the copy of a message to its retry or dead queue waits for its confirmation, and a
+   * close for each answer of the broker: one that stopped answering holds neither.
    */
   readonly publishTimeoutMs: number;
+  /** How long the start of a subscription waits for its declarations. */
+  readonly connectTimeoutMs: number;
   /** Called when the channel dies while the connection lives. */
   readonly channelLost: () => void;
 }
@@ -168,7 +169,7 @@ export class Consumption {
   private async startOrGiveUp(channel: ConfirmChannel, subscription: QueueSubscription): Promise<void> {
     try {
       // A broker that stops answering a declaration loses the channel too: the link rebuilds it.
-      await answeredWithin(this.settings.publishTimeoutMs, this.start(channel, subscription));
+      await answeredWithin(this.settings.connectTimeoutMs, this.start(channel, subscription));
     } catch (error) {
       this.settings.onFailure({ kind: 'connection', code: connectionFailureCode(error) });
       this.settings.channelLost();

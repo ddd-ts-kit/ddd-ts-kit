@@ -131,10 +131,10 @@ export class RabbitMqEventBus implements EventBus {
   /**
    * Connects if needed and declares the exchange, the queues and the bindings of the
    * subscriptions made so far. Idempotent. Resolves once those subscriptions are consuming.
-   * One deadline, `publishTimeoutMs`, bounds the whole call, however many declarations it makes.
+   * One deadline, `connectTimeoutMs`, bounds the whole call, however many declarations it makes.
    */
   async assertTopology(): Promise<void> {
-    const deadline = new Deadline(this.settings.publishTimeoutMs);
+    const deadline = new Deadline(this.settings.connectTimeoutMs);
     const model = await deadline.answered(this.link.opened());
     // On a channel of its own: a refused declaration closes the channel it was made on.
     const channel = await deadline.opened(model.createChannel());

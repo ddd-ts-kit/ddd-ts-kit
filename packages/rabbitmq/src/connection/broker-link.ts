@@ -23,6 +23,8 @@ export interface LinkSettings {
   readonly open: () => Promise<ChannelModel>;
   readonly reconnect: Required<ReconnectOptions>;
   /** The time the broker has to open the connection, then to answer what the hooks set up on it. */
+  readonly connectTimeoutMs: number;
+  /** The time a close waits for the answer of the broker. */
   readonly publishTimeoutMs: number;
 }
 
@@ -123,8 +125,8 @@ export class BrokerLink {
   }
 
   private async establish(): Promise<ChannelModel> {
-    const { publishTimeoutMs } = this.settings;
-    const model = await openedWithin(publishTimeoutMs, this.connect());
+    const { connectTimeoutMs } = this.settings;
+    const model = await openedWithin(connectTimeoutMs, this.connect());
 
     model.on('error', ignore);
 
@@ -133,7 +135,7 @@ export class BrokerLink {
     });
 
     try {
-      await answeredWithin(publishTimeoutMs, this.hooks.opened(model));
+      await answeredWithin(connectTimeoutMs, this.hooks.opened(model));
     } catch (error) {
       this.hooks.lost();
       await this.closeInTime(model);

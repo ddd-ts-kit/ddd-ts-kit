@@ -33,6 +33,8 @@ describe('the settings of a bus', () => {
       prefetch: 10,
       queueType: 'quorum',
       failOnUnroutable: false,
+      publishTimeoutMs: 30_000,
+      connectTimeoutMs: 10_000,
       retry: { maxAttempts: 5, delayMs: 5_000 },
       reconnect: { initialMs: 200, factor: 2, maxMs: 30_000 },
     });
@@ -47,6 +49,8 @@ describe('the settings of a bus', () => {
         prefetch: 1,
         queueType: 'classic',
         onUnroutable: 'fail',
+        publishTimeoutMs: 500,
+        connectTimeoutMs: 200,
         retry: { maxAttempts: 2, delayMs: 10 },
         reconnect: { initialMs: 5, factor: 3, maxMs: 50 },
       },
@@ -59,6 +63,8 @@ describe('the settings of a bus', () => {
       prefetch: 1,
       queueType: 'classic',
       failOnUnroutable: true,
+      publishTimeoutMs: 500,
+      connectTimeoutMs: 200,
       retry: { maxAttempts: 2, delayMs: 10 },
       reconnect: { initialMs: 5, factor: 3, maxMs: 50 },
     });
