@@ -1,5 +1,5 @@
 [English](http-caches.md) · **Français**
-<!-- translation-of: http-caches.md sha256:338959dd096ff18c -->
+<!-- translation-of: http-caches.md sha256:1c7ec710becf2f0b -->
 
 # Caches HTTP : Varnish, Souin, nginx, Fastly, Cloudflare, Bunny
 
@@ -318,7 +318,7 @@ cachePurgerContract(
   { describe, it, expect, beforeEach },
   {
     name: 'SouinCachePurger',
-    createCache: () => {
+    createPurger: () => {
       run += 1;
       const namespace = `/${Date.now()}-${run}`;
 

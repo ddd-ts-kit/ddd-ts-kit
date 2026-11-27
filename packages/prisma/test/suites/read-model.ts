@@ -45,7 +45,12 @@ async function stored(key: string) {
   return rows[0];
 }
 
-readModelStoreContract(runner, { name: 'PrismaReadModelTable', createTable: emptied, stored, uniqueTitle: true });
+readModelStoreContract(runner, {
+  name: 'PrismaReadModelTable',
+  createTableInUnitOfWork: emptied,
+  stored,
+  uniqueTitle: true,
+});
 
 describe('PrismaReadModelTable', () => {
   const stamp = { eventId: 'evt-1', occurredAt: new Date('2026-10-10T12:00:00.000Z') };

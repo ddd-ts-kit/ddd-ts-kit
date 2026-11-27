@@ -40,10 +40,6 @@ class EventBusSuite extends ContractSuite<EventBusUnderContract> {
   }
 
   protected tests(): void {
-    this.afterEach(async () => {
-      await this.subject.close?.();
-    });
-
     this.deliversToTheSubscribersOfTheType();
     this.stopsDeliveringOnceUnsubscribed();
     this.handsTheEnvelopeOverUntouched();

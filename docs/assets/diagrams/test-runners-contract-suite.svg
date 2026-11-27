@@ -28,7 +28,7 @@
   <!-- subjects -->
   <path d="M614,150 H640 V112 H678" fill="none" stroke="#3d4449" stroke-width="2" marker-end="url(#arrow)"/>
   <path d="M614,194 H640 V232 H678" fill="none" stroke="#3d4449" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="646" y="176" font-size="13" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">create()</text>
+  <text x="646" y="176" font-size="13" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">createMailer()</text>
   <rect x="680" y="80" width="248" height="64" rx="10" fill="#e7eef5" stroke="#2b5d8a" stroke-width="2"/>
   <text x="804" y="107" font-size="16" font-weight="700" fill="#2b5d8a" text-anchor="middle">InMemoryMailer</text>
   <text x="804" y="129" font-size="13" fill="#1f2328" text-anchor="middle">the fake, in the unit run</text>

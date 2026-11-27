@@ -61,7 +61,7 @@ eventStoreContract(runner, {
 
 eventStoreUnitOfWorkContract(runner, {
   name: 'createKnexEventSourcing on PostgreSQL',
-  createSubject: async () => {
+  createStoreInUnitOfWork: async () => {
     await database.truncate();
 
     const unitOfWork = createKnexUnitOfWork(database.knex);

@@ -12,7 +12,7 @@ authorizerContract(
   { describe, it, expect, beforeEach },
   {
     name: 'RecordingAuthorizer over a role-based model, which records and does not explain',
-    create: () => ({
+    createAuthorizer: () => ({
       authorizer: new RecordingAuthorizer(new RoleBasedAuthorizer({ roles: { accountant: [issue] } })),
       granted: { actor: ada, permission: issue, resource: { type: 'invoice', id: 'inv-1' } },
       refused: { actor: bob, permission: issue, resource: { type: 'invoice', id: 'inv-1' } },

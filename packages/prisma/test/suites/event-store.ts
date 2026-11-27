@@ -38,7 +38,7 @@ eventStoreContract(runner, {
 
 eventStoreUnitOfWorkContract(runner, {
   name: 'createPrismaEventSourcing on PostgreSQL',
-  createSubject: async () => {
+  createStoreInUnitOfWork: async () => {
     await database.truncate();
 
     const unitOfWork = createPrismaUnitOfWork(database.prisma);

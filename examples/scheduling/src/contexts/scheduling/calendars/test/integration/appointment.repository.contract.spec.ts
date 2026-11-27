@@ -232,7 +232,7 @@ tenantIsolationContract<Appointment>(runner, {
 
     return new KnexAppointmentRepository(database.persistence.database, scope, clock);
   },
-  recreate: (appointment: Appointment) => anAppointment().identifiedBy(appointment.id).build(),
+  createAggregateAgain: (appointment: Appointment) => anAppointment().identifiedBy(appointment.id).build(),
   elevatedReads: true,
 });
 

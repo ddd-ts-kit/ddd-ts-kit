@@ -31,7 +31,7 @@ authorizerContract(
   { describe, it, expect, beforeEach },
   {
     name: 'SignedInGrantsAuthorizer',
-    create: () => ({
+    createAuthorizer: () => ({
       authorizer,
       granted: { actor: bob, permission: editProduct },
       refused: { actor: bob, permission: issue },

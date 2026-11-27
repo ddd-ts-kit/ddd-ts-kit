@@ -23,7 +23,7 @@ export interface ReadModelTablesContractOptions {
    * connection. Left out where the member connects when its storage is opened, before any table
    * is built: an application on it never starts without its database.
    */
-  unreachable?(shape: ReadModelTableShape): Awaitable<UnreachableTable>;
+  createUnreachableTable?(shape: ReadModelTableShape): Awaitable<UnreachableTable>;
 }
 
 interface UnreachableTable {
@@ -57,6 +57,6 @@ export function readModelTablesContract(runner: ContractRunner, options: ReadMod
   new TablesAtStartSuite(
     runner,
     createTables,
-    options.unreachable === undefined ? undefined : (shape) => options.unreachable?.(shape),
+    options.createUnreachableTable === undefined ? undefined : (shape) => options.createUnreachableTable?.(shape),
   ).describe(`${named}: the start)`);
 }

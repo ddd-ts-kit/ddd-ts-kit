@@ -46,7 +46,7 @@ const staffOver = (tenants: TenantElevation['tenants']) =>
 tenantIsolationContract<Invoice>(runner, {
   name: 'TypeORM, shared tables',
   createAggregate: () => Invoice.draft(`inv-${(next += 1)}`, 100),
-  recreate: (invoice) => Invoice.draft(invoice.id, 100),
+  createAggregateAgain: (invoice) => Invoice.draft(invoice.id, 100),
   mutate: (invoice) => invoice.addCharge(50),
   idOf: (invoice) => invoice.id,
   stateOf: (invoice) => invoice.state,

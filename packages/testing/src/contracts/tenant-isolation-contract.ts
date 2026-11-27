@@ -32,7 +32,7 @@ export interface TenantIsolationContractOptions<A extends AggregateRoot<Id>, Id 
    * A new aggregate, never saved, with the id of `aggregate`: what a tenant would insert under
    * an id another tenant already holds. Without it, that case is not run.
    */
-  recreate?(aggregate: A): A;
+  createAggregateAgain?(aggregate: A): A;
   /**
    * Whether an elevation of platform staff over every tenant reads another tenant's aggregate:
    * true on shared tables (and under row-level security), false where a unit of work reaches one
@@ -127,9 +127,9 @@ class TenantIsolationSuite<A extends AggregateRoot<Id>, Id extends string | numb
 
   private keepsAnotherTenantFromInserting(): void {
     const { options } = this;
-    const recreate = options.recreate?.bind(options);
+    const createAggregateAgain = options.createAggregateAgain?.bind(options);
 
-    if (recreate === undefined) {
+    if (createAggregateAgain === undefined) {
       return;
     }
 
@@ -139,7 +139,7 @@ class TenantIsolationSuite<A extends AggregateRoot<Id>, Id extends string | numb
 
       await this.as(ACME, () => this.subject.save(saved));
 
-      const clash = recreate(saved);
+      const clash = createAggregateAgain(saved);
 
       options.mutate?.(clash);
       await failureOf(() => this.as(GLOBEX, () => this.subject.save(clash)));

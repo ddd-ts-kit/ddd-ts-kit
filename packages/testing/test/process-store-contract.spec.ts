@@ -18,7 +18,7 @@ processStoreContract(
   {
     name: 'a process store in memory with transactions',
     createStore: () => (processes = new TransactionalProcesses()),
-    unitOfWork: () => processes.unitOfWork,
+    createUnitOfWork: () => processes.unitOfWork,
   },
 );
 
@@ -30,6 +30,6 @@ processStoreContract(
   {
     name: 'a process store in memory keyed by tenant',
     createStore: () => (tenantProcesses = new TenantProcesses()),
-    storeInTenant: (scope) => tenantProcesses.inTenant(scope),
+    createStoreInTenant: (scope) => tenantProcesses.inTenant(scope),
   },
 );

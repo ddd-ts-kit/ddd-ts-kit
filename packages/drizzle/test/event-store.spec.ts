@@ -56,7 +56,7 @@ eventStoreContract(runner, {
 
 eventStoreUnitOfWorkContract(runner, {
   name: 'createDrizzleEventSourcing on PGlite',
-  createSubject: async () => {
+  createStoreInUnitOfWork: async () => {
     await database.truncate();
 
     const unitOfWork = createDrizzleUnitOfWork(database.db);

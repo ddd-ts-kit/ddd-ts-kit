@@ -23,7 +23,7 @@ const CLOSED = 'postgresql://app:app@127.0.0.1:1/none';
 
 readModelTablesContract(runner, {
   name: 'KnexReadModelTable',
-  unreachable: ({ table, key, fields }) => {
+  createUnreachableTable: ({ table, key, fields }) => {
     const closed = knex({ client: 'pg', connection: CLOSED, pool: { min: 0, max: 1 } });
 
     return {

@@ -12,7 +12,7 @@ authorizerContract(
   { describe, it, expect, beforeEach },
   {
     name: 'The custom authorizer',
-    create: () => {
+    createAuthorizer: () => {
       const reader = anActor().named('ada').withRole('reader').build();
 
       return {

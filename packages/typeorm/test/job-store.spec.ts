@@ -30,7 +30,7 @@ jobStoreContract(runner, {
 
     return new TypeOrmJobStore(shared, { entity: messagingJobs });
   },
-  unitOfWork: () => shared,
+  createUnitOfWork: () => shared,
 });
 
 jobStoreContract(runner, {

@@ -48,8 +48,8 @@ describe.skipIf(VARNISH_URL === undefined)('VarnishCachePurger on Varnish', () =
       };
     };
 
-  cachePurgerContract(runner, { name: 'VarnishCachePurger, xkey', createCache: cacheIn(VarnishPurgeMode.xkey) });
-  cachePurgerContract(runner, { name: 'VarnishCachePurger, ban', createCache: cacheIn(VarnishPurgeMode.ban) });
+  cachePurgerContract(runner, { name: 'VarnishCachePurger, xkey', createPurger: cacheIn(VarnishPurgeMode.xkey) });
+  cachePurgerContract(runner, { name: 'VarnishCachePurger, ban', createPurger: cacheIn(VarnishPurgeMode.ban) });
 
   it('keeps nothing an answer did not allow by name, whatever the default TTL of Varnish', async () => {
     const path = `/${Date.now()}-without-policy`;

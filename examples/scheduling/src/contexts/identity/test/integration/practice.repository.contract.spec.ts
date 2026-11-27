@@ -69,7 +69,7 @@ tenantIsolationContract<Practice>(runner, {
 
     return new KnexPracticeRepository(database.persistence.database, scope, clock);
   },
-  recreate: (practice: Practice) => aPractice().identifiedBy(practice.id).build(),
+  createAggregateAgain: (practice: Practice) => aPractice().identifiedBy(practice.id).build(),
   elevatedReads: true,
 });
 

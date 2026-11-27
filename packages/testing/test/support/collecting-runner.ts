@@ -3,6 +3,7 @@ import type { ContractRunner } from '../../src/contracts';
 
 interface Group {
   readonly setups: (() => Promise<void>)[];
+  readonly teardowns: (() => Promise<void>)[];
   readonly tests: { readonly name: string; readonly test: () => Promise<void> }[];
 }
 
@@ -13,7 +14,7 @@ export class CollectingRunner implements ContractRunner {
   private readonly groups: Group[] = [];
 
   describe(_name: string, suite: () => void): void {
-    this.groups.push({ setups: [], tests: [] });
+    this.groups.push({ setups: [], teardowns: [], tests: [] });
     suite();
   }
 
@@ -30,11 +31,15 @@ export class CollectingRunner implements ContractRunner {
     this.groups.at(-1)?.setups.push(setup);
   }
 
-  /** Runs every test after the setups of its group, and answers the names of those that failed and of those that passed. */
+  afterEach(teardown: () => Promise<void>): void {
+    this.groups.at(-1)?.teardowns.push(teardown);
+  }
+
+  /** Runs every test between the setups and the teardowns of its group, and answers the names of those that failed and of those that passed. */
   async run(): Promise<{ failed: string[]; passed: string[]; messages: string[] }> {
     const outcome = { failed: new Array<string>(), passed: new Array<string>(), messages: new Array<string>() };
 
-    for (const { setups, tests } of this.groups) {
+    for (const { setups, teardowns, tests } of this.groups) {
       for (const { name, test } of tests) {
         for (const setup of setups) {
           await setup();
@@ -47,6 +52,10 @@ export class CollectingRunner implements ContractRunner {
             outcome.messages.push(error instanceof Error ? error.message : String(error));
           },
         );
+
+        for (const teardown of teardowns) {
+          await teardown();
+        }
       }
     }
 

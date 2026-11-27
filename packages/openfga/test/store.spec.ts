@@ -8,7 +8,7 @@ const runner = { describe, it, expect, beforeEach, afterEach };
 
 relationTupleStoreContract(runner, {
   name: 'OpenFgaRelationTupleStore, on the tuple endpoints in memory',
-  create: () => new OpenFgaRelationTupleStore(new InMemoryOpenFga(), schema),
+  createStore: () => new OpenFgaRelationTupleStore(new InMemoryOpenFga(), schema),
 });
 
 describe('OpenFgaRelationTupleStore', () => {

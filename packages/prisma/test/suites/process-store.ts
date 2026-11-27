@@ -31,8 +31,8 @@ processStoreContract(runner, {
 
     return messagingProcesses(shared);
   },
-  unitOfWork: () => shared,
-  storeInTenant: (tenant) =>
+  createUnitOfWork: () => shared,
+  createStoreInTenant: (tenant) =>
     new PrismaProcessStore(shared, { delegate: (client) => client.messagingProcessInstance, tenant }),
 });
 

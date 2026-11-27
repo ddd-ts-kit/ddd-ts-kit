@@ -29,6 +29,23 @@ class Conditions extends ContractSuite<string> {
   }
 }
 
+/** A subject that says how many times it was closed. */
+class Connection {
+  closed = 0;
+
+  close(): void {
+    this.closed += 1;
+  }
+}
+
+/** A suite with two tests that use their subject and close nothing themselves. */
+class Using<Subject> extends ContractSuite<Subject> {
+  protected tests(): void {
+    this.it('uses it once', async () => undefined);
+    this.it('uses it twice', async () => undefined);
+  }
+}
+
 describe('ContractSuite', () => {
   it('has a subject while a test runs, and none outside', () => {
     expect(() => new ReadingTooEarly(new CollectingRunner(), () => 'a subject').describe('too early')).toThrow(
@@ -69,5 +86,26 @@ describe('ContractSuite', () => {
       passed: ['holds'],
       messages: ['the adapter answered a subject, not another'],
     });
+  });
+
+  it('closes after each test the subject it created when the subject has a close, and leaves any other alone', async () => {
+    const opened: Connection[] = [];
+    const collecting = new CollectingRunner();
+
+    new Using(collecting, () => {
+      opened.push(new Connection());
+
+      return opened.at(-1);
+    }).describe('closable');
+
+    new Using(collecting, () => ({ close: 'not a function' })).describe('not closable');
+
+    expect(await collecting.run()).toEqual({
+      failed: [],
+      passed: ['uses it once', 'uses it twice', 'uses it once', 'uses it twice'],
+      messages: [],
+    });
+
+    expect(opened.map(({ closed }) => closed)).toEqual([1, 1]);
   });
 });

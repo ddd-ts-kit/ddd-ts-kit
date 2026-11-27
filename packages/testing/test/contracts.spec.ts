@@ -137,7 +137,7 @@ eventStoreContract(runner, {
 
 eventStoreUnitOfWorkContract(runner, {
   name: 'an event store and an outbox in memory with transactions',
-  createSubject: () => new TransactionalJournal(),
+  createStoreInUnitOfWork: () => new TransactionalJournal(),
 });
 
 processedEventStoreContract(runner, {
@@ -160,7 +160,7 @@ cacheContract(runner, { name: 'InMemoryCache', createCache: () => new InMemoryCa
 
 cachePurgerContract(runner, {
   name: 'InMemoryCachePurger',
-  createCache: () => {
+  createPurger: () => {
     const purger = new InMemoryCachePurger();
 
     return { purger, store: (key, tags) => purger.store(key, tags), holds: (key) => purger.holds(key) };
@@ -169,7 +169,7 @@ cachePurgerContract(runner, {
 
 cachePurgerContract(runner, {
   name: 'RepeatedCachePurger, around the in-memory one',
-  createCache: () => {
+  createPurger: () => {
     const purger = new InMemoryCachePurger();
     const repeated = new RepeatedCachePurger(purger, { againAfterMs: 0 });
 
@@ -281,7 +281,7 @@ let readModelTable = new UniqueTitles();
 // In memory a deleted row is its key and its stamp.
 readModelStoreContract(runner, {
   name: 'InMemoryReadModelTable',
-  createTable: () => {
+  createTableInUnitOfWork: () => {
     readModelTable = new UniqueTitles();
 
     return { table: readModelTable, unitOfWork: new InMemoryUnitOfWork() };

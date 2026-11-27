@@ -6,12 +6,12 @@ import { tupleKey } from '../rebac/tuple-key';
 export interface RelationTupleStoreContractOptions {
   readonly name: string;
   /** A fresh, empty store; called before each test. */
-  create(): Awaitable<RelationTupleStore>;
+  createStore(): Awaitable<RelationTupleStore>;
 }
 
 /** What every relation tuple store, in memory or in a database, guarantees to the authorizer. */
 export function relationTupleStoreContract(runner: ContractRunner, options: RelationTupleStoreContractOptions): void {
-  new TupleStoreSuite(runner, () => options.create()).describe(`${options.name} (relation tuple store contract)`);
+  new TupleStoreSuite(runner, () => options.createStore()).describe(`${options.name} (relation tuple store contract)`);
 }
 
 const adaEdits: RelationTuple = { object: 'document:1', relation: 'editor', subject: 'user:ada' };

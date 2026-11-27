@@ -71,7 +71,7 @@ describe.each(SERVERS)('RedisJobStore, %s', (_name, start) => {
   jobStoreContract(runner, {
     name: 'RedisJobStore',
     createStore: () => new RedisJobStore(client, { namespace: aNamespace() }),
-    unitOfWork: () => new InMemoryUnitOfWork(),
+    createUnitOfWork: () => new InMemoryUnitOfWork(),
   });
 
   it('keeps an empty list as a list, in the payload and in the actor', async () => {
