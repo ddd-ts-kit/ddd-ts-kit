@@ -1,3 +1,0 @@
-**`verify-merge` names the base of the merge it verifies `--merge-base <commit>`, so `--base <ref>` means one thing across the CLI.** Everywhere else `--base` is the ref a branch, a worktree or a selection starts from (`worktree`, `story-scope`, `worker-scope`, `affected`, `digest`, `cited`, `drizzle-generate`); `verify-merge` alone used it for the merge base of one merge. The option is renamed, with its refusals and fix lines, its help and its documentation. The old `--base` is refused as any unknown option is.
-
-To move: a script or a CI step that calls `verify-merge --base <commit>` passes `--merge-base <commit>`.

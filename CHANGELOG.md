@@ -4,6 +4,52 @@ What each version changes for someone who uses the kit. The packages of `package
 together, under one version; the notes of each [GitHub release](https://github.com/ddd-ts-kit/ddd-ts-kit/releases)
 list the pull requests behind it.
 
+## 0.116.0
+
+**RabbitMQ's `publish`, `assertTopology` and `close()` never wait for ever on a broker that stopped answering, and the bus gains `connectTimeoutMs`, as on Kafka.** A broker that accepted the connection and never answered AMQP, never opened a channel or never answered a declaration held `publish` and `assertTopology` for ever, and held the connection too: the bus never tried again, so it stayed stuck once the broker was back. `publish` now settles within `publishTimeoutMs` for the whole call, the opening of the connection included, not per step, rejecting with `BrokerUnavailableError` of reason `REQUEST_TIMEOUT` (as Kafka does, and as `replayDead` does since #923) when it was held up before sending, and with `PUBLISH_NOT_CONFIRMED` as before when the confirmation did not come. The new option `connectTimeoutMs` (default 10000, Kafka's meaning and default) bounds each attempt to open the connection and set it up, the start of a subscription, and `assertTopology` as a whole, however many declarations it makes. An attempt to open the connection, or a subscription start, that the broker does not finish within it now fails after 10 seconds, is reported to `onFailure` as `REQUEST_TIMEOUT`, and is retried with the delays of `reconnect`. A connection or a channel the broker opens after its timeout, the confirm channel of `replayDead` among them, is closed when it arrives, and `close()` no longer waits for the broker to answer the close of the connection.
+
+**A command that fails leaves nothing in the fakes, as a real adapter rolls back.** With `createTestBuses` of `@ddd-ts-kit/testing` and the test application of `@ddd-ts-kit/di`, a command whose handler, before-commit handler or commit step failed used to keep in the fakes what it had saved, and a spec could assert a state no database would leave. `InMemoryUnitOfWork` now rolls back: when its outermost `run` rejects, the stores in memory undo what the work wrote, newest first, and the aggregates it saved are given back at the version they were loaded at, with their events, as on the four ORM. After a failed command a spec sees in `InMemoryRepository` what it held before, removals included; nothing of it in `InMemoryOutboxStore`, `InMemoryReadModelStore` (and `InMemoryReadModelTable`), `InMemoryProcessStore`, `InMemoryCheckpointStore`, `InMemorySnapshotStore` or `InMemoryEventStore` (whose positions leave a gap, as a database sequence does); the mark of `InMemoryProcessedEventStore` given back; and, as before, no domain event of the command reached an `after-commit` handler and no job of `InMemoryJobStore` was added. The undo of a key leaves what a command running alongside wrote since. `unitOfWorkContract` now holds `InMemoryUnitOfWork`, an `InMemoryRepository` and an `InMemoryOutboxStore` to the same contract as the ORM. `@ddd-ts-kit/kernel` exports what the fakes are built on, for a fake of your own: `onRollback(undo)`, which hands an undo to the unit of work in progress, and `RollbackMap`, a Map whose `set` and `delete` are undone that way. The in-memory outbox wakes a relay once the unit of work committed, no longer at the append. The repository `generate repository` writes on `--orm none` keeps its rows in a `RollbackMap` too, so a failed command leaves nothing in it either.
+
+`InMemoryEventBus.published` is not rolled back: the bus stands for a broker, and no transaction covers a broker. In a generated application with `--events outbox` a publisher writes to the outbox, which rolls back with the command; the test buses and the test application hand the publisher the bus itself, so in a spec what a handler published straight on the bus stays in `publishedEvents()` after a failure.
+
+To move: a spec that asserted a save, a row or an outbox record left by a command that failed now sees it gone: assert what the database would hold, the state before the command.
+To move: `unitOfWorkOver(transaction, { rollsBack: false })` no longer compiles: the option is gone, every unit of work gives the aggregates back. A unit of work of your own over a store that undoes nothing hands its undos to `onRollback`, or keeps its rows in a `RollbackMap`.
+To move: a fake of your own over a plain `Map`, saved again with the same instance after a failed command, now refuses it with a `ConcurrencyError` (the aggregate is given back, the Map kept the save): keep its rows in a `RollbackMap` of `@ddd-ts-kit/kernel`, or extend `InMemoryRepository`.
+
+**A kind of `generate` reads its flags as it declares them, as a command reads its options.** A refactoring of the CLI, with no change of what `generate` writes, says or refuses: a kind gets its flags as the `Arguments` of the options it declares, and a kind that reads a flag it does not declare, itself or through a helper, no longer compiles. The kind a command line asks for, when a flag stands before it (`generate --command CancelInvoice job billing Remind`), is found by one rule: the kind that, its flags read as it declares them, is named first.
+
+**The factory options of the contract suites are named after what they hand over.** In `@ddd-ts-kit/testing/contracts` and `@ddd-ts-kit/auth/testing`, an option that builds something is `create<Noun>`, the noun being what it returns, its type named after the same noun: the event store with its outbox in one unit of work is `createStoreInUnitOfWork(): EventStoreInUnitOfWork`, no longer a `createSubject` answering an `EventStoreUnderContract`; the table of `readModelStoreContract` with the unit of work of its database is `createTableInUnitOfWork(): ReadModelTableInUnitOfWork`, no longer a `createTable` answering a `ReadModelStoreUnderContract`. The unit of work the job and process stores are used in, the store of a tenant, the table that cannot be reached, the aggregate built again under an id, the purger, the personal data adapters, the authorizer and the relation tuple store follow the same rule, and so do the contracts the documentation writes for a port of your own (`createMailer`, `createGeocoder`). The suites test what they tested.
+
+To move: rename, in the specs that call these contracts (`tsc` names each one):
+
+| Contract | Before | After |
+| --- | --- | --- |
+| `eventStoreUnitOfWorkContract` | `createSubject` | `createStoreInUnitOfWork` |
+| `eventStoreUnitOfWorkContract` | type `EventStoreUnderContract` | type `EventStoreInUnitOfWork` |
+| `readModelStoreContract` | `createTable` | `createTableInUnitOfWork` |
+| `readModelStoreContract` | type `ReadModelStoreUnderContract` | type `ReadModelTableInUnitOfWork` |
+| `readModelRowsContract` | type `ReadModelRowsUnderContract` | type `ReadModelTableUnderContract` (`createTable` stays) |
+| `cachePurgerContract` | `createCache` | `createPurger` |
+| `personalDataErasureContract` | `create`, `createWithoutFiles` | `createErasure`, `createErasureWithoutFiles` |
+| `personalDataExportContract` | `create` | `createExport` |
+| `personalDataRetentionContract` | `create` | `createRetention` |
+| `jobStoreContract`, `processStoreContract` | `unitOfWork` | `createUnitOfWork` |
+| `processStoreContract` | `storeInTenant` | `createStoreInTenant` |
+| `readModelTablesContract` | `unreachable` | `createUnreachableTable` |
+| `tenantIsolationContract` | `recreate` | `createAggregateAgain`, the name `repositoryContract` gives the same function |
+| `authorizerContract` | `create` | `createAuthorizer` |
+| `relationTupleStoreContract` | `create` | `createStore` |
+
+A project generated by `init` with a job or process table runs `ddd-ts-kit init --force`, or renames `unitOfWork` and `storeInTenant` in `src/platform/database/persistence.contract.spec.ts`; one on `--authz rebac` renames `create` in `src/platform/auth/relationships/create-tuple-store.contract.spec.ts`, one on `--authz custom` in `src/platform/auth/custom/custom-authorizer.contract.spec.ts`.
+
+**`ContractSuite` closes after each test a subject that has a `close()`.** The base class of the contract suites of `@ddd-ts-kit/testing/contracts` registers the hook once, when the runner gives `afterEach`, so a suite of your own written on it no longer registers `afterEach(() => this.subject.close?.())`. The suites of the kit closed such a subject already: nothing changes for a caller.
+
+**A port, a guard, a schema and a controller of `generate` are declared, not scripted.** A refactoring of the CLI, with no change of what `generate` writes, says or refuses: a port, a guard and a schema are one `labelKind` each, the sibling of `conceptKind` for a name that is not a concept of the model; a controller shares the declaration of a route; and a kind that writes for the HTTP stack declares it, refused in a project without one before it reads any name.
+
+**`verify-merge` names the base of the merge it verifies `--merge-base <commit>`, so `--base <ref>` means one thing across the CLI.** Everywhere else `--base` is the ref a branch, a worktree or a selection starts from (`worktree`, `story-scope`, `worker-scope`, `affected`, `digest`, `cited`, `drizzle-generate`); `verify-merge` alone used it for the merge base of one merge. The option is renamed, with its refusals and fix lines, its help and its documentation. The old `--base` is refused as any unknown option is.
+
+To move: a script or a CI step that calls `verify-merge --base <commit>` passes `--merge-base <commit>`.
+
 ## 0.115.0
 
 **A guide says how to run the kit inside an Nx workspace, from a real session.** `docs/guides/with-other-tools.md` holds one kit project as one Nx project: the targets Nx infers from its scripts, the cache to declare, `nx affected` beside `ddd-ts-kit affected`, the CI and the Prettier of the workspace, and the two sets of agent instructions, with what an agent did when the plugin of the kit and the one of Nx were loaded together. It says why one Nx project per bounded context is not recommended (the import alias of the kit is invisible to the graph of Nx, and a cached check answered green over a forbidden import), and which tool reports which import beside `@nx/enforce-module-boundaries`.
