@@ -14,14 +14,6 @@ import { unitOfWorkScope, type UnitOfWorkScope } from './unit-of-work-scope';
 /** Runs what it is given atomically: it begins, calls it, and commits when it resolved or rolls back when it rejected. */
 type Transaction = <T>(work: () => Promise<T>) => Promise<T>;
 
-export interface UnitOfWorkOverOptions {
-  /**
-   * False when `transaction` undoes nothing of what the work wrote, as a unit of work in memory:
-   * the aggregates then stay as their saves left them, in step with what was stored.
-   */
-  readonly rollsBack?: boolean;
-}
-
 /**
  * What every `UnitOfWork` is made of: the unit of work over the transactions of one database.
  *
@@ -32,9 +24,10 @@ export interface UnitOfWorkOverOptions {
  * rejects the whole: the transaction rolls back, the waiting events reach no handler, and the
  * aggregates the work saved are put back as it found them, at the version they were loaded at and
  * with the events they had recorded, so the same instances can be saved again. The steps handed to
- * `atCommit` are applied last, still inside
- * `transaction`; when it rejects, those applied are undone. Once `transaction` has resolved, and
- * only then, the `after-commit` handlers run, then the work handed to `afterCommit`.
+ * `atCommit` are applied last, still inside `transaction`; when it rejects, those applied are
+ * undone, then what was handed to `onRollback`, newest first: what the stores in memory wrote.
+ * Once `transaction` has resolved, and only then, the `after-commit` handlers run, then the work
+ * handed to `afterCommit`.
  *
  * A deadlock or a serialization failure the database raised anywhere in the transaction, on the
  * statement it chose, rejects the outermost `run` as a `TransactionConflictError`, a
@@ -52,7 +45,7 @@ export interface UnitOfWorkOverOptions {
  * rejects, with that failure when it travelled up, with a `UnitOfWorkAbortedError` whose
  * `cause` it is when the work caught it, a retry that then succeeded included.
  */
-export function unitOfWorkOver(transaction: Transaction, { rollsBack = true }: UnitOfWorkOverOptions = {}): UnitOfWork {
+export function unitOfWorkOver(transaction: Transaction): UnitOfWork {
   // The scope of the transaction of this unit of work open on the asynchronous call chain.
   const open = new AsyncLocalStorage<UnitOfWorkScope>();
 
@@ -64,7 +57,7 @@ export function unitOfWorkOver(transaction: Transaction, { rollsBack = true }: U
         return joining(joined, work);
       }
 
-      const scope = openScope(rollsBack);
+      const scope = openScope();
 
       return opened(work, scope, (scoped) =>
         open.run(scope, () => unitOfWorkScope.run(scope, () => transaction(scoped))),
@@ -96,6 +89,7 @@ async function opened<T>(
     .catch(async (error: unknown) => {
       giveBack(scope.found);
       await undone(applied);
+      rolledBack(scope);
       throw translated(error);
     })
     .finally(() => {
@@ -121,17 +115,17 @@ function isRunning(scope: UnitOfWorkScope | undefined): scope is UnitOfWorkScope
   return scope?.kind === 'unit-of-work' && (scope.stage === 'open' || scope.stage === 'before-commit');
 }
 
-function openScope(rollsBack: boolean): UnitOfWorkScope {
-  const scope: UnitOfWorkScope = {
+function openScope(): UnitOfWorkScope {
+  return {
     kind: 'unit-of-work',
     stage: 'open',
     queue: [],
     dispatched: [],
     committed: [],
     atCommit: [],
+    rolledBack: [],
+    found: new Map(),
   };
-
-  return rollsBack ? { ...scope, found: new Map() } : scope;
 }
 
 async function thenDispatched<T>(work: () => Promise<T>, scope: UnitOfWorkScope, applied: CommitStep[]): Promise<T> {
@@ -160,6 +154,17 @@ function refuseAborted({ abortedBy }: UnitOfWorkScope): void {
 async function undone(applied: readonly CommitStep[]): Promise<void> {
   for (const step of [...applied].reverse()) {
     await step.undo().catch(() => undefined);
+  }
+}
+
+/** Newest first, what the stores in memory wrote; an undo that throws is dropped, and the others still run. */
+function rolledBack({ rolledBack: undos = [] }: UnitOfWorkScope): void {
+  for (const undo of [...undos].reverse()) {
+    try {
+      undo();
+    } catch {
+      // The failure the caller gets is the one that rolled the unit of work back.
+    }
   }
 }
 

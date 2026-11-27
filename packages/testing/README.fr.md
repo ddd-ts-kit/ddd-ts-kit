@@ -1,5 +1,5 @@
 [English](README.md) · **Français**
-<!-- translation-of: README.md sha256:d4440177f67a3156 -->
+<!-- translation-of: README.md sha256:88fedbdcf3957028 -->
 
 # @ddd-ts-kit/testing
 
@@ -525,8 +525,13 @@ Une spec de gestionnaire a le minutage de la production. `commandBus` exécute c
 `unitOfWork` (une `InMemoryUnitOfWork`), comme le fait le bus de l'application : les événements de chaque
 sauvegarde attendent que le gestionnaire de la commande ait rendu la main, puis sont distribués dans
 l'ordre où l'agrégat les a enregistrés, et `execute` se résout une fois que les gestionnaires des deux phases ont été
-exécutés. Un gestionnaire qui échoue dans la phase `before-commit` fait rejeter `execute` ; rien n'est
-défait, puisqu'il n'y a pas de transaction en mémoire. Appelé hors d'une commande, `orders.save(order)`
+exécutés. Un gestionnaire qui échoue dans la phase `before-commit` fait rejeter `execute`, et une commande
+qui échoue ne laisse rien dans les *fakes*, comme une transaction annulée : `InMemoryRepository`, les
+magasins en mémoire de l'outbox, des modèles de lecture, des processus, des points de reprise, des
+instantanés et des événements défont ce qu'elle a écrit (une `RollbackMap` le fait pour un *fake* à vous),
+et les agrégats qu'elle a sauvegardés sont rendus. `eventBus.published` garde ce qu'un gestionnaire a
+publié directement sur le bus : le bus tient lieu de *broker*, qu'aucune transaction ne couvre ; dans
+l'application, un *publisher* écrit dans l'outbox. Appelé hors d'une commande, `orders.save(order)`
 distribue avant de se résoudre.
 
 ```ts

@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   InMemoryDomainEventDispatcher,
   InMemoryUnitOfWork,
+  RollbackMap,
   appendChanges,
   dispatchingOnSave,
   loadedAt,
+  optimisticUpdate,
   rankOf,
   recordedEventsOf,
   unitOfWorkOver,
@@ -147,17 +149,21 @@ describe('a unit of work that rolls back', () => {
     expect([inside.version, namesOf(inside), outside.version, namesOf(outside)]).toEqual([1, [], 1, []]);
   });
 
-  it('gives nothing back where nothing is undone: a unit of work in memory leaves the aggregate in step with the fakes', async () => {
-    const { shelf } = aShelf();
+  it('gives back in memory too: the aggregate as the unit of work found it, the fake as it was', async () => {
+    const versions = new RollbackMap<string, number>();
     const cart = Cart.open('c1');
 
     const failing = new InMemoryUnitOfWork().run(async () => {
-      await shelf.save(cart);
+      await optimisticUpdate(cart, async ({ next }) => {
+        versions.set(cart.id, next);
+
+        return 1;
+      });
 
       throw carrierDown;
     });
 
     await expect(failing).rejects.toBe(carrierDown);
-    expect([cart.version, namesOf(cart), shelf.versionOf('c1')]).toEqual([1, [], 1]);
+    expect([cart.version, namesOf(cart), versions.get('c1')]).toEqual([0, ['shop.cart.opened'], undefined]);
   });
 });

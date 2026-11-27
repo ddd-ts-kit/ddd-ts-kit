@@ -6,16 +6,22 @@ import type { EventStore } from '../../application/ports/event-store';
 import type { ExecutionScope } from '../../application/ports/execution-scope';
 import { assertNamesTenant } from '../../application/tenancy/assert-names-tenant';
 import { ConcurrencyError } from '../../domain/errors/concurrency-error';
+import { onRollback } from '../domain-events/on-rollback';
 
-/** Reference implementation, for tests and single-process apps. Not transactional: a failed unit of work keeps what it appended.
- * An append stores its whole batch or nothing.
+/**
+ * Reference implementation, for tests and single-process apps. An append stores its whole batch or
+ * nothing, and a unit of work that rolls back takes it away: its positions are not handed out
+ * again, a gap as a sequence of a database leaves.
  *
  * Given the execution scope, it holds tenant data, as the SQL stores do: it records the tenant of the
  * work at the first append of a stream, refuses a read or an append of a stream of another tenant
  * (`EventStreamTenantError`) and work that names no tenant (`NoCurrentTenantError`).
  */
 export class InMemoryEventStore implements EventStore {
-  private readonly events: StoredEvent[] = [];
+  private events: StoredEvent[] = [];
+
+  /** The last position handed out. */
+  private position = 0;
 
   constructor(private readonly scope?: ExecutionScope) {}
 
@@ -28,8 +34,7 @@ export class InMemoryEventStore implements EventStore {
     }
 
     const tenantId = held[0]?.tenantId ?? this.scope?.current()?.tenantId;
-
-    const position = this.events.length;
+    const position = this.position;
 
     const placed = events.map((event, index) =>
       structuredClone({
@@ -42,9 +47,11 @@ export class InMemoryEventStore implements EventStore {
       }),
     );
 
+    this.position += placed.length;
     this.events.push(...placed);
+    onRollback(() => this.forget(placed));
 
-    return { version: version + events.length, position: this.events.length };
+    return { version: version + events.length, position: this.position };
   }
 
   async readStream(stream: string, after = 0): Promise<readonly StoredEvent[]> {
@@ -54,11 +61,20 @@ export class InMemoryEventStore implements EventStore {
   }
 
   async readAll(after: number, limit: number): Promise<readonly StoredEvent[]> {
-    return this.events.slice(Math.max(0, after), Math.max(0, after) + Math.max(0, limit)).map(copy);
+    return this.events
+      .filter((event) => event.position > after)
+      .slice(0, Math.max(0, limit))
+      .map(copy);
   }
 
   async head(): Promise<number> {
-    return this.events.length;
+    return this.events.at(-1)?.position ?? 0;
+  }
+
+  private forget(placed: readonly StoredEvent[]): void {
+    const gone = new Set(placed);
+
+    this.events = this.events.filter((event) => !gone.has(event));
   }
 
   private reached(stream: string, access: 'read' | 'write'): StoredEvent[] {

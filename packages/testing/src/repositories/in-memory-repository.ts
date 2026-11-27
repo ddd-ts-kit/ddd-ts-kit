@@ -1,4 +1,5 @@
 import {
+  RollbackMap,
   loadedAt,
   optimisticUpdate,
   type AggregateRoot,
@@ -34,14 +35,15 @@ interface Entry<A> {
 /**
  * A working repository over a Map: the fake of any aggregate repository port. Use it as is or
  * extend it to add the finders of the port. It enforces optimistic concurrency on `version`
- * through the `optimisticUpdate` and `loadedAt` of a real adapter, and passes the same `repositoryContract`. Confined to a scope, it keeps
- * each tenant to what it saved, under ids all tenants share as the rows of one table do, and
- * passes `tenantIsolationContract`.
+ * through the `optimisticUpdate` and `loadedAt` of a real adapter, and passes the same `repositoryContract`. A unit of work that rolls
+ * back undoes what its saves and removals wrote, and leaves what a command running alongside
+ * committed since. Confined to a scope, it keeps each tenant to what it saved, under ids all
+ * tenants share as the rows of one table do, and passes `tenantIsolationContract`.
  */
 export class InMemoryRepository<A extends AggregateRoot<Id>, Id extends string | number = string>
   implements Repository<A, Id>
 {
-  private readonly entries = new Map<Id, Entry<A>>();
+  private readonly entries = new RollbackMap<Id, Entry<A>>();
 
   private readonly keep: (aggregate: A) => () => A;
 

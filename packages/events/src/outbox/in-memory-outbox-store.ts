@@ -1,4 +1,4 @@
-import type { IntegrationEvent } from '@ddd-ts-kit/kernel';
+import { RollbackMap, whenCommitted, type IntegrationEvent } from '@ddd-ts-kit/kernel';
 import type { InMemoryRelaySignal } from '../relay/in-memory-relay-signal';
 import { DuplicateOutboxEventError } from './duplicate-outbox-event-error';
 import type { OutboxRecord } from './outbox-record';
@@ -11,7 +11,7 @@ import type { PersonalEvent } from './personal-event';
 export interface InMemoryOutboxStoreOptions {
   /** How long a claimed record stays invisible to other claims. Default 30000. */
   readonly leaseMs?: number;
-  /** Notified after each append, to wake a relay built with `wakeOn`. */
+  /** Notified after each append, once its unit of work committed, to wake a relay built with `wakeOn`. */
   readonly signal?: InMemoryRelaySignal;
 }
 
@@ -28,9 +28,13 @@ interface StoredRecord {
 // A fresh record is due at once, whatever clock the relay runs on.
 const DUE_IMMEDIATELY = 0;
 
-/** Reference implementation, for tests and single-process apps. Not transactional. */
+/**
+ * Reference implementation, for tests and single-process apps. A unit of work that rolls back
+ * takes back what it appended. There is no isolation: a relay that polls during a unit of work
+ * may claim a record before its commit.
+ */
 export class InMemoryOutboxStore implements OutboxStore {
-  private readonly storedRecords = new Map<string, StoredRecord>();
+  private readonly storedRecords = new RollbackMap<string, StoredRecord>();
 
   private readonly leaseMs: number;
 
@@ -61,7 +65,7 @@ export class InMemoryOutboxStore implements OutboxStore {
     }
 
     if (events.length > 0) {
-      this.signal?.notify();
+      await whenCommitted(async () => this.signal?.notify());
     }
   }
 

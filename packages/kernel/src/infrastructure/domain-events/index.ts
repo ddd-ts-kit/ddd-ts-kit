@@ -3,6 +3,7 @@ export * from './announce-domain-events';
 export * from './at-commit';
 export * from './commit-step';
 export * from './dispatching-on-save';
+export * from './on-rollback';
 export * from './report-after-commit-failures';
 export * from './save-after-commit-error';
 export * from './unit-of-work-aborted-error';

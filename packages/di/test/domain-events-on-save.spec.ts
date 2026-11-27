@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { CommandBus, InMemoryEventBus } from '@ddd-ts-kit/kernel';
+import { CommandBus, InMemoryEventBus, RollbackMap } from '@ddd-ts-kit/kernel';
 import { contextModule, defineContextModule, fake, kernelModule, type Application, type BindingAspect } from '../src';
 import { createApplication, createTestApplication } from './support/on-container';
 import { TransactionalJournal } from './support/fakes/transactional-journal';
@@ -206,6 +206,25 @@ describe('a test application', () => {
 
     expect(saved).toEqual(['l1']);
     expect(app.eventBus.published.map(({ id }) => id)).toEqual(['evt-l1']);
+  });
+
+  it('leaves nothing in a fake of a command that failed: its unit of work rolls the fake back', async () => {
+    const stored = new RollbackMap<string, Loan>();
+
+    const fakeLoans: LoanRepository = {
+      findById: async (id) => stored.get(id),
+      save: async (loan) => void stored.set(loan.id, loan),
+    };
+
+    const app = createTestApplication({
+      modules: [contextModule('lending', lending)],
+      fakes: [fake(LoanRepository, fakeLoans)],
+    });
+
+    LoanOpenedPublisher.failure = new Error('broker schema refused');
+
+    await expect(app.commandBus.execute(new OpenLoan('l1'))).rejects.toThrow('broker schema refused');
+    expect([...stored.keys()]).toEqual([]);
   });
 
   it('dispatches with the save of the adapter of the module, whether the kernel module is listed or not', async () => {

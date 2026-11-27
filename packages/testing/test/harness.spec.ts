@@ -137,6 +137,34 @@ describe('createTestBuses', () => {
     expect(domainEvents.afterCommitFailures).toEqual([]);
   });
 
+  it('leaves nothing in the fakes of a command that failed: what it saved is undone, its events heard by no one', async () => {
+    const { commandBus, dispatching, domainEvents } = createTestBuses({ now: at });
+    const orders = dispatching(new InMemoryOrders());
+    const heard: string[] = [];
+    const placed = Order.place('order-1', { id: 'c', name: 'Ada' }, [{ sku: 'pen', quantity: 3 }], at);
+
+    await orders.save(placed);
+    domainEvents.on('ordering.order.paid', async (event) => void heard.push(event.aggregateId));
+
+    commandBus.register(PlaceOrder, {
+      execute: async () => {
+        const order = await orders.findById('order-1');
+
+        order?.pay(at);
+        await orders.save(order ?? placed);
+        await orders.save(Order.place('order-2', { id: 'c', name: 'Ada' }, [{ sku: 'ink', quantity: 1 }], at));
+        orders.delete('order-1');
+
+        throw new Error('the card was declined');
+      },
+    });
+
+    await expect(commandBus.execute(new PlaceOrder('pen'))).rejects.toThrow('the card was declined');
+
+    expect(orders.all().map((order) => [order.id, order.status, order.version])).toEqual([['order-1', 'placed', 1]]);
+    expect(heard).toEqual([]);
+  });
+
   it('gives a query bus, a frozen clock that can move and a unit of work', async () => {
     const { commandBus, queryBus, clock, unitOfWork } = createTestBuses({ now: at });
     const orders = new InMemoryOrders();
