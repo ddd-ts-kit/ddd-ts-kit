@@ -1,4 +1,4 @@
-import { loadedAt, optimisticUpdate } from '@ddd-ts-kit/kernel';
+import { RollbackMap, loadedAt, optimisticUpdate } from '@ddd-ts-kit/kernel';
 {{#if style.declared}}
 import { Repository } from '@ddd-ts-kit/kernel/declarations';
 {{/if}}
@@ -19,7 +19,8 @@ interface Stored{{aggregate.pascal}} {
 @Repository({{aggregate.pascal}}Repository)
 {{/if}}
 export class InMemory{{aggregate.pascal}}Repository implements {{aggregate.pascal}}Repository {
-  private readonly rows = new Map<string, Stored{{aggregate.pascal}}>();
+  // A command that fails takes back what it saved, as the transaction of a database.
+  private readonly rows = new RollbackMap<string, Stored{{aggregate.pascal}}>();
 
   async findById(id: string): Promise<{{aggregate.pascal}} | undefined> {
     const row = this.rows.get(id);
