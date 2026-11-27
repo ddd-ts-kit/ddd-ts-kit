@@ -10,6 +10,6 @@ export const SHARED_KERNEL = 'shared-kernel';
  * glossary `<sharedKernelDir>/CONTEXT.md`, and its name the one its code list is named after
  * (`shared-kernel.codes.ts`, `SharedKernelCodes`).
  */
-export function sharedKernelScope({ ws, config, flags }: KindRequest): Scope {
-  return { ws, config, flags, context: toName(SHARED_KERNEL), dir: config.sharedKernelDir };
+export function sharedKernelScope({ ws, config, flags, probe }: KindRequest): Scope {
+  return { ws, config, flags, probe, context: toName(SHARED_KERNEL), dir: config.sharedKernelDir };
 }

@@ -42,7 +42,14 @@ export const routeKind = defineKind({
     assertHttpStack(scope);
 
     const name = label(scope, request.args[1] ?? '', { what: 'use case', strip: ['route', 'controller', 'handler'] });
-    const parts = { name, endpoint: parseEndpoint(request.flags), useCase: findUseCase(scope, name, request.flags) };
+    const { method, path, command, query } = request.flags;
+
+    const parts = {
+      name,
+      endpoint: parseEndpoint({ method, path }),
+      useCase: findUseCase(scope, name, { command, query }),
+    };
+
     const { validation, routes } = scope.config.stack;
 
     if (routes === 'nest' && request.asController !== true) {

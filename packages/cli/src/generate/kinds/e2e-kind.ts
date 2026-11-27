@@ -166,7 +166,7 @@ function endpointOf(scope: Scope, name: Name, file: string): Endpoint | undefine
   const route = functionRoute(scope.ws.read(file) ?? '');
 
   if (route !== undefined) {
-    scope.flags.builtOn?.(scope.ws.placed(file));
+    scope.probe?.builtOn(scope.ws.placed(file));
   }
 
   const { method, path, status, isProtected } = route ?? controllerOf(scope, name) ?? {};
@@ -220,7 +220,7 @@ function controllerOf(scope: Scope, name: Name): Declared | undefined {
     return undefined;
   }
 
-  scope.flags.builtOn?.(route.file);
+  scope.probe?.builtOn(route.file);
 
   return {
     method: route.method,

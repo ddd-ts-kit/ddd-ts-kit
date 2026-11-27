@@ -69,7 +69,7 @@ function declaredUpstream(scope: Scope, upstream: string): string {
       (candidate) => candidate.context === upstream,
     ) === true
   ) {
-    scope.flags.builtOn?.(`${scope.config.contextsDir}/${upstream}/CONTEXT.md`);
+    scope.probe?.builtOn(`${scope.config.contextsDir}/${upstream}/CONTEXT.md`);
 
     return upstream;
   }

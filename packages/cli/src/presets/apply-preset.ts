@@ -52,7 +52,7 @@ export function applyPreset(ws: Workspace, config: Config, request: PresetReques
   const scope = adr === '' ? first : { ...first, config: outsideTheTenancy(first, adr) };
   const rendering = { preset: preset.name, context: vars(scope, { preset: { adr, adapter: adapterOf(config) } }) };
 
-  learnTerms(scope);
+  learnTerms(scope, termsOf(preset));
 
   writeFiles(
     scope,
@@ -134,14 +134,17 @@ function describeContext(scope: Scope, preset: Preset, rendering: Rendering): vo
   scope.ws.update(file, text);
 }
 
-function scopeOf(ws: Workspace, config: Config, { context, preset }: PresetRequest): Scope {
+function scopeOf(ws: Workspace, config: Config, { context }: PresetRequest): Scope {
   const name = parseContextName(context);
 
-  const term = preset.terms.map(
+  return { ws, config, context: name, dir: `${config.contextsDir}/${name.kebab}`, flags: NO_FLAGS };
+}
+
+/** The terms of the preset, as `--term` gives them. */
+function termsOf(preset: Preset): string[] {
+  return preset.terms.map(
     (row) => `${row.term}=${row.meaning}${row.notConfusedWith === undefined ? '' : `|${row.notConfusedWith}`}`,
   );
-
-  return { ws, config, context: name, dir: `${config.contextsDir}/${name.kebab}`, flags: { ...NO_FLAGS, term } };
 }
 
 function writeFiles(scope: Scope, files: readonly PresetFile[], rendering: Rendering): void {

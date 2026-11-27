@@ -1,9 +1,8 @@
 import type { OptionSpecs } from '../commands/arguments';
 import type { Config } from '../config';
 import type { Workspace } from '../workspace';
-import type { PrerequisiteProbe } from './generator-probe';
+import type { GeneratorProbe } from './generator-probe';
 import type { SharedWrite } from './shared-write';
-import type { LanguageProbe } from './language-probe';
 
 export interface KindFlags {
   readonly classification?: string;
@@ -92,10 +91,6 @@ export interface KindFlags {
   readonly creates: boolean;
   /** The module of the model of the context the files of its layers and their specs are written in. */
   readonly module?: string;
-  /** No flag of the command line: hears the names to judge against the glossary instead of judging them (`plan-waves`). */
-  readonly language?: LanguageProbe;
-  /** No flag of the command line: hears each file the command builds on, where it was found (`plan-waves`). */
-  readonly builtOn?: PrerequisiteProbe;
 }
 
 export interface KindRequest {
@@ -104,6 +99,8 @@ export interface KindRequest {
   /** Positional arguments after the kind. */
   readonly args: readonly string[];
   readonly flags: KindFlags;
+  /** What `plan-waves` hears of the command: the names to judge, in place of the judgement, and each file it builds on. */
+  readonly probe?: GeneratorProbe | undefined;
   /** `generate controller`: a controller class is written whatever the form of routes the config records. */
   readonly asController?: boolean;
 }

@@ -36,7 +36,7 @@ export function tableOfSchema(scope: Scope, name: string): FoundTable {
     throw undeclared(scope, { name, file, tables });
   }
 
-  scope.flags.builtOn?.(file);
+  scope.probe?.builtOn(file);
 
   return { table, file };
 }

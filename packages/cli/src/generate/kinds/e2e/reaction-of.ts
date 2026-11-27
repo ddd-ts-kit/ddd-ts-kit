@@ -45,7 +45,7 @@ export function reactionOf(scope: Scope, name: Name, routeFile: string): Reactio
   }
 
   if (event !== undefined) {
-    scope.flags.builtOn?.(event.file);
+    scope.probe?.builtOn(event.file);
   }
 
   const reads = readRoutes(sources, [])

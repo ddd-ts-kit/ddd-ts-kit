@@ -25,9 +25,10 @@ export const propertyKind = defineKind({
   },
   writesInModules: true,
   run: (scope, request) => {
-    const name = concept({ ...scope, flags: { ...scope.flags, allowName: true } }, request.args[1] ?? '', {
+    const name = concept(scope, request.args[1] ?? '', {
       what: 'value object',
       strip: ['vo'],
+      judged: false,
     });
 
     requireFile(scope, {

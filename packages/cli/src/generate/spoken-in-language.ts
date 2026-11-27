@@ -31,8 +31,8 @@ export function spokenInLanguage(scope: Scope, together: Name | Together, qualif
     return;
   }
 
-  if (scope.flags.language !== undefined) {
-    scope.flags.language({ context: scope.context.kebab, dir: scope.dir, name: name.pascal, qualifiers });
+  if (scope.probe !== undefined) {
+    scope.probe.language({ context: scope.context.kebab, dir: scope.dir, name: name.pascal, qualifiers });
 
     return;
   }

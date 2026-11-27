@@ -9,7 +9,7 @@ export function foundPrerequisite(scope: Scope, file: string): boolean {
     return false;
   }
 
-  scope.flags.builtOn?.(scope.ws.placed(file));
+  scope.probe?.builtOn(scope.ws.placed(file));
 
   return true;
 }

@@ -27,7 +27,7 @@ export function defineKind(spec: KindSpec): Kind {
       const scope = openScope(request, { sharedKernel: spec.scope === 'context-or-shared-kernel' });
 
       if (heldToGlossary(kind)) {
-        learnTerms(scope);
+        learnTerms(scope, request.flags.term);
       }
 
       spec.run(scope, request);

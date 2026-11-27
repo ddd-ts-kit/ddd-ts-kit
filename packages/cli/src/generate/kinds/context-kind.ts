@@ -37,7 +37,7 @@ export const contextKind: Kind = {
     ],
   },
   writesInModules: false,
-  run: ({ ws, config, args, flags }) => {
+  run: ({ ws, config, args, flags, probe }) => {
     const name = args[0] ?? '';
     const preset = flags.preset === undefined ? undefined : presetNamed(flags.preset);
 
@@ -48,7 +48,7 @@ export const contextKind: Kind = {
       purpose: flags.purpose ?? preset?.purpose,
       classificationReason: flags.reason ?? preset?.classificationReason,
       terms: parseTerms(flags.term),
-      builtOn: flags.builtOn,
+      builtOn: probe?.builtOn,
     });
 
     if (preset !== undefined) {

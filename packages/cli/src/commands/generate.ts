@@ -69,7 +69,7 @@ function generateKind({ argv, io, probe, args, kind, rest }: Asked): number {
 
   keepFlatPlatform(ws, config);
 
-  const flags = probedFlags(flagsOf(args), probe);
+  const flags = flagsOf(args);
 
   refuseModuleOf(kind, flags);
   refuseUndeclaredFlags(kind, passedFlags(args), COMMON_FLAGS);
@@ -83,7 +83,7 @@ function generateKind({ argv, io, probe, args, kind, rest }: Asked): number {
     declaresModule: kind.declaresModule === true,
   });
 
-  kind.run({ ws, config, args: rest, flags });
+  kind.run({ ws, config, args: rest, flags, probe });
   stopPlacing();
   // A worker confined to its context leaves another context in the single declarations file of 0.84: the trunk moves it.
   refreshDocs(ws, args.flag('local-only') ? 'keep' : 'move', docsScope(args, probe));
@@ -112,11 +112,6 @@ function docsScope(args: Arguments, probe: GeneratorProbe | undefined): 'whole' 
   }
 
   return args.flag('local-only') ? 'context' : 'whole';
-}
-
-/** The flags, with what a probe hears in place of a flag: the names to judge and the files built on. */
-function probedFlags(flags: KindFlags, probe: GeneratorProbe | undefined): KindFlags {
-  return probe === undefined ? flags : { ...flags, language: probe.language, builtOn: probe.builtOn };
 }
 
 /** The flags of `generate` given on the command line, by their name. */

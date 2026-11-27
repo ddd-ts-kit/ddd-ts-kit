@@ -108,7 +108,10 @@ function unshown(kind: (typeof KINDS)[number]): string[] {
   ]);
 
   // The steps `defineKind` takes for every kind read `--term` of the kinds that declare it alone.
-  const read = [...closureOf(sourceOf(kind.name), new Set([DEFINE_KIND]))].flatMap(fieldsReadBy);
+  const read = [...closureOf(sourceOf(kind.name), new Set([DEFINE_KIND]))]
+    .filter((file) => file !== DEFINE_KIND)
+    .flatMap(fieldsReadBy);
+
   const flags = read.map((field) => FLAG_OF[field] ?? field.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`));
 
   return [...new Set(flags)].filter((flag) => !shown.has(flag));

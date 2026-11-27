@@ -24,7 +24,7 @@ export function startingJobs(scope: Scope, name: Name): SendingJobs {
   }
 
   for (const job of all) {
-    scope.flags.builtOn?.(scope.ws.placed(job.file));
+    scope.probe?.builtOn(scope.ws.placed(job.file));
   }
 
   return starting;
